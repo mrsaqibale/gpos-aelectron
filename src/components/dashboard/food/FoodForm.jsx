@@ -1,0 +1,1268 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, ChevronDown, Info, Package, DollarSign, Clock, Settings, Tag, Pen, PenIcon, PenTool, X } from 'lucide-react';
+
+const FoodForm = ({ food, onSubmit }) => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    image: null,
+    category_id: '',
+    subcategory_id: '',
+    veg: 0, // 0 for Non-Veg, 1 for Veg
+    status: 'active',
+    restaurant_id: 1,
+    position: 0,
+    price: 0,
+    tax: 0,
+    tax_type: 'percentage',
+    discount: 0,
+    discount_type: 'percentage',
+    available_time_starts: '',
+    available_time_ends: '',
+    sku: '',
+    barcode: '',
+    stock_type: 'unlimited',
+    item_stock: 0,
+    sell_count: 0,
+    // Keep form-specific fields that aren't in database
+    allergenIngredients: '',
+    addons: [],
+    allowNotes: false,
+    productNote: '',
+    trackInventory: false,
+    lowInventory: 5,
+    recommended: false,
+    variations: []
+  });
+
+  const [imagePreview, setImagePreview] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [focusedField, setFocusedField] = useState('');
+  const [selectedAddon, setSelectedAddon] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [allergins, setAllergins] = useState([]);
+  const [selectedAllergins, setSelectedAllergins] = useState([]);
+  const [allerginInput, setAllerginInput] = useState('');
+  const [allerginSuggestions, setAllerginSuggestions] = useState([]);
+  const [showAllerginSuggestions, setShowAllerginSuggestions] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const addonsWithValues = [
+    { name: 'Extra Cheese', value: 2.50 },
+    { name: 'Double Patty', value: 4.00 },
+    { name: 'Extra Sauce', value: 1.00 },
+    { name: 'Spicy', value: 0.50 },
+    { name: 'No Onion', value: 0.00 }
+  ];
+
+  // Load categories and subcategories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoading(true);
+        console.log('Loading categories...');
+        const result = await window.myAPI?.getCategoriesByHotel(1); // Assuming hotel_id = 1
+        console.log('Categories API result:', result);
+        if (result && result.success) {
+          // Filter categories to only show active ones (status = 1)
+          const activeCategories = (result.data || []).filter(category => category.status === 1);
+          setCategories(activeCategories);
+          console.log('Active categories loaded:', activeCategories);
+        } else {
+          console.error('Failed to load categories:', result?.message);
+        }
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  // Load allergens
+  useEffect(() => {
+    const loadAllergins = async () => {
+      try {
+        console.log('Loading allergens...');
+        const result = await window.myAPI?.getAllAllergins();
+        console.log('Allergins API result:', result);
+        if (result && result.success) {
+          setAllergins(result.data || []);
+          console.log('Allergins loaded:', result.data);
+        } else {
+          console.error('Failed to load allergens:', result?.message);
+        }
+      } catch (error) {
+        console.error('Error loading allergens:', error);
+      }
+    };
+
+    loadAllergins();
+  }, []);
+
+  // Load subcategories when category changes
+  useEffect(() => {
+    const loadSubcategories = async () => {
+      if (!formData.category_id) {
+        setSubcategories([]);
+        return;
+      }
+
+      try {
+        console.log('Loading subcategories for category:', formData.category_id);
+        const result = await window.myAPI?.getSubcategoriesByCategory(formData.category_id);
+        console.log('Subcategories API result:', result);
+        if (result && result.success) {
+          // Filter subcategories to only show active ones (status = 1)
+          const activeSubcategories = (result.data || []).filter(subcategory => subcategory.status === 1);
+          setSubcategories(activeSubcategories);
+          console.log('Active subcategories loaded:', activeSubcategories);
+        } else {
+          console.error('Failed to load subcategories:', result?.message);
+          setSubcategories([]);
+        }
+      } catch (error) {
+        console.error('Error loading subcategories:', error);
+        setSubcategories([]);
+      }
+    };
+
+    loadSubcategories();
+  }, [formData.category_id]);
+
+  useEffect(() => {
+    if (food) {
+      setFormData({
+        name: food.name || '',
+        description: food.description || '',
+        image: food.image || null,
+        category_id: food.category_id || '',
+        subcategory_id: food.subcategory_id || '',
+        type: food.type || '',
+        allergenIngredients: food.allergenIngredients || '',
+        addons: food.addons || [],
+        availableFrom: food.availableFrom || '',
+        availableTo: food.availableTo || '',
+        unitPrice: food.unitPrice || 0,
+        discountType: food.discountType || 'percent',
+        discountValue: food.discountValue || 0,
+        maxPurchaseQty: food.maxPurchaseQty || '',
+        stockType: food.stockType || 'unlimited',
+        position: food.position || '',
+        variations: food.variations || [],
+        allowNotes: food.allowNotes || false,
+        productNote: food.productNote || '',
+        sku: food.sku || '',
+        barcode: food.barcode || '',
+        trackInventory: food.trackInventory || false,
+        quantity: food.quantity || 0,
+        lowInventory: food.lowInventory || 5,
+        recommended: food.recommended || false,
+        status: food.status !== undefined ? food.status : true
+      });
+
+      if (food.image) setImagePreview(food.image);
+    }
+  }, [food]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, image: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddAddon = () => {
+    if (selectedAddon && !formData.addons.some(a => a.name === selectedAddon)) {
+      const addon = addonsWithValues.find(a => a.name === selectedAddon);
+      setFormData(prev => ({
+        ...prev,
+        addons: [...prev.addons, addon]
+      }));
+      setSelectedAddon('');
+    }
+  };
+
+  const handleRemoveAddon = (addonName) => {
+    setFormData(prev => ({
+      ...prev,
+      addons: prev.addons.filter(a => a.name !== addonName)
+    }));
+  };
+
+  const handleAddVariation = () => {
+    setFormData(prev => ({
+      ...prev,
+      variations: [
+        ...(prev.variations || []),
+        { 
+          name: '', 
+          selectionType: 'single',
+          min: 1,
+          max: '',
+          options: [{ name: '', additionalPrice: 0 }]
+        }
+      ]
+    }));
+  };
+
+  const handleAddOption = (variationIndex) => {
+    const updatedVariations = [...(formData.variations || [])];
+    if (!updatedVariations[variationIndex].options) {
+      updatedVariations[variationIndex].options = [];
+    }
+    updatedVariations[variationIndex].options.push({ name: '', additionalPrice: 0 });
+    setFormData(prev => ({ ...prev, variations: updatedVariations }));
+  };
+
+  const handleVariationChange = (variationIndex, field, value) => {
+    const updatedVariations = [...(formData.variations || [])];
+    updatedVariations[variationIndex] = {
+      ...updatedVariations[variationIndex],
+      [field]: value
+    };
+    setFormData(prev => ({ ...prev, variations: updatedVariations }));
+  };
+
+  const handleOptionChange = (variationIndex, optionIndex, field, value) => {
+    const updatedVariations = [...(formData.variations || [])];
+    updatedVariations[variationIndex].options[optionIndex] = {
+      ...updatedVariations[variationIndex].options[optionIndex],
+      [field]: value
+    };
+    setFormData(prev => ({ ...prev, variations: updatedVariations }));
+  };
+
+  const handleRemoveVariation = (variationIndex) => {
+    const updatedVariations = [...(formData.variations || [])];
+    updatedVariations.splice(variationIndex, 1);
+    setFormData(prev => ({ ...prev, variations: updatedVariations }));
+  };
+
+  const handleRemoveOption = (variationIndex, optionIndex) => {
+    const updatedVariations = [...(formData.variations || [])];
+    updatedVariations[variationIndex].options.splice(optionIndex, 1);
+    setFormData(prev => ({ ...prev, variations: updatedVariations }));
+  };
+
+  // Allergin handling functions
+  const handleAllerginInputChange = (e) => {
+    const value = e.target.value;
+    setAllerginInput(value);
+    
+    if (value.trim()) {
+      // Filter suggestions based on input
+      const filtered = allergins.filter(allergin => 
+        allergin.name.toLowerCase().includes(value.toLowerCase()) &&
+        !selectedAllergins.some(selected => selected.id === allergin.id)
+      );
+      setAllerginSuggestions(filtered);
+      setShowAllerginSuggestions(true);
+    } else {
+      setAllerginSuggestions([]);
+      setShowAllerginSuggestions(false);
+    }
+  };
+
+  const handleAllerginSelect = (allergin) => {
+    if (!selectedAllergins.some(selected => selected.id === allergin.id)) {
+      setSelectedAllergins(prev => [...prev, allergin]);
+    }
+    setAllerginInput('');
+    setAllerginSuggestions([]);
+    setShowAllerginSuggestions(false);
+  };
+
+  const handleAllerginRemove = (allerginId) => {
+    setSelectedAllergins(prev => prev.filter(allergin => allergin.id !== allerginId));
+  };
+
+  const handleAllerginKeyPress = async (e) => {
+    if (e.key === 'Enter' && allerginInput.trim()) {
+      e.preventDefault();
+      
+      // Check if allergen already exists
+      const existingAllergin = allergins.find(allergin => 
+        allergin.name.toLowerCase() === allerginInput.trim().toLowerCase()
+      );
+      
+      if (existingAllergin) {
+        handleAllerginSelect(existingAllergin);
+      } else {
+        // Create new allergen
+        try {
+          const result = await window.myAPI?.createAllergin({ name: allerginInput.trim() });
+          if (result && result.success) {
+            const newAllergin = { id: result.id, name: allerginInput.trim() };
+            setAllergins(prev => [...prev, newAllergin]);
+            setSelectedAllergins(prev => [...prev, newAllergin]);
+            setAllerginInput('');
+            setAllerginSuggestions([]);
+            setShowAllerginSuggestions(false);
+          } else {
+            console.error('Failed to create allergen:', result?.message);
+          }
+        } catch (error) {
+          console.error('Error creating allergen:', error);
+        }
+      }
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.category_id) newErrors.category_id = 'Category is required';
+    if (formData.price <= 0) newErrors.price = 'Price must be greater than 0';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    
+    setSubmitting(true);
+    try {
+      // Convert image to base64 if it's a file
+      let imageBase64 = null;
+      if (formData.image && formData.image instanceof File) {
+        imageBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(formData.image);
+        });
+      } else if (typeof formData.image === 'string') {
+        imageBase64 = formData.image;
+      }
+
+      // Transform form data to match database schema
+      const foodData = {
+        name: formData.name,
+        description: formData.description,
+        image: imageBase64,
+        category_id: parseInt(formData.category_id),
+        subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : null,
+        price: parseFloat(formData.price),
+        tax: parseFloat(formData.tax),
+        tax_type: formData.tax_type,
+        discount: parseFloat(formData.discount),
+        discount_type: formData.discount_type,
+        available_time_starts: formData.available_time_starts,
+        available_time_ends: formData.available_time_ends,
+        veg: formData.veg,
+        status: formData.status,
+        restaurant_id: formData.restaurant_id,
+        position: parseInt(formData.position),
+        sku: formData.sku,
+        barcode: formData.barcode,
+        stock_type: formData.stock_type,
+        item_stock: parseInt(formData.item_stock),
+        sell_count: parseInt(formData.sell_count),
+        maximum_cart_quantity: formData.maxPurchaseQty ? parseInt(formData.maxPurchaseQty) : null,
+        track_inventory: formData.trackInventory ? 1 : 0,
+        low_inventory_threshold: formData.lowInventory ? parseInt(formData.lowInventory) : null,
+        product_note_enabled: formData.allowNotes ? 1 : 0,
+        product_note: formData.productNote || null
+      };
+
+      const result = await window.myAPI?.createFood(foodData);
+
+      if (result && result.success) {
+        console.log('Food created successfully:', result);
+        
+        // Save food-allergin relationships if allergens are selected
+        if (selectedAllergins.length > 0) {
+          try {
+            const allerginIds = selectedAllergins.map(allergin => allergin.id);
+            const relationshipResult = await window.myAPI?.updateFoodAllergins(result.food_id, allerginIds);
+            
+            if (relationshipResult && relationshipResult.success) {
+              console.log('Food-allergin relationships saved successfully');
+            } else {
+              console.error('Failed to save food-allergin relationships:', relationshipResult?.message);
+            }
+          } catch (error) {
+            console.error('Error saving food-allergin relationships:', error);
+          }
+        }
+        
+        navigate('/dashboard/food-management');
+      } else {
+        console.error('Failed to create food:', result?.message);
+        alert('Failed to create food: ' + (result?.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error creating food:', error);
+      alert('Error creating food: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const getInputClasses = (fieldName, hasError = false) => {
+    const baseClasses = "w-full px-3 py-2 border rounded-md transition-all duration-200 focus:outline-none focus:ring-2";
+    const errorClasses = hasError ? "border-red-500 focus:ring-red-500" : "";
+    const focusClasses = focusedField === fieldName && !hasError ? "border-primaryLight focus:ring-primaryLight focus:border-primaryLight" : "";
+    const normalClasses = !hasError && focusedField !== fieldName ? "border-gray-300 hover:border-primaryLight" : "";
+    
+    return `${baseClasses} ${errorClasses} ${focusClasses} ${normalClasses}`;
+  };
+
+  return (
+    <div className="container mx-auto p-4 max-w-6xl">
+      <div className="flex items-center mb-6">
+        <div className="flex items-center justify-center text-center text-black font-bold border-2 border-black h-6 w-6 rounded-full hover:text-gray-800 mr-4">
+          {food ? (
+            <Pen className="h-4 w-4 mr-1 pl-1" />
+          ) : (
+            <Plus className="h-5 w-5 mr-1 pl-1 font-bold" />
+          )}
+        </div>
+        <h1 className="text-2xl font-bold">
+          {food ? 'Edit Food Item' : 'Add New Food Item'}
+        </h1>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {/* Basic Information Section */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
+            <Info className="h-5 w-5 text-primaryLight mr-2" />
+            <h2 className="text-lg font-semibold">Basic Information</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  onFocus={() => setFocusedField('name')}
+                  onBlur={() => setFocusedField('')}
+                  className={getInputClasses('name', errors.name)}
+                  required
+                />
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  onFocus={() => setFocusedField('description')}
+                  onBlur={() => setFocusedField('')}
+                  className={getInputClasses('description')}
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Food Image</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primaryLight transition-colors">
+                {imagePreview ? (
+                  <div className="flex flex-col items-center">
+                    <img src={imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-md mb-2" />
+                    <button
+                      type="button"
+                      onClick={() => setImagePreview(null)}
+                      className="text-sm text-red-600 hover:text-red-800"
+                    >
+                      Remove Image
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <div className="flex text-sm text-gray-600 justify-center">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-primaryLight hover:text-primaryDark">
+                        <span>Upload an image</span>
+                        <input type="file" className="sr-only" onChange={handleFileChange} accept="image/*" />
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Section */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
+            <Tag className="h-5 w-5 text-primaryLight mr-2" />
+            <h2 className="text-lg font-semibold">Category & Position</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  name="category_id"
+                  value={formData.category_id}
+                  onChange={handleChange}
+                  onFocus={() => setFocusedField('category_id')}
+                  onBlur={() => setFocusedField('')}
+                  className={`${getInputClasses('category_id', errors.category_id)} appearance-none pr-8`}
+                  required
+                  disabled={loading}
+                >
+                  <option value="">{loading ? 'Loading categories...' : 'Select Category'}</option>
+                  {categories.map(cat => {
+                    console.log('Rendering category:', cat);
+                    return (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+              {errors.category_id && <p className="mt-1 text-sm text-red-600">{errors.category_id}</p>}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category</label>
+              <div className="relative">
+                <select
+                  name="subcategory_id"
+                  value={formData.subcategory_id}
+                  onChange={handleChange}
+                  onFocus={() => setFocusedField('subcategory_id')}
+                  onBlur={() => setFocusedField('')}
+                  className={`${getInputClasses('subcategory_id')} appearance-none pr-8`}
+                  disabled={!formData.category_id}
+                >
+                  <option value="">Select Sub Category</option>
+                  {subcategories.map(sub => (
+                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Food Type</label>
+              <div className="relative">
+                <select
+                  name="veg"
+                  value={formData.veg}
+                  onChange={handleChange}
+                  onFocus={() => setFocusedField('veg')}
+                  onBlur={() => setFocusedField('')}
+                  className={`${getInputClasses('veg')} appearance-none pr-8`}
+                >
+                  <option value={0}>Non-Veg</option>
+                  <option value={1}>Veg</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Position (in Category)</label>
+              <input
+                type="number"
+                name="position"
+                value={formData.position}
+                onChange={handleChange}
+                onFocus={() => setFocusedField('position')}
+                onBlur={() => setFocusedField('')}
+                className={getInputClasses('position')}
+                min="1"
+                placeholder="1, 2, 3..."
+              />
+            </div>
+          </div>
+
+          {/* <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Allergen Ingredients</label>
+            <input
+              type="text"
+              name="allergenIngredients"
+              value={formData.allergenIngredients}
+              onChange={handleChange}
+              onFocus={() => setFocusedField('allergenIngredients')}
+              onBlur={() => setFocusedField('')}
+              className={getInputClasses('allergenIngredients')}
+              placeholder="e.g., Contains peanuts, gluten"
+            />
+          </div> */}
+
+          {/* Allergin Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Allergins</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={allerginInput}
+                onChange={handleAllerginInputChange}
+                onKeyPress={handleAllerginKeyPress}
+                onFocus={() => setShowAllerginSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowAllerginSuggestions(false), 200)}
+                className={getInputClasses('allerginInput')}
+                placeholder="Type allergen name and press Enter, or select from suggestions"
+              />
+              
+              {/* Suggestions dropdown */}
+              {showAllerginSuggestions && allerginSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {allerginSuggestions.map((allergin) => (
+                    <div
+                      key={allergin.id}
+                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      onClick={() => handleAllerginSelect(allergin)}
+                    >
+                      {allergin.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Selected allergens */}
+            {selectedAllergins.length > 0 && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Selected Allergins:</label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedAllergins.map((allergin) => (
+                    <div
+                      key={allergin.id}
+                      className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      <span>{allergin.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleAllerginRemove(allergin.id)}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Price & Availability Section */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
+            <DollarSign className="h-5 w-5 text-primaryLight mr-2" />
+            <h2 className="text-lg font-semibold">Price & Availability</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Unit Price (€) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  onFocus={() => setFocusedField('price')}
+                  onBlur={() => setFocusedField('')}
+                  className={getInputClasses('price', errors.price)}
+                  step="0.01"
+                  min="0.01"
+                  required
+                />
+                {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax (%)</label>
+                  <input
+                    type="number"
+                    name="tax"
+                    value={formData.tax}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('tax')}
+                    onBlur={() => setFocusedField('')}
+                    className={getInputClasses('tax')}
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax Type</label>
+                  <div className="relative">
+                    <select
+                      name="tax_type"
+                      value={formData.tax_type}
+                      onChange={handleChange}
+                      onFocus={() => setFocusedField('tax_type')}
+                      onBlur={() => setFocusedField('')}
+                      className={`${getInputClasses('tax_type')} appearance-none pr-8`}
+                    >
+                      <option value="percentage">Percentage</option>
+                      <option value="fixed">Fixed Amount</option>
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
+                  <div className="relative">
+                    <select
+                      name="discount_type"
+                      value={formData.discount_type}
+                      onChange={handleChange}
+                      onFocus={() => setFocusedField('discount_type')}
+                      onBlur={() => setFocusedField('')}
+                      className={`${getInputClasses('discount_type')} appearance-none pr-8`}
+                    >
+                      <option value="percentage">Percent (%)</option>
+                      <option value="amount">Amount (€)</option>
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Discount Value</label>
+                  <input
+                    type="number"
+                    name="discount"
+                    value={formData.discount}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('discount')}
+                    onBlur={() => setFocusedField('')}
+                    className={getInputClasses('discount')}
+                    min="0"
+                    step={formData.discount_type === 'percentage' ? '1' : '0.01'}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Available From</label>
+                  <input
+                    type="time"
+                    name="available_time_starts"
+                    value={formData.available_time_starts}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('available_time_starts')}
+                    onBlur={() => setFocusedField('')}
+                    className={getInputClasses('available_time_starts')}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Available To</label>
+                  <input
+                    type="time"
+                    name="available_time_ends"
+                    value={formData.available_time_ends}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('available_time_ends')}
+                    onBlur={() => setFocusedField('')}
+                    className={getInputClasses('available_time_ends')}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Purchase Quantity</label>
+                <input
+                  type="number"
+                  name="maxPurchaseQty"
+                  value={formData.maxPurchaseQty}
+                  onChange={handleChange}
+                  onFocus={() => setFocusedField('maxPurchaseQty')}
+                  onBlur={() => setFocusedField('')}
+                  className={getInputClasses('maxPurchaseQty')}
+                  min="1"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                <div className="relative">
+                  <select
+                    name="stock_type"
+                    value={formData.stock_type}
+                    onChange={handleChange}
+                    onFocus={() => setFocusedField('stock_type')}
+                    onBlur={() => setFocusedField('')}
+                    className={`${getInputClasses('stock_type')} appearance-none pr-8`}
+                  >
+                    <option value="unlimited">Unlimited</option>
+                    <option value="limited">Limited</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Addons Section */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
+            <Package className="h-5 w-5 text-primaryLight mr-2" />
+            <h2 className="text-lg font-semibold">Addons</h2>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Select Addon</label>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <select
+                  value={selectedAddon}
+                  onChange={(e) => setSelectedAddon(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight appearance-none pr-8"
+                >
+                  <option value="">Choose an addon to add</option>
+                  {addonsWithValues
+                    .filter(addon => !formData.addons.some(a => a.name === addon.name))
+                    .map(addon => (
+                      <option key={addon.name} value={addon.name}>
+                        {addon.name} (+€{addon.value.toFixed(2)})
+                      </option>
+                    ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+              <button
+                type="button"
+                onClick={handleAddAddon}
+                disabled={!selectedAddon}
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primaryDark disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Selected Addons</label>
+            {formData.addons.length > 0 ? (
+              <div className="space-y-2">
+                {formData.addons.map((addon, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">{addon.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-primaryLight">+€{addon.value.toFixed(2)}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAddon(addon.name)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">No addons selected</p>
+            )}
+          </div>
+        </div>
+
+        {/* Variations Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+            <div className="flex items-center">
+              <Settings className="h-5 w-5 text-primaryLight mr-2" />
+              <h2 className="text-lg font-semibold">Variations</h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddVariation}
+              className="flex items-center px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primaryDark transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Variation
+            </button>
+          </div>
+          
+          <div className="space-y-6">
+            {formData.variations?.map((variation, vIndex) => (
+              <div key={vIndex} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-md font-medium text-gray-800">Variation {vIndex + 1}</h3>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveVariation(vIndex)}
+                    className="flex items-center text-red-600 hover:text-red-800 text-sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Remove
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Variation Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={variation.name || ''}
+                      onChange={(e) => handleVariationChange(vIndex, 'name', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                      placeholder="e.g., Size"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Selection Type</label>
+                    <div className="flex space-x-4 pt-2">
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          name={`selectionType-${vIndex}`}
+                          checked={(variation.selectionType || 'single') === 'single'}
+                          onChange={() => handleVariationChange(vIndex, 'selectionType', 'single')}
+                          className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Single Selection</span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          name={`selectionType-${vIndex}`}
+                          checked={variation.selectionType === 'multiple'}
+                          onChange={() => handleVariationChange(vIndex, 'selectionType', 'multiple')}
+                          className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300"/>
+                       <span className="ml-2 text-sm text-gray-700">Multiple Selection</span>
+                     </label>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">Min Selections</label>
+                   <input
+                     type="number"
+                     value={variation.min || 1}
+                     onChange={(e) => handleVariationChange(vIndex, 'min', e.target.value)}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                     min="1"
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-1">Max Selections</label>
+                   <input
+                     type="number"
+                     value={variation.max || ''}
+                     onChange={(e) => handleVariationChange(vIndex, 'max', e.target.value)}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                     min="1"
+                   />
+                 </div>
+               </div>
+
+               <div className="space-y-4">
+                 <div className="flex items-center justify-between">
+                   <label className="block text-sm font-medium text-gray-700">Options</label>
+                   <button
+                     type="button"
+                     onClick={() => handleAddOption(vIndex)}
+                     className="flex items-center text-primaryLight hover:text-primaryDark text-sm"
+                   >
+                     <Plus className="h-4 w-4 mr-1" />
+                     Add Option
+                   </button>
+                 </div>
+                 
+                 {variation.options?.map((option, oIndex) => (
+                   <div key={oIndex} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-white p-4 rounded-lg border">
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-1">
+                         Option Name <span className="text-red-500">*</span>
+                       </label>
+                       <input
+                         type="text"
+                         value={option.name || ''}
+                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'name', e.target.value)}
+                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                         required
+                       />
+                     </div>
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-1">Additional Price (€)</label>
+                       <input
+                         type="number"
+                         value={option.additionalPrice || 0}
+                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'additionalPrice', e.target.value)}
+                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                         step="0.01"
+                         min="0"
+                       />
+                     </div>
+                     <div>
+                       <button
+                         type="button"
+                         onClick={() => handleRemoveOption(vIndex, oIndex)}
+                         className="flex items-center text-red-600 hover:text-red-800 text-sm"
+                       >
+                         <Trash2 className="h-4 w-4 mr-1" />
+                         Remove
+                       </button>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </div>
+           ))}
+         </div>
+       </div>
+
+       {/* Inventory Section */}
+     <div className="mb-8">
+  <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
+    <Package className="h-5 w-5 text-primaryLight mr-2" />
+    <h2 className="text-lg font-semibold">Inventory</h2>
+  </div>
+
+  <div className="space-y-6">
+    {/* SKU and Barcode in one line */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="p-4 border border-gray-200 rounded-lg">
+        <label className="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
+        <input
+          type="text"
+          name="sku"
+          value={formData.sku}
+          onChange={handleChange}
+          className={getInputClasses('sku')}
+          placeholder="e.g., ABC-123"
+        />
+      </div>
+      <div className="p-4 border border-gray-200 rounded-lg">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+        <input
+          type="text"
+          name="barcode"
+          value={formData.barcode}
+          onChange={handleChange}
+          className={getInputClasses('barcode')}
+          placeholder="EAN, UPC, GTIN, etc"
+        />
+      </div>
+    </div>
+
+    {/* Inventory Tracking Toggle */}
+    <div className="p-4 border border-gray-200 rounded-lg">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="text-sm font-medium text-gray-700">Track Inventory</h3>
+          <p className="text-xs text-gray-500">Enable to track stock levels for this item</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            name="trackInventory"
+            checked={formData.trackInventory}
+            onChange={handleChange}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
+          <span className="ml-3 text-sm font-medium text-gray-700">
+            {formData.trackInventory ? 'ON' : 'OFF'}
+          </span>
+        </label>
+      </div>
+      
+      {formData.trackInventory && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Item Stock</label>
+            <input
+              type="number"
+              name="item_stock"
+              value={formData.item_stock}
+              onChange={handleChange}
+              className={getInputClasses('item_stock')}
+              min="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Low Inventory Threshold</label>
+            <input
+              type="number"
+              name="lowInventory"
+              value={formData.lowInventory}
+              onChange={handleChange}
+              className={getInputClasses('lowInventory')}
+              min="1"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
+       {/* Additional Options */}
+       <div className="mb-8">
+         <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
+           <Clock className="h-5 w-5 text-primaryLight mr-2" />
+           <h2 className="text-lg font-semibold">Additional Options</h2>
+         </div>
+         
+         <div className="space-y-6">
+           {/* Product Notes Toggle */}
+           <div className="p-4 border border-gray-200 rounded-lg">
+             <div className="flex items-center justify-between mb-3">
+               <div>
+                 <h3 className="text-sm font-medium text-gray-700">Product Notes</h3>
+                 <p className="text-xs text-gray-500">Allow staff to add custom notes while ordering</p>
+               </div>
+               <label className="relative inline-flex items-center cursor-pointer">
+                 <input 
+                   type="checkbox" 
+                   name="allowNotes"
+                   checked={formData.allowNotes}
+                   onChange={handleChange}
+                   className="sr-only peer"
+                 />
+                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
+                 <span className="ml-3 text-sm font-medium text-gray-700">
+                   {formData.allowNotes ? 'ON' : 'OFF'}
+                 </span>
+               </label>
+             </div>
+             
+             {formData.allowNotes && (
+               <div className="mt-3">
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Default Product Note</label>
+                 <input
+                   type="text"
+                   name="productNote"
+                   value={formData.productNote}
+                   onChange={handleChange}
+                   onFocus={() => setFocusedField('productNote')}
+                   onBlur={() => setFocusedField('')}
+                   className={`${getInputClasses('productNote')} ` }
+                   placeholder="e.g., No onions, Extra spicy"
+                 />
+               
+               </div>
+             )}
+           </div>
+
+           {/* Recommended Toggle */}
+           {/* <div className="p-4 border border-gray-200 rounded-lg">
+             <div className="flex items-center justify-between">
+               <div>
+                 <h3 className="text-sm font-medium text-gray-700">Recommended Item</h3>
+                 <p className="text-xs text-gray-500">Mark this item as recommended</p>
+               </div>
+               <label className="relative inline-flex items-center cursor-pointer">
+                 <input 
+                   type="checkbox" 
+                   name="recommended"
+                   checked={formData.recommended}
+                   onChange={handleChange}
+                   className="sr-only peer"
+                 />
+                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
+                 <span className="ml-3 text-sm font-medium text-gray-700">
+                   {formData.recommended ? 'ON' : 'OFF'}
+                 </span>
+               </label>
+             </div>
+           </div> */}
+
+           {/* Status Toggle */}
+           {/* <div className="p-4 border border-gray-200 rounded-lg">
+             <div className="flex items-center justify-between">
+               <div>
+                 <h3 className="text-sm font-medium text-gray-700">Status</h3>
+                 <p className="text-xs text-gray-500">Enable or disable this item</p>
+               </div>
+               <label className="relative inline-flex items-center cursor-pointer">
+                 <input 
+                   type="checkbox" 
+                   name="status"
+                   checked={formData.status}
+                   onChange={handleChange}
+                   className="sr-only peer"
+                 />
+                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
+                 <span className="ml-3 text-sm font-medium text-gray-700">
+                   {formData.status ? 'Active' : 'Inactive'}
+                 </span>
+               </label>
+             </div>
+           </div> */}
+         </div>
+       </div>
+
+       {/* Form Actions */}
+       <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+         <button
+           type="button"
+           onClick={() => navigate('/foods')}
+           className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight transition-colors"
+         >
+           Cancel
+         </button>
+         <button
+           type="submit"
+           disabled={submitting}
+           className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primaryDark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+         >
+           {submitting ? 'Creating...' : (food ? 'Update Food Item' : 'Add Food Item')}
+         </button>
+       </div>
+     </form>
+   </div>
+ );
+};
+
+export default FoodForm;

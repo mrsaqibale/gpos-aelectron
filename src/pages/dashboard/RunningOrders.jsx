@@ -1,0 +1,1067 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Home, 
+  Receipt, 
+  FileText, 
+  CreditCard, 
+  Bell, 
+  HelpCircle, 
+  Settings, 
+  Clock, 
+  Printer, 
+  RefreshCw,
+  Search,
+  Plus,
+  X,
+  Edit,
+  Trash2,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Users2,
+  Edit2,
+  Minus,
+  Eye,
+  ArrowLeft,
+  ShoppingCart,
+  Download,
+  ClipboardList,
+  Menu,
+  ChevronLeft,
+  LogOut,
+  LayoutDashboard,
+  Utensils,
+  Delete,
+  AlertTriangle,
+  CheckCircle
+} from 'lucide-react';
+import CustomerManagement from '../../components/dashboard/CustomerManagement';
+import CustomerSearchModal from '../../components/dashboard/CustomerSearchModal';
+import FloorPlan3D from '../../components/FloorPlan3D';
+
+const RunningOrders = () => {
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showCustomerSearchModal, setShowCustomerSearchModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showFoodModal, setShowFoodModal] = useState(false);
+  const [selectedFood, setSelectedFood] = useState(null);
+  const [selectedVariations, setSelectedVariations] = useState({});
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [selectedFloor, setSelectedFloor] = useState('1st Floor');
+  
+
+  const [foods, setFoods] = useState([]);
+  const [foodsLoading, setFoodsLoading] = useState(false);
+  
+
+
+
+  const orders = [
+    {
+      id: 1001,
+      customer: 'James Smith',
+      type: 'In Store',
+      status: 'active'
+    },
+    {
+      id: 1002,
+      customer: 'Peter Wright',
+      type: 'Dine-in',
+      status: 'active'
+    },
+    {
+      id: 1004,
+      customer: 'Sunstru Martin',
+      type: 'Collection',
+      status: 'active'
+    }
+  ];
+
+  // Fetch categories from backend
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching categories for hotel_id: 1');
+      
+      // Check if myAPI is available
+      if (!window.myAPI) {
+        console.error('myAPI is not available');
+        setCategories([]);
+        return;
+      }
+      
+      const result = await window.myAPI.getCategoriesByHotel(1);
+      console.log('Categories API result:', result);
+      
+      if (result && result.success) {
+        setCategories(result.data);
+        console.log('Categories loaded successfully:', result.data);
+        
+        // Auto-select the first category if available
+        if (result.data && result.data.length > 0) {
+          const firstCategory = result.data[0];
+          console.log('Auto-selecting first category:', firstCategory);
+          setSelectedCategory(firstCategory);
+          fetchFoodsByCategory(firstCategory.id);
+        }
+      } else {
+        console.error('Failed to fetch categories:', result?.message);
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch foods by category
+  const fetchFoodsByCategory = async (categoryId) => {
+    try {
+      setFoodsLoading(true);
+      console.log('Fetching foods for category_id:', categoryId);
+      
+      // Check if myAPI is available
+      if (!window.myAPI) {
+        console.error('myAPI is not available');
+        setFoods([]);
+        return;
+      }
+      
+      const result = await window.myAPI.getFoodByCategory(categoryId);
+      console.log('Foods API result:', result);
+      
+      if (result && result.success) {
+        setFoods(result.data);
+        console.log('Foods loaded successfully:', result.data);
+      } else {
+        console.error('Failed to fetch foods:', result?.message);
+        setFoods([]);
+      }
+    } catch (error) {
+      console.error('Error fetching foods:', error);
+      setFoods([]);
+    } finally {
+      setFoodsLoading(false);
+    }
+  };
+
+  // Handle category selection
+  const handleCategorySelect = (category) => {
+    if (selectedCategory?.id === category.id) {
+      setSelectedCategory(null);
+      setFoods([]); // Clear foods when deselecting
+    } else {
+      setSelectedCategory(category);
+      fetchFoodsByCategory(category.id);
+    }
+  };
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Handle variation selection
+  const handleVariationSelect = (variationId, optionId) => {
+    setSelectedVariations(prev => {
+      if (variationId === 'size') {
+        // Size is single selection
+        return {
+          ...prev,
+          [variationId]: optionId
+        };
+      } else {
+        // Toppings can be multiple selection
+        const currentSelections = prev[variationId] || [];
+        const newSelections = currentSelections.includes(optionId)
+          ? currentSelections.filter(id => id !== optionId)
+          : [...currentSelections, optionId];
+        
+        return {
+          ...prev,
+          [variationId]: newSelections
+        };
+      }
+    });
+  };
+
+  // Calculate total price with variations
+  const calculateTotalPrice = () => {
+    if (!selectedFood) return 0;
+    
+    let basePrice = selectedFood.price || 0;
+    let variationPrice = 0;
+    
+    // Mock variation prices - replace with actual API data
+    const variationPrices = {
+      size: {
+        'Small': 0,
+        'Medium': 2.50,
+        'Large': 5.00
+      },
+      toppings: {
+        'Extra Cheese': 1.50,
+        'Bacon': 2.00,
+        'Mushrooms': 1.00,
+        'Olives': 0.75
+      }
+    };
+    
+    // Add variation prices
+    Object.entries(selectedVariations).forEach(([type, selection]) => {
+      if (type === 'size' && variationPrices[type] && variationPrices[type][selection]) {
+        variationPrice += variationPrices[type][selection];
+      } else if (type === 'toppings' && Array.isArray(selection)) {
+        selection.forEach(topping => {
+          if (variationPrices[type] && variationPrices[type][topping]) {
+            variationPrice += variationPrices[type][topping];
+          }
+        });
+      }
+    });
+    
+    return basePrice + variationPrice;
+  };
+
+  // Handle add to cart
+  const handleAddToCart = () => {
+    console.log('Adding to cart:', {
+      food: selectedFood,
+      variations: selectedVariations,
+      totalPrice: calculateTotalPrice()
+    });
+    
+    // TODO: Add to cart functionality
+    setShowFoodModal(false);
+    setSelectedFood(null);
+    setSelectedVariations({});
+  };
+
+  // Handle floor selection
+  const handleFloorSelect = (floor) => {
+    setSelectedFloor(floor);
+  };
+
+  const handleCustomerSelect = (customer) => {
+    setSelectedCustomer(customer);
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!selectedCustomer) return;
+    
+    try {
+      // First delete all addresses for this customer
+      if (selectedCustomer.addresses && selectedCustomer.addresses.length > 0) {
+        for (const address of selectedCustomer.addresses) {
+          await window.myAPI?.deleteAddress(address.id);
+        }
+      }
+      
+      // Then delete the customer
+      const result = await window.myAPI?.updateCustomer(selectedCustomer.id, { isDelete: 1 });
+      if (result && result.success) {
+        setSelectedCustomer(null); // Reset to walk-in customer
+        setShowDeleteConfirm(false);
+        alert('Customer deleted successfully');
+      } else {
+        alert('Error deleting customer');
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      alert('Error deleting customer');
+    }
+  };
+
+  const handleEditCustomer = (updatedCustomer) => {
+    setSelectedCustomer(updatedCustomer);
+    setShowEditModal(false);
+  };
+
+  const handleOpenEditModal = async () => {
+    if (!selectedCustomer) {
+      alert('No customer selected to edit');
+      return;
+    }
+
+    try {
+      // Fetch the customer's addresses before opening edit form
+      const addressResult = await window.myAPI?.getCustomerAddresses(selectedCustomer.id);
+      if (addressResult && addressResult.success) {
+        const customerWithAddresses = {
+          ...selectedCustomer,
+          addresses: addressResult.data || []
+        };
+        setSelectedCustomer(customerWithAddresses);
+      }
+      setShowEditModal(true);
+    } catch (error) {
+      console.error('Error fetching customer addresses:', error);
+      setShowEditModal(true); // Still open modal even if address fetch fails
+    }
+  };
+
+
+const MenuCard = ({ item }) => (
+  <div 
+    className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all overflow-hidden transform hover:-translate-y-1 cursor-pointer"
+    onClick={() => {
+      console.log('Food item clicked:', item);
+      setSelectedFood(item);
+      setShowFoodModal(true);
+      setSelectedVariations({});
+    }}
+  >
+    <div className="h-[88px]">
+      <img 
+        src={item.image || "https://via.placeholder.com/150x120?text=Food"}
+        alt={item.name}
+        className="w-full h-[100%] object-cover"
+      />
+    </div>
+    <div className="flex justify-center py-2 items-center flex-col">
+      <h3 className="font-semibold text-gray-800 text-sm text-center">{item.name}</h3>
+      <p className="text-gray-600 font-semibold text-xs mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
+    </div>
+  </div>
+);
+
+const MenuGrid = () => {
+  return (
+    <div className="flex-1 overflow-y-auto py-4 px-2">
+      {foodsLoading ? (
+        <div className="text-center py-8">
+          <div className="text-gray-500 text-sm">Loading foods...</div>
+        </div>
+      ) : foods.length > 0 ? (
+        <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+          {foods.map((food) => (
+            <MenuCard key={food.id} item={food} />
+          ))}
+        </div>
+      ) : selectedCategory ? (
+        <div className="text-center py-8">
+          <div className="text-gray-500 text-sm">No foods found in this category</div>
+          <div className="text-gray-400 text-xs mt-2">Category: {selectedCategory.name}</div>
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <div className="text-gray-500 text-sm">Select a category to view foods</div>
+          <div className="text-gray-400 text-xs mt-2">Categories loaded: {categories.length}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+  return (
+    <>
+      <div className="flex justify-center  gap-2.5 overflow-hidden px-1.5 py-2 bg-[#d3D3D3]">
+            {/* Running Orders */}
+            <div className="w-68 bg-[#ffffff] border-r border-gray-200 flex flex-col shadow-lg rounded-xl h-[500px]">
+              <div className="p-3 flex items-center justify-between">
+                <h2 className="font-bold text-gray-800">Running Orders</h2>
+              <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+  <RefreshCw size={12} />
+  Refresh
+</button>
+              </div>
+              
+              <div className="px-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="py-4 mt-2 px-2 space-y-2 h-auto overflow-y-auto">
+                {orders.map((order) => (
+                  <div
+                    key={order.id}
+                    className={`p-4 border-b  cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${
+                      selectedOrder?.id === order.id ? 'bg-blue-50' : ''
+                    }`}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    <div className="font-semibold text-sm text-gray-800">{order.customer}</div>
+                    <div className="text-xs mt-1  text-gray-700">Order ID: {order.id}</div>
+                    <div className="text-xs  text-gray-700">Order Type: {order.type}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="py-4 px-2 border-t border-gray-200 flex gap-2 text-[10px] ">
+                <button className="flex-1 bg-[#010101] text-white font-medium rounded-lg px-3 py-1 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                  BILL
+                </button>
+                <button className="flex-1 bg-[#4d36eb] text-white font-medium rounded-lg px-3 py-1 cursor-pointer  flex items-center justify-centershadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                  ORDER DETAILS
+                </button>
+                <button className="flex-1 bg-[#f3be25] text-white font-medium rounded-lg px-3 py-1 cursor-pointer  flex items-center justify-center  shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                  MODIFY ORDER
+                </button>
+                <button className="flex-1 bg-[#c81118] text-white justify-center  font-medium rounded-lg px-3 py-1 cursor-pointer  flex items-center  shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                  CANCEL
+                </button>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+          <div className="w-[730px] bg-white flex flex-col shadow-lg rounded-xl overflow-hidden">
+  {/* Search and categories section */}
+  <div className="py-3 px-2 border-b border-gray-200">
+    {/* Search bar */}
+<div className="relative mb-4 w-full"> 
+  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+    <Search className="w-4 h-4 text-primary" />
+  </div>
+  <input
+    type="text"
+    placeholder="Search"
+    className="w-full pl-10 pr-4 py-2 text-sm bg-white placeholder:text-primary font-semibold border border-gray-300 rounded-xl z-10
+      shadow-[0_6px_12px_-2px_rgba(50,50,93,0.25),0_3px_7px_-3px_rgba(0,0,0,0.3)]
+      focus:outline-none focus:ring-2 focus:ring-blue-400"
+  />
+</div>
+    
+    {/* Category buttons */}
+    <div className="flex flex-wrap gap-1.5">
+      {loading ? (
+        <div className="text-gray-500 text-sm">Loading categories...</div>
+      ) : categories.length > 0 ? (
+        categories.map((category) => (
+          <button 
+            key={category.id}
+            className={`px-2 py-1 rounded-lg text-white text-[10.5px] font-medium bg-primary 
+                shadow-[0_4px_4px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1)] 
+                active:shadow-[0_1px_2px_rgba(0,0,0,0.15)] 
+                active:translate-y-[1px] 
+                transition-all duration-150 hover:bg-primary/90 ${
+                  selectedCategory?.id === category.id ? 'bg-primary/90' : ''
+                }`}
+            onClick={() => handleCategorySelect(category)}
+          >
+            {category.name}
+          </button>
+        ))
+      ) : (
+        <div className="text-gray-500 text-sm">No categories found</div>
+      )}
+    </div>
+  </div>
+
+  {/* Menu items section */}
+<MenuGrid />
+</div>
+
+            {/* Order Summary */}
+           <div className="w-[680px]  border border-gray-300 rounded-lg ">
+<div className="px-3 py-2 mb-2 bg-white border-b border-gray-200 rounded-lg">
+  {/* Tabs row */}
+  <div className="flex gap-1.5 mb-4">
+    <button className="px-3 py-1 bg-[#d3D3D3] text-black text-[11px] rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted ">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+      </svg>
+      In Store
+    </button>
+    <button 
+      onClick={() => setShowTableModal(true)}
+      className="px-3 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted hover:bg-gray-200 transition-colors">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+      </svg>
+      Table
+    </button>
+    <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted ">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10"></circle>
+      </svg>
+      Collection
+    </button>
+    <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted ">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
+      </svg>
+      Delivery
+    </button>
+     <button className="px-2 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted ">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
+      </svg>
+     Status
+    </button>
+  </div>
+
+  {/* Status section */}
+  <div className="flex items-center gap-1.5">
+
+    <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-300 btn-lifted ">
+   <Clock size={14} />
+      Due to
+    </button>
+     <button 
+       onClick={() => setShowCustomerSearchModal(true)}
+       className="px-2.5 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
+                     btn-lifted hover:bg-primary/90 transition-colors">
+      <Users2 size={12} />
+      Customer
+    </button>
+    
+ 
+    <button 
+      onClick={() => setSelectedCustomer(null)}
+      className={`px-1.5 py-1 text-[11px] rounded flex items-center gap-1 
+                      border border-gray-300 btn-lifted transition-colors ${
+                        !selectedCustomer ? 'bg-primary text-white' : 'bg-[#d3D3D3] text-black'
+                      }`}>
+      {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
+    </button>
+    
+    <button 
+      onClick={() => setShowCustomerModal(true)}
+      className=" px-2 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
+                      border border-[#1e4a9a] btn-lifted hover:bg-primary/90 transition-colors">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 5v14M5 12h14"></path>
+      </svg>
+      Add New Customer
+    </button>
+   
+<button 
+  onClick={handleOpenEditModal}
+  disabled={!selectedCustomer}
+  className={`btn-lifted transition-colors ${
+    selectedCustomer 
+      ? 'text-green-600 hover:text-green-800 cursor-pointer' 
+      : 'text-gray-400 cursor-not-allowed'
+  }`}>
+  <Edit size={17}/>
+</button>
+     <button 
+      //  onClick={() => {
+      //    if (selectedCustomer) {
+      //      setShowDeleteConfirm(true);
+      //    } else {
+      //      alert('No customer selected to delete');
+      //    }
+      //  }}
+      //  disabled={!selectedCustomer}
+       className={`px-2 py-1.5 text-white text-xs rounded flex items-center gap-1 
+                      border border-gray-300 btn-lifted transition-colors bg-[#c81118] hover:bg-red-700 cursor-pointer 
+                    
+                         
+                      `}>
+      <Trash2 size={14} />
+      Delete 
+    </button>
+  </div>
+</div>
+
+  {/* Items table */}
+   {/* Items table header */}
+<div className='bg-white rounded-lg p-2 '>
+<div className="mt-3 border border-primary">
+  <table className="w-full">
+  <thead>
+    <tr className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700 p-3">
+      <th className="text-center">Items</th>
+      <th className="text-center">Price</th>
+      <th className="text-center">Qty</th>
+      <th className="text-center">Total</th>
+    </tr>
+  </thead>
+  <tbody className="bg-white">
+    {/* Red Velvet Delight Slice */}
+    <tr className="grid grid-cols-4 gap-4 items-center text-sm p-2 border-b border-gray-200">
+      <td className="flex items-center gap-2">
+        <Edit2 size={22} className="text-primary" />
+        <span className="text-gray-800">Red Velvet Delight Slice</span>
+      </td>
+      <td className="text-gray-800 text-center">89.00</td>
+      <td className="flex items-center justify-center">
+         <div className="flex items-center rounded">
+          <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
+            <Minus size={11} />
+          </button>
+          <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
+          <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
+            <Plus size={11} />
+         </button>
+        </div>
+      </td>
+      <td className="flex items-center justify-center gap-2">
+        <span className="text-gray-800">89.00</span>
+        <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
+      </td>
+    </tr>
+
+    {/* Chicken */}
+    <tr className="grid grid-cols-4 gap-4 items-center text-sm p-3 border-b border-gray-200">
+      <td className="flex items-center gap-2">
+        <Edit2 size={13} className="text-primary" />
+        <span className="text-gray-800 text-center">chicken</span>
+      </td>
+      <td className="text-gray-800 text-center">49.00</td>
+      <td className="flex items-center justify-center">
+       <div className="flex items-center rounded">
+          <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
+            <Minus size={11} />
+          </button>
+          <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
+          <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
+            <Plus size={11} />
+         </button>
+        </div>
+      </td>
+      <td className="flex items-center justify-center gap-2">
+        <span className="text-gray-800">49.00</span>
+        <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
+      </td>
+    </tr>
+
+    {/* Burger */}
+    <tr className="grid grid-cols-4 gap-4 items-center text-sm p-3 border-b border-gray-200">
+      <td className="flex items-center gap-2">
+        <Edit2 size={13} className="text-primary" />
+        <span className="text-gray-800">burger</span>
+      </td>
+      <td className="text-gray-800 text-center">180.00</td>
+      <td className="flex items-center justify-center">
+        <div className="flex items-center rounded">
+          <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
+            <Minus size={11} />
+          </button>
+          <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
+          <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
+            <Plus size={11} />
+         </button>
+        </div>
+      </td>
+      <td className="flex items-center justify-center gap-2">
+        <span className="text-gray-800">180.00</span>
+        <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+{/* Summary section */}
+<div className="bg-white p-4 max-w-md mx-auto">
+  <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
+    <span className="font-medium">Subtotal</span>
+    <span className="font-medium">Tax</span>
+    <span className="font-medium">Discount</span>
+    <span className="font-medium">DIY.CHARGE</span>
+  </div>
+  <div className="grid grid-cols-4 gap-2 place-content-center text-sm mb-4 text-center font-medium">
+    <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto ">
+      €130
+    </div>
+    <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
+      €130
+    </div>
+    <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto text-red-500">
+      €130
+    </div>
+    <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
+      €130
+    </div>
+  </div>
+</div>
+  {/* Total Payable */}
+<div className='flex justify-center items-center'>
+    <div className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer   w-[70%] rounded flex items-center justify-center mb-4">
+    <div className="flex items-center  gap-2">
+     <Eye size={14} />
+      <span className="text-gray-800 font-medium">Total Payable : 0.00</span>
+    </div>
+  </div>
+</div>
+
+  {/* Action buttons */}
+  <div className="flex gap-2 flex-wrap justify-center my-4 pb-5">
+    <button className="bg-[#43a148] text-white px-2.5 btn-lifted  py-1.5  text-[11px] rounded  hover:bg-green-600">
+      DISCOUNT
+    </button>
+    <button className="bg-[#4d35ee] text-white px-2.5 py-1.5 btn-lifted    text-[11px] rounded   hover:bg-blue-700">
+      DRAFT
+    </button>
+    <button className="bg-[#3db4e4] text-white px-2.5 py-1.5 btn-lifted   text-[11px] rounded  hover:bg-cyan-500">
+      KOT
+    </button>
+    <button className="bg-[#fb8b02] text-white px-2.5 py-1.5 btn-lifted  text-[11px] rounded   hover:bg-orange-600">
+      PLACE ORDER
+    </button>
+    <button className="bg-[#f42cef] text-white px-2.5 py-1.5 btn-lifted  text-[11px] rounded  hover:bg-pink-600">
+      PAY
+    </button>
+  </div>
+
+{/* Items */}
+
+
+
+</div>
+</div>
+
+          {/* Customer Management Modal */}
+          <CustomerManagement 
+            isOpen={showCustomerModal}
+            onClose={() => setShowCustomerModal(false)}
+            onCustomerSelect={handleCustomerSelect}
+          />
+
+                    {/* Customer Search Modal */}
+          <CustomerSearchModal
+            isOpen={showCustomerSearchModal}
+            onClose={() => setShowCustomerSearchModal(false)}
+            onCustomerSelect={handleCustomerSelect}
+          />
+
+          {/* Edit Customer Modal */}
+          {showEditModal && selectedCustomer && (
+            <CustomerManagement
+              isOpen={showEditModal}
+              onClose={() => setShowEditModal(false)}
+              onCustomerSelect={handleEditCustomer}
+              editingCustomer={selectedCustomer}
+            />
+          )}
+
+          {/* Table Management Modal */}
+          {showTableModal && (
+            <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-7xl max-h-[95vh] flex">
+                {/* Left Sidebar - Floors */}
+                <div className="w-64 bg-gray-50 border-r border-gray-200 p-4">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Tables</h2>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Area/Floor</h3>
+                    <div className="space-y-2">
+                      {['1st Floor', '2nd Floor', '3rd Floor'].map((floor) => (
+                        <button
+                          key={floor}
+                          onClick={() => handleFloorSelect(floor)}
+                          className={`w-full px-3 py-2 text-left rounded-lg transition-colors ${
+                            selectedFloor === floor
+                              ? 'bg-primary text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                          }`}
+                        >
+                          {floor}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10,9 9,9 8,9"></polyline>
+                      </svg>
+                      Invoice
+                    </button>
+                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10,9 9,9 8,9"></polyline>
+                      </svg>
+                      Split Bill
+                    </button>
+                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                      <Edit2 size={14} />
+                      Modify Order
+                    </button>
+                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                        <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                        <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                        <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                      </svg>
+                      Merge Table
+                    </button>
+                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10,9 9,9 8,9"></polyline>
+                      </svg>
+                      Bill
+                    </button>
+                    <button className="w-full px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                      <X size={14} />
+                      Cancel Order
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Side - 3D Floor Plan */}
+                <div className="flex-1 flex flex-col">
+                  {/* Header */}
+                  <div className="bg-primary text-white p-4 flex justify-between items-center">
+                    <h2 className="text-xl font-bold">{selectedFloor} - Floor Plan</h2>
+                    <button 
+                      onClick={() => setShowTableModal(false)}
+                      className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+
+
+                                     {/* 3D Floor Plan Canvas */}
+                   <div className="flex-1 bg-gray-100 overflow-hidden relative">
+                     <FloorPlan3D />
+                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Customer Confirmation Modal */}
+          {showDeleteConfirm && selectedCustomer && (
+            <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+                <div className="bg-red-500 text-white p-4 flex justify-between items-center rounded-t-xl">
+                  <h2 className="text-xl font-bold">Delete Customer</h2>
+                  <button 
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="text-white hover:text-red-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="p-6">
+                  <p className="text-gray-700 mb-4">
+                    Are you sure you want to delete this customer? This action cannot be undone.
+                  </p>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Customer: <strong>{selectedCustomer.name}</strong>
+                  </p>
+                </div>
+                <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteCustomer}
+                    className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Food Details Modal */}
+          {showFoodModal && selectedFood && (
+            <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh]">
+                {/* Header */}
+                <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+                  <h2 className="text-xl font-bold">Food Details</h2>
+                  <button 
+                    onClick={() => {
+                      setShowFoodModal(false);
+                      setSelectedFood(null);
+                      setSelectedVariations({});
+                    }}
+                    className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 overflow-y-auto max-h-[80vh] custom-scrollbar">
+
+                  {/* Variations Section */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Edit2 size={18} className="text-primary" />
+                      Variations
+                    </h4>
+                    
+                    {/* Mock variations data - replace with actual API call */}
+                    <div className="space-y-4">
+                      {/* Size Variation */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <h5 className="font-medium text-gray-800 mb-3">Size</h5>
+                        <div className="space-y-2">
+                          {[
+                            { name: 'Small', price: 0 },
+                            { name: 'Medium', price: 2.50 },
+                            { name: 'Large', price: 5.00 }
+                          ].map((size) => (
+                            <button
+                              key={size.name}
+                              onClick={() => handleVariationSelect('size', size.name)}
+                              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                selectedVariations.size === size.name
+                                  ? 'bg-primary/10 border-primary'
+                                  : 'bg-white border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                  selectedVariations.size === size.name
+                                    ? 'border-primary bg-primary'
+                                    : 'border-gray-300'
+                                }`}>
+                                  {selectedVariations.size === size.name && (
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                  )}
+                                </div>
+                                <span className={`font-medium ${
+                                  selectedVariations.size === size.name ? 'text-primary' : 'text-gray-700'
+                                }`}>
+                                  {size.name}
+                                </span>
+                              </div>
+                              <span className={`font-semibold ${
+                                selectedVariations.size === size.name ? 'text-primary' : 'text-gray-600'
+                              }`}>
+                                {size.price > 0 ? `+€${size.price.toFixed(2)}` : 'Free'}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Toppings Variation */}
+                      {/* <div className="border border-gray-200 rounded-lg p-4">
+                        <h5 className="font-medium text-gray-800 mb-3">Toppings</h5>
+                        <div className="space-y-2">
+                          {[
+                            { name: 'Extra Cheese', price: 1.50 },
+                            { name: 'Bacon', price: 2.00 },
+                            { name: 'Mushrooms', price: 1.00 },
+                            { name: 'Olives', price: 0.75 }
+                          ].map((topping) => {
+                            const isSelected = selectedVariations.toppings && selectedVariations.toppings.includes(topping.name);
+                            return (
+                              <button
+                                key={topping.name}
+                                onClick={() => handleVariationSelect('toppings', topping.name)}
+                                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                  isSelected
+                                    ? 'bg-primary/10 border-primary'
+                                    : 'bg-white border-gray-200 hover:bg-gray-50'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                    isSelected
+                                      ? 'border-primary bg-primary'
+                                      : 'border-gray-300'
+                                  }`}>
+                                    {isSelected && (
+                                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                                    )}
+                                  </div>
+                                  <span className={`font-medium ${
+                                    isSelected ? 'text-primary' : 'text-gray-700'
+                                  }`}>
+                                    {topping.name}
+                                  </span>
+                                </div>
+                                <span className={`font-semibold ${
+                                  isSelected ? 'text-primary' : 'text-gray-600'
+                                }`}>
+                                  +€{topping.price.toFixed(2)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div> */}
+                    </div>
+                  </div>
+
+                  {/* Allergens Section */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <AlertTriangle size={18} className="text-orange-500" />
+                      Allergens
+                    </h4>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                      <div className="flex flex-wrap gap-2">
+                        {['Gluten', 'Dairy', 'Nuts', 'Eggs'].map((allergen) => (
+                          <span
+                            key={allergen}
+                            className="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full flex items-center gap-1"
+                          >
+                            <AlertTriangle size={12} />
+                            {allergen}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          setShowFoodModal(false);
+                          setSelectedFood(null);
+                          setSelectedVariations({});
+                        }}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAddToCart}
+                        className="flex-1 px-4 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ShoppingCart size={18} />
+                        Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </>
+    );
+};
+
+export default RunningOrders;

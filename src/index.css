@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@theme {
+
+  --color-bgColor:#f8faff;
+  --color-primary:#032d81;
+--color-primaryLight:#20407f;
+--color-primaryExtraLight:#20407f1b;
+--color-secondary:#D4B85F;
+}
+
+/* Test style to see if CSS is loading */
+body {
+  background-color: #f0f0f0;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@layer components {
+  .btn-lifted {
+    @apply 
+             shadow-[0_2px_4px_rgba(0,0,0,0.25)]
+            hover:shadow-[0_4px_6px_rgba(0,0,0,0.2)]
+            active:shadow-[0_1px_2px_rgba(0,0,0,0.2)]
+            active:translate-y-[1px]
+            transition-all duration-150;
+  }
+  
+  .bg-primary {
+    background-color: #032d81;
+  }
+  
+  .text-primary {
+    color: #032d81;
+  }
+  
+  .border-primary {
+    border-color: #032d81;
+  }
+  
+  .hover\:bg-primary\/90:hover {
+    background-color: rgba(3, 45, 129, 0.9);
+  }
+  
+  .bg-brown-400 {
+    background-color: #a16207;
+  }
+  
+  .bg-brown-600 {
+    background-color: #92400e;
+  }
+  
+  .border-brown-700 {
+    border-color: #78350f;
+  }
+  
+  .from-brown-400 {
+    --tw-gradient-from: #a16207;
+  }
+  
+  .to-brown-600 {
+    --tw-gradient-to: #92400e;
+  }
+  
+  .from-brown-600 {
+    --tw-gradient-from: #92400e;
+  }
+  
+  .to-brown-800 {
+    --tw-gradient-to: #78350f;
+  }
+}
+
+/* Add to your index.css or global CSS file */
+html, body, #root {
+  height: 100%;
+  overflow: auto; /* or scroll */
+}
+
+/* Make title bar draggable */
+.title-bar {
+  -webkit-app-region: drag;
+}
+
+.title-bar button {
+  -webkit-app-region: no-drag;
+}
+/* Modal scroll improvements */
+.modal-backdrop {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.modal-backdrop::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* Smooth scrolling for modal content */
+.modal-content {
+  scroll-behavior: smooth;
+}
+
+/* Ensure modal doesn't interfere with body scroll when closed */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Custom scrollbar for modal content if needed */
+.modal-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scrollable::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-scrollable::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;                    /* Thin scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #032D3A;           /* Same as modal background */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #4a7ca3;           /* Your border color */
+  border-radius: 10px;
+  border: 1px solid #2d5a87;     /* Darker border for definition */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #2d5a87;           /* Darker on hover */
+}
+
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: #032D3A;           /* Corner color */
+}
