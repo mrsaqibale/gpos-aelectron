@@ -315,7 +315,7 @@ const POSLogin = () => {
 
           {/* Right Section - PIN Entry with 3D effect */}
           <div
-            className="w-1/2 bg-[#032D3A] rounded-2xl p-6 shadow-2xl border-1 border-[#2d5a87]"
+            className="w-1/2 bg-[#ffffff] text-black rounded-2xl p-6 shadow-2xl border-1 border-[#2d5a87]"
             style={{
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
             }}
@@ -323,7 +323,7 @@ const POSLogin = () => {
             {/* Logging in as Role Header */}
             {selectedRole && (
               <div className="mb-3 p-2] rounded-md border border-[#4a7ca3] shadow-inner max-w-xs mx-auto">
-                <div className="flex items-center justify-center gap-1 text-white">
+                <div className="flex items-center justify-center gap-1 text-black">
                   <BarChart3 className="w-3 h-3" />
                   <span className="text-sm font-medium">
                     Logging in as: {getSelectedRoleName()}
@@ -332,7 +332,7 @@ const POSLogin = () => {
               </div>
             )}
 
-            <h2 className="text-2xl font-semibold text-white mb-6 text-center transform transition-transform hover:scale-105">
+            <h2 className="text-2xl font-semibold text-black mb-6 text-center transform transition-transform hover:scale-105">
               Enter PIN To Continue
             </h2>
 
