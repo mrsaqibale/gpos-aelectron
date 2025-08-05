@@ -270,7 +270,7 @@ const POSLogin = () => {
         <div className="w-full max-w-4xl flex gap-8 transform perspective-1000">
 
           {/* Left Section - Role Selection with 3D effect */}
-          <div className="w-1/2 bg-transparent rounded-3xl p-6 border-[#4a7ca3] border shadow-2xl">
+          <div className="w-1/2 h-full bg-transparent rounded-3xl p-6 border-[#4a7ca3] border shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
