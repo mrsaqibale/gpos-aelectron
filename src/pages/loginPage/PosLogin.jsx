@@ -399,7 +399,7 @@ const POSLogin = () => {
                       background: `linear-gradient(to bottom right, ${theme.background}, ${theme.buttonHover})`,
                     }}
                   >
-                    <X className="w-4 h-4" />
+                    OK
                   </ActionButton>
                 </div>
 
