@@ -19,7 +19,7 @@ export function createRegister(data) {
   try {
     const { startamount, employee_id } = data;
     
-    if (!startamount || !employee_id) {
+    if (startamount === undefined || startamount === null || startamount === '' || !employee_id) {
       return errorResponse('Start amount and employee ID are required');
     }
 

@@ -35,6 +35,31 @@ const DashboardLayout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Handle logout session tracking when user leaves the app
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      try {
+        const currentEmployee = localStorage.getItem('currentEmployee');
+        if (currentEmployee) {
+          const employeeData = JSON.parse(currentEmployee);
+          if (employeeData.id) {
+            // Use the global logout function if available, otherwise call directly
+            if (window.handleEmployeeLogout) {
+              await window.handleEmployeeLogout(employeeData.id);
+            } else {
+              await window.myAPI?.updateEmployeeLogout(employeeData.id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error handling beforeunload logout:', error);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   // Check if we should show check-in popup
 useEffect(() => {
   const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');

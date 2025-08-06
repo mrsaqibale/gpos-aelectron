@@ -173,6 +173,30 @@ const POSLogin = () => {
     setShowForgotPinModal(false);
   };
 
+  // Utility function to handle employee logout (can be used from other components)
+  const handleEmployeeLogout = async (employeeId) => {
+    try {
+      if (employeeId) {
+        const logoutResult = await window.myAPI?.updateEmployeeLogout(employeeId);
+        if (logoutResult.success) {
+          console.log('Employee logout session updated:', logoutResult);
+        } else {
+          console.warn('Failed to update logout session:', logoutResult.message);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating logout session:', error);
+    }
+  };
+
+  // Expose logout function globally for use in other components
+  React.useEffect(() => {
+    window.handleEmployeeLogout = handleEmployeeLogout;
+    return () => {
+      delete window.handleEmployeeLogout;
+    };
+  }, []);
+
   const renderPinDisplay = () => {
     const boxes = Array.from({ length: 6 }, (_, index) => {
       const hasDigit = index < pin.length;

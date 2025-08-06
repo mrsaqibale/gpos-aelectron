@@ -90,11 +90,46 @@ const Header = ({
     navigate(-1);
   };
 
-  const handleLogout = () => {
-    // Clear user data from localStorage
-    localStorage.removeItem('currentEmployee');
-    // Redirect to login page
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      // Get current employee data before clearing
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      let employeeId = null;
+      
+      if (currentEmployee) {
+        try {
+          const employeeData = JSON.parse(currentEmployee);
+          employeeId = employeeData.id;
+        } catch (error) {
+          console.error('Error parsing employee data for logout:', error);
+        }
+      }
+
+      // Update employee logout session if we have an employee ID
+      if (employeeId) {
+        try {
+          const logoutResult = await window.myAPI?.updateEmployeeLogout(employeeId);
+          if (logoutResult.success) {
+            console.log('Employee logout session updated successfully:', logoutResult);
+          } else {
+            console.warn('Failed to update logout session:', logoutResult.message);
+          }
+        } catch (error) {
+          console.error('Error updating logout session:', error);
+        }
+      }
+
+      // Clear user data from localStorage
+      localStorage.removeItem('currentEmployee');
+      
+      // Redirect to login page
+      navigate('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still clear data and redirect even if logout session update fails
+      localStorage.removeItem('currentEmployee');
+      navigate('/login');
+    }
   };
 
   const showBackButton = location.pathname !== '/dashboard';
