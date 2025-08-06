@@ -120,8 +120,29 @@ const POSLogin = () => {
 
         if (result.success) {
           console.log('Login successful:', result.data);
-          // Store employee data in localStorage or state management
-          localStorage.setItem('currentEmployee', JSON.stringify(result.data));
+          
+          // Create employee login session after successful authentication
+          try {
+            const loginSessionResult = await window.myAPI?.createEmployeeLogin(result.data.id);
+            if (loginSessionResult.success) {
+              console.log('Employee login session created:', loginSessionResult);
+              // Store login session data along with employee data
+              localStorage.setItem('currentEmployee', JSON.stringify({
+                ...result.data,
+                loginSessionId: loginSessionResult.login_id,
+                loginTime: loginSessionResult.login_time
+              }));
+            } else {
+              console.warn('Failed to create login session:', loginSessionResult.message);
+              // Still proceed with login even if session creation fails
+              localStorage.setItem('currentEmployee', JSON.stringify(result.data));
+            }
+          } catch (sessionError) {
+            console.error('Error creating login session:', sessionError);
+            // Still proceed with login even if session creation fails
+            localStorage.setItem('currentEmployee', JSON.stringify(result.data));
+          }
+          
           navigate('/dashboard');
         } else {
           setError('⚠ Invalid PIN or role. Please try again.');
