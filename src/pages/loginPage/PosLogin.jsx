@@ -107,11 +107,11 @@ const POSLogin = () => {
       setError('⚠ Please select a role first.');
       return;
     }
-    if (pin.length < 4) {
-      setError('⚠ PIN must be at least 4 digits.');
+    if (pin.length < 6) {
+      setError('⚠ PIN must be 6 digits.');
       return;
     }
-    if (selectedRole && pin.length >= 4) {
+    if (selectedRole && pin.length >= 6) {
       try {
         console.log('Login attempt:', { role: selectedRole, pin });
 
@@ -161,10 +161,13 @@ const POSLogin = () => {
       return (
         <div
           key={index}
-          className={`w-10 h-10 border-[1.5px] rounded-lg flex items-center justify-center text-lg font-semibold transition-all duration-200 ${isEmpty
-              ? 'border-[#1e3a5f] bg-[#0f2a44]'
-              : 'border-[#2d5a87] bg-[#032D3A] text-white'
+          className={`w-10 h-10 border-[2px] rounded-lg flex items-center justify-center text-lg font-semibold transition-all duration-200 ${isEmpty
+              ? 'border-[#6BD8E6] bg-[#E0F7FA]'
+              : 'border-[#6BD8E6] bg-[#E0F7FA] text-black'
             } shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
+            style={{
+              boxShadow: "0 0 10px rgba(0, 188, 212, 0.6)"
+            }}
         >
           {hasDigit ? (showPin ? digit : '●') : ''}
         </div>
@@ -177,12 +180,12 @@ const POSLogin = () => {
         <button
           onClick={togglePinVisibility}
           disabled={!selectedRole}
-          className={`ml-3 w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${selectedRole
-              ? 'text-gray-300 hover:text-white hover:bg-[#032D3A] cursor-pointer'
-              : 'text-gray-500 cursor-not-allowed'
+          className={`ml-1 w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${selectedRole
+              ? 'text-[#032D3A] hover:text-white hover:bg-[#032D3A] cursor-pointer'
+              : 'text-[#032D3A] cursor-not-allowed'
             }`}
         >
-          {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          {showPin ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
         </button>
       </div>
     );
@@ -201,29 +204,42 @@ const POSLogin = () => {
       </button>
     );
 
+  const ActionButton = ({
+    onClick,
+    className = "",
+    children,
+    variant = "default",
+    disabled = false,
+  }) => {
+    const baseClasses =
+      "h-11 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
-  const ActionButton = ({ onClick, className = "", children, variant = "default", disabled = false }) => {
-    const baseClasses = "h-11 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
-    const variantClasses = {
-      clear: disabled
-        ? `bg-linear-to-145-from${theme.keypad}-to-${theme.keypad_end} border-[#4a7ca3] text-gray-500 cursor-not-allowed`
-        : "bg-red-900/40 hover:bg-red-800/50 border-[#4a7ca3] cursor-pointer text-red-300 hover:border-red-500",
-      backspace: disabled
-        ? "bg-[#032D3A] text-gray-500 cursor-not-allowed border-[#4a7ca3]"
-        : "bg-[#032D3A] hover:bg-[#2d5a87] border-[#4a7ca3] cursor-pointer text-white hover:border-[#4a7ca3]",
-      default: baseClasses
+    const isBackspace = variant === "backspace";
+
+    const gradientStyle = {
+      background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`,
     };
+
+    const variantClasses = isBackspace
+      ? disabled
+        ? "text-red-300 cursor-not-allowed border-[#4a7ca3]"
+        : "hover:bg-[#2d5a87] border-[#4a7ca3] cursor-pointer text-white hover:border-[#4a7ca3]"
+      : disabled
+      ? "text-red-300 cursor-not-allowed border-[#4a7ca3]"
+      : "cursor-pointer text-white border-[#4a7ca3]";
 
     return (
       <button
         onClick={onClick}
         disabled={disabled}
-        className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+        className={`${baseClasses} ${variantClasses} ${className}`}
+        style={gradientStyle}
       >
         {children}
       </button>
     );
   };
+
 
   return (
     <>
@@ -273,7 +289,7 @@ const POSLogin = () => {
         <div className="w-full max-w-4xl flex gap-8 transform perspective-1000">
 
           {/* Left Section - Role Selection with 3D effect */}
-          <div className="w-1/2 h-full bg-transparent rounded-3xl p-6 border-[#4a7ca3] border shadow-2xl">
+          <div className="w-1/2 bg-transparent rounded-3xl p-6 border-[#4a7ca3] border shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
@@ -284,25 +300,28 @@ const POSLogin = () => {
                 const isSelected = selectedRole === role.id;
 
                 return (
+                  
                   <button
                       key={role.id}
                       onClick={() => handleRoleSelect(role.id)}
                       className={`
-                        ${isSelected ? 'border-3 border-[#4a7ca3] text-white' : 'border-[#1e3a5f] text-black hover:bg-transparent hover:border-white'}
-                        p-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl
-                        flex flex-col items-center justify-center h-24 hover:cursor-pointer 
-                        transform hover:-translate-y-1 hover:scale-105 active:translate-y-0 
-                        border-2
+                        ${isSelected
+                          ? 'text-white scale-[1.04] z-[1]'
+                          : 'text-black hover:bg-transparent hover:border-white'}
+                        p-4 rounded-xl transition-all duration-300 
+                        flex flex-col items-center justify-center h-24 
+                        hover:cursor-pointer transform hover:-translate-y-1 hover:scale-105 active:translate-y-0 
+                        border-[2.5px]
                       `}
                       style={{
                         transformStyle: 'preserve-3d',
-                        boxShadow: isSelected
-                          ? '0 10px 15px -3px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,0,0,0.1), inset 0 0 0 2px #4a7ca3'
-                          : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)',
                         background: isSelected
-                          ? `linear-gradient(135deg, ${theme.loginBg}, ${theme.buttonHover})`
+                          ? `linear-gradient(135deg, ${theme.loginBg} 60%, ${theme.buttonHover} 100%)`
                           : '#ffffff',
-                        borderColor: isSelected ? theme.loginBg : '#1e3a5f'
+                        borderColor: isSelected ? theme.loginBg : '#1e3a5f',
+                        boxShadow: isSelected
+                          ? `0 0 16px 2px ${theme.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
+                          : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
                       }}
                     >
                       <IconComponent className="w-6 h-6 mb-1" />
@@ -311,6 +330,7 @@ const POSLogin = () => {
                         <span className="text-xs opacity-70">{role.subtitle}</span>
                       )}
                     </button>
+
                 );
               })}
             </div>
@@ -343,13 +363,13 @@ const POSLogin = () => {
             <div className="mb-4">
               {renderPinDisplay()}
               <p className="text-center text-xs text-gray-400 mt-2">
-                {pin.length}/6 digits (min 4)
+                {pin.length}/6 digits
               </p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-4 flex items-center justify-center gap-2 bg-red-900/40 text-red-300 p-2 rounded-lg border border-red-600/30">
+              <div className="mb-4 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">{error}</span>
               </div>
@@ -378,9 +398,6 @@ const POSLogin = () => {
                     onClick={handleClear}
                     variant="clear"
                     disabled={!selectedRole}
-                    // style={{
-                    //   background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`
-                    // }}
                   >
                     Clear
                   </ActionButton>
@@ -412,7 +429,7 @@ const POSLogin = () => {
             <div className="mb-4 flex justify-center">
               <button
                 onClick={handleLogin}
-                disabled={!selectedRole || pin.length < 4}
+                disabled={!selectedRole || pin.length < 6}
                 className="w-[86%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
                 style={{
                     background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`,
