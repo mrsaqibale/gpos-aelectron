@@ -18,7 +18,8 @@ const POSLogin = () => {
       background: '#003C58',
       logo: '#176B87',
       logo_border: '#0D445E',
-      keypad: '#003C58',
+      keypad: '#176b87',
+      keypad_end: '#00bcd4',
       keypadBorder: '#1976d2',
       buttonHover: '#06A9C2',
       loginBg: '#005A9C',
@@ -28,7 +29,8 @@ const POSLogin = () => {
       background: '#00428C',
       logo: '#004687',
       logo_border: '#0C4789',
-      keypad: '#00428C',
+      keypad: '#00428c',
+      keypad_end: '#4f8cff',
       keypadBorder: '#34A0A4',
       buttonHover: '#3B79E2',
       loginBg: '#34A0A4',
@@ -37,7 +39,8 @@ const POSLogin = () => {
       background: '#25A18E',
       logo: '#34A0A4',
       logo_border: '#2FA391',
-      keypad: '#25A18E',
+      keypad: '#25a18e',
+      keypad_end: '#86efac',
       keypadBorder: '#2d5a87',
       buttonHover: '#6AD9A4',
       loginBg: '#2d5a87',
@@ -191,7 +194,7 @@ const POSLogin = () => {
         disabled={!selectedRole}
         className="rounded-xl py-2 px-4 shadow-lg cursor-pointer hover:shadow-xl text-white font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
         style={{
-          background: `linear-gradient(to bottom right, ${style?.start}, ${style?.end})`
+          background: `linear-gradient(145deg, ${style?.start} 60%, ${style?.end} 100%)`
         }}
       >
         {number}
@@ -203,7 +206,7 @@ const POSLogin = () => {
     const baseClasses = "h-11 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
     const variantClasses = {
       clear: disabled
-        ? "bg-[#032D3A] border-[#4a7ca3] text-gray-500 cursor-not-allowed"
+        ? `bg-linear-to-145-from${theme.keypad}-to-${theme.keypad_end} border-[#4a7ca3] text-gray-500 cursor-not-allowed`
         : "bg-red-900/40 hover:bg-red-800/50 border-[#4a7ca3] cursor-pointer text-red-300 hover:border-red-500",
       backspace: disabled
         ? "bg-[#032D3A] text-gray-500 cursor-not-allowed border-[#4a7ca3]"
@@ -363,21 +366,21 @@ const POSLogin = () => {
                     onClick={handleNumberClick}
                     style={{
                       start: theme.keypad,
-                      end: theme.buttonHover,
+                      end: theme.keypad_end,
                     }}
                   />
                 ))}
               </div>
 
 
-              <div className="grid grid-cols-3 gap-3 text-white">
+              <div className="grid grid-cols-3 gap-3">
                   <ActionButton
                     onClick={handleClear}
                     variant="clear"
                     disabled={!selectedRole}
-                    style={{
-                      background: `linear-gradient(to bottom right, ${theme.background}, ${theme.buttonHover})`,
-                    }}
+                    // style={{
+                    //   background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`
+                    // }}
                   >
                     Clear
                   </ActionButton>
@@ -386,8 +389,8 @@ const POSLogin = () => {
                     number={0}
                     onClick={handleNumberClick}
                     style={{
-                      start: theme.background,
-                      end: theme.buttonHover,
+                      start: theme.keypad,
+                      end: theme.keypad_end,
                     }}
                   />
 
@@ -396,10 +399,10 @@ const POSLogin = () => {
                     variant="backspace"
                     disabled={!selectedRole}
                     style={{
-                      background: `linear-gradient(to bottom right, ${theme.background}, ${theme.buttonHover})`,
+                      background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`
                     }}
                   >
-                    OK
+                    <X className="w-4 h-4" />
                   </ActionButton>
                 </div>
 
@@ -412,7 +415,7 @@ const POSLogin = () => {
                 disabled={!selectedRole || pin.length < 4}
                 className="w-[86%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
                 style={{
-                    backgroundColor: theme.background,
+                    background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`,
                     borderColor: theme.loginBg,
                   }}
               >
