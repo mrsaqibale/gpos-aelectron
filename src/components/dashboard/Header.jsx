@@ -122,12 +122,16 @@ const Header = ({
       // Clear user data from localStorage
       localStorage.removeItem('currentEmployee');
       
+      // Clear session storage to reset check-in state
+      sessionStorage.removeItem('hasCheckedIn');
+      
       // Redirect to login page
       navigate('/login');
     } catch (error) {
       console.error('Error during logout:', error);
       // Still clear data and redirect even if logout session update fails
       localStorage.removeItem('currentEmployee');
+      sessionStorage.removeItem('hasCheckedIn');
       navigate('/login');
     }
   };

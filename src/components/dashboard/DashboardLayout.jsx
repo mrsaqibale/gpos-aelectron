@@ -61,14 +61,23 @@ const DashboardLayout = () => {
   }, []);
 
   // Check if we should show check-in popup
-useEffect(() => {
-  const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
+  useEffect(() => {
+    const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
+    const currentEmployee = localStorage.getItem('currentEmployee');
 
-  if (location.pathname === '/dashboard' && userRole !== 'admin' && !hasCheckedIn) {
-    setShowCheckIn(true);
-    sessionStorage.setItem('hasCheckedIn', 'true');
-  }
-}, [location, userRole]);
+    // Show check-in popup if:
+    // 1. We're on dashboard page
+    // 2. User is not admin
+    // 3. Hasn't checked in this session
+    // 4. Has valid employee data
+    if (location.pathname === '/dashboard' && 
+        userRole !== 'admin' && 
+        !hasCheckedIn && 
+        currentEmployee) {
+      setShowCheckIn(true);
+      sessionStorage.setItem('hasCheckedIn', 'true');
+    }
+  }, [location, userRole]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
