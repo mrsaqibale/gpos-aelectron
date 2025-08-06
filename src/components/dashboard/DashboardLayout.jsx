@@ -9,6 +9,7 @@ import {
   Search,
   Users2, Utensils, Table
 } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const SidebarContext = createContext();
 
@@ -19,6 +20,7 @@ const DashboardLayout = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
   const location = useLocation();
+  const { themeColors } = useTheme();
   
   // Mock user data for frontend demo
   const user = {

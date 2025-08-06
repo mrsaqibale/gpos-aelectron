@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Crown, Settings, DollarSign, ChefHat, X, BarChart3, AlertCircle } from 'lucide-react';
 import ForgotPinModals from './ForgotPassword';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const POSLogin = () => {
   console.log('POSLogin component rendering...');
@@ -13,43 +14,7 @@ const POSLogin = () => {
 
   const navigate = useNavigate();
   const [showForgotPinModal, setShowForgotPinModal] = useState(false);
-  const themes = {
-    default: {
-      background: '#003C58',
-      logo: '#176B87',
-      logo_border: '#0D445E',
-      keypad: '#176b87',
-      keypad_end: '#00bcd4',
-      keypadBorder: '#1976d2',
-      buttonHover: '#06A9C2',
-      loginBg: '#005A9C',
-      
-    },
-    blue: {
-      background: '#00428C',
-      logo: '#004687',
-      logo_border: '#0C4789',
-      keypad: '#00428c',
-      keypad_end: '#4f8cff',
-      keypadBorder: '#34A0A4',
-      buttonHover: '#3B79E2',
-      loginBg: '#34A0A4',
-    },
-    green: {
-      background: '#25A18E',
-      logo: '#34A0A4',
-      logo_border: '#2FA391',
-      keypad: '#25a18e',
-      keypad_end: '#86efac',
-      keypadBorder: '#2d5a87',
-      buttonHover: '#6AD9A4',
-      loginBg: '#2d5a87',
-    },
-  };
-  const [theme, setTheme] = useState(themes.default);
-   const changeTheme = (themeKey) => {
-    setTheme(themes[themeKey]);
-  };
+  const { themeColors, changeTheme } = useTheme();
 
   const roles = [
     { id: 'Admin', name: 'Admin', icon: Crown },
@@ -262,7 +227,7 @@ const POSLogin = () => {
     const isBackspace = variant === "backspace";
 
     const gradientStyle = {
-      background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`,
+      background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`,
     };
 
     const variantClasses = isBackspace
@@ -290,7 +255,7 @@ const POSLogin = () => {
     <>
       <div
         className="w-full min-h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
-        style={{ backgroundColor: theme.background }}
+        style={{ backgroundColor: themeColors.background }}
       >
 
         <div className="py-6 rounded-t-xl">
@@ -317,7 +282,7 @@ const POSLogin = () => {
             className="flex flex-col items-center justify-center text-center mt-6"
           >
             <div className="w-24 h-20 rounded-2xl border-2 flex flex-col items-center justify-center mb-3 shadow-md shadow-black"
-            style={{ backgroundColor: theme.logo, borderColor: theme.logo_border  }} 
+            style={{ backgroundColor: themeColors.logo, borderColor: themeColors.logo_border  }} 
             >
               <span className="text-white font-bold text-5xl">G</span>
               <span className="text-white font-medium text-base">POS</span>
@@ -361,11 +326,11 @@ const POSLogin = () => {
                       style={{
                         transformStyle: 'preserve-3d',
                         background: isSelected
-                          ? `linear-gradient(135deg, ${theme.loginBg} 60%, ${theme.buttonHover} 100%)`
+                          ? `linear-gradient(135deg, ${themeColors.loginBg} 60%, ${themeColors.buttonHover} 100%)`
                           : '#ffffff',
-                        borderColor: isSelected ? theme.loginBg : '#1e3a5f',
+                        borderColor: isSelected ? themeColors.loginBg : '#1e3a5f',
                         boxShadow: isSelected
-                          ? `0 0 16px 2px ${theme.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
+                          ? `0 0 16px 2px ${themeColors.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
                           : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
                       }}
                     >
@@ -425,15 +390,15 @@ const POSLogin = () => {
               {/* First 3 rows */}
               <div className="grid grid-cols-3 gap-3 mb-3 text-white cursor-pointer">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
-                  <NumberButton
-                    key={number}
-                    number={number}
-                    onClick={handleNumberClick}
-                    style={{
-                      start: theme.keypad,
-                      end: theme.keypad_end,
-                    }}
-                  />
+                                     <NumberButton
+                     key={number}
+                     number={number}
+                     onClick={handleNumberClick}
+                     style={{
+                       start: themeColors.keypad,
+                       end: themeColors.keypad_end,
+                     }}
+                   />
                 ))}
               </div>
 
@@ -447,22 +412,22 @@ const POSLogin = () => {
                     Clear
                   </ActionButton>
 
-                  <NumberButton
-                    number={0}
-                    onClick={handleNumberClick}
-                    style={{
-                      start: theme.keypad,
-                      end: theme.keypad_end,
-                    }}
-                  />
+                                     <NumberButton
+                     number={0}
+                     onClick={handleNumberClick}
+                     style={{
+                       start: themeColors.keypad,
+                       end: themeColors.keypad_end,
+                     }}
+                   />
 
                   <ActionButton
                     onClick={handleBackspace}
                     variant="backspace"
                     disabled={!selectedRole}
-                    style={{
-                      background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`
-                    }}
+                                         style={{
+                       background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`
+                     }}
                   >
                     <X className="w-4 h-4" />
                   </ActionButton>
@@ -476,10 +441,10 @@ const POSLogin = () => {
                 onClick={handleLogin}
                 disabled={!selectedRole || pin.length < 6}
                 className="w-[86%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
-                style={{
-                    background: `linear-gradient(145deg, ${theme.keypad} 60%, ${theme.keypad_end} 100%)`,
-                    borderColor: theme.loginBg,
-                  }}
+                                 style={{
+                     background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`,
+                     borderColor: themeColors.loginBg,
+                   }}
               >
                 Login
               </button>

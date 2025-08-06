@@ -12,6 +12,7 @@ import FoodFormPage from './components/dashboard/food/FoodFormPage.jsx'
 import EmployeeManagement from './pages/dashboard/EmployeeManagement.jsx'
 import TableManagementPage from './pages/dashboard/TableManagement.jsx'
 import RunningOrders from './pages/dashboard/RunningOrders.jsx'
+import { ThemeProvider } from './contexts/ThemeContext.jsx'
 
 console.log('main.jsx loading...');
 
@@ -38,11 +39,11 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/login" replace /> },
       {
         path: 'login',
-        element: <ErrorBoundary><POSLogin /></ErrorBoundary>,
+        element: <ErrorBoundary><ThemeProvider><POSLogin /></ThemeProvider></ErrorBoundary>,
       },
       {
         path: 'dashboard',
-        element: <ErrorBoundary><DashboardLayout /></ErrorBoundary>,
+        element: <ErrorBoundary><ThemeProvider><DashboardLayout /></ThemeProvider></ErrorBoundary>,
         children: [
           {
             path: 'manage-orders',
