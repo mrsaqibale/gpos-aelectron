@@ -35,6 +35,13 @@ const {
   deleteRegister, 
   getRegisterStatistics 
 } = getModelPath('employee/register.js');
+const { 
+  createEmployeeLogin, 
+  updateEmployeeLogout, 
+  getEmployeeLoginSessions, 
+  getCurrentEmployeeSession, 
+  getAllLoginSessions 
+} = getModelPath('employee/employeeLogin.js');
 
 function registerEmployeeIpcHandlers() {
   // Employee handlers
@@ -54,6 +61,13 @@ function registerEmployeeIpcHandlers() {
   ipcMain.handle('register:update', async (event, id, updates) => updateRegister(id, updates));
   ipcMain.handle('register:delete', async (event, id) => deleteRegister(id));
   ipcMain.handle('register:getStatistics', async (event, employeeId, startDate, endDate) => getRegisterStatistics(employeeId, startDate, endDate));
+
+  // Employee Login handlers
+  ipcMain.handle('employeeLogin:create', async (event, employeeId) => createEmployeeLogin(employeeId));
+  ipcMain.handle('employeeLogin:logout', async (event, employeeId) => updateEmployeeLogout(employeeId));
+  ipcMain.handle('employeeLogin:getSessions', async (event, employeeId, limit, offset) => getEmployeeLoginSessions(employeeId, limit, offset));
+  ipcMain.handle('employeeLogin:getCurrentSession', async (event, employeeId) => getCurrentEmployeeSession(employeeId));
+  ipcMain.handle('employeeLogin:getAllSessions', async (event, limit, offset) => getAllLoginSessions(limit, offset));
 }
 
 module.exports = { registerEmployeeIpcHandlers }; 

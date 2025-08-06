@@ -86,6 +86,13 @@ contextBridge.exposeInMainWorld('myAPI', {
   deleteRegister: (id) => ipcRenderer.invoke('register:delete', id),
   getRegisterStatistics: (employeeId, startDate, endDate) => ipcRenderer.invoke('register:getStatistics', employeeId, startDate, endDate),
 
+  // Employee Login
+  createEmployeeLogin: (employeeId) => ipcRenderer.invoke('employeeLogin:create', employeeId),
+  updateEmployeeLogout: (employeeId) => ipcRenderer.invoke('employeeLogin:logout', employeeId),
+  getEmployeeLoginSessions: (employeeId, limit, offset) => ipcRenderer.invoke('employeeLogin:getSessions', employeeId, limit, offset),
+  getCurrentEmployeeSession: (employeeId) => ipcRenderer.invoke('employeeLogin:getCurrentSession', employeeId),
+  getAllLoginSessions: (limit, offset) => ipcRenderer.invoke('employeeLogin:getAllSessions', limit, offset),
+
                 // Customer
               createCustomer: (data) => ipcRenderer.invoke('customer:create', data),
               createCustomerWithAddresses: (data) => ipcRenderer.invoke('customer:createWithAddresses', data),
