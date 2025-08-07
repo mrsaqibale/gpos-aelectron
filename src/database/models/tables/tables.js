@@ -162,3 +162,63 @@ export function getTablesByFloor(floorId) {
     return errorResponse(err.message);
   }
 } 
+
+// Get tables by floor id with status filter
+export function getTablesByFloorWithStatus(floorId, status = 'Free') {
+  try {
+    // Check if seat_capacity and status columns exist
+    const tableInfo = db.prepare("PRAGMA table_info(restaurant_table)").all();
+    const hasSeatCapacity = tableInfo.some(col => col.name === 'seat_capacity');
+    const hasStatus = tableInfo.some(col => col.name === 'status');
+    
+    let sql = `
+      SELECT 
+        rt.*,
+        f.name as floor_name,
+        f.type as floor_type
+    `;
+    
+    if (!hasSeatCapacity) {
+      sql = sql.replace('rt.*', 'rt.id, rt.table_no, rt.floor_id, rt.created_at, rt.updated_at, rt.issyncronized, rt.isdeleted, rt.addedby');
+    }
+    
+    if (hasStatus) {
+      sql += `
+        FROM restaurant_table rt
+        LEFT JOIN floor f ON rt.floor_id = f.id
+        WHERE rt.floor_id = ? AND rt.status = ? AND rt.isdeleted = 0
+        ORDER BY rt.table_no
+      `;
+      const tables = db.prepare(sql).all(floorId, status);
+      
+      // Add default values for missing columns
+      const processedTables = tables.map(table => ({
+        ...table,
+        seat_capacity: hasSeatCapacity ? table.seat_capacity : 4,
+        status: table.status
+      }));
+      
+      return { success: true, data: processedTables };
+    } else {
+      // If status column doesn't exist, return all tables for the floor
+      sql += `
+        FROM restaurant_table rt
+        LEFT JOIN floor f ON rt.floor_id = f.id
+        WHERE rt.floor_id = ? AND rt.isdeleted = 0
+        ORDER BY rt.table_no
+      `;
+      const tables = db.prepare(sql).all(floorId);
+      
+      // Add default values for missing columns
+      const processedTables = tables.map(table => ({
+        ...table,
+        seat_capacity: hasSeatCapacity ? table.seat_capacity : 4,
+        status: 'Free' // Default status
+      }));
+      
+      return { success: true, data: processedTables };
+    }
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+} 

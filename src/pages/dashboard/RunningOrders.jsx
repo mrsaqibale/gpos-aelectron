@@ -55,9 +55,16 @@ const RunningOrders = () => {
   const [selectedVariations, setSelectedVariations] = useState({});
   const [showTableModal, setShowTableModal] = useState(false);
   const [showMergeTableModal, setShowMergeTableModal] = useState(false);
+  
+  // Floor and Table Management State
+  const [floors, setFloors] = useState([]);
   const [selectedFloor, setSelectedFloor] = useState('');
+  const [tables, setTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState('');
   const [selectedPersons, setSelectedPersons] = useState('');
+  const [floorsLoading, setFloorsLoading] = useState(false);
+  const [tablesLoading, setTablesLoading] = useState(false);
+  
   const [mergeTable1, setMergeTable1] = useState('');
   const [mergeTable2, setMergeTable2] = useState('');
   
@@ -173,7 +180,96 @@ const RunningOrders = () => {
   // Fetch categories on component mount
   useEffect(() => {
     fetchCategories();
+    fetchFloors(); // Add this line to fetch floors on component mount
   }, []);
+
+  // Debug floors state
+  useEffect(() => {
+    console.log('Floors state updated:', floors);
+    console.log('Floors loading:', floorsLoading);
+  }, [floors, floorsLoading]);
+
+  // Fetch floors from database
+  const fetchFloors = async () => {
+    try {
+      setFloorsLoading(true);
+      console.log('Fetching floors...');
+      
+      if (!window.myAPI) {
+        console.error('myAPI is not available');
+        setFloors([]);
+        return;
+      }
+      
+      console.log('Calling floorGetAll...');
+      const result = await window.myAPI.floorGetAll();
+      console.log('Floors API result:', result);
+      
+      if (result && result.success) {
+        console.log('Floors data:', result.data);
+        setFloors(result.data);
+        console.log('Floors loaded successfully:', result.data);
+      } else {
+        console.error('Failed to fetch floors:', result?.message);
+        setFloors([]);
+      }
+    } catch (error) {
+      console.error('Error fetching floors:', error);
+      setFloors([]);
+    } finally {
+      setFloorsLoading(false);
+    }
+  };
+
+  // Handle floor selection
+  const handleFloorSelect = (floor) => {
+    setSelectedFloor(floor.name);
+    // Reset table and persons when floor changes
+    setSelectedTable('');
+    setSelectedPersons('');
+    fetchTablesByFloor(floor.id); // Pass floor ID instead of name
+  };
+
+  // Fetch tables by floor ID with status filter
+  const fetchTablesByFloor = async (floorId) => {
+    try {
+      setTablesLoading(true);
+      console.log('Fetching tables for floor ID:', floorId);
+      
+      if (!window.myAPI) {
+        console.error('myAPI is not available');
+        setTables([]);
+        return;
+      }
+      
+      // First get the floor details using getFloorById
+      const floorResult = await window.myAPI.floorGetById(floorId);
+      console.log('Floor details:', floorResult);
+      
+      if (!floorResult || !floorResult.success) {
+        console.error('Failed to get floor details:', floorResult?.message);
+        setTables([]);
+        return;
+      }
+      
+      // Then get tables for this floor with status filter
+      const result = await window.myAPI.tableGetByFloorWithStatus(floorId, 'Free');
+      console.log('Tables API result:', result);
+      
+      if (result && result.success) {
+        setTables(result.data);
+        console.log('Tables loaded successfully:', result.data);
+      } else {
+        console.error('Failed to fetch tables:', result?.message);
+        setTables([]);
+      }
+    } catch (error) {
+      console.error('Error fetching tables:', error);
+      setTables([]);
+    } finally {
+      setTablesLoading(false);
+    }
+  };
 
   // Handle variation selection
   const handleVariationSelect = (variationId, optionId) => {
@@ -251,17 +347,9 @@ const RunningOrders = () => {
     setSelectedVariations({});
   };
 
-  // Handle floor selection
-  const handleFloorSelect = (floor) => {
-    setSelectedFloor(floor);
-    // Reset table and persons when floor changes
-    setSelectedTable('');
-    setSelectedPersons('');
-  };
-
   // Handle table selection
-  const handleTableSelect = (table) => {
-    setSelectedTable(table);
+  const handleTableSelect = (tableId) => {
+    setSelectedTable(tableId);
     // Reset persons when table changes
     setSelectedPersons('');
   };
@@ -269,6 +357,20 @@ const RunningOrders = () => {
   // Handle persons selection
   const handlePersonsSelect = (persons) => {
     setSelectedPersons(persons);
+  };
+
+  // Get selected table data
+  const getSelectedTableData = () => {
+    return tables.find(table => table.id.toString() === selectedTable);
+  };
+
+  // Generate seat capacity options based on selected table
+  const getSeatCapacityOptions = () => {
+    const selectedTableData = getSelectedTableData();
+    if (!selectedTableData) return [];
+    
+    const seatCapacity = selectedTableData.seat_capacity || 4;
+    return Array.from({ length: seatCapacity }, (_, i) => i + 1);
   };
 
   // Handle merge table button click
@@ -325,6 +427,27 @@ const RunningOrders = () => {
   const handleEditCustomer = (updatedCustomer) => {
     setSelectedCustomer(updatedCustomer);
     setShowEditModal(false);
+  };
+
+  // Add sample data function
+  const addSampleData = async () => {
+    try {
+      console.log('Adding sample data...');
+      const result = await window.myAPI?.floorAddSampleData();
+      console.log('Sample data result:', result);
+      
+      if (result && result.success) {
+        console.log('Sample data added successfully');
+        // Refresh floors after adding sample data
+        await fetchFloors();
+      } else {
+        console.error('Failed to add sample data:', result?.error);
+        alert('Failed to add sample data: ' + (result?.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error adding sample data:', error);
+      alert('Error adding sample data');
+    }
   };
 
   const handleOpenEditModal = async () => {
@@ -809,19 +932,37 @@ const MenuGrid = () => {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Floor</h3>
                     <div className="grid grid-cols-1 gap-3">
-                      {['1st Floor', '2nd Floor', '3rd Floor'].map((floor) => (
-                        <button
-                          key={floor}
-                          onClick={() => handleFloorSelect(floor)}
-                          className={`px-4 py-3 text-left rounded-lg transition-colors border ${
-                            selectedFloor === floor
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-                          }`}
-                        >
-                          <div className="font-medium">{floor}</div>
-                        </button>
-                      ))}
+                      {floorsLoading ? (
+                        <div className="text-center py-8">
+                          <div className="text-gray-500 text-sm">Loading floors...</div>
+                        </div>
+                      ) : floors && floors.length > 0 ? (
+                        floors.map((floor) => (
+                          <button
+                            key={floor.id}
+                            onClick={() => handleFloorSelect(floor)}
+                            className={`px-4 py-3 text-left rounded-lg transition-colors border ${
+                              selectedFloor === floor.name
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <div className="font-medium">{floor.name}</div>
+                            <div className="text-sm opacity-75">{floor.type}</div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-gray-500 text-sm">No floors found</div>
+                          <div className="text-gray-400 text-xs mt-2 mb-4">Please add floors to the database</div>
+                          <button
+                            onClick={addSampleData}
+                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm"
+                          >
+                            Add Sample Data
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -845,35 +986,18 @@ const MenuGrid = () => {
                         }`}
                       >
                         <option value="">Choose a table...</option>
-                        {selectedFloor === '1st Floor' && (
-                          <>
-                            <option value="table1">Table 1 (4 seats)</option>
-                            <option value="table2">Table 2 (6 seats)</option>
-                            <option value="table3">Table 3 (2 seats)</option>
-                            <option value="table4">Table 4 (8 seats)</option>
-                            <option value="table5">Table 5 (4 seats)</option>
-                            <option value="table6">Table 6 (6 seats)</option>
-                            <option value="table7">Table 7 (2 seats)</option>
-                            <option value="table8">Table 8 (4 seats)</option>
-                          </>
-                        )}
-                        {selectedFloor === '2nd Floor' && (
-                          <>
-                            <option value="table9">Table 9 (6 seats)</option>
-                            <option value="table10">Table 10 (4 seats)</option>
-                            <option value="table11">Table 11 (8 seats)</option>
-                            <option value="table12">Table 12 (2 seats)</option>
-                            <option value="table13">Table 13 (4 seats)</option>
-                            <option value="table14">Table 14 (6 seats)</option>
-                          </>
-                        )}
-                        {selectedFloor === '3rd Floor' && (
-                          <>
-                            <option value="table15">Table 15 (4 seats)</option>
-                            <option value="table16">Table 16 (6 seats)</option>
-                            <option value="table17">Table 17 (8 seats)</option>
-                            <option value="table18">Table 18 (2 seats)</option>
-                          </>
+                        {tablesLoading ? (
+                          <option value="" disabled>Loading tables...</option>
+                        ) : tables.length > 0 ? (
+                          tables.map((table) => (
+                            <option key={table.id} value={table.id}>
+                              Table {table.table_no} ({table.seat_capacity || 4} seats)
+                            </option>
+                          ))
+                        ) : selectedFloor ? (
+                          <option value="" disabled>No available tables</option>
+                        ) : (
+                          <option value="" disabled>Select a floor first</option>
                         )}
                       </select>
                     </div>
@@ -896,7 +1020,7 @@ const MenuGrid = () => {
                         }`}
                       >
                         <option value="">Select number of persons...</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map((num) => (
+                        {getSeatCapacityOptions().map((num) => (
                           <option key={num} value={num}>
                             {num} {num === 1 ? 'Person' : 'Persons'}
                           </option>
@@ -974,19 +1098,37 @@ const MenuGrid = () => {
                    <div className="flex-1">
                      <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Floor</h3>
                      <div className="grid grid-cols-1 gap-3">
-                       {['1st Floor', '2nd Floor', '3rd Floor'].map((floor) => (
-                         <button
-                           key={floor}
-                           onClick={() => handleFloorSelect(floor)}
-                           className={`px-4 py-3 text-left rounded-lg transition-colors border ${
-                             selectedFloor === floor
-                               ? 'bg-primary text-white border-primary'
-                               : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-                           }`}
-                         >
-                           <div className="font-medium">{floor}</div>
-                         </button>
-                       ))}
+                       {floorsLoading ? (
+                         <div className="text-center py-8">
+                           <div className="text-gray-500 text-sm">Loading floors...</div>
+                         </div>
+                       ) : floors.length > 0 ? (
+                         floors.map((floor) => (
+                           <button
+                             key={floor.id}
+                             onClick={() => handleFloorSelect(floor)}
+                             className={`px-4 py-3 text-left rounded-lg transition-colors border ${
+                               selectedFloor === floor.name
+                                 ? 'bg-primary text-white border-primary'
+                                 : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+                             }`}
+                           >
+                             <div className="font-medium">{floor.name}</div>
+                             <div className="text-sm opacity-75">{floor.type}</div>
+                           </button>
+                         ))
+                       ) : (
+                         <div className="text-center py-8">
+                           <div className="text-gray-500 text-sm">No floors found</div>
+                           <div className="text-gray-400 text-xs mt-2 mb-4">Please add floors to the database</div>
+                           <button
+                             onClick={addSampleData}
+                             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm"
+                           >
+                             Add Sample Data
+                           </button>
+                         </div>
+                       )}
                      </div>
                    </div>
 
@@ -1012,35 +1154,18 @@ const MenuGrid = () => {
                            }`}
                          >
                            <option value="">Choose first table...</option>
-                           {selectedFloor === '1st Floor' && (
-                             <>
-                               <option value="table1">Table 1 (4 seats)</option>
-                               <option value="table2">Table 2 (6 seats)</option>
-                               <option value="table3">Table 3 (2 seats)</option>
-                               <option value="table4">Table 4 (8 seats)</option>
-                               <option value="table5">Table 5 (4 seats)</option>
-                               <option value="table6">Table 6 (6 seats)</option>
-                               <option value="table7">Table 7 (2 seats)</option>
-                               <option value="table8">Table 8 (4 seats)</option>
-                             </>
-                           )}
-                           {selectedFloor === '2nd Floor' && (
-                             <>
-                               <option value="table9">Table 9 (6 seats)</option>
-                               <option value="table10">Table 10 (4 seats)</option>
-                               <option value="table11">Table 11 (8 seats)</option>
-                               <option value="table12">Table 12 (2 seats)</option>
-                               <option value="table13">Table 13 (4 seats)</option>
-                               <option value="table14">Table 14 (6 seats)</option>
-                             </>
-                           )}
-                           {selectedFloor === '3rd Floor' && (
-                             <>
-                               <option value="table15">Table 15 (4 seats)</option>
-                               <option value="table16">Table 16 (6 seats)</option>
-                               <option value="table17">Table 17 (8 seats)</option>
-                               <option value="table18">Table 18 (2 seats)</option>
-                             </>
+                           {tablesLoading ? (
+                             <option value="" disabled>Loading tables...</option>
+                           ) : tables.length > 0 ? (
+                             tables.map((table) => (
+                               <option key={table.id} value={table.id}>
+                                 Table {table.table_no} ({table.seat_capacity || 4} seats)
+                               </option>
+                             ))
+                           ) : selectedFloor ? (
+                             <option value="" disabled>No available tables</option>
+                           ) : (
+                             <option value="" disabled>Select a floor first</option>
                            )}
                          </select>
                        </div>
@@ -1063,35 +1188,18 @@ const MenuGrid = () => {
                            }`}
                          >
                            <option value="">Choose second table...</option>
-                           {selectedFloor === '1st Floor' && (
-                             <>
-                               <option value="table1">Table 1 (4 seats)</option>
-                               <option value="table2">Table 2 (6 seats)</option>
-                               <option value="table3">Table 3 (2 seats)</option>
-                               <option value="table4">Table 4 (8 seats)</option>
-                               <option value="table5">Table 5 (4 seats)</option>
-                               <option value="table6">Table 6 (6 seats)</option>
-                               <option value="table7">Table 7 (2 seats)</option>
-                               <option value="table8">Table 8 (4 seats)</option>
-                             </>
-                           )}
-                           {selectedFloor === '2nd Floor' && (
-                             <>
-                               <option value="table9">Table 9 (6 seats)</option>
-                               <option value="table10">Table 10 (4 seats)</option>
-                               <option value="table11">Table 11 (8 seats)</option>
-                               <option value="table12">Table 12 (2 seats)</option>
-                               <option value="table13">Table 13 (4 seats)</option>
-                               <option value="table14">Table 14 (6 seats)</option>
-                             </>
-                           )}
-                           {selectedFloor === '3rd Floor' && (
-                             <>
-                               <option value="table15">Table 15 (4 seats)</option>
-                               <option value="table16">Table 16 (6 seats)</option>
-                               <option value="table17">Table 17 (8 seats)</option>
-                               <option value="table18">Table 18 (2 seats)</option>
-                             </>
+                           {tablesLoading ? (
+                             <option value="" disabled>Loading tables...</option>
+                           ) : tables.length > 0 ? (
+                             tables.map((table) => (
+                               <option key={table.id} value={table.id}>
+                                 Table {table.table_no} ({table.seat_capacity || 4} seats)
+                               </option>
+                             ))
+                           ) : selectedFloor ? (
+                             <option value="" disabled>No available tables</option>
+                           ) : (
+                             <option value="" disabled>Select a floor first</option>
                            )}
                          </select>
                        </div>
