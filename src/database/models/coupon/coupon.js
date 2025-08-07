@@ -21,7 +21,7 @@ export function createCoupon(data) {
       title, 
       type, 
       code, 
-      limit = 0, 
+      usage_limit = 0, 
       start_date, 
       end_date, 
       discount_type, 
@@ -38,7 +38,7 @@ export function createCoupon(data) {
 
     const stmt = db.prepare(`
       INSERT INTO coupon (
-        title, type, code, limit, start_date, end_date, discount_type, 
+        title, type, code, usage_limit, start_date, end_date, discount_type, 
         amount, max_discount, min_purchase, added_by, customer_id, 
         status, created_at
       )
@@ -46,7 +46,7 @@ export function createCoupon(data) {
     `);
 
     const result = stmt.run(
-      title, type, code, limit, start_date, end_date, discount_type,
+      title, type, code, usage_limit, start_date, end_date, discount_type,
       amount, max_discount, min_purchase, added_by, customer_id
     );
     
@@ -57,7 +57,7 @@ export function createCoupon(data) {
         title,
         type,
         code,
-        limit,
+        usage_limit,
         start_date,
         end_date,
         discount_type,
@@ -80,7 +80,7 @@ export function createCoupon(data) {
 export function updateCoupon(id, updates) {
   try {
     const allowedFields = [
-      'title', 'type', 'code', 'limit', 'start_date', 'end_date', 
+      'title', 'type', 'code', 'usage_limit', 'start_date', 'end_date', 
       'discount_type', 'amount', 'max_discount', 'min_purchase', 
       'issyncronized', 'status', 'customer_id'
     ];

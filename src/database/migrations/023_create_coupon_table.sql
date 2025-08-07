@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS coupon (
     title TEXT NOT NULL,
     type TEXT NOT NULL,
     code TEXT NOT NULL,
-    limit INTEGER DEFAULT 0,
+    usage_limit INTEGER DEFAULT 0,
     start_date DATETIME,
     end_date DATETIME,
     discount_type TEXT NOT NULL,
