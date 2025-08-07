@@ -1,0 +1,762 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Search, 
+  Filter,
+  Calendar,
+  Percent,
+  DollarSign,
+  Tag,
+  Users,
+  X
+} from 'lucide-react';
+
+const Coupons = () => {
+  const [coupons, setCoupons] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
+
+  // Mock data for demonstration
+  useEffect(() => {
+    const mockCoupons = [
+      {
+        id: 1,
+        title: 'New Coupon',
+        customerType: 'All Customers',
+        code: 'SAVE20',
+        limitForSameUser: 10,
+        startDate: '2024-01-01',
+        expireDate: '2024-12-31',
+        discountType: 'percentage',
+        discount: 20,
+        maxDiscount: 100,
+        minPurchase: 50,
+        totalUsers: 245,
+        status: 'active'
+      },
+      {
+        id: 2,
+        title: 'Free Delivery',
+        customerType: 'Delivery Only',
+        code: 'FREEDEL',
+        limitForSameUser: 5,
+        startDate: '2024-01-01',
+        expireDate: '2024-06-30',
+        discountType: 'fixed',
+        discount: 5,
+        maxDiscount: 5,
+        minPurchase: 30,
+        totalUsers: 500,
+        status: 'inactive'
+      },
+      {
+        id: 3,
+        title: 'New Customer Discount',
+        customerType: 'New Customers',
+        code: 'NEWCUST',
+        limitForSameUser: 1,
+        startDate: '2024-01-01',
+        expireDate: '2024-12-31',
+        discountType: 'fixed',
+        discount: 10,
+        maxDiscount: 10,
+        minPurchase: 25,
+        totalUsers: 89,
+        status: 'active'
+      }
+    ];
+    setCoupons(mockCoupons);
+  }, []);
+
+  const [newCoupon, setNewCoupon] = useState({
+    title: '',
+    customerType: '',
+    code: '',
+    limitForSameUser: '',
+    startDate: '',
+    expireDate: '',
+    discountType: 'percentage',
+    discount: '',
+    maxDiscount: '',
+    minPurchase: ''
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewCoupon(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!newCoupon.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
+    
+    if (!newCoupon.customerType.trim()) {
+      newErrors.customerType = 'Customer type is required';
+    }
+    
+    if (!newCoupon.code.trim()) {
+      newErrors.code = 'Code is required';
+    }
+    
+    if (!newCoupon.discount || newCoupon.discount <= 0) {
+      newErrors.discount = 'Valid discount is required';
+    }
+    
+    if (!newCoupon.startDate) {
+      newErrors.startDate = 'Start date is required';
+    }
+    
+    if (!newCoupon.expireDate) {
+      newErrors.expireDate = 'Expire date is required';
+    }
+    
+    if (newCoupon.startDate && newCoupon.expireDate && newCoupon.startDate >= newCoupon.expireDate) {
+      newErrors.expireDate = 'Expire date must be after start date';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      if (editingCoupon) {
+        // Update existing coupon
+        const updatedCoupon = {
+          ...editingCoupon,
+          ...newCoupon,
+          discount: parseFloat(newCoupon.discount),
+          maxDiscount: parseFloat(newCoupon.maxDiscount) || 0,
+          minPurchase: parseFloat(newCoupon.minPurchase) || 0,
+          limitForSameUser: parseInt(newCoupon.limitForSameUser) || 0
+        };
+        
+        // Mock API call
+        setTimeout(() => {
+          setCoupons(prev => prev.map(coupon => 
+            coupon.id === editingCoupon.id ? updatedCoupon : coupon
+          ));
+          setShowForm(false);
+          setEditingCoupon(null);
+          setLoading(false);
+        }, 1000);
+      } else {
+        // Create new coupon
+        const newCouponData = {
+          id: Date.now(),
+          ...newCoupon,
+          discount: parseFloat(newCoupon.discount),
+          maxDiscount: parseFloat(newCoupon.maxDiscount) || 0,
+          minPurchase: parseFloat(newCoupon.minPurchase) || 0,
+          limitForSameUser: parseInt(newCoupon.limitForSameUser) || 0,
+          totalUsers: 0,
+          status: 'active'
+        };
+        
+        // Mock API call
+        setTimeout(() => {
+          setCoupons(prev => [...prev, newCouponData]);
+          setShowForm(false);
+          setLoading(false);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error saving coupon:', error);
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (coupon) => {
+    setEditingCoupon(coupon);
+    setNewCoupon({
+      title: coupon.title,
+      customerType: coupon.customerType,
+      code: coupon.code,
+      limitForSameUser: coupon.limitForSameUser.toString(),
+      startDate: coupon.startDate,
+      expireDate: coupon.expireDate,
+      discountType: coupon.discountType,
+      discount: coupon.discount.toString(),
+      maxDiscount: coupon.maxDiscount.toString(),
+      minPurchase: coupon.minPurchase.toString()
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (couponId) => {
+    if (window.confirm('Are you sure you want to delete this coupon?')) {
+      try {
+        setLoading(true);
+        // Mock API call
+        setTimeout(() => {
+          setCoupons(prev => prev.filter(coupon => coupon.id !== couponId));
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
+        console.error('Error deleting coupon:', error);
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleReset = () => {
+    setNewCoupon({
+      title: '',
+      customerType: '',
+      code: '',
+      limitForSameUser: '',
+      startDate: '',
+      expireDate: '',
+      discountType: 'percentage',
+      discount: '',
+      maxDiscount: '',
+      minPurchase: ''
+    });
+    setErrors({});
+  };
+
+  const handleAddCoupon = () => {
+    setEditingCoupon(null);
+    setNewCoupon({
+      title: '',
+      customerType: '',
+      code: '',
+      limitForSameUser: '',
+      startDate: '',
+      expireDate: '',
+      discountType: 'percentage',
+      discount: '',
+      maxDiscount: '',
+      minPurchase: ''
+    });
+    setErrors({});
+    setShowForm(true);
+  };
+
+  const toggleStatus = async (couponId) => {
+    try {
+      const coupon = coupons.find(c => c.id === couponId);
+      const newStatus = coupon.status === 'active' ? 'inactive' : 'active';
+      
+      // Mock API call
+      setTimeout(() => {
+        setCoupons(prev => prev.map(c => 
+          c.id === couponId ? { ...c, status: newStatus } : c
+        ));
+      }, 500);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
+  };
+
+  const getFilteredCoupons = () => {
+    let filtered = coupons;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(coupon =>
+        coupon.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        coupon.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(coupon => coupon.status === statusFilter);
+    }
+
+    return filtered;
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getDiscountTypeIcon = (type) => {
+    return type === 'percentage' ? <Percent size={16} /> : <DollarSign size={16} />;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Coupon Form - NOW AT THE VERY TOP */}
+      {showForm && (
+        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-primary">
+              {editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}
+            </h2>
+            <button 
+              onClick={() => {
+                setShowForm(false);
+                setEditingCoupon(null);
+                handleReset();
+              }} 
+              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-2 gap-5">
+              {/* Title */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={newCoupon.title}
+                  onChange={handleInputChange}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.title ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="New Coupon"
+                  required
+                />
+                {errors.title && (
+                  <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+                )}
+              </div>
+
+              {/* Select Customer */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Select Customer <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="customerType"
+                  value={newCoupon.customerType}
+                  onChange={handleInputChange}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.customerType ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                >
+                  <option value="">Select Customer</option>
+                  <option value="All Customers">All Customers</option>
+                  <option value="New Customers">New Customers</option>
+                  <option value="Loyal Customers">Loyal Customers</option>
+                  <option value="Delivery Only">Delivery Only</option>
+                  <option value="Collection Only">Collection Only</option>
+                </select>
+                {errors.customerType && (
+                  <p className="text-red-500 text-xs mt-1">{errors.customerType}</p>
+                )}
+              </div>
+
+              {/* Code */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="code"
+                  value={newCoupon.code}
+                  onChange={handleInputChange}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.code ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="e.g., SAVE20"
+                  required
+                />
+                {errors.code && (
+                  <p className="text-red-500 text-xs mt-1">{errors.code}</p>
+                )}
+              </div>
+
+              {/* Limit for same user */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Limit for same user
+                </label>
+                <input
+                  type="number"
+                  name="limitForSameUser"
+                  value={newCoupon.limitForSameUser}
+                  onChange={handleInputChange}
+                  min="1"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="Ex:10"
+                />
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="startDate"
+                  value={newCoupon.startDate}
+                  onChange={handleInputChange}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.startDate ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                />
+                {errors.startDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>
+                )}
+              </div>
+
+              {/* Expire Date */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Expire Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="expireDate"
+                  value={newCoupon.expireDate}
+                  onChange={handleInputChange}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.expireDate ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                />
+                {errors.expireDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.expireDate}</p>
+                )}
+              </div>
+
+              {/* Discount Type */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Discount Type
+                </label>
+                <select
+                  name="discountType"
+                  value={newCoupon.discountType}
+                  onChange={handleInputChange}
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                >
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="fixed">Fixed Amount (€)</option>
+                </select>
+              </div>
+
+              {/* Discount */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Discount <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="discount"
+                  value={newCoupon.discount}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.discount ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder={newCoupon.discountType === 'percentage' ? '20' : '10'}
+                  required
+                />
+                {errors.discount && (
+                  <p className="text-red-500 text-xs mt-1">{errors.discount}</p>
+                )}
+              </div>
+
+              {/* Max Discount */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Max Discount
+                </label>
+                <input
+                  type="number"
+                  name="maxDiscount"
+                  value={newCoupon.maxDiscount}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="0 (no limit)"
+                />
+              </div>
+
+              {/* Min Purchase */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Min Purchase
+                </label>
+                <input
+                  type="number"
+                  name="minPurchase"
+                  value={newCoupon.minPurchase}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                Reset
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2 bg-primary text-white font-medium rounded-lg 
+                shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
+                active:shadow-none active:translate-y-[4px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </div>
+                ) : (
+                  editingCoupon ? 'Update Coupon' : 'Submit'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Coupons List Section - NOW BELOW THE FORM */}
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🏷️</span>
+            <h2 className="text-lg font-semibold text-gray-800">Coupon List</h2>
+          </div>
+          <button
+            onClick={handleAddCoupon}
+            className="px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg flex items-center gap-2 
+            shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
+            active:shadow-none active:translate-y-[4px] transition-all"
+          >
+            <Plus size={16} />
+            Add New Coupon
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex-1 min-w-64">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  placeholder="Search coupons..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-gray-500" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Coupons Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
+            <thead>
+              <tr className="bg-primaryExtraLight">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  SI
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Title
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Code
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Total Users
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Min Purchase
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Max Discount
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Discount
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Discount Type
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Start Date
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Expire Date
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Customer Type
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {getFilteredCoupons().map((coupon, index) => (
+                <tr key={coupon.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-700">{index + 1}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-900">{coupon.title}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center">
+                      <Tag size={16} className="text-primary mr-2" />
+                      <span className="font-mono font-medium text-primary">{coupon.code}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">{coupon.discountType}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">{coupon.totalUsers}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">€{coupon.minPurchase}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">€{coupon.maxDiscount}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      {getDiscountTypeIcon(coupon.discountType)}
+                      <span className="text-sm font-medium text-gray-900">
+                        {coupon.discountType === 'percentage' ? `${coupon.discount}%` : `€${coupon.discount}`}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600 capitalize">{coupon.discountType}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">
+                      {new Date(coupon.startDate).toLocaleDateString()}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">
+                      {new Date(coupon.expireDate).toLocaleDateString()}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">{coupon.customerType}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={coupon.status === 'active'}
+                        onChange={() => toggleStatus(coupon.id)}
+                        className="sr-only"
+                      />
+                      <div className={`w-10 h-5 rounded-full transition-colors ${coupon.status === 'active' ? 'bg-primary' : 'bg-gray-200'}`}>
+                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${coupon.status === 'active' ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`}></div>
+                      </div>
+                    </label>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => handleEdit(coupon)}
+                        className="text-primary hover:text-primary-dark transition-colors p-1 rounded hover:bg-blue-50"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(coupon.id)}
+                        className="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {getFilteredCoupons().length === 0 && (
+          <div className="text-center py-12">
+            <Tag size={48} className="mx-auto text-gray-300 mb-4" />
+            <p className="text-gray-600 font-medium">No coupons found</p>
+            <p className="text-gray-500 text-sm mt-1">Create your first coupon to get started</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Coupons;

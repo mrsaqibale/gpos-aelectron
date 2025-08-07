@@ -11,6 +11,7 @@ import FoodList from './pages/dashboard/FoodList.jsx'
 import FoodFormPage from './components/dashboard/food/FoodFormPage.jsx'
 import EmployeeManagement from './pages/dashboard/EmployeeManagement.jsx'
 import TableManagementPage from './pages/dashboard/TableManagement.jsx'
+import Coupons from './pages/dashboard/Coupons.jsx'
 import RunningOrders from './pages/dashboard/RunningOrders.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 
@@ -72,6 +73,10 @@ const router = createBrowserRouter([
           {
             path: 'table-management',
             element: <ErrorBoundary><TableManagementPage /></ErrorBoundary>
+          },
+          {
+            path: 'coupons',
+            element: <ErrorBoundary><Coupons /></ErrorBoundary>
           },
             {
             path: 'sales',

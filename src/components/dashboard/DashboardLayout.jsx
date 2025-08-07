@@ -7,7 +7,8 @@ import CheckInFlow from '../../pages/loginPage/CheckInPopup';
 import {
   LayoutDashboard,
   Search,
-  Users2, Utensils, Table
+  Users2, Utensils, Table,
+  Tag
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -24,7 +25,7 @@ const DashboardLayout = () => {
   
   // Mock user data for frontend demo
   const user = {
-    role: 'cashier', 
+    role: 'admin', 
     name: 'John Doe',
     email: 'john@example.com'
   };
@@ -129,6 +130,12 @@ const DashboardLayout = () => {
         icon: <Table size={18} />,
         path: "/dashboard/table-management",
         allowedRoles: ["admin", "cashier"]
+      },
+      {
+        name: "Coupons",
+        icon: <Tag size={18} />,
+        path: "/dashboard/coupons",
+        allowedRoles: ["admin", "manager", "cashier"]
       },
       {
         name: "sales",
