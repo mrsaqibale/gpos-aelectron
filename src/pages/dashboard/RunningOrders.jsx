@@ -67,6 +67,7 @@ const RunningOrders = () => {
   
   const [mergeTable1, setMergeTable1] = useState('');
   const [mergeTable2, setMergeTable2] = useState('');
+  const [mergeTableSelections, setMergeTableSelections] = useState([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
   
 
   const [foods, setFoods] = useState([]);
@@ -227,6 +228,8 @@ const RunningOrders = () => {
     // Reset table and persons when floor changes
     setSelectedTable('');
     setSelectedPersons('');
+    // Reset merge table selections to initial 2 columns when floor changes
+    setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
     fetchTablesByFloor(floor.id); // Pass floor ID instead of name
   };
 
@@ -377,12 +380,16 @@ const RunningOrders = () => {
   const handleMergeTableClick = () => {
     setShowTableModal(false);
     setShowMergeTableModal(true);
+    // Reset merge table selections to initial state
+    setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
   };
 
   // Handle back button in merge modal
   const handleBackToTableSelection = () => {
     setShowMergeTableModal(false);
     setShowTableModal(true);
+    // Reset merge table selections when going back
+    setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
   };
 
   // Handle merge table selections
@@ -400,6 +407,48 @@ const RunningOrders = () => {
     if (mergeTable1 === tableId) {
       setMergeTable1('');
     }
+  };
+
+  // Handle dynamic merge table selections
+  const handleMergeTableSelectionChange = (selectionId, tableId) => {
+    setMergeTableSelections(prev => 
+      prev.map(selection => 
+        selection.id === selectionId 
+          ? { ...selection, tableId }
+          : selection
+      )
+    );
+  };
+
+  // Add more table selection
+  const handleAddMoreTableSelection = () => {
+    const newId = Math.max(...mergeTableSelections.map(s => s.id)) + 1;
+    setMergeTableSelections(prev => [...prev, { id: newId, tableId: '' }]);
+  };
+
+  // Remove table selection
+  const handleRemoveTableSelection = (selectionId) => {
+    if (mergeTableSelections.length > 2) {
+      setMergeTableSelections(prev => prev.filter(selection => selection.id !== selectionId));
+    }
+  };
+
+  // Get available tables for a specific selection (excluding already selected tables)
+  const getAvailableTablesForSelection = (selectionId) => {
+    const selectedTableIds = mergeTableSelections
+      .filter(selection => selection.id !== selectionId && selection.tableId)
+      .map(selection => selection.tableId);
+    
+    return tables.filter(table => !selectedTableIds.includes(table.id.toString()));
+  };
+
+  // Check if "Add More" button should be disabled
+  const isAddMoreDisabled = () => {
+    const selectedTableIds = mergeTableSelections
+      .filter(selection => selection.tableId)
+      .map(selection => selection.tableId);
+    
+    return selectedTableIds.length >= tables.length;
   };
 
   const handleCustomerSelect = (customer) => {
@@ -1092,7 +1141,11 @@ const MenuGrid = () => {
                    </button>
                    <h2 className="text-xl font-bold absolute left-1/2 transform -translate-x-1/2">Merge Tables</h2>
                    <button 
-                     onClick={() => setShowMergeTableModal(false)}
+                     onClick={() => {
+                       setShowMergeTableModal(false);
+                       // Reset merge table selections when closing modal
+                       setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+                     }}
                      className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20 ml-auto"
                    >
                      <X size={20} />
@@ -1141,82 +1194,69 @@ const MenuGrid = () => {
                    </div>
 
                    {/* Merge Tables Section */}
-                   <div className="flex-1">
-                     <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Tables to Merge</h3>
-                     <div className="grid grid-cols-2 gap-4">
-                       {/* First Table Selection */}
-                       <div>
-                         <label className={`block text-sm font-medium mb-2 ${
-                           selectedFloor ? 'text-gray-700' : 'text-gray-400'
-                         }`}>
-                           Select Table
-                         </label>
-                         <select 
-                           value={mergeTable1}
-                           onChange={(e) => handleMergeTable1Select(e.target.value)}
-                           disabled={!selectedFloor}
-                           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
-                             selectedFloor 
-                               ? 'border-gray-300 bg-white' 
-                               : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                           }`}
-                         >
-                           <option value="">Choose first table...</option>
-                           {tablesLoading ? (
-                             <option value="" disabled>Loading tables...</option>
-                           ) : tables.length > 0 ? (
-                             tables.filter(table => table.id.toString() !== mergeTable2).map((table) => (
-                               <option key={table.id} value={table.id}>
-                                 Table {table.table_no} ({table.seat_capacity || 4} seats)
-                               </option>
-                             ))
-                           ) : selectedFloor ? (
-                             <option value="" disabled>No available tables</option>
-                           ) : (
-                             <option value="" disabled>Select a floor first</option>
+                                         <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Tables to Merge</h3>
+                        <div className="space-y-4 max-h-60 overflow-y-auto">
+                       {mergeTableSelections.map((selection, index) => (
+                         <div key={selection.id} className="flex items-center gap-4">
+                           <div className="flex-1">
+                             <label className={`block text-sm font-medium mb-2 ${
+                               selectedFloor ? 'text-gray-700' : 'text-gray-400'
+                             }`}>
+                               Select Table {index + 1}
+                             </label>
+                             <select 
+                               value={selection.tableId}
+                               onChange={(e) => handleMergeTableSelectionChange(selection.id, e.target.value)}
+                               disabled={!selectedFloor}
+                               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
+                                 selectedFloor 
+                                   ? 'border-gray-300 bg-white' 
+                                   : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                               }`}
+                             >
+                               <option value="">Choose table {index + 1}...</option>
+                               {tablesLoading ? (
+                                 <option value="" disabled>Loading tables...</option>
+                               ) : tables.length > 0 ? (
+                                 getAvailableTablesForSelection(selection.id).map((table) => (
+                                   <option key={table.id} value={table.id}>
+                                     Table {table.table_no} ({table.seat_capacity || 4} seats)
+                                   </option>
+                                 ))
+                               ) : selectedFloor ? (
+                                 <option value="" disabled>No available tables</option>
+                               ) : (
+                                 <option value="" disabled>Select a floor first</option>
+                               )}
+                             </select>
+                           </div>
+                           {mergeTableSelections.length > 2 && (
+                             <button
+                               onClick={() => handleRemoveTableSelection(selection.id)}
+                               className="mt-6 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                               title="Remove table selection"
+                             >
+                               <X size={16} />
+                             </button>
                            )}
-                         </select>
-                       </div>
-
-                       {/* Second Table Selection */}
-                       <div>
-                         <label className={`block text-sm font-medium mb-2 ${
-                           selectedFloor ? 'text-gray-700' : 'text-gray-400'
-                         }`}>
-                           Select Table
-                         </label>
-                         <select 
-                           value={mergeTable2}
-                           onChange={(e) => handleMergeTable2Select(e.target.value)}
-                           disabled={!selectedFloor}
-                           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
-                             selectedFloor 
-                               ? 'border-gray-300 bg-white' 
-                               : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                           }`}
-                         >
-                           <option value="">Choose second table...</option>
-                           {tablesLoading ? (
-                             <option value="" disabled>Loading tables...</option>
-                           ) : tables.length > 0 ? (
-                             tables.filter(table => table.id.toString() !== mergeTable1).map((table) => (
-                               <option key={table.id} value={table.id}>
-                                 Table {table.table_no} ({table.seat_capacity || 4} seats)
-                               </option>
-                             ))
-                           ) : selectedFloor ? (
-                             <option value="" disabled>No available tables</option>
-                           ) : (
-                             <option value="" disabled>Select a floor first</option>
-                           )}
-                         </select>
-                       </div>
+                         </div>
+                       ))}
                      </div>
                      
                      {/* Add More Button */}
                      <div className="mt-4 flex justify-center">
-                       <button className="w-fit px-4 py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
-                         + Add More
+                       <button 
+                         onClick={handleAddMoreTableSelection}
+                         disabled={isAddMoreDisabled()}
+                         className={`w-fit px-4 py-2 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                           isAddMoreDisabled()
+                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                             : 'bg-green-500 text-white hover:bg-green-600'
+                         }`}
+                       >
+                         <Plus size={16} />
+                         Add More
                        </button>
                      </div>
                    </div>
@@ -1225,15 +1265,19 @@ const MenuGrid = () => {
                    {/* Action Buttons */}
                    <div className="flex gap-4 justify-end pt-4 border-t border-gray-200 flex-shrink-0">
                      <button 
-                       onClick={() => setShowMergeTableModal(false)}
+                       onClick={() => {
+                         setShowMergeTableModal(false);
+                         // Reset merge table selections when closing modal
+                         setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+                       }}
                        className="px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                      >
                        Cancel
                      </button>
                      <button 
-                       disabled={!mergeTable1 || !mergeTable2}
+                       disabled={mergeTableSelections.filter(s => s.tableId).length < 2}
                        className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${
-                         mergeTable1 && mergeTable2
+                         mergeTableSelections.filter(s => s.tableId).length >= 2
                            ? 'bg-primary text-white hover:bg-primary/90'
                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                        }`}
