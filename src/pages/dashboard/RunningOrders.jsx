@@ -54,7 +54,9 @@ const RunningOrders = () => {
   const [selectedFood, setSelectedFood] = useState(null);
   const [selectedVariations, setSelectedVariations] = useState({});
   const [showTableModal, setShowTableModal] = useState(false);
-  const [selectedFloor, setSelectedFloor] = useState('1st Floor');
+  const [selectedFloor, setSelectedFloor] = useState('');
+  const [selectedTable, setSelectedTable] = useState('');
+  const [selectedPersons, setSelectedPersons] = useState('');
   
 
   const [foods, setFoods] = useState([]);
@@ -249,6 +251,21 @@ const RunningOrders = () => {
   // Handle floor selection
   const handleFloorSelect = (floor) => {
     setSelectedFloor(floor);
+    // Reset table and persons when floor changes
+    setSelectedTable('');
+    setSelectedPersons('');
+  };
+
+  // Handle table selection
+  const handleTableSelect = (table) => {
+    setSelectedTable(table);
+    // Reset persons when table changes
+    setSelectedPersons('');
+  };
+
+  // Handle persons selection
+  const handlePersonsSelect = (persons) => {
+    setSelectedPersons(persons);
   };
 
   const handleCustomerSelect = (customer) => {
@@ -749,57 +766,133 @@ const MenuGrid = () => {
           {/* Table Management Modal */}
           {showTableModal && (
             <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl shadow-xl w-full max-w-7xl max-h-[95vh] flex">
-                {/* Left Sidebar - Floors */}
-                <div className="w-64 bg-gray-50 border-r border-gray-200 p-4">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Tables</h2>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Area/Floor</h3>
-                    <div className="space-y-2">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh]">
+                {/* Header */}
+                <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+                  <h2 className="text-xl font-bold">Table Selection</h2>
+                  <button 
+                    onClick={() => setShowTableModal(false)}
+                    className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <div className='flex gap-6'>
+                  {/* Floor Selection */}
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Floor</h3>
+                    <div className="grid grid-cols-1 gap-3">
                       {['1st Floor', '2nd Floor', '3rd Floor'].map((floor) => (
                         <button
                           key={floor}
                           onClick={() => handleFloorSelect(floor)}
-                          className={`w-full px-3 py-2 text-left rounded-lg transition-colors ${
+                          className={`px-4 py-3 text-left rounded-lg transition-colors border ${
                             selectedFloor === floor
-                              ? 'bg-primary text-white'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
                           }`}
                         >
-                          {floor}
+                          <div className="font-medium">{floor}</div>
                         </button>
                       ))}
                     </div>
                   </div>
 
+                  {/* Dropdowns Section */}
+                  <div className="flex-1 grid grid-cols-1 gap-4">
+                    {/* Table Selection Dropdown */}
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        selectedFloor ? 'text-gray-700' : 'text-gray-400'
+                      }`}>
+                        Select Table
+                      </label>
+                      <select 
+                        value={selectedTable}
+                        onChange={(e) => handleTableSelect(e.target.value)}
+                        disabled={!selectedFloor}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
+                          selectedFloor 
+                            ? 'border-gray-300 bg-white' 
+                            : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <option value="">Choose a table...</option>
+                        {selectedFloor === '1st Floor' && (
+                          <>
+                            <option value="table1">Table 1 (4 seats)</option>
+                            <option value="table2">Table 2 (6 seats)</option>
+                            <option value="table3">Table 3 (2 seats)</option>
+                            <option value="table4">Table 4 (8 seats)</option>
+                            <option value="table5">Table 5 (4 seats)</option>
+                            <option value="table6">Table 6 (6 seats)</option>
+                            <option value="table7">Table 7 (2 seats)</option>
+                            <option value="table8">Table 8 (4 seats)</option>
+                          </>
+                        )}
+                        {selectedFloor === '2nd Floor' && (
+                          <>
+                            <option value="table9">Table 9 (6 seats)</option>
+                            <option value="table10">Table 10 (4 seats)</option>
+                            <option value="table11">Table 11 (8 seats)</option>
+                            <option value="table12">Table 12 (2 seats)</option>
+                            <option value="table13">Table 13 (4 seats)</option>
+                            <option value="table14">Table 14 (6 seats)</option>
+                          </>
+                        )}
+                        {selectedFloor === '3rd Floor' && (
+                          <>
+                            <option value="table15">Table 15 (4 seats)</option>
+                            <option value="table16">Table 16 (6 seats)</option>
+                            <option value="table17">Table 17 (8 seats)</option>
+                            <option value="table18">Table 18 (2 seats)</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Persons Selection Dropdown */}
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${
+                        selectedTable ? 'text-gray-700' : 'text-gray-400'
+                      }`}>
+                        Persons
+                      </label>
+                      <select 
+                        value={selectedPersons}
+                        onChange={(e) => handlePersonsSelect(e.target.value)}
+                        disabled={!selectedTable}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
+                          selectedTable 
+                            ? 'border-gray-300 bg-white' 
+                            : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <option value="">Select number of persons...</option>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map((num) => (
+                          <option key={num} value={num}>
+                            {num} {num === 1 ? 'Person' : 'Persons'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  </div>
+
                   {/* Action Buttons */}
-                  <div className="space-y-2">
-                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14,2 14,8 20,8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10,9 9,9 8,9"></polyline>
-                      </svg>
-                      Invoice
-                    </button>
-                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14,2 14,8 20,8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10,9 9,9 8,9"></polyline>
-                      </svg>
-                      Split Bill
-                    </button>
-                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
-                      <Edit2 size={14} />
-                      Modify Order
-                    </button>
-                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
+                    <button 
+                      disabled={!selectedPersons}
+                      className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${
+                        selectedPersons
+                          ? 'bg-gray-500 text-white hover:bg-gray-600'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
                         <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
                         <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
@@ -807,42 +900,22 @@ const MenuGrid = () => {
                       </svg>
                       Merge Table
                     </button>
-                    <button className="w-full px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14,2 14,8 20,8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10,9 9,9 8,9"></polyline>
-                      </svg>
-                      Bill
-                    </button>
-                    <button className="w-full px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
-                      <X size={14} />
-                      Cancel Order
-                    </button>
-                  </div>
-                </div>
-
-                {/* Right Side - 3D Floor Plan */}
-                <div className="flex-1 flex flex-col">
-                  {/* Header */}
-                  <div className="bg-primary text-white p-4 flex justify-between items-center">
-                    <h2 className="text-xl font-bold">{selectedFloor} - Floor Plan</h2>
                     <button 
-                      onClick={() => setShowTableModal(false)}
-                      className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                      disabled={!selectedPersons}
+                      className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${
+                        selectedPersons
+                          ? 'bg-primary text-white hover:bg-primary/90'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
                     >
-                      <X size={20} />
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                        <polyline points="7,3 7,8 15,8"></polyline>
+                      </svg>
+                      Save
                     </button>
                   </div>
-
-
-
-                                     {/* 3D Floor Plan Canvas */}
-                   <div className="flex-1 bg-gray-100 overflow-hidden relative">
-                     <FloorPlan3D />
-                   </div>
                 </div>
               </div>
             </div>

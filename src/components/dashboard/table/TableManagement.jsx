@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, Plus, X, Trash2 } from 'lucide-react';
+import { Edit, Plus, X, Trash2, Users, Filter } from 'lucide-react';
 
 const TableManagement = () => {
   const [tables, setTables] = useState([]);
@@ -13,6 +13,8 @@ const TableManagement = () => {
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [tableToDelete, setTableToDelete] = useState(null);
+  const [selectedFloorFilter, setSelectedFloorFilter] = useState('');
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'visual'
 
   const fetchTables = async () => {
     try {
@@ -131,8 +133,6 @@ const TableManagement = () => {
     }
   };
 
-
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'Free':
@@ -146,17 +146,163 @@ const TableManagement = () => {
     }
   };
 
-  return (
+  // Filter tables by selected floor
+  const filteredTables = selectedFloorFilter 
+    ? tables.filter(table => table.floor_id == selectedFloorFilter)
+    : tables;
+
+  // Visual Table View Component
+  const VisualTableView = () => {
+    const getTableSize = (seatCapacity) => {
+      if (seatCapacity <= 2) return 'w-16 h-16';
+      if (seatCapacity <= 4) return 'w-20 h-20';
+      if (seatCapacity <= 6) return 'w-24 h-24';
+      return 'w-28 h-28';
+    };
+
+    const getTableColor = (status) => {
+      switch (status) {
+        case 'Occupied':
+          return 'bg-red-500';
+        case 'Reserved':
+          return 'bg-yellow-500';
+        default:
+          return 'bg-green-500';
+      }
+    };
+
+    const selectedFloor = floors.find(f => f.id == selectedFloorFilter);
+
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">
+              {selectedFloor ? `${selectedFloor.name} - Tables` : 'All Tables'}
+            </h2>
+            <p className="text-sm text-gray-600">
+              {filteredTables.length} tables, {filteredTables.reduce((total, table) => total + (table.seat_capacity || 0), 0)} total seats
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedFloorFilter}
+              onChange={(e) => setSelectedFloorFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight"
+            >
+              <option value="">All Floors</option>
+              {floors.map((floor) => (
+                <option key={floor.id} value={floor.id}>
+                  {floor.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setViewMode('list')}
+              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              List View
+            </button>
+          </div>
+        </div>
+
+        {/* Floor Layout */}
+        <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
+          {filteredTables.length > 0 ? (
+            <div className="grid grid-cols-6 gap-6">
+              {filteredTables.map((table) => (
+                <div
+                  key={table.id}
+                  className={`${getTableSize(table.seat_capacity)} ${getTableColor(table.status || 'Free')} rounded-lg flex flex-col items-center justify-center text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer relative group`}
+                  title={`Table ${table.table_no} - ${table.seat_capacity} seats - ${table.status || 'Free'}`}
+                >
+                  {/* Table Number */}
+                  <span className="text-xs font-bold">T{table.table_no}</span>
+                  
+                  {/* Seat Capacity */}
+                  <div className="flex items-center gap-1 mt-1">
+                    <Users size={10} />
+                    <span className="text-xs">{table.seat_capacity}</span>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="absolute -top-2 -right-2 bg-white text-xs px-1 py-0.5 rounded-full text-gray-700 font-medium shadow-sm">
+                    {table.status || 'Free'}
+                  </div>
+
+                  {/* Hover Info */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                    Table {table.table_no} - {table.seat_capacity} seats
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+              <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
+                <Users size={24} />
+              </div>
+              <p className="text-lg font-medium">No tables found</p>
+              <p className="text-sm text-gray-400 mt-1">
+                {selectedFloorFilter ? 'No tables on this floor' : 'Add tables to see them here'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Legend */}
+        <div className="mt-6 flex items-center justify-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-500 rounded"></div>
+            <span className="text-sm text-gray-600">Available</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-500 rounded"></div>
+            <span className="text-sm text-gray-600">Occupied</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+            <span className="text-sm text-gray-600">Reserved</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // List Table View Component
+  const ListTableView = () => (
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800">Table List</h2>
-        <button
-          onClick={handleAddTable}
-          className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
-        >
-          <Plus size={16} />
-          Add New Table
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedFloorFilter}
+            onChange={(e) => setSelectedFloorFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight"
+          >
+            <option value="">All Floors</option>
+            {floors.map((floor) => (
+              <option key={floor.id} value={floor.id}>
+                {floor.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setViewMode('visual')}
+            className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+          >
+            <Filter size={16} />
+            Visual View
+          </button>
+          <button
+            onClick={handleAddTable}
+            className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add New Table
+          </button>
+        </div>
       </div>
 
       <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
@@ -183,7 +329,7 @@ const TableManagement = () => {
           </tr>
         </thead>
         <tbody>
-          {tables.map((table, index) => (
+          {filteredTables.map((table, index) => (
             <tr key={table.id} className={`border-b border-gray-100 hover:bg-gray-25 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
               <td className="py-3 px-4">
                 <span className="text-sm font-medium text-gray-700">{table.id}</span>
@@ -222,6 +368,12 @@ const TableManagement = () => {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+
+  return (
+    <>
+      {viewMode === 'visual' ? <VisualTableView /> : <ListTableView />}
 
       {showForm && (
         <div className="fixed inset-0 bg-[#0000008e] bg-opacity-50 flex items-center justify-center z-50">
@@ -351,7 +503,7 @@ const TableManagement = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

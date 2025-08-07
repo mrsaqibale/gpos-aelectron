@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, Plus, X, Trash2 } from 'lucide-react';
+import { Edit, Plus, X, Trash2, ArrowLeft, Users } from 'lucide-react';
 
 const FloorManagement = () => {
   const [floors, setFloors] = useState([]);
@@ -11,6 +11,9 @@ const FloorManagement = () => {
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [floorToDelete, setFloorToDelete] = useState(null);
+  const [selectedFloor, setSelectedFloor] = useState(null);
+  const [floorTables, setFloorTables] = useState([]);
+  const [showTableView, setShowTableView] = useState(false);
 
   const fetchFloors = async () => {
     try {
@@ -27,9 +30,36 @@ const FloorManagement = () => {
     }
   };
 
+  const fetchFloorTables = async (floorId) => {
+    try {
+      const result = await window.myAPI?.tableGetByFloor(floorId);
+      if (result && result.success) {
+        setFloorTables(result.data || []);
+      } else {
+        console.error('Failed to fetch floor tables:', result?.message || 'Unknown error');
+        setFloorTables([]);
+      }
+    } catch (error) {
+      console.error('Error fetching floor tables:', error);
+      setFloorTables([]);
+    }
+  };
+
   useEffect(() => {
     fetchFloors();
   }, []);
+
+  const handleFloorClick = async (floor) => {
+    setSelectedFloor(floor);
+    await fetchFloorTables(floor.id);
+    setShowTableView(true);
+  };
+
+  const handleBackToList = () => {
+    setShowTableView(false);
+    setSelectedFloor(null);
+    setFloorTables([]);
+  };
 
   const handleEditFloor = (floor) => {
     setEditingFloor(floor);
@@ -109,9 +139,113 @@ const FloorManagement = () => {
     }
   };
 
+  // Table View Component
+  const TableView = () => {
+    const getTableSize = (seatCapacity) => {
+      if (seatCapacity <= 2) return 'w-16 h-16';
+      if (seatCapacity <= 4) return 'w-20 h-20';
+      if (seatCapacity <= 6) return 'w-24 h-24';
+      return 'w-28 h-28';
+    };
 
+    const getTableColor = (status) => {
+      switch (status) {
+        case 'Occupied':
+          return 'bg-red-500';
+        case 'Reserved':
+          return 'bg-yellow-500';
+        default:
+          return 'bg-green-500';
+      }
+    };
 
-  return (
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackToList}
+              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">{selectedFloor?.name}</h2>
+              <p className="text-sm text-gray-600">{selectedFloor?.type} Floor</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-600">Total Tables: <span className="font-semibold text-primary">{floorTables.length}</span></p>
+            <p className="text-sm text-gray-600">Total Seats: <span className="font-semibold text-primary">
+              {floorTables.reduce((total, table) => total + (table.seat_capacity || 0), 0)}
+            </span></p>
+          </div>
+        </div>
+
+        {/* Floor Layout */}
+        <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
+          {floorTables.length > 0 ? (
+            <div className="grid grid-cols-6 gap-6">
+              {floorTables.map((table) => (
+                <div
+                  key={table.id}
+                  className={`${getTableSize(table.seat_capacity)} ${getTableColor(table.status || 'Free')} rounded-lg flex flex-col items-center justify-center text-white font-bold shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer relative group`}
+                  title={`Table ${table.table_no} - ${table.seat_capacity} seats - ${table.status || 'Free'}`}
+                >
+                  {/* Table Number */}
+                  <span className="text-xs font-bold">T{table.table_no}</span>
+                  
+                  {/* Seat Capacity */}
+                  <div className="flex items-center gap-1 mt-1">
+                    <Users size={10} />
+                    <span className="text-xs">{table.seat_capacity}</span>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="absolute -top-2 -right-2 bg-white text-xs px-1 py-0.5 rounded-full text-gray-700 font-medium shadow-sm">
+                    {table.status || 'Free'}
+                  </div>
+
+                  {/* Hover Info */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                    Table {table.table_no} - {table.seat_capacity} seats
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+              <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
+                <Users size={24} />
+              </div>
+              <p className="text-lg font-medium">No tables found</p>
+              <p className="text-sm text-gray-400 mt-1">Add tables to this floor to see them here</p>
+            </div>
+          )}
+        </div>
+
+        {/* Legend */}
+        <div className="mt-6 flex items-center justify-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-500 rounded"></div>
+            <span className="text-sm text-gray-600">Available</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-500 rounded"></div>
+            <span className="text-sm text-gray-600">Occupied</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+            <span className="text-sm text-gray-600">Reserved</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Floor List View
+  const FloorListView = () => (
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800">Floor List</h2>
@@ -151,7 +285,12 @@ const FloorManagement = () => {
                 <span className="text-sm font-medium text-gray-700">{index + 1}</span>
               </td>
               <td className="py-3 px-4">
-                <span className="text-sm font-medium text-gray-800">{floor.name}</span>
+                <button
+                  onClick={() => handleFloorClick(floor)}
+                  className="text-sm font-medium text-gray-800 hover:text-primary transition-colors text-left"
+                >
+                  {floor.name}
+                </button>
               </td>
               <td className="py-3 px-4">
                 <span className="text-sm text-gray-600">{floor.type}</span>
@@ -179,6 +318,12 @@ const FloorManagement = () => {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+
+  return (
+    <>
+      {showTableView ? <TableView /> : <FloorListView />}
 
       {showForm && (
         <div className="fixed inset-0 bg-[#0000008e] bg-opacity-50 flex items-center justify-center z-50">
@@ -287,7 +432,7 @@ const FloorManagement = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
