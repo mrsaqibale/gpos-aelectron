@@ -54,9 +54,12 @@ const RunningOrders = () => {
   const [selectedFood, setSelectedFood] = useState(null);
   const [selectedVariations, setSelectedVariations] = useState({});
   const [showTableModal, setShowTableModal] = useState(false);
+  const [showMergeTableModal, setShowMergeTableModal] = useState(false);
   const [selectedFloor, setSelectedFloor] = useState('');
   const [selectedTable, setSelectedTable] = useState('');
   const [selectedPersons, setSelectedPersons] = useState('');
+  const [mergeTable1, setMergeTable1] = useState('');
+  const [mergeTable2, setMergeTable2] = useState('');
   
 
   const [foods, setFoods] = useState([]);
@@ -266,6 +269,27 @@ const RunningOrders = () => {
   // Handle persons selection
   const handlePersonsSelect = (persons) => {
     setSelectedPersons(persons);
+  };
+
+  // Handle merge table button click
+  const handleMergeTableClick = () => {
+    setShowTableModal(false);
+    setShowMergeTableModal(true);
+  };
+
+  // Handle back button in merge modal
+  const handleBackToTableSelection = () => {
+    setShowMergeTableModal(false);
+    setShowTableModal(true);
+  };
+
+  // Handle merge table selections
+  const handleMergeTable1Select = (table) => {
+    setMergeTable1(table);
+  };
+
+  const handleMergeTable2Select = (table) => {
+    setMergeTable2(table);
   };
 
   const handleCustomerSelect = (customer) => {
@@ -882,24 +906,25 @@ const MenuGrid = () => {
                   </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
-                    <button 
-                      disabled={!selectedPersons}
-                      className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${
-                        selectedPersons
-                          ? 'bg-gray-500 text-white hover:bg-gray-600'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
-                        <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
-                        <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
-                        <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
-                      </svg>
-                      Merge Table
-                    </button>
+                                     {/* Action Buttons */}
+                   <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
+                     <button 
+                       disabled={!selectedTable}
+                       onClick={handleMergeTableClick}
+                       className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${
+                         selectedTable
+                           ? 'bg-gray-500 text-white hover:bg-gray-600'
+                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                       }`}
+                     >
+                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                         <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+                         <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+                         <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+                         <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+                       </svg>
+                       Merge Table
+                     </button>
                     <button 
                       disabled={!selectedPersons}
                       className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${
@@ -919,9 +944,198 @@ const MenuGrid = () => {
                 </div>
               </div>
             </div>
-          )}
+                     )}
 
-          {/* Delete Customer Confirmation Modal */}
+           {/* Merge Table Modal */}
+           {showMergeTableModal && (
+             <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+               <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh]">
+                 {/* Header */}
+                 <div className="bg-primary text-white p-4 flex items-center rounded-t-xl relative">
+                   <button 
+                     onClick={handleBackToTableSelection}
+                     className="text-white cursor-pointer p-1 rounded-full flex items-center gap-1"
+                   >
+                     <ArrowLeft size={16} />
+                   </button>
+                   <h2 className="text-xl font-bold absolute left-1/2 transform -translate-x-1/2">Merge Tables</h2>
+                   <button 
+                     onClick={() => setShowMergeTableModal(false)}
+                     className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20 ml-auto"
+                   >
+                     <X size={20} />
+                   </button>
+                 </div>
+
+                 {/* Content */}
+                 <div className="p-6">
+                   <div className='flex gap-6'>
+                   {/* Floor Selection */}
+                   <div className="flex-1">
+                     <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Floor</h3>
+                     <div className="grid grid-cols-1 gap-3">
+                       {['1st Floor', '2nd Floor', '3rd Floor'].map((floor) => (
+                         <button
+                           key={floor}
+                           onClick={() => handleFloorSelect(floor)}
+                           className={`px-4 py-3 text-left rounded-lg transition-colors border ${
+                             selectedFloor === floor
+                               ? 'bg-primary text-white border-primary'
+                               : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+                           }`}
+                         >
+                           <div className="font-medium">{floor}</div>
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+
+                   {/* Merge Tables Section */}
+                   <div className="flex-1">
+                     <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Tables to Merge</h3>
+                     <div className="grid grid-cols-2 gap-4">
+                       {/* First Table Selection */}
+                       <div>
+                         <label className={`block text-sm font-medium mb-2 ${
+                           selectedFloor ? 'text-gray-700' : 'text-gray-400'
+                         }`}>
+                           Select Table
+                         </label>
+                         <select 
+                           value={mergeTable1}
+                           onChange={(e) => handleMergeTable1Select(e.target.value)}
+                           disabled={!selectedFloor}
+                           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
+                             selectedFloor 
+                               ? 'border-gray-300 bg-white' 
+                               : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                           }`}
+                         >
+                           <option value="">Choose first table...</option>
+                           {selectedFloor === '1st Floor' && (
+                             <>
+                               <option value="table1">Table 1 (4 seats)</option>
+                               <option value="table2">Table 2 (6 seats)</option>
+                               <option value="table3">Table 3 (2 seats)</option>
+                               <option value="table4">Table 4 (8 seats)</option>
+                               <option value="table5">Table 5 (4 seats)</option>
+                               <option value="table6">Table 6 (6 seats)</option>
+                               <option value="table7">Table 7 (2 seats)</option>
+                               <option value="table8">Table 8 (4 seats)</option>
+                             </>
+                           )}
+                           {selectedFloor === '2nd Floor' && (
+                             <>
+                               <option value="table9">Table 9 (6 seats)</option>
+                               <option value="table10">Table 10 (4 seats)</option>
+                               <option value="table11">Table 11 (8 seats)</option>
+                               <option value="table12">Table 12 (2 seats)</option>
+                               <option value="table13">Table 13 (4 seats)</option>
+                               <option value="table14">Table 14 (6 seats)</option>
+                             </>
+                           )}
+                           {selectedFloor === '3rd Floor' && (
+                             <>
+                               <option value="table15">Table 15 (4 seats)</option>
+                               <option value="table16">Table 16 (6 seats)</option>
+                               <option value="table17">Table 17 (8 seats)</option>
+                               <option value="table18">Table 18 (2 seats)</option>
+                             </>
+                           )}
+                         </select>
+                       </div>
+
+                       {/* Second Table Selection */}
+                       <div>
+                         <label className={`block text-sm font-medium mb-2 ${
+                           selectedFloor ? 'text-gray-700' : 'text-gray-400'
+                         }`}>
+                           Select Table
+                         </label>
+                         <select 
+                           value={mergeTable2}
+                           onChange={(e) => handleMergeTable2Select(e.target.value)}
+                           disabled={!selectedFloor}
+                           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
+                             selectedFloor 
+                               ? 'border-gray-300 bg-white' 
+                               : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                           }`}
+                         >
+                           <option value="">Choose second table...</option>
+                           {selectedFloor === '1st Floor' && (
+                             <>
+                               <option value="table1">Table 1 (4 seats)</option>
+                               <option value="table2">Table 2 (6 seats)</option>
+                               <option value="table3">Table 3 (2 seats)</option>
+                               <option value="table4">Table 4 (8 seats)</option>
+                               <option value="table5">Table 5 (4 seats)</option>
+                               <option value="table6">Table 6 (6 seats)</option>
+                               <option value="table7">Table 7 (2 seats)</option>
+                               <option value="table8">Table 8 (4 seats)</option>
+                             </>
+                           )}
+                           {selectedFloor === '2nd Floor' && (
+                             <>
+                               <option value="table9">Table 9 (6 seats)</option>
+                               <option value="table10">Table 10 (4 seats)</option>
+                               <option value="table11">Table 11 (8 seats)</option>
+                               <option value="table12">Table 12 (2 seats)</option>
+                               <option value="table13">Table 13 (4 seats)</option>
+                               <option value="table14">Table 14 (6 seats)</option>
+                             </>
+                           )}
+                           {selectedFloor === '3rd Floor' && (
+                             <>
+                               <option value="table15">Table 15 (4 seats)</option>
+                               <option value="table16">Table 16 (6 seats)</option>
+                               <option value="table17">Table 17 (8 seats)</option>
+                               <option value="table18">Table 18 (2 seats)</option>
+                             </>
+                           )}
+                         </select>
+                       </div>
+                     </div>
+                     
+                     {/* Add More Button */}
+                     <div className="mt-4 flex justify-center">
+                       <button className="w-fit px-4 py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
+                         + Add More
+                       </button>
+                     </div>
+                   </div>
+                   </div>
+
+                   {/* Action Buttons */}
+                   <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
+                     <button 
+                       onClick={() => setShowMergeTableModal(false)}
+                       className="px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                     >
+                       Cancel
+                     </button>
+                     <button 
+                       disabled={!mergeTable1 || !mergeTable2}
+                       className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${
+                         mergeTable1 && mergeTable2
+                           ? 'bg-primary text-white hover:bg-primary/90'
+                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                       }`}
+                     >
+                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                         <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                         <polyline points="7,3 7,8 15,8"></polyline>
+                       </svg>
+                       Save
+                     </button>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           )}
+
+           {/* Delete Customer Confirmation Modal */}
           {showDeleteConfirm && selectedCustomer && (
             <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
