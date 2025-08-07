@@ -386,12 +386,20 @@ const RunningOrders = () => {
   };
 
   // Handle merge table selections
-  const handleMergeTable1Select = (table) => {
-    setMergeTable1(table);
+  const handleMergeTable1Select = (tableId) => {
+    setMergeTable1(tableId);
+    // If the same table is selected in table2, clear it
+    if (mergeTable2 === tableId) {
+      setMergeTable2('');
+    }
   };
 
-  const handleMergeTable2Select = (table) => {
-    setMergeTable2(table);
+  const handleMergeTable2Select = (tableId) => {
+    setMergeTable2(tableId);
+    // If the same table is selected in table1, clear it
+    if (mergeTable1 === tableId) {
+      setMergeTable1('');
+    }
   };
 
   const handleCustomerSelect = (customer) => {
@@ -913,9 +921,9 @@ const MenuGrid = () => {
           {/* Table Management Modal */}
           {showTableModal && (
             <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh]">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+                <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                   <h2 className="text-xl font-bold">Table Selection</h2>
                   <button 
                     onClick={() => setShowTableModal(false)}
@@ -926,12 +934,12 @@ const MenuGrid = () => {
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-6 flex-1 overflow-y-auto">
                   <div className='flex gap-6'>
                   {/* Floor Selection */}
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Floor</h3>
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
                       {floorsLoading ? (
                         <div className="text-center py-8">
                           <div className="text-gray-500 text-sm">Loading floors...</div>
@@ -1031,13 +1039,13 @@ const MenuGrid = () => {
                   </div>
 
                                      {/* Action Buttons */}
-                   <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
+                   <div className="flex gap-4 justify-end pt-4 border-t border-gray-200 flex-shrink-0">
                      <button 
-                       disabled={!selectedTable}
+                       disabled={!selectedFloor}
                        onClick={handleMergeTableClick}
                        className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${
-                         selectedTable
-                           ? 'bg-gray-500 text-white hover:bg-gray-600'
+                         selectedFloor
+                           ? 'bg-primary text-white hover:bg-primary/90'
                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                        }`}
                      >
@@ -1073,9 +1081,9 @@ const MenuGrid = () => {
            {/* Merge Table Modal */}
            {showMergeTableModal && (
              <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-               <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh]">
+               <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
                  {/* Header */}
-                 <div className="bg-primary text-white p-4 flex items-center rounded-t-xl relative">
+                 <div className="bg-primary text-white p-4 flex items-center rounded-t-xl relative flex-shrink-0">
                    <button 
                      onClick={handleBackToTableSelection}
                      className="text-white cursor-pointer p-1 rounded-full flex items-center gap-1"
@@ -1092,12 +1100,12 @@ const MenuGrid = () => {
                  </div>
 
                  {/* Content */}
-                 <div className="p-6">
+                 <div className="p-6 flex-1 overflow-y-auto">
                    <div className='flex gap-6'>
                    {/* Floor Selection */}
                    <div className="flex-1">
                      <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Floor</h3>
-                     <div className="grid grid-cols-1 gap-3">
+                     <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
                        {floorsLoading ? (
                          <div className="text-center py-8">
                            <div className="text-gray-500 text-sm">Loading floors...</div>
@@ -1157,7 +1165,7 @@ const MenuGrid = () => {
                            {tablesLoading ? (
                              <option value="" disabled>Loading tables...</option>
                            ) : tables.length > 0 ? (
-                             tables.map((table) => (
+                             tables.filter(table => table.id.toString() !== mergeTable2).map((table) => (
                                <option key={table.id} value={table.id}>
                                  Table {table.table_no} ({table.seat_capacity || 4} seats)
                                </option>
@@ -1191,7 +1199,7 @@ const MenuGrid = () => {
                            {tablesLoading ? (
                              <option value="" disabled>Loading tables...</option>
                            ) : tables.length > 0 ? (
-                             tables.map((table) => (
+                             tables.filter(table => table.id.toString() !== mergeTable1).map((table) => (
                                <option key={table.id} value={table.id}>
                                  Table {table.table_no} ({table.seat_capacity || 4} seats)
                                </option>
@@ -1215,7 +1223,7 @@ const MenuGrid = () => {
                    </div>
 
                    {/* Action Buttons */}
-                   <div className="flex gap-4 justify-end pt-4 border-t border-gray-200">
+                   <div className="flex gap-4 justify-end pt-4 border-t border-gray-200 flex-shrink-0">
                      <button 
                        onClick={() => setShowMergeTableModal(false)}
                        className="px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
