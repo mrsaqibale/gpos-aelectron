@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS coupon (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    type TEXT NOT NULL,
+    code TEXT NOT NULL,
+    limit INTEGER DEFAULT 0,
+    start_date DATETIME,
+    end_date DATETIME,
+    discount_type TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    max_discount INTEGER DEFAULT 0,
+    min_purchase INTEGER DEFAULT 0,
+    issyncronized BOOLEAN DEFAULT 0,
+    isdeleted BOOLEAN DEFAULT 0,
+    status BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    added_by INTEGER NOT NULL,
+    customer_id INTEGER,
+    FOREIGN KEY (added_by) REFERENCES employee(id),
+    FOREIGN KEY (customer_id) REFERENCES customer(id)
+); 

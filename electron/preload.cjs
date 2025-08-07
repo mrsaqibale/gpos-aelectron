@@ -127,6 +127,15 @@ contextBridge.exposeInMainWorld('myAPI', {
   getOrderStatistics: (restaurantId, startDate, endDate) => ipcRenderer.invoke('order:getStatistics', restaurantId, startDate, endDate),
   deleteOrder: (id) => ipcRenderer.invoke('order:delete', id),
 
+  // Coupon
+  createCoupon: (data) => ipcRenderer.invoke('coupon:create', data),
+  updateCoupon: (id, updates) => ipcRenderer.invoke('coupon:update', id, updates),
+  getAllCoupons: () => ipcRenderer.invoke('coupon:getAll'),
+  getCouponById: (id) => ipcRenderer.invoke('coupon:getById', id),
+  getCouponsByCustomerId: (customerId) => ipcRenderer.invoke('coupon:getByCustomerId', customerId),
+  deleteCoupon: (id) => ipcRenderer.invoke('coupon:delete', id),
+  searchCouponByCode: (code) => ipcRenderer.invoke('coupon:searchByCode', code),
+
 });
 
 contextBridge.exposeInMainWorld('api', {
