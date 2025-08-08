@@ -20,6 +20,8 @@ const Coupons = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [couponToDelete, setCouponToDelete] = useState(null);
 
   // Load coupons from database
   useEffect(() => {
@@ -205,21 +207,28 @@ const Coupons = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (couponId) => {
-    if (window.confirm('Are you sure you want to delete this coupon?')) {
-      try {
-        setLoading(true);
-        const result = await window.myAPI.deleteCoupon(couponId);
-        if (result.success) {
-          await loadCoupons(); // Reload data
-        } else {
-          console.error('Failed to delete coupon:', result.message);
-        }
-      } catch (error) {
-        console.error('Error deleting coupon:', error);
-      } finally {
-        setLoading(false);
+  const handleDeleteClick = (coupon) => {
+    setCouponToDelete(coupon);
+    setShowDeleteConfirm(true);
+  };
+
+  const deleteCoupon = async (id) => {
+    try {
+      setLoading(true);
+      const result = await window.myAPI.deleteCoupon(id);
+      if (result.success) {
+        await loadCoupons(); // Reload data
+        setShowDeleteConfirm(false);
+        setCouponToDelete(null);
+      } else {
+        console.error('Failed to delete coupon:', result.message);
+        alert('Error deleting coupon: ' + result.message);
       }
+    } catch (error) {
+      console.error('Error deleting coupon:', error);
+      alert('Error deleting coupon');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -329,7 +338,8 @@ const Coupons = () => {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-5">
+            {/* First row: Title and Select Customer in 2 columns */}
+            <div className="grid grid-cols-2 gap-5 mb-5">
               {/* Title */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -376,7 +386,10 @@ const Coupons = () => {
                   <p className="text-red-500 text-xs mt-1">{errors.customerType}</p>
                 )}
               </div>
+            </div>
 
+            {/* Second row: Rest of the fields in 3 columns */}
+            <div className="grid grid-cols-3 gap-5">
               {/* Code */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -576,36 +589,31 @@ const Coupons = () => {
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-64">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Search coupons..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Filter size={16} className="text-gray-500" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-        </div>
+                 {/* Filters */}
+         <div className="bg-gray-50 rounded-lg p-4 mb-6">
+           <div className="flex justify-end items-center gap-4">
+             <div className="relative">
+               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+               <input
+                 type="text"
+                 placeholder="Search coupons..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+               />
+             </div>
+             
+             <select
+               value={statusFilter}
+               onChange={(e) => setStatusFilter(e.target.value)}
+               className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+             >
+               <option value="all">All Status</option>
+               <option value="active">Active</option>
+               <option value="inactive">Inactive</option>
+             </select>
+           </div>
+         </div>
 
         {/* Coupons Table */}
         <div className="overflow-x-auto">
@@ -673,10 +681,7 @@ const Coupons = () => {
                     <span className="text-sm font-medium text-gray-900">{coupon.title}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center">
-                      <Tag size={16} className="text-primary mr-2" />
-                      <span className="font-mono font-medium text-primary">{coupon.code}</span>
-                    </div>
+                    <span className="font-mono font-medium text-primary">{coupon.code}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">{coupon.discountType}</span>
@@ -690,14 +695,11 @@ const Coupons = () => {
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">€{coupon.maxDiscount}</span>
                   </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      {getDiscountTypeIcon(coupon.discountType)}
-                      <span className="text-sm font-medium text-gray-900">
-                        {coupon.discountType === 'percentage' ? `${coupon.discount}%` : `€${coupon.discount}`}
-                      </span>
-                    </div>
-                  </td>
+                                     <td className="py-3 px-4">
+                     <span className="text-sm font-medium text-gray-900">
+                       {coupon.discountType === 'percentage' ? `${coupon.discount}%` : `€${coupon.discount}`}
+                     </span>
+                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600 capitalize">{coupon.discountType}</span>
                   </td>
@@ -736,7 +738,7 @@ const Coupons = () => {
                         <Edit size={16} />
                       </button>
                       <button 
-                        onClick={() => handleDelete(coupon.id)}
+                        onClick={() => handleDeleteClick(coupon)}
                         className="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
                       >
                         <Trash2 size={16} />
@@ -758,6 +760,57 @@ const Coupons = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && couponToDelete && (
+        <div className="fixed inset-0 bg-[#000000a1] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="bg-red-700 text-white p-4 flex justify-between items-center rounded-t-xl">
+              <h2 className="text-xl font-bold">Delete Coupon</h2>
+              <button 
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setCouponToDelete(null);
+                }}
+                className="text-white hover:text-red-700 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to delete this coupon? This action cannot be undone.
+              </p>
+              <p className="text-sm text-gray-600 mb-6">
+                Coupon: <strong>{couponToDelete.title}</strong>
+              </p>
+              <p className="text-sm text-gray-600 mb-6">
+                Code: <strong>{couponToDelete.code}</strong>
+              </p>
+              <p className="text-sm text-gray-600 mb-6">
+                Discount: <strong>{couponToDelete.discountType === 'percentage' ? `${couponToDelete.discount}%` : `€${couponToDelete.discount}`}</strong>
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setCouponToDelete(null);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteCoupon(couponToDelete.id)}
+                className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
