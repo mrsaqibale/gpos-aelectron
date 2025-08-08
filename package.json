@@ -25,7 +25,9 @@
     "pack": "npm run build && electron-builder --dir",
     "postinstall": "electron-builder install-app-deps",
     "build:app": "node build-app.js",
-    "build:app-linux": "node build-app-linux.js"
+    "build:app-linux": "node build-app-linux.js",
+    "test:table-integration": "node src/database/test/run-table-test.js",
+    "check:floor-data": "node src/database/test/check-floor-data.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.6.1",

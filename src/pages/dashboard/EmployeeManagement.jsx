@@ -10,6 +10,7 @@ const EmployeeManagement = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
+  const [imageUrls, setImageUrls] = useState({});
   const [newEmployee, setNewEmployee] = useState({
     firstName: '',
     lastName: '',
@@ -21,6 +22,8 @@ const EmployeeManagement = () => {
     image: null
   });
   const [pinError, setPinError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [toggleLoading, setToggleLoading] = useState({});
 
   const fetchEmployees = async () => {
@@ -28,6 +31,22 @@ const EmployeeManagement = () => {
       const result = await window.myAPI?.getAllEmployees();
       if (result.success) {
         setEmployees(result.data);
+        
+        // Load images for employees with file paths
+        const newImageUrls = {};
+        for (const employee of result.data) {
+          if (employee.imgurl && employee.imgurl.startsWith('uploads/')) {
+            try {
+              const imageResult = await window.myAPI.getEmployeeImage(employee.imgurl);
+              if (imageResult.success) {
+                newImageUrls[employee.id] = imageResult.data;
+              }
+            } catch (error) {
+              console.error('Error loading image for employee:', employee.id, error);
+            }
+          }
+        }
+        setImageUrls(newImageUrls);
       } else {
         console.error('Error fetching employees:', result.message);
       }
@@ -54,11 +73,33 @@ const EmployeeManagement = () => {
     });
     // Set image preview if employee has an image
     if (employee.imgurl) {
-      setImagePreview(`data:image/png;base64,${employee.imgurl}`);
+      if (employee.imgurl.startsWith('uploads/')) {
+        // Use cached image URL if available
+        const cachedUrl = imageUrls[employee.id];
+        if (cachedUrl) {
+          setImagePreview(cachedUrl);
+        } else {
+          // Load image if not cached
+          window.myAPI.getEmployeeImage(employee.imgurl).then(result => {
+            if (result.success) {
+              setImagePreview(result.data);
+            } else {
+              setImagePreview(null);
+            }
+          }).catch(() => {
+            setImagePreview(null);
+          });
+        }
+      } else {
+        // Old system: base64 data
+        setImagePreview(`data:image/png;base64,${employee.imgurl}`);
+      }
     } else {
       setImagePreview(null);
     }
     setPinError(''); // Clear any previous PIN error messages
+    setEmailError('');
+    setPhoneError('');
     setShowForm(true);
   };
 
@@ -76,6 +117,8 @@ const EmployeeManagement = () => {
     });
     setImagePreview(null);
     setPinError(''); // Clear any previous PIN error messages
+    setEmailError('');
+    setPhoneError('');
     setShowForm(true);
   };
 
@@ -104,6 +147,11 @@ const EmployeeManagement = () => {
         ...prev,
         [name]: numericValue
       }));
+      
+      // Clear phone error when typing
+      if (phoneError) {
+        setPhoneError('');
+      }
       return;
     }
     
@@ -120,6 +168,11 @@ const EmployeeManagement = () => {
       } else {
         setPinError('');
       }
+    }
+    
+    // Clear email error when typing
+    if (name === 'email' && emailError) {
+      setEmailError('');
     }
     
     setNewEmployee(prev => ({
@@ -162,17 +215,10 @@ const EmployeeManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Check for duplicate PIN before submitting
-    const trimmedPin = newEmployee.pin.trim();
-    const existingEmployee = employees.find(emp => 
-      emp.pin === trimmedPin && 
-      (!editingEmployee || emp.id !== editingEmployee.id)
-    );
-    
-    if (existingEmployee) {
-      setPinError('⚠ This PIN is already taken by another employee');
-      return;
-    }
+    // Clear all previous errors
+    setPinError('');
+    setEmailError('');
+    setPhoneError('');
     
     // Validate PIN match
     if (newEmployee.pin !== newEmployee.confirmPin) {
@@ -216,7 +262,6 @@ const EmployeeManagement = () => {
         phone: newEmployee.phone,
         email: newEmployee.email,
         pin: newEmployee.pin,
-        imgurl: imageBase64 || '', // Use empty string instead of null
         code: newEmployee.pin, // Using PIN as code for now
         address: '',
         isActive: 1,
@@ -224,18 +269,34 @@ const EmployeeManagement = () => {
         isSyncronized: 0
       };
 
+      // Only include image data if a new image is selected
+      if (newEmployee.image) {
+        employeeData.imgurl = imageBase64;
+        employeeData.originalFilename = newEmployee.image.name;
+      }
+
       console.log('Employee data to send:', {
         ...employeeData,
-        imgurl: imageBase64 ? `base64_data_${imageBase64.length}_chars` : null
+        imgurl: employeeData.imgurl ? `base64_data_${employeeData.imgurl.length}_chars` : 'not provided'
       });
 
       if (editingEmployee) {
         // Update existing employee
-        const result = await window.myAPI?.updateEmployee(editingEmployee.id, employeeData);
+        const result = await window.myAPI?.updateEmployee(editingEmployee.id, employeeData, employeeData.originalFilename || null);
         if (result.success) {
           fetchEmployees();
         } else {
-          alert('Error updating employee: ' + result.message);
+          // Handle validation errors
+          if (result.message.includes('Email already exists')) {
+            setEmailError('⚠ Email already exists');
+          } else if (result.message.includes('Phone number already exists')) {
+            setPhoneError('⚠ Phone number already exists');
+          } else if (result.message.includes('PIN code already exists')) {
+            setPinError('⚠ PIN code already exists');
+          } else {
+            alert('Error updating employee: ' + result.message);
+          }
+          return; // Don't close form if there are validation errors
         }
       } else {
         // Add new employee
@@ -243,7 +304,17 @@ const EmployeeManagement = () => {
         if (result.success) {
           fetchEmployees();
         } else {
-          alert('Error creating employee: ' + result.message);
+          // Handle validation errors
+          if (result.message.includes('Email already exists')) {
+            setEmailError('⚠ Email already exists');
+          } else if (result.message.includes('Phone number already exists')) {
+            setPhoneError('⚠ Phone number already exists');
+          } else if (result.message.includes('PIN code already exists')) {
+            setPinError('⚠ PIN code already exists');
+          } else {
+            alert('Error creating employee: ' + result.message);
+          }
+          return; // Don't close form if there are validation errors
         }
       }
       setShowForm(false);
@@ -266,6 +337,9 @@ const EmployeeManagement = () => {
       image: null
     });
     setImagePreview(null);
+    setPinError('');
+    setEmailError('');
+    setPhoneError('');
   };
 
   const handleDeleteClick = (employee) => {
@@ -430,7 +504,9 @@ const EmployeeManagement = () => {
                         name="phone"
                         value={newEmployee.phone}
                         onChange={handleInputChange}
-                        className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                        className={`w-[80%] px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                          phoneError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
+                        }`}
                         placeholder="08xxxxxxxx"
                         maxLength="10"
                         required
@@ -442,6 +518,9 @@ const EmployeeManagement = () => {
                           </span>
                         )}
                       </p>
+                      {phoneError && (
+                        <p className="mt-1 text-xs text-red-600">{phoneError}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -509,10 +588,15 @@ const EmployeeManagement = () => {
                     name="email"
                     value={newEmployee.email}
                     onChange={handleInputChange}
-                    className="w-3/4 px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                    className={`w-3/4 px-3 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                      emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
+                    }`}
                     placeholder="mrsaqibale@gmail.com"
                     required
                   />
+                  {emailError && (
+                    <p className="mt-1 text-xs text-red-600">{emailError}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -659,9 +743,14 @@ const EmployeeManagement = () => {
                     <div className="flex items-center gap-3">
                       {employee.imgurl ? (
                         <img
-                          src={`data:image/png;base64,${employee.imgurl}`}
+                          src={employee.imgurl.startsWith('uploads/') ? imageUrls[employee.id] : `data:image/png;base64,${employee.imgurl}`}
                           alt={`${employee.fname} ${employee.lname}`}
                           className="w-8 h-8 object-cover rounded-full"
+                          onError={(e) => {
+                            // Fallback to initials if image fails to load
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
                         />
                       ) : (
                         <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
@@ -670,6 +759,11 @@ const EmployeeManagement = () => {
                           </span>
                         </div>
                       )}
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center" style={{ display: 'none' }}>
+                        <span className="text-xs text-gray-500">
+                          {employee.fname?.charAt(0)}{employee.lname?.charAt(0)}
+                        </span>
+                      </div>
                       <span className="text-sm font-medium text-gray-800">
                         {employee.fname} {employee.lname}
                       </span>

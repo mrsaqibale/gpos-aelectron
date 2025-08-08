@@ -20,7 +20,8 @@ const Header = ({
   // Get logged-in user data
   const [user, setUser] = useState({
     name: 'Loading...',
-    role: 'Loading...'
+    role: 'Loading...',
+    image: null
   });
 
   useEffect(() => {
@@ -29,15 +30,36 @@ const Header = ({
     if (currentEmployee) {
       try {
         const employeeData = JSON.parse(currentEmployee);
+        
+        // Load employee image if available
+        let imageUrl = null;
+        if (employeeData.imgurl) {
+          if (employeeData.imgurl.startsWith('uploads/')) {
+            // Load image from uploads folder
+            window.myAPI.getEmployeeImage(employeeData.imgurl).then(result => {
+              if (result.success) {
+                setUser(prev => ({ ...prev, image: result.data }));
+              }
+            }).catch(() => {
+              // Image load failed, keep null
+            });
+          } else {
+            // Handle base64 images
+            imageUrl = `data:image/png;base64,${employeeData.imgurl}`;
+          }
+        }
+        
         setUser({
           name: `${employeeData.fname || ''} ${employeeData.lname || ''}`.trim() || 'Unknown User',
-          role: employeeData.roll || 'Unknown Role'
+          role: employeeData.roll || 'Unknown Role',
+          image: imageUrl
         });
       } catch (error) {
         console.error('Error parsing employee data:', error);
         setUser({
           name: 'Unknown User',
-          role: 'Unknown Role'
+          role: 'Unknown Role',
+          image: null
         });
       }
     } else {
@@ -90,11 +112,50 @@ const Header = ({
     navigate(-1);
   };
 
-  const handleLogout = () => {
-    // Clear user data from localStorage
-    localStorage.removeItem('currentEmployee');
-    // Redirect to login page
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      // Get current employee data before clearing
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      let employeeId = null;
+      
+      if (currentEmployee) {
+        try {
+          const employeeData = JSON.parse(currentEmployee);
+          employeeId = employeeData.id;
+        } catch (error) {
+          console.error('Error parsing employee data for logout:', error);
+        }
+      }
+
+      // Update employee logout session if we have an employee ID
+      if (employeeId) {
+        try {
+          const logoutResult = await window.myAPI?.updateEmployeeLogout(employeeId);
+          if (logoutResult.success) {
+            console.log('Employee logout session updated successfully:', logoutResult);
+          } else {
+            console.warn('Failed to update logout session:', logoutResult.message);
+          }
+        } catch (error) {
+          console.error('Error updating logout session:', error);
+        }
+      }
+
+      // Clear user data from localStorage
+      localStorage.removeItem('currentEmployee');
+      
+      // Clear session storage to reset check-in state
+      sessionStorage.removeItem('hasCheckedIn');
+      
+      // Redirect to login page
+      navigate('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still clear data and redirect even if logout session update fails
+      localStorage.removeItem('currentEmployee');
+      sessionStorage.removeItem('hasCheckedIn');
+      navigate('/login');
+    }
   };
 
   const showBackButton = location.pathname !== '/dashboard';
@@ -148,7 +209,19 @@ const Header = ({
         <div className="flex items-center gap-5">
           {/* User Profile */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium shadow-sm">
+            {user.image ? (
+              <img
+                src={user.image}
+                alt={user.name}
+                className="w-9 h-9 object-cover rounded-full shadow-sm"
+                onError={(e) => {
+                  // Fallback to initials if image fails to load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className={`w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium shadow-sm ${user.image ? 'hidden' : ''}`}>
               {user.name.charAt(0).toUpperCase()}
             </div>
             

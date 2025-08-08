@@ -3,9 +3,9 @@
 
   --color-bgColor:#f8faff;
   --color-primary:#032d81;
---color-primaryLight:#20407f;
---color-primaryExtraLight:#20407f1b;
---color-secondary:#D4B85F;
+  --color-primaryLight:#20407f;
+  --color-primaryExtraLight:#20407f1b;
+  --color-secondary:#D4B85F;
 }
 
 /* Test style to see if CSS is loading */
@@ -30,19 +30,43 @@ body {
   }
   
   .bg-primary {
-    background-color: #032d81;
+    background-color: var(--color-primary);
   }
   
   .text-primary {
-    color: #032d81;
+    color: var(--color-primary);
   }
   
   .border-primary {
-    border-color: #032d81;
+    border-color: var(--color-primary);
   }
   
   .hover\:bg-primary\/90:hover {
-    background-color: rgba(3, 45, 129, 0.9);
+    background-color: color-mix(in srgb, var(--color-primary) 90%, transparent);
+  }
+  
+  .bg-primaryLight {
+    background-color: var(--color-primaryLight);
+  }
+  
+  .text-primaryLight {
+    color: var(--color-primaryLight);
+  }
+  
+  .border-primaryLight {
+    border-color: var(--color-primaryLight);
+  }
+  
+  .bg-primaryExtraLight {
+    background-color: var(--color-primaryExtraLight);
+  }
+  
+  .text-primaryExtraLight {
+    color: var(--color-primaryExtraLight);
+  }
+  
+  .border-primaryExtraLight {
+    border-color: var(--color-primaryExtraLight);
   }
   
   .bg-brown-400 {
@@ -147,4 +171,9 @@ body.modal-open {
 
 .custom-scrollbar::-webkit-scrollbar-corner {
   background: #032D3A;           /* Corner color */
+}
+
+/* Title bar button hover styles */
+.title-bar button:hover {
+  background-color: var(--hover-bg-color) !important;
 }

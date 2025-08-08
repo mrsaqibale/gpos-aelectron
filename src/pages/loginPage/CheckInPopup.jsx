@@ -49,8 +49,14 @@ const CheckInFlow = ({ onComplete }) => {
   };
 
   const handleSave = async () => {
-    if (!openingCash || parseFloat(openingCash) <= 0) {
-      setError('Please enter a valid opening cash amount');
+    if (openingCash === '' || openingCash === null || openingCash === undefined) {
+      setError('Please enter opening cash amount');
+      return;
+    }
+    
+    const cashAmount = parseFloat(openingCash);
+    if (isNaN(cashAmount) || cashAmount < 0) {
+      setError('Please enter a valid opening cash amount (0 or greater)');
       return;
     }
 
@@ -91,6 +97,11 @@ const CheckInFlow = ({ onComplete }) => {
       setError('Network error. Please try again.');
       setIsSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    // Close the modal without creating a register
+    onComplete();
   };
 
   return (
@@ -162,17 +173,17 @@ const CheckInFlow = ({ onComplete }) => {
 
               <div className="flex gap-3">
                 <button
-                  onClick={handleClear}
+                  onClick={handleCancel}
                   disabled={isSaving}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  Clear
+                  Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={!openingCash || parseFloat(openingCash) <= 0 || isSaving}
+                  disabled={openingCash === '' || openingCash === null || openingCash === undefined || isSaving}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-colors ${
-                    openingCash && parseFloat(openingCash) > 0 && !isSaving
+                    openingCash !== '' && openingCash !== null && openingCash !== undefined && !isSaving
                       ? 'bg-green-600 hover:bg-green-700 text-white' 
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}

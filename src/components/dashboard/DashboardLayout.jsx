@@ -2,13 +2,15 @@ import React, { useState, createContext, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import OrdersHeader from './OrdersHeader'; // Import the new OrdersHeader component
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import CheckInFlow from '../../pages/loginPage/CheckInPopup';
 import {
   LayoutDashboard,
   Search,
-  Users2, Utensils, Table
+  Users2, Utensils, Table,
+  Tag, X, LogOut
 } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const SidebarContext = createContext();
 
@@ -18,11 +20,14 @@ const DashboardLayout = () => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isLoading, setIsLoading] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showDashboardSlider, setShowDashboardSlider] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { themeColors } = useTheme();
   
   // Mock user data for frontend demo
   const user = {
-    role: 'cashier', 
+    role: 'admin', 
     name: 'John Doe',
     email: 'john@example.com'
   };
@@ -35,15 +40,49 @@ const DashboardLayout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Check if we should show check-in popup
-useEffect(() => {
-  const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
+  // Handle logout session tracking when user leaves the app
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      try {
+        const currentEmployee = localStorage.getItem('currentEmployee');
+        if (currentEmployee) {
+          const employeeData = JSON.parse(currentEmployee);
+          if (employeeData.id) {
+            // Use the global logout function if available, otherwise call directly
+            if (window.handleEmployeeLogout) {
+              await window.handleEmployeeLogout(employeeData.id);
+            } else {
+              await window.myAPI?.updateEmployeeLogout(employeeData.id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error handling beforeunload logout:', error);
+      }
+    };
 
-  if (location.pathname === '/dashboard' && userRole !== 'admin' && !hasCheckedIn) {
-    setShowCheckIn(true);
-    sessionStorage.setItem('hasCheckedIn', 'true');
-  }
-}, [location, userRole]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // Check if we should show check-in popup
+  useEffect(() => {
+    const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
+    const currentEmployee = localStorage.getItem('currentEmployee');
+
+    // Show check-in popup if:
+    // 1. We're on dashboard page
+    // 2. User is not admin
+    // 3. Hasn't checked in this session
+    // 4. Has valid employee data
+    if (location.pathname === '/dashboard' && 
+        userRole !== 'admin' && 
+        !hasCheckedIn && 
+        currentEmployee) {
+      setShowCheckIn(true);
+      sessionStorage.setItem('hasCheckedIn', 'true');
+    }
+  }, [location, userRole]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -95,6 +134,12 @@ useEffect(() => {
         allowedRoles: ["admin", "cashier"]
       },
       {
+        name: "Coupons",
+        icon: <Tag size={18} />,
+        path: "/dashboard/coupons",
+        allowedRoles: ["admin", "manager", "cashier"]
+      },
+      {
         name: "sales",
         icon: <Users2 size={18} />,
         path: "/dashboard/sales",
@@ -123,6 +168,96 @@ useEffect(() => {
 
   return (
     <SidebarContext.Provider value={contextValue}>
+      {/* Dashboard Slider Overlay */}
+      {showDashboardSlider && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Dashboard Slider */}
+          <div 
+            className="w-64 h-full shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-xl"
+            style={{ backgroundColor: themeColors.primaryLight }}
+          >
+            {/* Header */}
+            <div 
+              className="p-4 border-b flex justify-between items-center"
+              style={{ borderColor: 'rgba(255, 255, 255, 0.23)' }}
+            >
+              <div className="cursor-pointer">
+                <h1 className="font-bold text-white text-xl">
+                  G
+                  <span className="text-secondary">POS</span>
+                  System
+                </h1>
+              </div>
+              <button 
+                onClick={() => setShowDashboardSlider(false)}
+                className="p-2 rounded-full text-white transition-colors"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.23)',
+                  ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.39)' }
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Menu Items - Using the same navigationItems as main sidebar */}
+            <nav className="mt-3 flex flex-col h-full">
+              <div className="flex-1">
+                {navigationItems.map((item) => (
+                  <div key={item.name}>
+                                         <button
+                       onClick={() => {
+                         setShowDashboardSlider(false);
+                         // Navigate to the item's path using React Router
+                         navigate(item.path);
+                       }}
+                      className="w-full flex items-center px-4 py-3 text-sm text-gray-100 transition-colors"
+                      style={{ 
+                        ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.055)' }
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.055)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <span className="text-gray-100">{item.icon}</span>
+                      <span className="ml-2 font-medium whitespace-nowrap">
+                        {item.name}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Logout Button */}
+              <div className="px-4 mb-6 cursor-pointer">
+                <button
+                  onClick={() => {
+                    setShowDashboardSlider(false);
+                    // Handle logout logic here
+                    console.log("Logout clicked");
+                  }}
+                  className="w-full flex items-center cursor-pointer gap-2 py-3 text-gray-100"
+                >
+                  <LogOut size={20} />
+                  <span className="font-medium">
+                    Logout
+                  </span>
+                </button>
+              </div>
+            </nav>
+          </div>
+          
+          {/* Backdrop - click to close */}
+          <div 
+            className="flex-1 cursor-pointer"
+            onClick={() => setShowDashboardSlider(false)}
+          ></div>
+        </div>
+      )}
+
       <div className={`min-h-screen ${shouldHideSidebar ? 'bg-[#d3d3d3] p-0' : 'bg-bgColor p-2'} p-2 md:p-2`}>
         {/* Check-In Popup */}
         {showCheckIn && (
@@ -137,7 +272,10 @@ useEffect(() => {
             {/* Conditional Header Rendering */}
             {isOrdersRoute ? (
               // Show OrdersHeader for sales route
-              <OrdersHeader isOrdersRoute={isOrdersRoute} />
+              <OrdersHeader 
+                isOrdersRoute={isOrdersRoute} 
+                onMenuClick={() => setShowDashboardSlider(true)}
+              />
             ) : isKDSRoute ? (
               // Show KDS-specific Header for KDS route
               <div className={shouldHideSidebar ? "" : "md:pl-5"}>

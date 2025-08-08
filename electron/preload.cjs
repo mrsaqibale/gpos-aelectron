@@ -61,19 +61,27 @@ contextBridge.exposeInMainWorld('myAPI', {
   tableGetById: (id) => ipcRenderer.invoke('table:getById', id),
   tableGetAll: () => ipcRenderer.invoke('table:getAll'),
   tableGetByFloor: (floorId) => ipcRenderer.invoke('table:getByFloor', floorId),
+  tableGetByFloorWithStatus: (floorId, status) => ipcRenderer.invoke('table:getByFloorWithStatus', floorId, status),
 
   // Floor
   floorCreate: (data) => ipcRenderer.invoke('floor:create', data),
   floorUpdate: (id, updates) => ipcRenderer.invoke('floor:update', id, updates),
   floorGetById: (id) => ipcRenderer.invoke('floor:getById', id),
   floorGetAll: () => ipcRenderer.invoke('floor:getAll'),
+  floorAddSampleData: () => ipcRenderer.invoke('floor:addSampleData'),
 
   // Employee
   createEmployee: (data) => ipcRenderer.invoke('employee:create', data),
-  updateEmployee: (id, updates) => ipcRenderer.invoke('employee:update', id, updates),
+  updateEmployee: (id, updates, originalFilename) => ipcRenderer.invoke('employee:update', id, updates, originalFilename),
   getEmployeeById: (id) => ipcRenderer.invoke('employee:getById', id),
   getAllEmployees: () => ipcRenderer.invoke('employee:getAll'),
   loginEmployee: (code, roll) => ipcRenderer.invoke('employee:login', code, roll),
+  deleteEmployeeImage: (employeeId) => ipcRenderer.invoke('employee:deleteImage', employeeId),
+  getEmployeeImage: (imagePath) => ipcRenderer.invoke('employee:getImage', imagePath),
+  checkEmailUnique: (email, excludeId) => ipcRenderer.invoke('employee:checkEmailUnique', email, excludeId),
+  checkPhoneUnique: (phone, excludeId) => ipcRenderer.invoke('employee:checkPhoneUnique', phone, excludeId),
+  checkPinUnique: (pin, excludeId) => ipcRenderer.invoke('employee:checkPinUnique', pin, excludeId),
+  validateEmployeeData: (data, excludeId) => ipcRenderer.invoke('employee:validateData', data, excludeId),
 
   // Register
   createRegister: (data) => ipcRenderer.invoke('register:create', data),
@@ -85,6 +93,13 @@ contextBridge.exposeInMainWorld('myAPI', {
   updateRegister: (id, updates) => ipcRenderer.invoke('register:update', id, updates),
   deleteRegister: (id) => ipcRenderer.invoke('register:delete', id),
   getRegisterStatistics: (employeeId, startDate, endDate) => ipcRenderer.invoke('register:getStatistics', employeeId, startDate, endDate),
+
+  // Employee Login
+  createEmployeeLogin: (employeeId) => ipcRenderer.invoke('employeeLogin:create', employeeId),
+  updateEmployeeLogout: (employeeId) => ipcRenderer.invoke('employeeLogin:logout', employeeId),
+  getEmployeeLoginSessions: (employeeId, limit, offset) => ipcRenderer.invoke('employeeLogin:getSessions', employeeId, limit, offset),
+  getCurrentEmployeeSession: (employeeId) => ipcRenderer.invoke('employeeLogin:getCurrentSession', employeeId),
+  getAllLoginSessions: (limit, offset) => ipcRenderer.invoke('employeeLogin:getAllSessions', limit, offset),
 
                 // Customer
               createCustomer: (data) => ipcRenderer.invoke('customer:create', data),
@@ -117,6 +132,15 @@ contextBridge.exposeInMainWorld('myAPI', {
   processRefund: (id, processedBy) => ipcRenderer.invoke('order:processRefund', id, processedBy),
   getOrderStatistics: (restaurantId, startDate, endDate) => ipcRenderer.invoke('order:getStatistics', restaurantId, startDate, endDate),
   deleteOrder: (id) => ipcRenderer.invoke('order:delete', id),
+
+  // Coupon
+  createCoupon: (data) => ipcRenderer.invoke('coupon:create', data),
+  updateCoupon: (id, updates) => ipcRenderer.invoke('coupon:update', id, updates),
+  getAllCoupons: () => ipcRenderer.invoke('coupon:getAll'),
+  getCouponById: (id) => ipcRenderer.invoke('coupon:getById', id),
+  getCouponsByCustomerId: (customerId) => ipcRenderer.invoke('coupon:getByCustomerId', customerId),
+  deleteCoupon: (id) => ipcRenderer.invoke('coupon:delete', id),
+  searchCouponByCode: (code) => ipcRenderer.invoke('coupon:searchByCode', code),
 
 });
 
