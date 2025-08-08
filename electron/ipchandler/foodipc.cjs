@@ -47,7 +47,8 @@ const {
   getAllFoods,
   deleteFood,
   updateFoodPosition,
-  searchFoodsByName
+  searchFoodsByName,
+  deleteFoodImage
 } = getModelPath('foods/food.js');
 
 // Category IPC
@@ -91,6 +92,52 @@ ipcMain.handle('food:getAll', (event) => getAllFoods());
 ipcMain.handle('food:delete', (event, id) => deleteFood(id));
 ipcMain.handle('food:updatePosition', (event, id, position) => updateFoodPosition(id, position));
 ipcMain.handle('food:searchByName', (event, name, restaurantId) => searchFoodsByName(name, restaurantId));
+ipcMain.handle('food:deleteImage', (event, foodId) => deleteFoodImage(foodId));
+
+// Get food image data
+ipcMain.handle('food:getImage', async (event, imagePath) => {
+  try {
+    if (!imagePath || !imagePath.startsWith('uploads/')) {
+      return { success: false, message: 'Invalid image path' };
+    }
+    
+    const fullPath = path.resolve(__dirname, '../../src/database', imagePath);
+    
+    // Security check
+    const uploadsDir = path.resolve(__dirname, '../../src/database/uploads');
+    if (!fullPath.startsWith(uploadsDir)) {
+      return { success: false, message: 'Access denied' };
+    }
+    
+    if (fs.existsSync(fullPath)) {
+      const imageBuffer = fs.readFileSync(fullPath);
+      const base64Data = imageBuffer.toString('base64');
+      const mimeType = getMimeType(fullPath);
+      return { 
+        success: true, 
+        data: `data:${mimeType};base64,${base64Data}` 
+      };
+    } else {
+      return { success: false, message: 'Image not found' };
+    }
+  } catch (error) {
+    console.error('Error getting food image:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Helper function to get MIME type
+function getMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp'
+  };
+  return mimeTypes[ext] || 'image/jpeg';
+}
 
 // Export registration function for consistency
 function registerFoodIpcHandlers() {

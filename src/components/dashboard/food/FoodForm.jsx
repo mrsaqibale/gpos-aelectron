@@ -166,7 +166,30 @@ const FoodForm = ({ food, onSubmit }) => {
         status: food.status !== undefined ? food.status : true
       });
 
-      if (food.image) setImagePreview(food.image);
+      // Load image preview
+      if (food.image) {
+        if (food.image.startsWith('uploads/')) {
+          // Load image from uploads folder
+          window.myAPI.getFoodImage(food.image).then(result => {
+            if (result.success) {
+              setImagePreview(result.data);
+            } else {
+              console.error('Failed to load food image:', result.message);
+              setImagePreview(null);
+            }
+          }).catch(() => {
+            setImagePreview(null);
+          });
+        } else if (food.image.startsWith('data:image')) {
+          // Already a base64 data URL
+          setImagePreview(food.image);
+        } else {
+          // Assume it's base64 without data URL prefix
+          setImagePreview(`data:image/png;base64,${food.image}`);
+        }
+      } else {
+        setImagePreview(null);
+      }
     }
   }, [food]);
 
@@ -341,24 +364,33 @@ const FoodForm = ({ food, onSubmit }) => {
     
     setSubmitting(true);
     try {
-      // Convert image to base64 if it's a file
-      let imageBase64 = null;
+      // Handle image data
+      let imageData = null;
+      let originalFilename = null;
+      
       if (formData.image && formData.image instanceof File) {
-        imageBase64 = await new Promise((resolve, reject) => {
+        // Convert file to base64
+        imageData = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
           reader.readAsDataURL(formData.image);
         });
-      } else if (typeof formData.image === 'string') {
-        imageBase64 = formData.image;
+        originalFilename = formData.image.name;
+      } else if (typeof formData.image === 'string' && formData.image.startsWith('data:image')) {
+        // Already a base64 data URL
+        imageData = formData.image;
+      } else if (typeof formData.image === 'string' && formData.image.startsWith('uploads/')) {
+        // Already a file path, keep as is
+        imageData = formData.image;
       }
 
       // Transform form data to match database schema
       const foodData = {
         name: formData.name,
         description: formData.description,
-        image: imageBase64,
+        image: imageData,
+        originalFilename: originalFilename,
         category_id: parseInt(formData.category_id),
         subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : null,
         price: parseFloat(formData.price),

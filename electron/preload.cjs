@@ -54,6 +54,8 @@ contextBridge.exposeInMainWorld('myAPI', {
   deleteFood: (id) => ipcRenderer.invoke('food:delete', id),
   updateFoodPosition: (id, position) => ipcRenderer.invoke('food:updatePosition', id, position),
   searchFoodsByName: (name, restaurantId) => ipcRenderer.invoke('food:searchByName', name, restaurantId),
+  deleteFoodImage: (foodId) => ipcRenderer.invoke('food:deleteImage', foodId),
+  getFoodImage: (imagePath) => ipcRenderer.invoke('food:getImage', imagePath),
 
   // Tables
   tableCreate: (data) => ipcRenderer.invoke('table:create', data),

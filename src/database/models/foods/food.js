@@ -1,10 +1,45 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../pos.db');
+
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in development by looking for src/database
+    const devPath = path.join(__dirname, '../../', relativePath);
+    const prodPath = path.join(__dirname, '../../../', relativePath);
+    
+    if (fs.existsSync(devPath)) {
+      return devPath;
+    } else if (fs.existsSync(prodPath)) {
+      return prodPath;
+    } else {
+      // Fallback to development path
+      return devPath;
+    }
+  } catch (error) {
+    console.error(`Failed to resolve path: ${relativePath}`, error);
+    // Fallback to development path
+    return path.join(__dirname, '../../', relativePath);
+  }
+};
+
+const dbPath = getDynamicPath('pos.db');
+const uploadsDir = getDynamicPath('uploads');
+const foodImagesDir = path.join(uploadsDir, 'food');
+
+// Create uploads directories if they don't exist
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(foodImagesDir)) {
+  fs.mkdirSync(foodImagesDir, { recursive: true });
+}
+
 const db = new Database(dbPath);
 
 // Universal error response
@@ -12,27 +47,63 @@ export function errorResponse(message) {
   return { success: false, message };
 }
 
+// Helper function to save image file
+function saveImageFile(imageData, foodId, originalFilename) {
+  try {
+    // Generate unique filename
+    const timestamp = Date.now();
+    const fileExtension = path.extname(originalFilename || 'image.jpg');
+    const filename = `food_${foodId}_${timestamp}${fileExtension}`;
+    const filePath = path.join(foodImagesDir, filename);
+    
+    // If imageData is base64, decode and save
+    if (imageData && imageData.startsWith('data:image')) {
+      const base64Data = imageData.split(',')[1];
+      const buffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(filePath, buffer);
+    } else if (imageData && typeof imageData === 'string') {
+      // If it's already a file path, copy to our directory
+      if (fs.existsSync(imageData)) {
+        fs.copyFileSync(imageData, filePath);
+      } else {
+        // Assume it's base64 without data URL prefix
+        const buffer = Buffer.from(imageData, 'base64');
+        fs.writeFileSync(filePath, buffer);
+      }
+    }
+    
+    // Return relative path for database storage
+    return `uploads/food/${filename}`;
+  } catch (error) {
+    console.error('Error saving image file:', error);
+    throw new Error('Failed to save image file');
+  }
+}
+
 // Create food with basic data only (no variations)
 export function createFood(foodData) {
   try {
     console.log('Creating food with basic data:', foodData.name);
     
+    // First insert food to get the ID
     const now = new Date().toISOString();
     const foodStmt = db.prepare(`
       INSERT INTO food (
         name, description, image, category_id, subcategory_id, price, 
         tax, tax_type, discount, discount_type, available_time_starts, 
         available_time_ends, veg, status, restaurant_id, position, created_at, 
-        updated_at, sku, barcode, stock_type, item_stock, sell_count, 
-        maximum_cart_quantity, track_inventory, low_inventory_threshold, 
-        product_note_enabled, product_note, isdeleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+        updated_at, order_count, avg_rating, rating_count, rating, recommended, 
+        slug, maximum_cart_quantity, is_halal, item_stock, sell_count, stock_type, 
+        issynctonized, isdeleted, sku, barcode, track_inventory, inventory_enable, 
+        quantity, low_inventory_threshold, product_note_enabled, product_note
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
+    // Initially save without image path
     const foodInfo = foodStmt.run(
       foodData.name,
       foodData.description || null,
-      foodData.image || null,
+      null, // Initially null, will update after saving image
       foodData.category_id,
       foodData.subcategory_id || null,
       foodData.price,
@@ -48,13 +119,24 @@ export function createFood(foodData) {
       foodData.position || 0,
       now,
       now,
-      foodData.sku || null,
-      foodData.barcode || null,
-      foodData.stock_type || 'unlimited',
+      0, // order_count
+      0.0, // avg_rating
+      0, // rating_count
+      0.0, // rating
+      0, // recommended
+      null, // slug
+      foodData.maximum_cart_quantity || null,
+      0, // is_halal
       foodData.item_stock || 0,
       foodData.sell_count || 0,
-      foodData.maximum_cart_quantity || null,
+      foodData.stock_type || 'unlimited',
+      0, // issynctonized
+      0, // isdeleted
+      foodData.sku || null,
+      foodData.barcode || null,
       foodData.track_inventory || 0,
+      0, // inventory_enable
+      0, // quantity
       foodData.low_inventory_threshold || null,
       foodData.product_note_enabled || 0,
       foodData.product_note || null
@@ -63,9 +145,29 @@ export function createFood(foodData) {
     const food_id = foodInfo.lastInsertRowid;
     console.log('Food created with ID:', food_id);
     
+    // If image is provided, save it and update the record
+    let imagePath = null;
+    if (foodData.image) {
+      try {
+        imagePath = saveImageFile(foodData.image, food_id, foodData.originalFilename);
+        
+        // Update the food record with the image path
+        const updateStmt = db.prepare(`
+          UPDATE food SET image = ? WHERE id = ?
+        `);
+        updateStmt.run(imagePath, food_id);
+        
+        console.log('Food image saved to:', imagePath);
+      } catch (imageError) {
+        console.error('Error saving food image:', imageError);
+        // Continue without image if saving fails
+      }
+    }
+    
     return { 
       success: true, 
-      food_id: food_id
+      food_id: food_id,
+      imagePath: imagePath
     };
   } catch (err) {
     console.error('Error in createFood:', err.message);
@@ -149,6 +251,41 @@ export function getAllAllergins() {
 export function updateFood(id, { foodData, variations = [] }) {
   try {
     const transaction = db.transaction(() => {
+      // Handle image update separately
+      let imagePath = null;
+      if (foodData.image) {
+        try {
+          // Delete old image if exists
+          const oldFood = getFoodById(id);
+          if (oldFood.success && oldFood.data.image) {
+            const oldImagePath = getDynamicPath(oldFood.data.image);
+            if (fs.existsSync(oldImagePath)) {
+              fs.unlinkSync(oldImagePath);
+              console.log('Deleted old image:', oldImagePath);
+            }
+          }
+          
+          // Save new image
+          imagePath = saveImageFile(foodData.image, id, foodData.originalFilename);
+          foodData.image = imagePath; // Replace with file path
+          console.log('New image saved to:', imagePath);
+        } catch (imageError) {
+          console.error('Error updating food image:', imageError);
+          // Continue without image if saving fails
+          delete foodData.image;
+        }
+      } else {
+        // If no new image is provided, preserve the existing image path
+        const oldFood = getFoodById(id);
+        if (oldFood.success && oldFood.data.image) {
+          imagePath = oldFood.data.image;
+          console.log('Preserving existing image path:', imagePath);
+        }
+      }
+      
+      // Remove originalFilename from foodData as it's not a database column
+      delete foodData.originalFilename;
+      
       // 1. Update the food
       const fields = [];
       const values = [];
@@ -257,12 +394,34 @@ export function updateFood(id, { foodData, variations = [] }) {
         }
       }
       
-      return { success: true };
+      return { 
+        success: true,
+        imagePath: imagePath 
+      };
     });
     
     return transaction();
   } catch (err) {
     return errorResponse(err.message);
+  }
+}
+
+// Delete food image file
+export function deleteFoodImage(foodId) {
+  try {
+    const food = getFoodById(foodId);
+    if (food.success && food.data.image) {
+      const imagePath = getDynamicPath(food.data.image);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log('Deleted food image:', imagePath);
+        return { success: true, message: 'Image deleted successfully' };
+      }
+    }
+    return { success: true, message: 'No image to delete' };
+  } catch (err) {
+    console.error('Error deleting food image:', err);
+    return errorResponse('Failed to delete image');
   }
 }
 
