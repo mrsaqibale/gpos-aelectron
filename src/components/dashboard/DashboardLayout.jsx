@@ -2,7 +2,7 @@ import React, { useState, createContext, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import OrdersHeader from './OrdersHeader'; // Import the new OrdersHeader component
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import CheckInFlow from '../../pages/loginPage/CheckInPopup';
 import {
   LayoutDashboard,
@@ -22,6 +22,7 @@ const DashboardLayout = () => {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showDashboardSlider, setShowDashboardSlider] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { themeColors } = useTheme();
   
   // Mock user data for frontend demo
@@ -171,9 +172,15 @@ const DashboardLayout = () => {
       {showDashboardSlider && (
         <div className="fixed inset-0 z-50 flex">
           {/* Dashboard Slider */}
-          <div className="bg-primaryLight w-64 h-full shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-xl">
+          <div 
+            className="w-64 h-full shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-xl"
+            style={{ backgroundColor: themeColors.primaryLight }}
+          >
             {/* Header */}
-            <div className="p-4 border-b border-[#ffffff3b] flex justify-between items-center">
+            <div 
+              className="p-4 border-b flex justify-between items-center"
+              style={{ borderColor: 'rgba(255, 255, 255, 0.23)' }}
+            >
               <div className="cursor-pointer">
                 <h1 className="font-bold text-white text-xl">
                   G
@@ -183,7 +190,11 @@ const DashboardLayout = () => {
               </div>
               <button 
                 onClick={() => setShowDashboardSlider(false)}
-                className="p-2 bg-[#ffffff3b] rounded-full text-white hover:bg-[#ffffff63] transition-colors"
+                className="p-2 rounded-full text-white transition-colors"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.23)',
+                  ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.39)' }
+                }}
               >
                 <X size={20} />
               </button>
@@ -194,13 +205,22 @@ const DashboardLayout = () => {
               <div className="flex-1">
                 {navigationItems.map((item) => (
                   <div key={item.name}>
-                    <button
-                      onClick={() => {
-                        setShowDashboardSlider(false);
-                        // Navigate to the item's path
-                        window.location.href = item.path;
+                                         <button
+                       onClick={() => {
+                         setShowDashboardSlider(false);
+                         // Navigate to the item's path using React Router
+                         navigate(item.path);
+                       }}
+                      className="w-full flex items-center px-4 py-3 text-sm text-gray-100 transition-colors"
+                      style={{ 
+                        ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.055)' }
                       }}
-                      className="w-full flex items-center px-4 py-3 text-sm text-gray-100 hover:bg-[#ffffff0e] transition-colors"
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.055)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = 'transparent';
+                      }}
                     >
                       <span className="text-gray-100">{item.icon}</span>
                       <span className="ml-2 font-medium whitespace-nowrap">

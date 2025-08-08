@@ -6,11 +6,13 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { SidebarContext } from './DashboardLayout';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Sidebar = ({ navigationItems }) => {
   const [logoutLoading, setLogoutLoading] = useState(false);
   const { isOpen, toggleSidebar, isMobileMenuOpen, toggleMobileMenu, windowWidth } =
     useContext(SidebarContext);
+  const { themeColors } = useTheme();
 
   // Handle logout (frontend only)
   const handleLogout = async () => {
@@ -43,10 +45,21 @@ const Sidebar = ({ navigationItems }) => {
             <NavLink
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center px-4 py-3 text-sm  text-gray-100 hover:bg-[#ffffff0e] ${
-                  isActive ? "bg-[#ffffff0e] border-l-2 border-white" : ""
+                `flex items-center px-4 py-3 text-sm text-gray-100 ${
+                  isActive ? "border-l-2 border-white" : ""
                 }`
               }
+              style={({ isActive }) => ({
+                backgroundColor: isActive ? 'rgba(255, 255, 255, 0.055)' : 'transparent',
+                ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.055)' }
+              })}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.055)';
+              }}
+              onMouseLeave={(e) => {
+                const isActive = e.target.classList.contains('bg-[#ffffff0e]') || e.target.closest('a').classList.contains('bg-[#ffffff0e]');
+                e.target.style.backgroundColor = isActive ? 'rgba(255, 255, 255, 0.055)' : 'transparent';
+              }}
               onClick={() => {
                 if (windowWidth < 1024) {
                   toggleMobileMenu();
@@ -101,11 +114,15 @@ const Sidebar = ({ navigationItems }) => {
 
       {/* Mobile Menu Drawer */}
       <div
-        className={`lg:hidden fixed inset-y-0 left-0 z-40 w-64 bg-primaryLight transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-300 ease-in-out ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } shadow-xl rounded-r-xl`}
+        style={{ backgroundColor: themeColors.primaryLight }}
       >
-        <div className="p-4 border-b border-primary flex justify-between items-center">
+        <div 
+          className="p-4 border-b flex justify-between items-center"
+          style={{ borderColor: themeColors.primary }}
+        >
           <div className="cursor-pointer">
             <h1 className="font-bold text-white text-xl">
              G
@@ -115,7 +132,8 @@ const Sidebar = ({ navigationItems }) => {
           </div>
           <button
             onClick={toggleMobileMenu}
-            className="p-2 bg-[#ffffff3b] rounded-full text-white"
+            className="p-2 rounded-full text-white"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.23)' }}
           >
             <X size={24} />
           </button>
@@ -125,14 +143,18 @@ const Sidebar = ({ navigationItems }) => {
 
       {/* Desktop Sidebar */}
       <div 
-        className={`hidden lg:block h-full bg-primaryLight rounded-l-xl rounded-r-xl overflow-hidden flex-shrink-0`}
+        className={`hidden lg:block h-full rounded-l-xl rounded-r-xl overflow-hidden flex-shrink-0`}
         style={{
           width: isOpen ? "200px" : "60px",
           transition: "width 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+          backgroundColor: themeColors.primaryLight,
         }}
       >
         <div className="h-full flex flex-col">
-          <div className="p-3 flex items-center justify-between border-b border-[#ffffff3b] cursor-pointer">
+          <div 
+            className="p-3 flex items-center justify-between border-b cursor-pointer"
+            style={{ borderColor: 'rgba(255, 255, 255, 0.23)' }}
+          >
             <h1
               className="font-bold text-white text-xl transition-opacity duration-300"
               style={{
@@ -149,7 +171,8 @@ const Sidebar = ({ navigationItems }) => {
                 e.stopPropagation();
                 toggleSidebar();
               }}
-              className="p-1 bg-[#ffffff63] cursor-pointer rounded-full text-white"
+              className="p-1 cursor-pointer rounded-full text-white"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.39)' }}
             >
               <ChevronLeft
                 size={20}
