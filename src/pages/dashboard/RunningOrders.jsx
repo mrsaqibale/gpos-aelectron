@@ -101,6 +101,24 @@ const RunningOrders = () => {
       customer: 'Sunstru Martin',
       type: 'Collection',
       status: 'active'
+    },
+    {
+      id: 1001,
+      customer: 'James Smith',
+      type: 'In Store',
+      status: 'active'
+    },
+    {
+      id: 1002,
+      customer: 'Peter Wright',
+      type: 'Dine-in',
+      status: 'active'
+    },
+    {
+      id: 1004,
+      customer: 'Sunstru Martin',
+      type: 'Collection',
+      status: 'active'
     }
   ];
 
@@ -770,11 +788,10 @@ const RunningOrders = () => {
   return (
     <>
       <div className="flex gap-2.5 overflow-hidden px-1.5 py-2 bg-[#d3D3D3]">
-        <div className='flex flex-col gap-2.5'>
+        <div className='flex flex-col gap-2.5 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
-          <div className="flex justify-center gap-2.5">
             {/* Running Orders */}
-            <div className="w-68 bg-[#ffffff] border-r border-gray-200 flex flex-col shadow-lg rounded-xl h-[500px]">
+            <div className="w-68 flex flex-col h-[500px] overflow-y-auto">
               <div className="p-3 flex items-center justify-between">
                 <h2 className="font-bold text-gray-800">Running Orders</h2>
                 <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
@@ -809,11 +826,9 @@ const RunningOrders = () => {
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* Order Action Buttons - Below Running Orders Box */}
-          <div className="flex justify-center">
-            <div className="w-68 flex gap-2 text-[10px]">
+            {/* Order Action Buttons - Below Running Orders Box */}
+            <div className="flex justify-center">
+            <div className="flex gap-2 p-2 text-[10px]">
               <button className="flex-1 bg-[#010101] text-white font-medium rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                 BILL
               </button>
@@ -827,7 +842,7 @@ const RunningOrders = () => {
                 CANCEL
               </button>
             </div>
-          </div>
+          </div>  
         </div>
 
         {/* Menu Items */}
@@ -988,7 +1003,7 @@ const RunningOrders = () => {
           {/* Items table */}
           {/* Items table header */}
           <div className='bg-white mb-2 rounded-lg p-2 '>
-            <div className="mt-3 border border-primary">
+            <div className="mt-3 border border-primary overflow-y-auto h-[200px]">
               <table className="w-full">
                 <thead>
                   <tr className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700 p-3">
@@ -1070,12 +1085,38 @@ const RunningOrders = () => {
                       <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
                     </td>
                   </tr>
+                  
                 </tbody>
               </table>
             </div>
             
-            {/* Total Payable */}
-            <div className='flex justify-center items-center'>
+          </div>
+          {/* Summary section */}
+          <div className='bg-white p-4  rounded-lg'>
+          <div className=" max-w-md mx-auto">
+              <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
+                <span className="font-medium">Subtotal</span>
+                <span className="font-medium">Tax</span>
+                <span className="font-medium">Discount</span>
+                <span className="font-medium">DIY.CHARGE</span>
+              </div>
+              <div className="grid grid-cols-4 gap-2 place-content-center text-sm mb-4 text-center font-medium">
+                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto ">
+                  €130
+                </div>
+                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
+                  €130
+                </div>
+                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto text-red-500">
+                  €130
+                </div>
+                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
+                  €130
+                </div>
+              </div>
+            </div>
+             {/* Total Payable */}
+             <div className='flex justify-center items-center'>
               <div className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer   w-[70%] rounded flex items-center justify-center mb-4">
                 <div className="flex items-center  gap-2">
                   <Eye size={14} />
@@ -1105,31 +1146,7 @@ const RunningOrders = () => {
                 PAY
               </button>
             </div>
-
-            {/* Items */}
-          </div>
-          {/* Summary section */}
-          <div className="bg-white  rounded-lg p-4 max-w-md mx-auto">
-              <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
-                <span className="font-medium">Subtotal</span>
-                <span className="font-medium">Tax</span>
-                <span className="font-medium">Discount</span>
-                <span className="font-medium">DIY.CHARGE</span>
-              </div>
-              <div className="grid grid-cols-4 gap-2 place-content-center text-sm mb-4 text-center font-medium">
-                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto ">
-                  €130
-                </div>
-                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                  €130
-                </div>
-                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto text-red-500">
-                  €130
-                </div>
-                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                  €130
-                </div>
-              </div>
+          
             </div>
         </div>
 
