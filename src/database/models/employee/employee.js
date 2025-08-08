@@ -174,6 +174,13 @@ export function updateEmployee(id, updates, originalFilename) {
         // Continue without image if saving fails
         delete updates.imgurl;
       }
+    } else {
+      // If no new image is provided, preserve the existing image path
+      const oldEmployee = getEmployeeById(id);
+      if (oldEmployee.success && oldEmployee.data.imgurl) {
+        imagePath = oldEmployee.data.imgurl;
+        console.log('Preserving existing image path:', imagePath);
+      }
     }
     
     // Remove originalFilename from updates as it's not a database column
