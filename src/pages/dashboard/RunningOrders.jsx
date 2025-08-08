@@ -1038,8 +1038,8 @@ const RunningOrders = () => {
 
           {/* Items table */}
           {/* Items table header */}
-          <div className='bg-white flex flex-col h-[79%] mb-2 rounded-lg p-2 '>
-            <div className="mt-3 border border-primary overflow-y-auto h-[200px]">
+          <div className='bg-white flex flex-col h-[79%] mb-2 rounded-lg p-2 relative'>
+            <div className="mt-3 border border-primary overflow-y-auto h-[60%]">
               <table className="w-full">
                 <thead>
                   <tr className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700 p-3">
@@ -1122,11 +1122,83 @@ const RunningOrders = () => {
                     </td>
                   </tr>
 
+                  {/* Red Velvet Delight Slice */}
+                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-2 border-b border-gray-200">
+                    <td className="flex items-center gap-2">
+                      <Edit2 size={22} className="text-primary" />
+                      <span className="text-gray-800">Red Velvet Delight Slice</span>
+                    </td>
+                    <td className="text-gray-800 text-center">89.00</td>
+                    <td className="flex items-center justify-center">
+                      <div className="flex items-center rounded">
+                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
+                          <Minus size={11} />
+                        </button>
+                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
+                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
+                          <Plus size={11} />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="flex items-center justify-center gap-2">
+                      <span className="text-gray-800">89.00</span>
+                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
+                    </td>
+                  </tr>
+
+                  {/* Chicken */}
+                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-3 border-b border-gray-200">
+                    <td className="flex items-center gap-2">
+                      <Edit2 size={13} className="text-primary" />
+                      <span className="text-gray-800 text-center">chicken</span>
+                    </td>
+                    <td className="text-gray-800 text-center">49.00</td>
+                    <td className="flex items-center justify-center">
+                      <div className="flex items-center rounded">
+                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
+                          <Minus size={11} />
+                        </button>
+                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
+                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
+                          <Plus size={11} />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="flex items-center justify-center gap-2">
+                      <span className="text-gray-800">49.00</span>
+                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
+                    </td>
+                  </tr>
+
+                  {/* Burger */}
+                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-3 border-b border-gray-200">
+                    <td className="flex items-center gap-2">
+                      <Edit2 size={13} className="text-primary" />
+                      <span className="text-gray-800">burger</span>
+                    </td>
+                    <td className="text-gray-800 text-center">180.00</td>
+                    <td className="flex items-center justify-center">
+                      <div className="flex items-center rounded">
+                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
+                          <Minus size={11} />
+                        </button>
+                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
+                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
+                          <Plus size={11} />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="flex items-center justify-center gap-2">
+                      <span className="text-gray-800">180.00</span>
+                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
+                    </td>
+                  </tr>
+
                 </tbody>
               </table>
             </div>
             {/* Summary section */}
-            <div className='bg-white p-4  rounded-lg'>
+            <div className='bg-white p-2 absolute bottom-0 right-0 w-[100%] rounded-lg'>
               <div className=" max-w-md mx-auto">
                 <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
                   <span className="font-medium">Subtotal</span>
@@ -1159,7 +1231,7 @@ const RunningOrders = () => {
                 </div>
               </div>
               {/* Action buttons */}
-              <div className="flex gap-2 flex-wrap justify-center my-4 pb-5">
+              <div className="flex gap-2 flex-wrap justify-center pb-2">
                 <button
                   onClick={handleOpenCouponModal}
                   className="bg-[#43a148] text-white px-2.5 btn-lifted  py-1.5  text-[11px] rounded  hover:bg-green-600"
