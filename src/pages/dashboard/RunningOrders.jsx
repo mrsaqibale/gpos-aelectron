@@ -716,6 +716,38 @@ const RunningOrders = () => {
     }
   };
 
+  // Function to apply coupon directly when clicked from the list
+  const applyCouponDirectly = (coupon) => {
+    try {
+      console.log('Applying coupon directly:', coupon);
+
+      // Check if coupon is valid
+      if (coupon.status !== 'active') {
+        alert('This coupon is not active');
+        return;
+      }
+
+      if (coupon.expireDate && new Date(coupon.expireDate) < new Date()) {
+        alert('This coupon has expired');
+        return;
+      }
+
+      // Apply the coupon
+      setAppliedCoupon(coupon);
+      setCouponCode('');
+      alert(`Coupon "${coupon.code}" applied successfully!`);
+
+      // Close modal after successful application
+      setTimeout(() => {
+        setShowCouponModal(false);
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error applying coupon directly:', error);
+      alert('Error applying coupon. Please try again.');
+    }
+  };
+
   const handleOpenCouponModal = () => {
     setShowCouponModal(true);
     setCouponCode('');
@@ -787,47 +819,47 @@ const RunningOrders = () => {
   };
   return (
     <>
-      <div className="flex gap-2.5 overflow-hidden px-1.5 py-2 bg-[#d3D3D3]">
-        <div className='flex flex-col gap-2.5 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
+      <div className="flex gap-2.5 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
+        <div className='flex flex-col  gap-2.5 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
-            {/* Running Orders */}
-            <div className="w-68 flex flex-col h-[500px] overflow-y-auto">
-              <div className="p-3 flex items-center justify-between">
-                <h2 className="font-bold text-gray-800">Running Orders</h2>
-                <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                  <RefreshCw size={12} />
-                  Refresh
-                </button>
-              </div>
+          {/* Running Orders */}
+          <div className="w-68 flex flex-col overflow-y-auto">
+            <div className="p-3 flex items-center justify-between">
+              <h2 className="font-bold text-gray-800">Running Orders</h2>
+              <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <RefreshCw size={12} />
+                Refresh
+              </button>
+            </div>
 
-              <div className="px-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="py-4 mt-2 px-2 space-y-2 h-auto overflow-y-auto">
-                {orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className={`p-4 border-b  cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${selectedOrder?.id === order.id ? 'bg-blue-50' : ''
-                      }`}
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    <div className="font-semibold text-sm text-gray-800">{order.customer}</div>
-                    <div className="text-xs mt-1  text-gray-700">Order ID: {order.id}</div>
-                    <div className="text-xs  text-gray-700">Order Type: {order.type}</div>
-                  </div>
-                ))}
+            <div className="px-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             </div>
-            {/* Order Action Buttons - Below Running Orders Box */}
-            <div className="flex justify-center">
+
+            <div className="py-4 mt-2 my-auto px-2 space-y-2 h-auto overflow-y-auto">
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  className={`p-4 border-b  cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${selectedOrder?.id === order.id ? 'bg-blue-50' : ''
+                    }`}
+                  onClick={() => setSelectedOrder(order)}
+                >
+                  <div className="font-semibold text-sm text-gray-800">{order.customer}</div>
+                  <div className="text-xs mt-1  text-gray-700">Order ID: {order.id}</div>
+                  <div className="text-xs  text-gray-700">Order Type: {order.type}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Order Action Buttons - Below Running Orders Box */}
+          <div className="flex justify-center">
             <div className="flex gap-2 p-2 text-[10px]">
               <button className="flex-1 bg-[#010101] text-white font-medium rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                 BILL
@@ -842,7 +874,7 @@ const RunningOrders = () => {
                 CANCEL
               </button>
             </div>
-          </div>  
+          </div>
         </div>
 
         {/* Menu Items */}
@@ -893,8 +925,8 @@ const RunningOrders = () => {
         </div>
 
         {/* Order Summary */}
-        <div className="w-[670px]  border border-gray-300 rounded-lg ">
-          <div className="px-3 py-2 mb-2 bg-white border-b border-gray-200 rounded-lg">
+        <div className="w-[670px] h-[100%] border border-gray-300 rounded-lg ">
+          <div className="px-3 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
             {/* Tabs row */}
             <div className="flex gap-1.5 mb-4">
               <button className="px-3 py-1 bg-[#d3D3D3] text-black text-[11px] rounded flex items-center gap-1 
@@ -1002,7 +1034,7 @@ const RunningOrders = () => {
 
           {/* Items table */}
           {/* Items table header */}
-          <div className='bg-white mb-2 rounded-lg p-2 '>
+          <div className='bg-white flex flex-col h-[79%] mb-2 rounded-lg p-2 '>
             <div className="mt-3 border border-primary overflow-y-auto h-[200px]">
               <table className="w-full">
                 <thead>
@@ -1085,69 +1117,68 @@ const RunningOrders = () => {
                       <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
                     </td>
                   </tr>
-                  
+
                 </tbody>
               </table>
             </div>
-            
-          </div>
-          {/* Summary section */}
-          <div className='bg-white p-4  rounded-lg'>
-          <div className=" max-w-md mx-auto">
-              <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
-                <span className="font-medium">Subtotal</span>
-                <span className="font-medium">Tax</span>
-                <span className="font-medium">Discount</span>
-                <span className="font-medium">DIY.CHARGE</span>
-              </div>
-              <div className="grid grid-cols-4 gap-2 place-content-center text-sm mb-4 text-center font-medium">
-                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto ">
-                  €130
+            {/* Summary section */}
+            <div className='bg-white p-4  rounded-lg'>
+              <div className=" max-w-md mx-auto">
+                <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
+                  <span className="font-medium">Subtotal</span>
+                  <span className="font-medium">Tax</span>
+                  <span className="font-medium">Discount</span>
+                  <span className="font-medium">DIY.CHARGE</span>
                 </div>
-                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                  €130
-                </div>
-                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto text-red-500">
-                  €130
-                </div>
-                <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                  €130
-                </div>
-              </div>
-            </div>
-             {/* Total Payable */}
-             <div className='flex justify-center items-center'>
-              <div className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer   w-[70%] rounded flex items-center justify-center mb-4">
-                <div className="flex items-center  gap-2">
-                  <Eye size={14} />
-                  <span className="text-gray-800 font-medium">Total Payable : 0.00</span>
+                <div className="grid grid-cols-4 gap-2 place-content-center text-sm mb-4 text-center font-medium">
+                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto ">
+                    €130
+                  </div>
+                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
+                    €130
+                  </div>
+                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto text-red-500">
+                    €130
+                  </div>
+                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
+                    €130
+                  </div>
                 </div>
               </div>
-            </div>
+              {/* Total Payable */}
+              <div className='flex justify-center items-center'>
+                <div className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer   w-[70%] rounded flex items-center justify-center mb-4">
+                  <div className="flex items-center  gap-2">
+                    <Eye size={14} />
+                    <span className="text-gray-800 font-medium">Total Payable : 0.00</span>
+                  </div>
+                </div>
+              </div>
+              {/* Action buttons */}
+              <div className="flex gap-2 flex-wrap justify-center my-4 pb-5">
+                <button
+                  onClick={handleOpenCouponModal}
+                  className="bg-[#43a148] text-white px-2.5 btn-lifted  py-1.5  text-[11px] rounded  hover:bg-green-600"
+                >
+                  DISCOUNT
+                </button>
+                <button className="bg-[#4d35ee] text-white px-2.5 py-1.5 btn-lifted    text-[11px] rounded   hover:bg-blue-700">
+                  DRAFT
+                </button>
+                <button className="bg-[#3db4e4] text-white px-2.5 py-1.5 btn-lifted   text-[11px] rounded  hover:bg-cyan-500">
+                  KOT
+                </button>
+                <button className="bg-[#fb8b02] text-white px-2.5 py-1.5 btn-lifted  text-[11px] rounded   hover:bg-orange-600">
+                  PLACE ORDER
+                </button>
+                <button className="bg-[#f42cef] text-white px-2.5 py-1.5 btn-lifted  text-[11px] rounded  hover:bg-pink-600">
+                  PAY
+                </button>
+              </div>
 
-            {/* Action buttons */}
-            <div className="flex gap-2 flex-wrap justify-center my-4 pb-5">
-              <button
-                onClick={handleOpenCouponModal}
-                className="bg-[#43a148] text-white px-2.5 btn-lifted  py-1.5  text-[11px] rounded  hover:bg-green-600"
-              >
-                DISCOUNT
-              </button>
-              <button className="bg-[#4d35ee] text-white px-2.5 py-1.5 btn-lifted    text-[11px] rounded   hover:bg-blue-700">
-                DRAFT
-              </button>
-              <button className="bg-[#3db4e4] text-white px-2.5 py-1.5 btn-lifted   text-[11px] rounded  hover:bg-cyan-500">
-                KOT
-              </button>
-              <button className="bg-[#fb8b02] text-white px-2.5 py-1.5 btn-lifted  text-[11px] rounded   hover:bg-orange-600">
-                PLACE ORDER
-              </button>
-              <button className="bg-[#f42cef] text-white px-2.5 py-1.5 btn-lifted  text-[11px] rounded  hover:bg-pink-600">
-                PAY
-              </button>
             </div>
-          
-            </div>
+          </div>
+
         </div>
 
         {/* Customer Management Modal */}
@@ -1856,7 +1887,8 @@ const RunningOrders = () => {
                           className="border border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors cursor-pointer"
                           onClick={() => {
                             setCouponCode(coupon.code);
-                            handleApplyCoupon();
+                            // Apply the coupon directly without calling handleApplyCoupon
+                            applyCouponDirectly(coupon);
                           }}
                         >
                           <div className="flex justify-between items-start">
