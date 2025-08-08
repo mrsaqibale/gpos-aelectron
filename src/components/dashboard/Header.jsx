@@ -20,7 +20,8 @@ const Header = ({
   // Get logged-in user data
   const [user, setUser] = useState({
     name: 'Loading...',
-    role: 'Loading...'
+    role: 'Loading...',
+    image: null
   });
 
   useEffect(() => {
@@ -29,15 +30,36 @@ const Header = ({
     if (currentEmployee) {
       try {
         const employeeData = JSON.parse(currentEmployee);
+        
+        // Load employee image if available
+        let imageUrl = null;
+        if (employeeData.imgurl) {
+          if (employeeData.imgurl.startsWith('uploads/')) {
+            // Load image from uploads folder
+            window.myAPI.getEmployeeImage(employeeData.imgurl).then(result => {
+              if (result.success) {
+                setUser(prev => ({ ...prev, image: result.data }));
+              }
+            }).catch(() => {
+              // Image load failed, keep null
+            });
+          } else {
+            // Handle base64 images
+            imageUrl = `data:image/png;base64,${employeeData.imgurl}`;
+          }
+        }
+        
         setUser({
           name: `${employeeData.fname || ''} ${employeeData.lname || ''}`.trim() || 'Unknown User',
-          role: employeeData.roll || 'Unknown Role'
+          role: employeeData.roll || 'Unknown Role',
+          image: imageUrl
         });
       } catch (error) {
         console.error('Error parsing employee data:', error);
         setUser({
           name: 'Unknown User',
-          role: 'Unknown Role'
+          role: 'Unknown Role',
+          image: null
         });
       }
     } else {
@@ -187,7 +209,19 @@ const Header = ({
         <div className="flex items-center gap-5">
           {/* User Profile */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium shadow-sm">
+            {user.image ? (
+              <img
+                src={user.image}
+                alt={user.name}
+                className="w-9 h-9 object-cover rounded-full shadow-sm"
+                onError={(e) => {
+                  // Fallback to initials if image fails to load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className={`w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium shadow-sm ${user.image ? 'hidden' : ''}`}>
               {user.name.charAt(0).toUpperCase()}
             </div>
             
