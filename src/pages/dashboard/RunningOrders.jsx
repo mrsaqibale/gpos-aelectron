@@ -930,7 +930,7 @@ const RunningOrders = () => {
 
         {/* Order Summary */}
         <div className="w-[30%] h-[100%] border border-gray-300 rounded-lg ">
-          <div className="px-3 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
+          <div className="flex flex-wrap px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
             {/* Tabs row */}
             <div className="flex gap-1.5 mb-4">
               <button className="px-3 py-1 bg-[#d3D3D3] text-black text-[11px] rounded flex items-center gap-1 
@@ -1199,7 +1199,7 @@ const RunningOrders = () => {
             </div>
             {/* Summary section */}
             <div className='bg-white p-2 absolute bottom-0 right-0 w-[100%] rounded-lg'>
-              <div className=" max-w-md mx-auto">
+              <div className=" mx-auto">
                 <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
                   <span className="font-medium">Subtotal</span>
                   <span className="font-medium">Tax</span>
@@ -1231,23 +1231,23 @@ const RunningOrders = () => {
                 </div>
               </div>
               {/* Action buttons */}
-              <div className="flex gap-2 flex-wrap justify-center pb-2">
+              <div className="flex gap-2 justify-center pb-2">
                 <button
                   onClick={handleOpenCouponModal}
-                  className="bg-[#43a148] text-white px-2.5 btn-lifted  py-1.5  text-[11px] rounded  hover:bg-green-600"
+                  className="bg-[#43a148] text-white  btn-lifted  w-[100%]  text-[11px] font-bold rounded  hover:bg-green-600"
                 >
                   DISCOUNT
                 </button>
-                <button className="bg-[#4d35ee] text-white px-2.5 py-1.5 btn-lifted    text-[11px] rounded   hover:bg-blue-700">
+                <button className="bg-[#4d35ee] text-white  w-[100%] btn-lifted    text-[11px] font-bold rounded   hover:bg-blue-700">
                   DRAFT
                 </button>
-                <button className="bg-[#3db4e4] text-white px-2.5 py-1.5 btn-lifted   text-[11px] rounded  hover:bg-cyan-500">
+                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted   text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
                 </button>
-                <button className="bg-[#fb8b02] text-white px-2.5 py-1.5 btn-lifted  text-[11px] rounded   hover:bg-orange-600">
+                <button className="bg-[#fb8b02] text-white  w-[100%] btn-lifted  text-[11px] font-bold rounded   hover:bg-orange-600">
                   PLACE ORDER
                 </button>
-                <button className="bg-[#f42cef] text-white px-2.5 py-1.5 btn-lifted  text-[11px] rounded  hover:bg-pink-600">
+                <button className="bg-[#f42cef] text-white  w-[100%] btn-lifted  text-[11px] font-bold rounded  hover:bg-pink-600">
                   PAY
                 </button>
               </div>
