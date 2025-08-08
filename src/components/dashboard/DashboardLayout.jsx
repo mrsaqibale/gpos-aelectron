@@ -8,7 +8,7 @@ import {
   LayoutDashboard,
   Search,
   Users2, Utensils, Table,
-  Tag
+  Tag, X, LogOut
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -20,6 +20,7 @@ const DashboardLayout = () => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isLoading, setIsLoading] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showDashboardSlider, setShowDashboardSlider] = useState(false);
   const location = useLocation();
   const { themeColors } = useTheme();
   
@@ -166,6 +167,77 @@ const DashboardLayout = () => {
 
   return (
     <SidebarContext.Provider value={contextValue}>
+      {/* Dashboard Slider Overlay */}
+      {showDashboardSlider && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-50 flex">
+          {/* Dashboard Slider */}
+          <div className="bg-primaryLight w-64 h-full shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-xl">
+            {/* Header */}
+            <div className="p-4 border-b border-[#ffffff3b] flex justify-between items-center">
+              <div className="cursor-pointer">
+                <h1 className="font-bold text-white text-xl">
+                  G
+                  <span className="text-secondary">POS</span>
+                  System
+                </h1>
+              </div>
+              <button 
+                onClick={() => setShowDashboardSlider(false)}
+                className="p-2 bg-[#ffffff3b] rounded-full text-white hover:bg-[#ffffff63] transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Menu Items - Using the same navigationItems as main sidebar */}
+            <nav className="mt-3 flex flex-col h-full">
+              <div className="flex-1">
+                {navigationItems.map((item) => (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => {
+                        setShowDashboardSlider(false);
+                        // Navigate to the item's path
+                        window.location.href = item.path;
+                      }}
+                      className="w-full flex items-center px-4 py-3 text-sm text-gray-100 hover:bg-[#ffffff0e] transition-colors"
+                    >
+                      <span className="text-gray-100">{item.icon}</span>
+                      <span className="ml-2 font-medium whitespace-nowrap">
+                        {item.name}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Logout Button */}
+              <div className="px-4 mb-6 cursor-pointer">
+                <button
+                  onClick={() => {
+                    setShowDashboardSlider(false);
+                    // Handle logout logic here
+                    console.log("Logout clicked");
+                  }}
+                  className="w-full flex items-center cursor-pointer gap-2 py-3 text-gray-100"
+                >
+                  <LogOut size={20} />
+                  <span className="font-medium">
+                    Logout
+                  </span>
+                </button>
+              </div>
+            </nav>
+          </div>
+          
+          {/* Backdrop - click to close */}
+          <div 
+            className="flex-1"
+            onClick={() => setShowDashboardSlider(false)}
+          ></div>
+        </div>
+      )}
+
       <div className={`min-h-screen ${shouldHideSidebar ? 'bg-[#d3d3d3] p-0' : 'bg-bgColor p-2'} p-2 md:p-2`}>
         {/* Check-In Popup */}
         {showCheckIn && (
@@ -180,7 +252,10 @@ const DashboardLayout = () => {
             {/* Conditional Header Rendering */}
             {isOrdersRoute ? (
               // Show OrdersHeader for sales route
-              <OrdersHeader isOrdersRoute={isOrdersRoute} />
+              <OrdersHeader 
+                isOrdersRoute={isOrdersRoute} 
+                onMenuClick={() => setShowDashboardSlider(true)}
+              />
             ) : isKDSRoute ? (
               // Show KDS-specific Header for KDS route
               <div className={shouldHideSidebar ? "" : "md:pl-5"}>

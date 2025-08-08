@@ -20,10 +20,11 @@ import {
   RotateCwSquare,
   ListOrderedIcon,
   ListOrdered,
-  LogOut
+  LogOut,
+  Menu
 } from 'lucide-react';
 
-const OrdersHeader = () => {
+const OrdersHeader = ({ onMenuClick }) => {
   const location = useLocation();
   const isOrdersRoute = location.pathname === '/dashboard/sales';
 const navigate = useNavigate();
@@ -133,6 +134,14 @@ const navigate = useNavigate();
               <span className="text-xs font-medium">{item.label}</span>
             </div>
           ))}
+          
+          {/* Menu Button */}
+          <div
+            onClick={onMenuClick}
+            className="bg-primary text-white btn-lifted rounded-md px-2 py-1.5 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <Menu size={16} />
+          </div>
         </div>
 
         {/* Right side - Status indicators */}
