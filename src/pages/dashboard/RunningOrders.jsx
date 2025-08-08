@@ -824,10 +824,10 @@ const RunningOrders = () => {
   return (
     <>
       <div className="flex justify-between gap-2 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
-        <div className='flex w-[25%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
+        <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
           {/* Running Orders */}
-          <div className="w-68 h-[85%] flex flex-col overflow-y-auto">
+          <div className=" h-[85%] flex flex-col overflow-y-auto">
             <div className="p-3 flex items-center justify-between">
               <h2 className="font-bold text-gray-800">Running Orders</h2>
               <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
@@ -882,7 +882,7 @@ const RunningOrders = () => {
         </div>
 
         {/* Menu Items */}
-        <div className="w-[37%] bg-white flex flex-col shadow-lg rounded-xl overflow-hidden">
+        <div className="w-[50%] bg-white flex flex-col shadow-lg rounded-xl overflow-hidden">
           {/* Search and categories section */}
           <div className="py-3 px-2 border-b border-gray-200">
             {/* Search bar */}
@@ -929,7 +929,7 @@ const RunningOrders = () => {
         </div>
 
         {/* Order Summary */}
-        <div className="w-[37%] h-[100%] border border-gray-300 rounded-lg ">
+        <div className="w-[30%] h-[100%] border border-gray-300 rounded-lg ">
           <div className="px-3 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
             {/* Tabs row */}
             <div className="flex gap-1.5 mb-4">
