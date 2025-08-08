@@ -82,45 +82,10 @@ const RunningOrders = () => {
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-
-  const orders = [
-    {
-      id: 1001,
-      customer: 'James Smith',
-      type: 'In Store',
-      status: 'active'
-    },
-    {
-      id: 1002,
-      customer: 'Peter Wright',
-      type: 'Dine-in',
-      status: 'active'
-    },
-    {
-      id: 1004,
-      customer: 'Sunstru Martin',
-      type: 'Collection',
-      status: 'active'
-    },
-    {
-      id: 1001,
-      customer: 'James Smith',
-      type: 'In Store',
-      status: 'active'
-    },
-    {
-      id: 1002,
-      customer: 'Peter Wright',
-      type: 'Dine-in',
-      status: 'active'
-    },
-    {
-      id: 1004,
-      customer: 'Sunstru Martin',
-      type: 'Collection',
-      status: 'active'
-    }
-  ];
+  // Cart state to store added food items
+  const [cartItems, setCartItems] = useState([]);
+  const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
+  const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
 
   // Fetch categories from backend
   const fetchCategories = async () => {
@@ -393,7 +358,27 @@ const RunningOrders = () => {
       totalPrice: calculateTotalPrice()
     });
 
-    // TODO: Add to cart functionality
+    // Check if we're editing an existing cart item
+    if (editingCartItem) {
+      handleUpdateCartItem();
+      return;
+    }
+
+    // Create cart item with all details
+    const cartItem = {
+      id: cartItemId,
+      food: selectedFood,
+      variations: selectedVariations,
+      quantity: foodQuantity,
+      totalPrice: calculateTotalPrice(),
+      addedAt: new Date().toISOString()
+    };
+
+    // Add to cart
+    setCartItems(prev => [...prev, cartItem]);
+    setCartItemId(prev => prev + 1);
+
+    // Close modal and reset
     setShowFoodModal(false);
     setSelectedFood(null);
     setSelectedVariations({});
@@ -769,6 +754,177 @@ const RunningOrders = () => {
     setAppliedCoupon(null);
   };
 
+  // Cart item operations
+  const updateCartItemQuantity = (itemId, newQuantity) => {
+    if (newQuantity <= 0) {
+      // Remove item if quantity is 0 or less
+      removeCartItem(itemId);
+      return;
+    }
+
+    setCartItems(prev => prev.map(item => {
+      if (item.id === itemId) {
+        // Recalculate total price based on new quantity
+        const basePrice = item.food.price || 0;
+        let variationPrice = 0;
+
+        // Calculate variation prices (same logic as calculateTotalPrice)
+        const variationPrices = {
+          size: {
+            'Small': 0,
+            'Medium': 2.50,
+            'Large': 5.00
+          },
+          toppings: {
+            'Extra Cheese': 1.50,
+            'Bacon': 2.00,
+            'Mushrooms': 1.00,
+            'Olives': 0.75
+          },
+          addons: {
+            'Extra Cheese': 1.50,
+            'Bacon': 2.00,
+            'Mushrooms': 1.00,
+            'Olives': 0.75,
+            'Extra Sauce': 0.50,
+            'Double Portion': 3.00
+          }
+        };
+
+        Object.entries(item.variations).forEach(([type, selection]) => {
+          if ((type === 'size' || type === 'toppings' || type === 'addons') && Array.isArray(selection)) {
+            selection.forEach(variationItem => {
+              if (variationPrices[type] && variationPrices[type][variationItem]) {
+                variationPrice += variationPrices[type][variationItem];
+              }
+            });
+          }
+        });
+
+        const totalPricePerItem = basePrice + variationPrice;
+        const newTotalPrice = totalPricePerItem * newQuantity;
+
+        return {
+          ...item,
+          quantity: newQuantity,
+          totalPrice: newTotalPrice
+        };
+      }
+      return item;
+    }));
+  };
+
+  const removeCartItem = (itemId) => {
+    setCartItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  // Handle editing cart item
+  const handleEditCartItem = (cartItem) => {
+    setEditingCartItem(cartItem);
+    setSelectedFood(cartItem.food);
+    setSelectedVariations(cartItem.variations);
+    setFoodQuantity(cartItem.quantity);
+    setShowFoodModal(true);
+  };
+
+  // Handle updating cart item after editing
+  const handleUpdateCartItem = () => {
+    if (!editingCartItem) return;
+
+    // Update the cart item with new details
+    setCartItems(prev => prev.map(item => {
+      if (item.id === editingCartItem.id) {
+        return {
+          ...item,
+          variations: selectedVariations,
+          quantity: foodQuantity,
+          totalPrice: calculateTotalPrice()
+        };
+      }
+      return item;
+    }));
+
+    // Reset editing state
+    setEditingCartItem(null);
+    setShowFoodModal(false);
+    setSelectedFood(null);
+    setSelectedVariations({});
+    setFoodQuantity(1);
+  };
+
+  // Calculate cart totals
+  const calculateCartSubtotal = () => {
+    return cartItems.reduce((total, item) => total + item.totalPrice, 0);
+  };
+
+  const calculateCartTax = () => {
+    const subtotal = calculateCartSubtotal();
+    return subtotal * 0.10; // 10% tax rate
+  };
+
+  const calculateCartDiscount = () => {
+    if (!appliedCoupon) return 0;
+    
+    const subtotal = calculateCartSubtotal();
+    if (appliedCoupon.discountType === 'percentage') {
+      const discount = subtotal * (appliedCoupon.discount / 100);
+      return appliedCoupon.maxDiscount > 0 ? Math.min(discount, appliedCoupon.maxDiscount) : discount;
+    } else {
+      return appliedCoupon.discount;
+    }
+  };
+
+  const calculateCartTotal = () => {
+    const subtotal = calculateCartSubtotal();
+    const tax = calculateCartTax();
+    const discount = calculateCartDiscount();
+    return subtotal + tax - discount;
+  };
+
+  // Clear cart function
+  const clearCart = () => {
+    setCartItems([]);
+    setAppliedCoupon(null);
+  };
+
+  // Handle place order
+  const handlePlaceOrder = () => {
+    if (cartItems.length === 0) {
+      alert('Please add items to cart before placing order');
+      return;
+    }
+    
+    // TODO: Implement order placement logic
+    console.log('Placing order:', {
+      items: cartItems,
+      customer: selectedCustomer,
+      total: calculateCartTotal(),
+      coupon: appliedCoupon
+    });
+    
+    alert('Order placed successfully!');
+    clearCart();
+  };
+
+  // Handle payment
+  const handlePayment = () => {
+    if (cartItems.length === 0) {
+      alert('Please add items to cart before proceeding to payment');
+      return;
+    }
+    
+    // TODO: Implement payment logic
+    console.log('Processing payment:', {
+      items: cartItems,
+      customer: selectedCustomer,
+      total: calculateCartTotal(),
+      coupon: appliedCoupon
+    });
+    
+    alert('Payment processed successfully!');
+    clearCart();
+  };
+
   const MenuCard = ({ item }) => (
     <div
       className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all overflow-hidden transform hover:-translate-y-1 cursor-pointer"
@@ -848,18 +1004,35 @@ const RunningOrders = () => {
             </div>
 
             <div className="py-4 mt-2 my-auto px-2 space-y-2 h-auto overflow-y-auto">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className={`p-4 border-b  cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${selectedOrder?.id === order.id ? 'bg-blue-50' : ''
-                    }`}
-                  onClick={() => setSelectedOrder(order)}
-                >
-                  <div className="font-semibold text-sm text-gray-800">{order.customer}</div>
-                  <div className="text-xs mt-1  text-gray-700">Order ID: {order.id}</div>
-                  <div className="text-xs  text-gray-700">Order Type: {order.type}</div>
+              {cartItems.length > 0 ? (
+                cartItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`p-4 border-b cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${selectedOrder?.id === item.id ? 'bg-blue-50' : ''
+                      }`}
+                    onClick={() => setSelectedOrder(item)}
+                  >
+                    <div className="font-semibold text-sm text-gray-800">{item.food.name}</div>
+                    <div className="text-xs mt-1 text-gray-700">Qty: {item.quantity}</div>
+                    <div className="text-xs text-gray-700">€{item.totalPrice.toFixed(2)}</div>
+                    {Object.keys(item.variations).length > 0 && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {Object.entries(item.variations).map(([type, selections]) => {
+                          if (Array.isArray(selections) && selections.length > 0) {
+                            return `${type}: ${selections.join(', ')}`;
+                          }
+                          return null;
+                        }).filter(Boolean).join(' | ')}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-500 text-sm">No items in cart</div>
+                  <div className="text-gray-400 text-xs mt-2">Add items from the menu</div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
           {/* Order Action Buttons - Below Running Orders Box */}
@@ -930,9 +1103,9 @@ const RunningOrders = () => {
 
         {/* Order Summary */}
         <div className="w-[30%] h-[100%] border border-gray-300 rounded-lg ">
-          <div className="flex flex-wrap px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
+          <div className="flex px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
             {/* Tabs row */}
-            <div className="flex gap-1.5 mb-4">
+            <div className="flex flex-wrap gap-1.5 mb-4">
               <button className="px-3 py-1 bg-[#d3D3D3] text-black text-[11px] rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted ">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -973,7 +1146,7 @@ const RunningOrders = () => {
             </div>
 
             {/* Status section */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
 
               <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
                       border border-gray-300 btn-lifted ">
@@ -1050,150 +1223,53 @@ const RunningOrders = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white">
-                  {/* Red Velvet Delight Slice */}
-                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-2 border-b border-gray-200">
-                    <td className="flex items-center gap-2">
-                      <Edit2 size={22} className="text-primary" />
-                      <span className="text-gray-800">Red Velvet Delight Slice</span>
-                    </td>
-                    <td className="text-gray-800 text-center">89.00</td>
-                    <td className="flex items-center justify-center">
-                      <div className="flex items-center rounded">
-                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
-                          <Minus size={11} />
-                        </button>
-                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
-                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
-                          <Plus size={11} />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="flex items-center justify-center gap-2">
-                      <span className="text-gray-800">89.00</span>
-                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
-                    </td>
-                  </tr>
-
-                  {/* Chicken */}
-                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-3 border-b border-gray-200">
-                    <td className="flex items-center gap-2">
-                      <Edit2 size={13} className="text-primary" />
-                      <span className="text-gray-800 text-center">chicken</span>
-                    </td>
-                    <td className="text-gray-800 text-center">49.00</td>
-                    <td className="flex items-center justify-center">
-                      <div className="flex items-center rounded">
-                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
-                          <Minus size={11} />
-                        </button>
-                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
-                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
-                          <Plus size={11} />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="flex items-center justify-center gap-2">
-                      <span className="text-gray-800">49.00</span>
-                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
-                    </td>
-                  </tr>
-
-                  {/* Burger */}
-                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-3 border-b border-gray-200">
-                    <td className="flex items-center gap-2">
-                      <Edit2 size={13} className="text-primary" />
-                      <span className="text-gray-800">burger</span>
-                    </td>
-                    <td className="text-gray-800 text-center">180.00</td>
-                    <td className="flex items-center justify-center">
-                      <div className="flex items-center rounded">
-                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
-                          <Minus size={11} />
-                        </button>
-                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
-                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
-                          <Plus size={11} />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="flex items-center justify-center gap-2">
-                      <span className="text-gray-800">180.00</span>
-                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
-                    </td>
-                  </tr>
-
-                  {/* Red Velvet Delight Slice */}
-                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-2 border-b border-gray-200">
-                    <td className="flex items-center gap-2">
-                      <Edit2 size={22} className="text-primary" />
-                      <span className="text-gray-800">Red Velvet Delight Slice</span>
-                    </td>
-                    <td className="text-gray-800 text-center">89.00</td>
-                    <td className="flex items-center justify-center">
-                      <div className="flex items-center rounded">
-                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
-                          <Minus size={11} />
-                        </button>
-                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
-                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
-                          <Plus size={11} />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="flex items-center justify-center gap-2">
-                      <span className="text-gray-800">89.00</span>
-                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
-                    </td>
-                  </tr>
-
-                  {/* Chicken */}
-                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-3 border-b border-gray-200">
-                    <td className="flex items-center gap-2">
-                      <Edit2 size={13} className="text-primary" />
-                      <span className="text-gray-800 text-center">chicken</span>
-                    </td>
-                    <td className="text-gray-800 text-center">49.00</td>
-                    <td className="flex items-center justify-center">
-                      <div className="flex items-center rounded">
-                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
-                          <Minus size={11} />
-                        </button>
-                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
-                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
-                          <Plus size={11} />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="flex items-center justify-center gap-2">
-                      <span className="text-gray-800">49.00</span>
-                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
-                    </td>
-                  </tr>
-
-                  {/* Burger */}
-                  <tr className="grid grid-cols-4 gap-4 items-center text-sm p-3 border-b border-gray-200">
-                    <td className="flex items-center gap-2">
-                      <Edit2 size={13} className="text-primary" />
-                      <span className="text-gray-800">burger</span>
-                    </td>
-                    <td className="text-gray-800 text-center">180.00</td>
-                    <td className="flex items-center justify-center">
-                      <div className="flex items-center rounded">
-                        <button className="text-primary flex items-center cursor-pointer justify-center transition-colors">
-                          <Minus size={11} />
-                        </button>
-                        <span className="w-8 text-center text-gray-800  py-1 text-sm">1</span>
-                        <button className=" flex items-center cursor-pointer justify-center text-primary transition-colors">
-                          <Plus size={11} />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="flex items-center justify-center gap-2">
-                      <span className="text-gray-800">180.00</span>
-                      <Trash2 size={14} className="text-[#c81118] mt-0.5 cursor-pointer" />
-                    </td>
-                  </tr>
-
+                  {cartItems.length > 0 ? (
+                    cartItems.map((item) => (
+                                             <tr key={item.id} className="grid grid-cols-4 gap-4 items-center text-sm p-2 border-b border-gray-200">
+                         <td className="flex items-center gap-2">
+                           <Edit2 
+                             size={13} 
+                             className="text-primary cursor-pointer hover:text-primary-dark transition-colors" 
+                             onClick={() => handleEditCartItem(item)}
+                             title="Edit item"
+                           />
+                           <span className="text-gray-800 text-sm">{item.food.name}</span>
+                         </td>
+                        <td className="text-gray-800 text-center">€{(item.totalPrice / item.quantity).toFixed(2)}</td>
+                        <td className="flex items-center justify-center">
+                          <div className="flex items-center rounded">
+                            <button 
+                              className="text-primary flex items-center cursor-pointer justify-center transition-colors"
+                              onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                            >
+                              <Minus size={11} />
+                            </button>
+                            <span className="w-8 text-center text-gray-800 py-1 text-sm">{item.quantity}</span>
+                            <button 
+                              className="flex items-center cursor-pointer justify-center text-primary transition-colors"
+                              onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                            >
+                              <Plus size={11} />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="flex items-center justify-center gap-2">
+                          <span className="text-gray-800">€{item.totalPrice.toFixed(2)}</span>
+                          <Trash2 
+                            size={14} 
+                            className="text-[#c81118] mt-0.5 cursor-pointer" 
+                            onClick={() => removeCartItem(item.id)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="grid grid-cols-4 gap-4 items-center text-sm p-4">
+                      <td colSpan="4" className="text-center text-gray-500">
+                        No items in cart
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1208,16 +1284,16 @@ const RunningOrders = () => {
                 </div>
                 <div className="grid grid-cols-4 gap-2 place-content-center text-sm mb-4 text-center font-medium">
                   <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto ">
-                    €130
+                    €{calculateCartSubtotal().toFixed(2)}
                   </div>
                   <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                    €130
+                    €{calculateCartTax().toFixed(2)}
                   </div>
                   <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto text-red-500">
-                    €130
+                    €{calculateCartDiscount().toFixed(2)}
                   </div>
                   <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                    €130
+                    €0.00
                   </div>
                 </div>
               </div>
@@ -1226,7 +1302,7 @@ const RunningOrders = () => {
                 <div className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer   w-[70%] rounded flex items-center justify-center mb-4">
                   <div className="flex items-center  gap-2">
                     <Eye size={14} />
-                    <span className="text-gray-800 font-medium">Total Payable : 0.00</span>
+                    <span className="text-gray-800 font-medium">Total Payable : €{calculateCartTotal().toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -1238,16 +1314,25 @@ const RunningOrders = () => {
                 >
                   DISCOUNT
                 </button>
-                <button className="bg-[#4d35ee] text-white  w-[100%] btn-lifted    text-[11px] font-bold rounded   hover:bg-blue-700">
-                  DRAFT
+                <button 
+                  onClick={clearCart}
+                  className="bg-[#4d35ee] text-white  w-[100%] btn-lifted    text-[11px] font-bold rounded   hover:bg-blue-700"
+                >
+                  CLEAR CART
                 </button>
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted   text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
                 </button>
-                <button className="bg-[#fb8b02] text-white  w-[100%] btn-lifted  text-[11px] font-bold rounded   hover:bg-orange-600">
+                <button 
+                  onClick={handlePlaceOrder}
+                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted  text-[11px] font-bold rounded   hover:bg-orange-600"
+                >
                   PLACE ORDER
                 </button>
-                <button className="bg-[#f42cef] text-white  w-[100%] btn-lifted  text-[11px] font-bold rounded  hover:bg-pink-600">
+                <button 
+                  onClick={handlePayment}
+                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted  text-[11px] font-bold rounded  hover:bg-pink-600"
+                >
                   PAY
                 </button>
               </div>
@@ -1642,13 +1727,16 @@ const RunningOrders = () => {
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh]">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
-                <h2 className="text-xl font-bold">Food Details</h2>
+                <h2 className="text-xl font-bold">
+                  {editingCartItem ? 'Edit Food Item' : 'Food Details'}
+                </h2>
                 <button
                   onClick={() => {
                     setShowFoodModal(false);
                     setSelectedFood(null);
                     setSelectedVariations({});
                     setFoodQuantity(1); // Reset quantity
+                    setEditingCartItem(null); // Reset editing state
                   }}
                   className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
                 >
@@ -1661,6 +1749,13 @@ const RunningOrders = () => {
 
                 {/* Food Header Section */}
                 <div className="mb-6">
+                  {editingCartItem && (
+                    <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-700 font-medium">
+                        ✏️ Editing item: {editingCartItem.food.name}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-4">
                     {/* Food Image */}
                     <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
@@ -1891,7 +1986,7 @@ const RunningOrders = () => {
                       className="flex-1 px-4 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
                     >
                       <ShoppingCart size={18} />
-                      Add
+                      {editingCartItem ? 'Update' : 'Add'}
                     </button>
                   </div>
                 </div>
