@@ -48,6 +48,7 @@ const FoodForm = ({ food, onSubmit }) => {
   const [allerginInput, setAllerginInput] = useState('');
   const [allerginSuggestions, setAllerginSuggestions] = useState([]);
   const [showAllerginSuggestions, setShowAllerginSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const addonsWithValues = [
@@ -190,6 +191,11 @@ const FoodForm = ({ food, onSubmit }) => {
       } else {
         setImagePreview(null);
       }
+      
+      // Load existing allergens if editing
+      if (food.allergins && food.allergins.length > 0) {
+        setSelectedAllergins(food.allergins);
+      }
     }
   }, [food]);
 
@@ -289,6 +295,7 @@ const FoodForm = ({ food, onSubmit }) => {
   const handleAllerginInputChange = (e) => {
     const value = e.target.value;
     setAllerginInput(value);
+    setSelectedSuggestionIndex(-1); // Reset selection when typing
     
     if (value.trim()) {
       // Filter suggestions based on input
@@ -299,9 +306,22 @@ const FoodForm = ({ food, onSubmit }) => {
       setAllerginSuggestions(filtered);
       setShowAllerginSuggestions(true);
     } else {
-      setAllerginSuggestions([]);
-      setShowAllerginSuggestions(false);
+      // Show all available allergens when input is empty
+      const availableAllergins = allergins.filter(allergin => 
+        !selectedAllergins.some(selected => selected.id === allergin.id)
+      );
+      setAllerginSuggestions(availableAllergins);
+      setShowAllerginSuggestions(true);
     }
+  };
+
+  const handleAllerginFocus = () => {
+    // Show all available allergens when field is focused
+    const availableAllergins = allergins.filter(allergin => 
+      !selectedAllergins.some(selected => selected.id === allergin.id)
+    );
+    setAllerginSuggestions(availableAllergins);
+    setShowAllerginSuggestions(true);
   };
 
   const handleAllerginSelect = (allergin) => {
@@ -311,10 +331,60 @@ const FoodForm = ({ food, onSubmit }) => {
     setAllerginInput('');
     setAllerginSuggestions([]);
     setShowAllerginSuggestions(false);
+    setSelectedSuggestionIndex(-1);
   };
 
   const handleAllerginRemove = (allerginId) => {
     setSelectedAllergins(prev => prev.filter(allergin => allergin.id !== allerginId));
+  };
+
+  const handleAllerginKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (selectedSuggestionIndex >= 0 && allerginSuggestions[selectedSuggestionIndex]) {
+        // Select the highlighted suggestion
+        handleAllerginSelect(allerginSuggestions[selectedSuggestionIndex]);
+      } else if (allerginInput.trim()) {
+        // Create new allergen or select existing
+        const existingAllergin = allergins.find(allergin => 
+          allergin.name.toLowerCase() === allerginInput.trim().toLowerCase()
+        );
+        
+        if (existingAllergin) {
+          handleAllerginSelect(existingAllergin);
+        } else {
+          // Create new allergen
+          try {
+            const result = await window.myAPI?.createAllergin({ name: allerginInput.trim() });
+            if (result && result.success) {
+              const newAllergin = { id: result.id, name: allerginInput.trim() };
+              setAllergins(prev => [...prev, newAllergin]);
+              setSelectedAllergins(prev => [...prev, newAllergin]);
+              setAllerginInput('');
+              setAllerginSuggestions([]);
+              setShowAllerginSuggestions(false);
+              setSelectedSuggestionIndex(-1);
+            } else {
+              console.error('Failed to create allergen:', result?.message);
+            }
+          } catch (error) {
+            console.error('Error creating allergen:', error);
+          }
+        }
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => 
+        prev < allerginSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Escape') {
+      setShowAllerginSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }
   };
 
   const handleAllerginKeyPress = async (e) => {
@@ -332,14 +402,14 @@ const FoodForm = ({ food, onSubmit }) => {
         // Create new allergen
         try {
           const result = await window.myAPI?.createAllergin({ name: allerginInput.trim() });
-          if (result && result.success) {
-            const newAllergin = { id: result.id, name: allerginInput.trim() };
-            setAllergins(prev => [...prev, newAllergin]);
-            setSelectedAllergins(prev => [...prev, newAllergin]);
-            setAllerginInput('');
-            setAllerginSuggestions([]);
-            setShowAllerginSuggestions(false);
-          } else {
+                      if (result && result.success) {
+              const newAllergin = { id: result.id, name: allerginInput.trim() };
+              setAllergins(prev => [...prev, newAllergin]);
+              setSelectedAllergins(prev => [...prev, newAllergin]);
+              setAllerginInput('');
+              setAllerginSuggestions([]);
+              setShowAllerginSuggestions(false);
+            } else {
             console.error('Failed to create allergen:', result?.message);
           }
         } catch (error) {
@@ -656,25 +726,31 @@ const FoodForm = ({ food, onSubmit }) => {
           {/* Allergin Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Allergins</label>
+            
+            {/* Search Input */}
             <div className="relative">
               <input
                 type="text"
                 value={allerginInput}
                 onChange={handleAllerginInputChange}
-                onKeyPress={handleAllerginKeyPress}
-                onFocus={() => setShowAllerginSuggestions(true)}
+                onKeyDown={handleAllerginKeyDown}
+                onFocus={handleAllerginFocus}
                 onBlur={() => setTimeout(() => setShowAllerginSuggestions(false), 200)}
                 className={getInputClasses('allerginInput')}
-                placeholder="Type allergen name and press Enter, or select from suggestions"
+                placeholder="Click to see all allergens, type to search"
               />
               
               {/* Suggestions dropdown */}
               {showAllerginSuggestions && allerginSuggestions.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                  {allerginSuggestions.map((allergin) => (
+                  {allerginSuggestions.map((allergin, index) => (
                     <div
                       key={allergin.id}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                        index === selectedSuggestionIndex 
+                          ? 'bg-primary text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
                       onClick={() => handleAllerginSelect(allergin)}
                     >
                       {allergin.name}
@@ -684,7 +760,7 @@ const FoodForm = ({ food, onSubmit }) => {
               )}
             </div>
             
-            {/* Selected allergens */}
+            {/* Selected allergens tags */}
             {selectedAllergins.length > 0 && (
               <div className="mt-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Selected Allergins:</label>
