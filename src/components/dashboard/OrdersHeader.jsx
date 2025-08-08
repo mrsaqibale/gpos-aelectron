@@ -39,6 +39,12 @@ const navigate = useNavigate();
       textColor: 'text-white'
     },
     {
+      icon: <Menu size={16} />,
+      bgColor: 'bg-primary',
+      textColor: 'text-white',
+      onClick: onMenuClick
+    },
+    {
       icon: <ShoppingCart size={16} />,
       bgColor: 'bg-primary',
       textColor: 'text-white'
@@ -126,22 +132,15 @@ const navigate = useNavigate();
             <div
               key={index}
               onClick={() => {
-      if (index === 0) navigate('/dashboard'); // Go back when Home icon is clicked
-    }}
+                if (index === 0) navigate('/dashboard'); // Go back when Home icon is clicked
+                if (item.onClick) item.onClick(); // Handle custom onClick functions
+              }}
               className={`${item.bgColor} ${item.textColor} ${item.textMargin} btn-lifted rounded-md px-2 py-1.5 flex items-center justify-center  cursor-pointer hover:opacity-80 transition-opacity`}
             >
               {item.icon}
               <span className="text-xs font-medium">{item.label}</span>
             </div>
           ))}
-          
-          {/* Menu Button */}
-          <div
-            onClick={onMenuClick}
-            className="bg-primary text-white btn-lifted rounded-md px-2 py-1.5 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-          >
-            <Menu size={16} />
-          </div>
         </div>
 
         {/* Right side - Status indicators */}

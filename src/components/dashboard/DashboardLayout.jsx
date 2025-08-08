@@ -169,7 +169,7 @@ const DashboardLayout = () => {
     <SidebarContext.Provider value={contextValue}>
       {/* Dashboard Slider Overlay */}
       {showDashboardSlider && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-50 flex">
+        <div className="fixed inset-0 z-50 flex">
           {/* Dashboard Slider */}
           <div className="bg-primaryLight w-64 h-full shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-xl">
             {/* Header */}
@@ -232,7 +232,7 @@ const DashboardLayout = () => {
           
           {/* Backdrop - click to close */}
           <div 
-            className="flex-1"
+            className="flex-1 cursor-pointer"
             onClick={() => setShowDashboardSlider(false)}
           ></div>
         </div>

@@ -283,8 +283,8 @@ const RunningOrders = () => {
           ...prev,
           [variationId]: optionId
         };
-      } else {
-        // Toppings can be multiple selection
+      } else if (variationId === 'addons' || variationId === 'toppings') {
+        // Addons and toppings can be multiple selection
         const currentSelections = prev[variationId] || [];
         const newSelections = currentSelections.includes(optionId)
           ? currentSelections.filter(id => id !== optionId)
@@ -293,6 +293,12 @@ const RunningOrders = () => {
         return {
           ...prev,
           [variationId]: newSelections
+        };
+      } else {
+        // Default to single selection
+        return {
+          ...prev,
+          [variationId]: optionId
         };
       }
     });
@@ -317,6 +323,14 @@ const RunningOrders = () => {
         'Bacon': 2.00,
         'Mushrooms': 1.00,
         'Olives': 0.75
+      },
+      addons: {
+        'Extra Cheese': 1.50,
+        'Bacon': 2.00,
+        'Mushrooms': 1.00,
+        'Olives': 0.75,
+        'Extra Sauce': 0.50,
+        'Double Portion': 3.00
       }
     };
     
@@ -324,10 +338,10 @@ const RunningOrders = () => {
     Object.entries(selectedVariations).forEach(([type, selection]) => {
       if (type === 'size' && variationPrices[type] && variationPrices[type][selection]) {
         variationPrice += variationPrices[type][selection];
-      } else if (type === 'toppings' && Array.isArray(selection)) {
-        selection.forEach(topping => {
-          if (variationPrices[type] && variationPrices[type][topping]) {
-            variationPrice += variationPrices[type][topping];
+      } else if ((type === 'toppings' || type === 'addons') && Array.isArray(selection)) {
+        selection.forEach(item => {
+          if (variationPrices[type] && variationPrices[type][item]) {
+            variationPrice += variationPrices[type][item];
           }
         });
       }
@@ -1337,7 +1351,7 @@ const MenuGrid = () => {
           {/* Food Details Modal */}
           {showFoodModal && selectedFood && (
             <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh]">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh]">
                 {/* Header */}
                 <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
                   <h2 className="text-xl font-bold">Food Details</h2>
@@ -1356,11 +1370,33 @@ const MenuGrid = () => {
                 {/* Content */}
                 <div className="p-6 overflow-y-auto max-h-[80vh] custom-scrollbar">
 
-                  {/* Variations Section */}
+                  {/* Food Header Section */}
+                  <div className="mb-6">
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Food Image */}
+                      <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                        <img 
+                          src={selectedFood.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=400&fit=crop&crop=center"}
+                          alt={selectedFood.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {/* Food Info */}
+                      <div className="flex-1 text-right">
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedFood.name}</h3>
+                        <p className="text-2xl font-bold text-primary">€{selectedFood.price?.toFixed(2) || '0.00'}</p>
+                        {selectedFood.description && (
+                          <p className="text-sm text-gray-600 mt-2">{selectedFood.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Select Variation Section */}
                   <div className="mb-6">
                     <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                       <Edit2 size={18} className="text-primary" />
-                      Variations
+                      Select Variation
                     </h4>
                     
                     {/* Mock variations data - replace with actual API call */}
@@ -1459,6 +1495,62 @@ const MenuGrid = () => {
                     </div>
                   </div>
 
+                  {/* Select Add on Section */}
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Plus size={18} className="text-primary" />
+                      Select Add on
+                    </h4>
+                    
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <div className="space-y-2">
+                        {[
+                          { name: 'Extra Cheese', price: 1.50 },
+                          { name: 'Bacon', price: 2.00 },
+                          { name: 'Mushrooms', price: 1.00 },
+                          { name: 'Olives', price: 0.75 },
+                          { name: 'Extra Sauce', price: 0.50 },
+                          { name: 'Double Portion', price: 3.00 }
+                        ].map((addon) => {
+                          const isSelected = selectedVariations.addons && selectedVariations.addons.includes(addon.name);
+                          return (
+                            <button
+                              key={addon.name}
+                              onClick={() => handleVariationSelect('addons', addon.name)}
+                              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                isSelected
+                                  ? 'bg-primary/10 border-primary'
+                                  : 'bg-white border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                  isSelected
+                                    ? 'border-primary bg-primary'
+                                    : 'border-gray-300'
+                                }`}>
+                                  {isSelected && (
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                  )}
+                                </div>
+                                <span className={`font-medium ${
+                                  isSelected ? 'text-primary' : 'text-gray-700'
+                                }`}>
+                                  {addon.name}
+                                </span>
+                              </div>
+                              <span className={`font-semibold ${
+                                isSelected ? 'text-primary' : 'text-gray-600'
+                              }`}>
+                                +€{addon.price.toFixed(2)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Allergens Section */}
                   <div className="mb-6">
                     <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -1477,6 +1569,14 @@ const MenuGrid = () => {
                           </span>
                         ))}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Total Price Display */}
+                  <div className="border-t border-gray-200 pt-4 mb-4">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <span className="text-lg font-semibold text-gray-800">Total Price:</span>
+                      <span className="text-2xl font-bold text-primary">€{calculateTotalPrice().toFixed(2)}</span>
                     </div>
                   </div>
 
