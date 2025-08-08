@@ -21,57 +21,42 @@ const Coupons = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(false);
 
-  // Mock data for demonstration
+  // Load coupons from database
   useEffect(() => {
-    const mockCoupons = [
-      {
-        id: 1,
-        title: 'New Coupon',
-        customerType: 'All Customers',
-        code: 'SAVE20',
-        limitForSameUser: 10,
-        startDate: '2024-01-01',
-        expireDate: '2024-12-31',
-        discountType: 'percentage',
-        discount: 20,
-        maxDiscount: 100,
-        minPurchase: 50,
-        totalUsers: 245,
-        status: 'active'
-      },
-      {
-        id: 2,
-        title: 'Free Delivery',
-        customerType: 'Delivery Only',
-        code: 'FREEDEL',
-        limitForSameUser: 5,
-        startDate: '2024-01-01',
-        expireDate: '2024-06-30',
-        discountType: 'fixed',
-        discount: 5,
-        maxDiscount: 5,
-        minPurchase: 30,
-        totalUsers: 500,
-        status: 'inactive'
-      },
-      {
-        id: 3,
-        title: 'New Customer Discount',
-        customerType: 'New Customers',
-        code: 'NEWCUST',
-        limitForSameUser: 1,
-        startDate: '2024-01-01',
-        expireDate: '2024-12-31',
-        discountType: 'fixed',
-        discount: 10,
-        maxDiscount: 10,
-        minPurchase: 25,
-        totalUsers: 89,
-        status: 'active'
-      }
-    ];
-    setCoupons(mockCoupons);
+    loadCoupons();
   }, []);
+
+  const loadCoupons = async () => {
+    try {
+      setLoading(true);
+      const result = await window.myAPI.getAllCoupons();
+      if (result.success) {
+        // Transform database data to match frontend format
+        const transformedCoupons = result.data.map(coupon => ({
+          id: coupon.id,
+          title: coupon.title,
+          customerType: coupon.type || 'All Customers',
+          code: coupon.code,
+          limitForSameUser: coupon.usage_limit || 0,
+          startDate: coupon.start_date ? coupon.start_date.split('T')[0] : '',
+          expireDate: coupon.end_date ? coupon.end_date.split('T')[0] : '',
+          discountType: coupon.discount_type || 'percentage',
+          discount: coupon.amount || 0,
+          maxDiscount: coupon.max_discount || 0,
+          minPurchase: coupon.min_purchase || 0,
+          totalUsers: 0, // This would need to be calculated from usage data
+          status: coupon.status === 1 ? 'active' : 'inactive'
+        }));
+        setCoupons(transformedCoupons);
+      } else {
+        console.error('Failed to load coupons:', result.message);
+      }
+    } catch (error) {
+      console.error('Error loading coupons:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [newCoupon, setNewCoupon] = useState({
     title: '',
@@ -151,46 +136,54 @@ const Coupons = () => {
       
       if (editingCoupon) {
         // Update existing coupon
-        const updatedCoupon = {
-          ...editingCoupon,
-          ...newCoupon,
-          discount: parseFloat(newCoupon.discount),
-          maxDiscount: parseFloat(newCoupon.maxDiscount) || 0,
-          minPurchase: parseFloat(newCoupon.minPurchase) || 0,
-          limitForSameUser: parseInt(newCoupon.limitForSameUser) || 0
+        const updateData = {
+          title: newCoupon.title,
+          type: newCoupon.customerType,
+          code: newCoupon.code,
+          usage_limit: parseInt(newCoupon.limitForSameUser) || 0,
+          start_date: newCoupon.startDate,
+          end_date: newCoupon.expireDate,
+          discount_type: newCoupon.discountType,
+          amount: parseFloat(newCoupon.discount),
+          max_discount: parseFloat(newCoupon.maxDiscount) || 0,
+          min_purchase: parseFloat(newCoupon.minPurchase) || 0
         };
         
-        // Mock API call
-        setTimeout(() => {
-          setCoupons(prev => prev.map(coupon => 
-            coupon.id === editingCoupon.id ? updatedCoupon : coupon
-          ));
+        const result = await window.myAPI.updateCoupon(editingCoupon.id, updateData);
+        if (result.success) {
+          await loadCoupons(); // Reload data
           setShowForm(false);
           setEditingCoupon(null);
-          setLoading(false);
-        }, 1000);
+        } else {
+          console.error('Failed to update coupon:', result.message);
+        }
       } else {
         // Create new coupon
-        const newCouponData = {
-          id: Date.now(),
-          ...newCoupon,
-          discount: parseFloat(newCoupon.discount),
-          maxDiscount: parseFloat(newCoupon.maxDiscount) || 0,
-          minPurchase: parseFloat(newCoupon.minPurchase) || 0,
-          limitForSameUser: parseInt(newCoupon.limitForSameUser) || 0,
-          totalUsers: 0,
-          status: 'active'
+        const createData = {
+          title: newCoupon.title,
+          type: newCoupon.customerType,
+          code: newCoupon.code,
+          usage_limit: parseInt(newCoupon.limitForSameUser) || 0,
+          start_date: newCoupon.startDate,
+          end_date: newCoupon.expireDate,
+          discount_type: newCoupon.discountType,
+          amount: parseFloat(newCoupon.discount),
+          max_discount: parseFloat(newCoupon.maxDiscount) || 0,
+          min_purchase: parseFloat(newCoupon.minPurchase) || 0,
+          added_by: 1 // TODO: Get current employee ID from context
         };
         
-        // Mock API call
-        setTimeout(() => {
-          setCoupons(prev => [...prev, newCouponData]);
+        const result = await window.myAPI.createCoupon(createData);
+        if (result.success) {
+          await loadCoupons(); // Reload data
           setShowForm(false);
-          setLoading(false);
-        }, 1000);
+        } else {
+          console.error('Failed to create coupon:', result.message);
+        }
       }
     } catch (error) {
       console.error('Error saving coupon:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -216,13 +209,15 @@ const Coupons = () => {
     if (window.confirm('Are you sure you want to delete this coupon?')) {
       try {
         setLoading(true);
-        // Mock API call
-        setTimeout(() => {
-          setCoupons(prev => prev.filter(coupon => coupon.id !== couponId));
-          setLoading(false);
-        }, 1000);
+        const result = await window.myAPI.deleteCoupon(couponId);
+        if (result.success) {
+          await loadCoupons(); // Reload data
+        } else {
+          console.error('Failed to delete coupon:', result.message);
+        }
       } catch (error) {
         console.error('Error deleting coupon:', error);
+      } finally {
         setLoading(false);
       }
     }
@@ -265,14 +260,14 @@ const Coupons = () => {
   const toggleStatus = async (couponId) => {
     try {
       const coupon = coupons.find(c => c.id === couponId);
-      const newStatus = coupon.status === 'active' ? 'inactive' : 'active';
+      const newStatus = coupon.status === 'active' ? 0 : 1; // Convert to database format
       
-      // Mock API call
-      setTimeout(() => {
-        setCoupons(prev => prev.map(c => 
-          c.id === couponId ? { ...c, status: newStatus } : c
-        ));
-      }, 500);
+      const result = await window.myAPI.updateCoupon(couponId, { status: newStatus });
+      if (result.success) {
+        await loadCoupons(); // Reload data
+      } else {
+        console.error('Failed to toggle status:', result.message);
+      }
     } catch (error) {
       console.error('Error toggling status:', error);
     }
@@ -614,55 +609,62 @@ const Coupons = () => {
 
         {/* Coupons Table */}
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
-            <thead>
-              <tr className="bg-primaryExtraLight">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  SI
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Code
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Total Users
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Min Purchase
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Max Discount
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Discount
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Discount Type
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Start Date
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Expire Date
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Customer Type
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {getFilteredCoupons().map((coupon, index) => (
+          {loading && (
+            <div className="flex justify-center items-center py-8">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-2 text-gray-600">Loading coupons...</span>
+            </div>
+          )}
+          {!loading && (
+            <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
+              <thead>
+                <tr className="bg-primaryExtraLight">
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    SI
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Title
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Code
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Total Users
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Min Purchase
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Max Discount
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Discount
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Discount Type
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Start Date
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Expire Date
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Customer Type
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {getFilteredCoupons().map((coupon, index) => (
                 <tr key={coupon.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                   <td className="py-3 px-4">
                     <span className="text-sm font-medium text-gray-700">{index + 1}</span>
@@ -745,9 +747,10 @@ const Coupons = () => {
               ))}
             </tbody>
           </table>
+        )}
         </div>
 
-        {getFilteredCoupons().length === 0 && (
+        {!loading && getFilteredCoupons().length === 0 && (
           <div className="text-center py-12">
             <Tag size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-600 font-medium">No coupons found</p>
