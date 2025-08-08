@@ -139,13 +139,17 @@ const RunningOrders = () => {
       console.log('Categories API result:', result);
 
       if (result && result.success) {
-        setCategories(result.data);
-        console.log('Categories loaded successfully:', result.data);
+        // Filter categories to only show active ones (status = 1)
+        const activeCategories = result.data.filter(category => category.status === 1);
+        console.log('Active categories:', activeCategories);
+        
+        setCategories(activeCategories);
+        console.log('Active categories loaded successfully:', activeCategories);
 
-        // Auto-select the first category if available
-        if (result.data && result.data.length > 0) {
-          const firstCategory = result.data[0];
-          console.log('Auto-selecting first category:', firstCategory);
+        // Auto-select the first active category if available
+        if (activeCategories && activeCategories.length > 0) {
+          const firstCategory = activeCategories[0];
+          console.log('Auto-selecting first active category:', firstCategory);
           setSelectedCategory(firstCategory);
           fetchFoodsByCategory(firstCategory.id);
         }
