@@ -54,6 +54,7 @@ const RunningOrders = () => {
   const [showFoodModal, setShowFoodModal] = useState(false);
   const [selectedFood, setSelectedFood] = useState(null);
   const [selectedVariations, setSelectedVariations] = useState({});
+  const [foodQuantity, setFoodQuantity] = useState(1);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showMergeTableModal, setShowMergeTableModal] = useState(false);
 
@@ -283,14 +284,8 @@ const RunningOrders = () => {
   // Handle variation selection
   const handleVariationSelect = (variationId, optionId) => {
     setSelectedVariations(prev => {
-      if (variationId === 'size') {
-        // Size is single selection
-        return {
-          ...prev,
-          [variationId]: optionId
-        };
-      } else if (variationId === 'addons' || variationId === 'toppings') {
-        // Addons and toppings can be multiple selection
+      if (variationId === 'size' || variationId === 'addons' || variationId === 'toppings') {
+        // Size, addons and toppings can be multiple selection
         const currentSelections = prev[variationId] || [];
         const newSelections = currentSelections.includes(optionId)
           ? currentSelections.filter(id => id !== optionId)
@@ -342,9 +337,7 @@ const RunningOrders = () => {
 
     // Add variation prices
     Object.entries(selectedVariations).forEach(([type, selection]) => {
-      if (type === 'size' && variationPrices[type] && variationPrices[type][selection]) {
-        variationPrice += variationPrices[type][selection];
-      } else if ((type === 'toppings' || type === 'addons') && Array.isArray(selection)) {
+      if ((type === 'size' || type === 'toppings' || type === 'addons') && Array.isArray(selection)) {
         selection.forEach(item => {
           if (variationPrices[type] && variationPrices[type][item]) {
             variationPrice += variationPrices[type][item];
@@ -353,7 +346,20 @@ const RunningOrders = () => {
       }
     });
 
-    return basePrice + variationPrice;
+    const totalPricePerItem = basePrice + variationPrice;
+    return totalPricePerItem * foodQuantity;
+  };
+
+  // Handle quantity increase
+  const handleQuantityIncrease = () => {
+    setFoodQuantity(prev => prev + 1);
+  };
+
+  // Handle quantity decrease
+  const handleQuantityDecrease = () => {
+    if (foodQuantity > 1) {
+      setFoodQuantity(prev => prev - 1);
+    }
   };
 
   // Handle add to cart
@@ -361,6 +367,7 @@ const RunningOrders = () => {
     console.log('Adding to cart:', {
       food: selectedFood,
       variations: selectedVariations,
+      quantity: foodQuantity,
       totalPrice: calculateTotalPrice()
     });
 
@@ -368,6 +375,7 @@ const RunningOrders = () => {
     setShowFoodModal(false);
     setSelectedFood(null);
     setSelectedVariations({});
+    setFoodQuantity(1); // Reset quantity
   };
 
   // Handle table selection
@@ -715,6 +723,7 @@ const RunningOrders = () => {
         setSelectedFood(item);
         setShowFoodModal(true);
         setSelectedVariations({});
+        setFoodQuantity(1); // Reset quantity when opening modal
       }}
     >
       <div className="h-[88px]">
@@ -1515,6 +1524,7 @@ const RunningOrders = () => {
                     setShowFoodModal(false);
                     setSelectedFood(null);
                     setSelectedVariations({});
+                    setFoodQuantity(1); // Reset quantity
                   }}
                   className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
                 >
@@ -1564,35 +1574,38 @@ const RunningOrders = () => {
                           { name: 'Small', price: 0 },
                           { name: 'Medium', price: 2.50 },
                           { name: 'Large', price: 5.00 }
-                        ].map((size) => (
-                          <button
-                            key={size.name}
-                            onClick={() => handleVariationSelect('size', size.name)}
-                            className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${selectedVariations.size === size.name
-                              ? 'bg-primary/10 border-primary'
-                              : 'bg-white border-gray-200 hover:bg-gray-50'
-                              }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedVariations.size === size.name
-                                ? 'border-primary bg-primary'
-                                : 'border-gray-300'
-                                }`}>
-                                {selectedVariations.size === size.name && (
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                )}
+                        ].map((size) => {
+                          const isSelected = selectedVariations.size && selectedVariations.size.includes(size.name);
+                          return (
+                            <button
+                              key={size.name}
+                              onClick={() => handleVariationSelect('size', size.name)}
+                              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${isSelected
+                                ? 'bg-primary/10 border-primary'
+                                : 'bg-white border-gray-200 hover:bg-gray-50'
+                                }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
+                                  ? 'border-primary bg-primary'
+                                  : 'border-gray-300'
+                                  }`}>
+                                  {isSelected && (
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                  )}
+                                </div>
+                                <span className={`font-medium ${isSelected ? 'text-primary' : 'text-gray-700'
+                                  }`}>
+                                  {size.name}
+                                </span>
                               </div>
-                              <span className={`font-medium ${selectedVariations.size === size.name ? 'text-primary' : 'text-gray-700'
+                              <span className={`font-semibold ${isSelected ? 'text-primary' : 'text-gray-600'
                                 }`}>
-                                {size.name}
+                                {size.price > 0 ? `+€${size.price.toFixed(2)}` : 'Free'}
                               </span>
-                            </div>
-                            <span className={`font-semibold ${selectedVariations.size === size.name ? 'text-primary' : 'text-gray-600'
-                              }`}>
-                              {size.price > 0 ? `+€${size.price.toFixed(2)}` : 'Free'}
-                            </span>
-                          </button>
-                        ))}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1730,16 +1743,25 @@ const RunningOrders = () => {
                 {/* Action Buttons */}
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setShowFoodModal(false);
-                        setSelectedFood(null);
-                        setSelectedVariations({});
-                      }}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
+                    {/* Quantity Controls */}
+                    <div className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg bg-white">
+                      <button
+                        onClick={handleQuantityDecrease}
+                        disabled={foodQuantity <= 1}
+                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="w-12 text-center text-gray-800 font-medium text-lg">
+                        {foodQuantity}
+                      </span>
+                      <button
+                        onClick={handleQuantityIncrease}
+                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
                     <button
                       onClick={handleAddToCart}
                       className="flex-1 px-4 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
