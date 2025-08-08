@@ -49,13 +49,19 @@ export const themes = {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState('default');
-  const [themeColors, setThemeColors] = useState(themes.default);
+  // Initialize with saved theme or default immediately to prevent flickering
+  const getInitialTheme = () => {
+    const savedTheme = localStorage.getItem('posTheme');
+    return savedTheme && themes[savedTheme] ? savedTheme : 'default';
+  };
+  
+  const [currentTheme, setCurrentTheme] = useState(getInitialTheme);
+  const [themeColors, setThemeColors] = useState(themes[getInitialTheme()]);
 
   // Load saved theme on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('posTheme');
-    if (savedTheme && themes[savedTheme]) {
+    if (savedTheme && themes[savedTheme] && savedTheme !== currentTheme) {
       setCurrentTheme(savedTheme);
       setThemeColors(themes[savedTheme]);
     }
@@ -68,6 +74,15 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty('--color-primaryLight', themeColors.primaryLight);
     root.style.setProperty('--color-primaryExtraLight', themeColors.primaryExtraLight);
   }, [themeColors]);
+
+  // Set initial CSS custom properties immediately
+  useEffect(() => {
+    const root = document.documentElement;
+    const initialTheme = themes[getInitialTheme()];
+    root.style.setProperty('--color-primary', initialTheme.primary);
+    root.style.setProperty('--color-primaryLight', initialTheme.primaryLight);
+    root.style.setProperty('--color-primaryExtraLight', initialTheme.primaryExtraLight);
+  }, []);
 
   const changeTheme = (themeKey) => {
     if (themes[themeKey]) {

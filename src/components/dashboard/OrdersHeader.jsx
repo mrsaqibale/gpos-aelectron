@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLocation , useNavigate} from 'react-router-dom';
+import { useTheme } from '../../contexts/ThemeContext';
 
 import { 
   Home, 
@@ -27,42 +28,42 @@ import {
 const OrdersHeader = ({ onMenuClick }) => {
   const location = useLocation();
   const isOrdersRoute = location.pathname === '/dashboard/sales';
-const navigate = useNavigate();
+  const navigate = useNavigate();
+  const { themeColors } = useTheme();
 
   if (!isOrdersRoute) return null;
 
   const headerItems = [
     {
       icon: <Home size={16} />,
-    
-      bgColor: 'bg-primary',
+      style: { backgroundColor: themeColors.primary },
       textColor: 'text-white'
     },
     {
       icon: <Menu size={16} />,
-      bgColor: 'bg-primary',
+      style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
       onClick: onMenuClick
     },
     {
       icon: <ShoppingCart size={16} />,
-      bgColor: 'bg-primary',
+      style: { backgroundColor: themeColors.primary },
       textColor: 'text-white'
     },
     {
       icon: <FileText size={16} />,
-       bgColor: 'bg-primary',
+      style: { backgroundColor: themeColors.primary },
       textColor: 'text-white'
     },
    
     {
       icon: <CreditCard size={16} />,
-      bgColor: 'bg-primary',
+      style: { backgroundColor: themeColors.primary },
       textColor: 'text-white'
     },
      {
       icon: <Bell size={16} />,
-       bgColor: 'bg-primary',
+      style: { backgroundColor: themeColors.primary },
       textColor: 'text-white'
     },
    
@@ -71,39 +72,39 @@ const navigate = useNavigate();
       icon: <div className=" rounded-full border-1 border-white w-4 h-4  flex items-center justify-center">
     <span className="text-white font-bold text-xs">R</span>
   </div>,
-      bgColor: 'bg-primary',
+      style: { backgroundColor: themeColors.primary },
       textColor: 'text-white'
     },
-    {
-      icon: <Monitor size={16} />,
-      bgColor: 'bg-primary',
-      textColor: 'text-white'
-    },
+         {
+       icon: <Monitor size={16} />,
+       style: { backgroundColor: themeColors.primary },
+       textColor: 'text-white'
+     },
+      {
+       icon: <Clock size={16} />,
+       style: { backgroundColor: themeColors.primary },
+       textColor: 'text-white'
+     },
      {
-      icon: <Clock size={16} />,
-       bgColor: 'bg-primary',
-      textColor: 'text-white'
-    },
-    {
-      icon: <Printer size={16} />,
-       bgColor: 'bg-primary',
-      textColor: 'text-white'
-    },
-    
-    {
-      icon: <ListOrdered size={16} />,
-      label: 'Online Orders',
-      bgColor: 'bg-[#4e35ed]',
-      textColor: 'text-white',
-        textMargin: 'space-x-2',
-    },
-    {
-      icon: <ListOrderedIcon size={16} />,
-      label: 'Running Orders',
-      bgColor: 'bg-[#e63c3c]',
-      textColor: 'text-white',
-        textMargin: 'space-x-2',
-    }
+       icon: <Printer size={16} />,
+       style: { backgroundColor: themeColors.primary },
+       textColor: 'text-white'
+     },
+     
+     {
+       icon: <ListOrdered size={16} />,
+       label: 'Online Orders',
+       style: { backgroundColor: '#4e35ed' },
+       textColor: 'text-white',
+       textMargin: 'space-x-2',
+     },
+     {
+       icon: <ListOrderedIcon size={16} />,
+       label: 'Running Orders',
+       style: { backgroundColor: '#e63c3c' },
+       textColor: 'text-white',
+       textMargin: 'space-x-2',
+     }
   ];
 
   const statusItems = [
@@ -135,7 +136,8 @@ const navigate = useNavigate();
                 if (index === 0) navigate('/dashboard'); // Go back when Home icon is clicked
                 if (item.onClick) item.onClick(); // Handle custom onClick functions
               }}
-              className={`${item.bgColor} ${item.textColor} ${item.textMargin} btn-lifted rounded-md px-2 py-1.5 flex items-center justify-center  cursor-pointer hover:opacity-80 transition-opacity`}
+                             className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-2 py-1.5 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
+               style={item.style || (item.bgColor ? { backgroundColor: item.bgColor } : {})}
             >
               {item.icon}
               <span className="text-xs font-medium">{item.label}</span>
