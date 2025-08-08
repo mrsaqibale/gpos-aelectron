@@ -1,5 +1,6 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, protocol } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 // Disable Chrome sandbox to avoid permission issues on Linux
 // These must be called before app.whenReady()
@@ -54,7 +55,8 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      sandbox: false // Disable sandbox to avoid permission issues
+      sandbox: false, // Disable sandbox to avoid permission issues
+      webSecurity: false // Allow local file access
     },
   });
 
@@ -116,6 +118,26 @@ async function createWindow() {
 Menu.setApplicationMenu(null);
 
 app.whenReady().then(async () => {
+  // Register custom protocol for serving local files
+  protocol.registerFileProtocol('local-file', (request, callback) => {
+    const filePath = request.url.replace('local-file://', '');
+    const absolutePath = path.resolve(__dirname, '../src/database', filePath);
+    
+    // Security check: ensure the file is within the uploads directory
+    const uploadsDir = path.resolve(__dirname, '../src/database/uploads');
+    if (!absolutePath.startsWith(uploadsDir)) {
+      callback({ error: 403 });
+      return;
+    }
+    
+    // Check if file exists
+    if (fs.existsSync(absolutePath)) {
+      callback({ path: absolutePath });
+    } else {
+      callback({ error: 404 });
+    }
+  });
+
   const win = await createWindow();
 
   // Register IPC handlers

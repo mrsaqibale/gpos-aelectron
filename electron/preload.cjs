@@ -72,10 +72,16 @@ contextBridge.exposeInMainWorld('myAPI', {
 
   // Employee
   createEmployee: (data) => ipcRenderer.invoke('employee:create', data),
-  updateEmployee: (id, updates) => ipcRenderer.invoke('employee:update', id, updates),
+  updateEmployee: (id, updates, originalFilename) => ipcRenderer.invoke('employee:update', id, updates, originalFilename),
   getEmployeeById: (id) => ipcRenderer.invoke('employee:getById', id),
   getAllEmployees: () => ipcRenderer.invoke('employee:getAll'),
   loginEmployee: (code, roll) => ipcRenderer.invoke('employee:login', code, roll),
+  deleteEmployeeImage: (employeeId) => ipcRenderer.invoke('employee:deleteImage', employeeId),
+  getEmployeeImage: (imagePath) => ipcRenderer.invoke('employee:getImage', imagePath),
+  checkEmailUnique: (email, excludeId) => ipcRenderer.invoke('employee:checkEmailUnique', email, excludeId),
+  checkPhoneUnique: (phone, excludeId) => ipcRenderer.invoke('employee:checkPhoneUnique', phone, excludeId),
+  checkPinUnique: (pin, excludeId) => ipcRenderer.invoke('employee:checkPinUnique', pin, excludeId),
+  validateEmployeeData: (data, excludeId) => ipcRenderer.invoke('employee:validateData', data, excludeId),
 
   // Register
   createRegister: (data) => ipcRenderer.invoke('register:create', data),

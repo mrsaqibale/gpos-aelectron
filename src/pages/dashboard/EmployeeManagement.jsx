@@ -10,6 +10,7 @@ const EmployeeManagement = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
+  const [imageUrls, setImageUrls] = useState({});
   const [newEmployee, setNewEmployee] = useState({
     firstName: '',
     lastName: '',
@@ -28,6 +29,22 @@ const EmployeeManagement = () => {
       const result = await window.myAPI?.getAllEmployees();
       if (result.success) {
         setEmployees(result.data);
+        
+        // Load images for employees with file paths
+        const newImageUrls = {};
+        for (const employee of result.data) {
+          if (employee.imgurl && employee.imgurl.startsWith('uploads/')) {
+            try {
+              const imageResult = await window.myAPI.getEmployeeImage(employee.imgurl);
+              if (imageResult.success) {
+                newImageUrls[employee.id] = imageResult.data;
+              }
+            } catch (error) {
+              console.error('Error loading image for employee:', employee.id, error);
+            }
+          }
+        }
+        setImageUrls(newImageUrls);
       } else {
         console.error('Error fetching employees:', result.message);
       }
@@ -54,7 +71,27 @@ const EmployeeManagement = () => {
     });
     // Set image preview if employee has an image
     if (employee.imgurl) {
-      setImagePreview(`data:image/png;base64,${employee.imgurl}`);
+      if (employee.imgurl.startsWith('uploads/')) {
+        // Use cached image URL if available
+        const cachedUrl = imageUrls[employee.id];
+        if (cachedUrl) {
+          setImagePreview(cachedUrl);
+        } else {
+          // Load image if not cached
+          window.myAPI.getEmployeeImage(employee.imgurl).then(result => {
+            if (result.success) {
+              setImagePreview(result.data);
+            } else {
+              setImagePreview(null);
+            }
+          }).catch(() => {
+            setImagePreview(null);
+          });
+        }
+      } else {
+        // Old system: base64 data
+        setImagePreview(`data:image/png;base64,${employee.imgurl}`);
+      }
     } else {
       setImagePreview(null);
     }
@@ -217,6 +254,7 @@ const EmployeeManagement = () => {
         email: newEmployee.email,
         pin: newEmployee.pin,
         imgurl: imageBase64 || '', // Use empty string instead of null
+        originalFilename: newEmployee.image ? newEmployee.image.name : null,
         code: newEmployee.pin, // Using PIN as code for now
         address: '',
         isActive: 1,
@@ -231,7 +269,7 @@ const EmployeeManagement = () => {
 
       if (editingEmployee) {
         // Update existing employee
-        const result = await window.myAPI?.updateEmployee(editingEmployee.id, employeeData);
+        const result = await window.myAPI?.updateEmployee(editingEmployee.id, employeeData, newEmployee.image ? newEmployee.image.name : null);
         if (result.success) {
           fetchEmployees();
         } else {
@@ -659,9 +697,14 @@ const EmployeeManagement = () => {
                     <div className="flex items-center gap-3">
                       {employee.imgurl ? (
                         <img
-                          src={`data:image/png;base64,${employee.imgurl}`}
+                          src={employee.imgurl.startsWith('uploads/') ? imageUrls[employee.id] : `data:image/png;base64,${employee.imgurl}`}
                           alt={`${employee.fname} ${employee.lname}`}
                           className="w-8 h-8 object-cover rounded-full"
+                          onError={(e) => {
+                            // Fallback to initials if image fails to load
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
                         />
                       ) : (
                         <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
@@ -670,6 +713,11 @@ const EmployeeManagement = () => {
                           </span>
                         </div>
                       )}
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center" style={{ display: 'none' }}>
+                        <span className="text-xs text-gray-500">
+                          {employee.fname?.charAt(0)}{employee.lname?.charAt(0)}
+                        </span>
+                      </div>
                       <span className="text-sm font-medium text-gray-800">
                         {employee.fname} {employee.lname}
                       </span>
