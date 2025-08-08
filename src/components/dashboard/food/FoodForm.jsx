@@ -40,7 +40,7 @@ const FoodForm = ({ food, onSubmit }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [focusedField, setFocusedField] = useState('');
-  const [selectedAddon, setSelectedAddon] = useState('');
+
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [allergins, setAllergins] = useState([]);
@@ -48,15 +48,15 @@ const FoodForm = ({ food, onSubmit }) => {
   const [allerginInput, setAllerginInput] = useState('');
   const [allerginSuggestions, setAllerginSuggestions] = useState([]);
   const [showAllerginSuggestions, setShowAllerginSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [adons, setAdons] = useState([]);
+  const [selectedAdons, setSelectedAdons] = useState([]);
+  const [adonInput, setAdonInput] = useState('');
+  const [adonSuggestions, setAdonSuggestions] = useState([]);
+  const [showAdonSuggestions, setShowAdonSuggestions] = useState(false);
+  const [selectedAdonSuggestionIndex, setSelectedAdonSuggestionIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const addonsWithValues = [
-    { name: 'Extra Cheese', value: 2.50 },
-    { name: 'Double Patty', value: 4.00 },
-    { name: 'Extra Sauce', value: 1.00 },
-    { name: 'Spicy', value: 0.50 },
-    { name: 'No Onion', value: 0.00 }
-  ];
 
   // Load categories and subcategories
   useEffect(() => {
@@ -103,6 +103,29 @@ const FoodForm = ({ food, onSubmit }) => {
     };
 
     loadAllergins();
+  }, []);
+
+  // Load adons
+  useEffect(() => {
+    const loadAdons = async () => {
+      try {
+        console.log('Loading adons...');
+        const result = await window.myAPI?.getAdonsByHotel(1); // Assuming hotel_id = 1
+        console.log('Adons API result:', result);
+        if (result && result.success) {
+          // Filter adons to only show active ones (status = 1)
+          const activeAdons = (result.data || []).filter(adon => adon.status === 1);
+          setAdons(activeAdons);
+          console.log('Active adons loaded:', activeAdons);
+        } else {
+          console.error('Failed to load adons:', result?.message);
+        }
+      } catch (error) {
+        console.error('Error loading adons:', error);
+      }
+    };
+
+    loadAdons();
   }, []);
 
   // Load subcategories when category changes
@@ -166,7 +189,54 @@ const FoodForm = ({ food, onSubmit }) => {
         status: food.status !== undefined ? food.status : true
       });
 
-      if (food.image) setImagePreview(food.image);
+      // Load image preview
+      if (food.image) {
+        if (food.image.startsWith('uploads/')) {
+          // Load image from uploads folder
+          window.myAPI.getFoodImage(food.image).then(result => {
+            if (result.success) {
+              setImagePreview(result.data);
+            } else {
+              console.error('Failed to load food image:', result.message);
+              setImagePreview(null);
+            }
+          }).catch(() => {
+            setImagePreview(null);
+          });
+        } else if (food.image.startsWith('data:image')) {
+          // Already a base64 data URL
+          setImagePreview(food.image);
+        } else {
+          // Assume it's base64 without data URL prefix
+          setImagePreview(`data:image/png;base64,${food.image}`);
+        }
+      } else {
+        setImagePreview(null);
+      }
+      
+      // Load existing allergens if editing
+      if (food.allergins && food.allergins.length > 0) {
+        setSelectedAllergins(food.allergins);
+      }
+
+      // Load existing adons if editing
+      if (food.adons && food.adons.length > 0) {
+        // If adons are already loaded in the food object
+        setSelectedAdons(food.adons);
+      } else if (food.id) {
+        // If not loaded, fetch them separately
+        const loadFoodAdons = async () => {
+          try {
+            const adonResult = await window.myAPI?.getFoodAdons(food.id);
+            if (adonResult && adonResult.success) {
+              setSelectedAdons(adonResult.data || []);
+            }
+          } catch (error) {
+            console.error('Error loading food adons:', error);
+          }
+        };
+        loadFoodAdons();
+      }
     }
   }, [food]);
 
@@ -189,23 +259,7 @@ const FoodForm = ({ food, onSubmit }) => {
     }
   };
 
-  const handleAddAddon = () => {
-    if (selectedAddon && !formData.addons.some(a => a.name === selectedAddon)) {
-      const addon = addonsWithValues.find(a => a.name === selectedAddon);
-      setFormData(prev => ({
-        ...prev,
-        addons: [...prev.addons, addon]
-      }));
-      setSelectedAddon('');
-    }
-  };
 
-  const handleRemoveAddon = (addonName) => {
-    setFormData(prev => ({
-      ...prev,
-      addons: prev.addons.filter(a => a.name !== addonName)
-    }));
-  };
 
   const handleAddVariation = () => {
     setFormData(prev => ({
@@ -266,6 +320,7 @@ const FoodForm = ({ food, onSubmit }) => {
   const handleAllerginInputChange = (e) => {
     const value = e.target.value;
     setAllerginInput(value);
+    setSelectedSuggestionIndex(-1); // Reset selection when typing
     
     if (value.trim()) {
       // Filter suggestions based on input
@@ -276,9 +331,22 @@ const FoodForm = ({ food, onSubmit }) => {
       setAllerginSuggestions(filtered);
       setShowAllerginSuggestions(true);
     } else {
-      setAllerginSuggestions([]);
-      setShowAllerginSuggestions(false);
+      // Show all available allergens when input is empty
+      const availableAllergins = allergins.filter(allergin => 
+        !selectedAllergins.some(selected => selected.id === allergin.id)
+      );
+      setAllerginSuggestions(availableAllergins);
+      setShowAllerginSuggestions(true);
     }
+  };
+
+  const handleAllerginFocus = () => {
+    // Show all available allergens when field is focused
+    const availableAllergins = allergins.filter(allergin => 
+      !selectedAllergins.some(selected => selected.id === allergin.id)
+    );
+    setAllerginSuggestions(availableAllergins);
+    setShowAllerginSuggestions(true);
   };
 
   const handleAllerginSelect = (allergin) => {
@@ -288,13 +356,63 @@ const FoodForm = ({ food, onSubmit }) => {
     setAllerginInput('');
     setAllerginSuggestions([]);
     setShowAllerginSuggestions(false);
+    setSelectedSuggestionIndex(-1);
   };
 
   const handleAllerginRemove = (allerginId) => {
     setSelectedAllergins(prev => prev.filter(allergin => allergin.id !== allerginId));
   };
 
-  const handleAllerginKeyPress = async (e) => {
+  const handleAllerginKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (selectedSuggestionIndex >= 0 && allerginSuggestions[selectedSuggestionIndex]) {
+        // Select the highlighted suggestion
+        handleAllerginSelect(allerginSuggestions[selectedSuggestionIndex]);
+      } else if (allerginInput.trim()) {
+        // Create new allergen or select existing
+        const existingAllergin = allergins.find(allergin => 
+          allergin.name.toLowerCase() === allerginInput.trim().toLowerCase()
+        );
+        
+        if (existingAllergin) {
+          handleAllerginSelect(existingAllergin);
+        } else {
+          // Create new allergen
+          try {
+            const result = await window.myAPI?.createAllergin({ name: allerginInput.trim() });
+            if (result && result.success) {
+              const newAllergin = { id: result.id, name: allerginInput.trim() };
+              setAllergins(prev => [...prev, newAllergin]);
+              setSelectedAllergins(prev => [...prev, newAllergin]);
+              setAllerginInput('');
+              setAllerginSuggestions([]);
+              setShowAllerginSuggestions(false);
+              setSelectedSuggestionIndex(-1);
+            } else {
+              console.error('Failed to create allergen:', result?.message);
+            }
+          } catch (error) {
+            console.error('Error creating allergen:', error);
+          }
+        }
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => 
+        prev < allerginSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Escape') {
+      setShowAllerginSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }
+  };
+
+    const handleAllerginKeyPress = async (e) => {
     if (e.key === 'Enter' && allerginInput.trim()) {
       e.preventDefault();
       
@@ -326,6 +444,75 @@ const FoodForm = ({ food, onSubmit }) => {
     }
   };
 
+  // Adon handling functions
+  const handleAdonInputChange = (e) => {
+    const value = e.target.value;
+    setAdonInput(value);
+    setSelectedAdonSuggestionIndex(-1); // Reset selection when typing
+    
+    if (value.trim()) {
+      // Filter suggestions based on input
+      const filtered = adons.filter(adon => 
+        adon.name.toLowerCase().includes(value.toLowerCase()) &&
+        !selectedAdons.some(selected => selected.id === adon.id)
+      );
+      setAdonSuggestions(filtered);
+      setShowAdonSuggestions(true);
+    } else {
+      // Show all available adons when input is empty
+      const availableAdons = adons.filter(adon => 
+        !selectedAdons.some(selected => selected.id === adon.id)
+      );
+      setAdonSuggestions(availableAdons);
+      setShowAdonSuggestions(true);
+    }
+  };
+
+  const handleAdonFocus = () => {
+    // Show all available adons when field is focused
+    const availableAdons = adons.filter(adon => 
+      !selectedAdons.some(selected => selected.id === adon.id)
+    );
+    setAdonSuggestions(availableAdons);
+    setShowAdonSuggestions(true);
+  };
+
+  const handleAdonSelect = (adon) => {
+    if (!selectedAdons.some(selected => selected.id === adon.id)) {
+      setSelectedAdons(prev => [...prev, adon]);
+    }
+    setAdonInput('');
+    setAdonSuggestions([]);
+    setShowAdonSuggestions(false);
+    setSelectedAdonSuggestionIndex(-1);
+  };
+
+  const handleAdonRemove = (adonId) => {
+    setSelectedAdons(prev => prev.filter(adon => adon.id !== adonId));
+  };
+
+  const handleAdonKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (selectedAdonSuggestionIndex >= 0 && adonSuggestions[selectedAdonSuggestionIndex]) {
+        // Select the highlighted suggestion
+        handleAdonSelect(adonSuggestions[selectedAdonSuggestionIndex]);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedAdonSuggestionIndex(prev => 
+        prev < adonSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedAdonSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Escape') {
+      setShowAdonSuggestions(false);
+      setSelectedAdonSuggestionIndex(-1);
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
@@ -341,24 +528,33 @@ const FoodForm = ({ food, onSubmit }) => {
     
     setSubmitting(true);
     try {
-      // Convert image to base64 if it's a file
-      let imageBase64 = null;
+      // Handle image data
+      let imageData = null;
+      let originalFilename = null;
+      
       if (formData.image && formData.image instanceof File) {
-        imageBase64 = await new Promise((resolve, reject) => {
+        // Convert file to base64
+        imageData = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
           reader.readAsDataURL(formData.image);
         });
-      } else if (typeof formData.image === 'string') {
-        imageBase64 = formData.image;
+        originalFilename = formData.image.name;
+      } else if (typeof formData.image === 'string' && formData.image.startsWith('data:image')) {
+        // Already a base64 data URL
+        imageData = formData.image;
+      } else if (typeof formData.image === 'string' && formData.image.startsWith('uploads/')) {
+        // Already a file path, keep as is
+        imageData = formData.image;
       }
 
       // Transform form data to match database schema
       const foodData = {
         name: formData.name,
         description: formData.description,
-        image: imageBase64,
+        image: imageData,
+        originalFilename: originalFilename,
         category_id: parseInt(formData.category_id),
         subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : null,
         price: parseFloat(formData.price),
@@ -402,6 +598,22 @@ const FoodForm = ({ food, onSubmit }) => {
             }
           } catch (error) {
             console.error('Error saving food-allergin relationships:', error);
+          }
+        }
+
+        // Save food-addon relationships if adons are selected
+        if (selectedAdons.length > 0) {
+          try {
+            const adonIds = selectedAdons.map(adon => adon.id);
+            const adonResult = await window.myAPI?.updateFoodAdons(result.food_id, adonIds);
+            
+            if (adonResult && adonResult.success) {
+              console.log('Food-addon relationships saved successfully');
+            } else {
+              console.error('Failed to save food-addon relationships:', adonResult?.message);
+            }
+          } catch (error) {
+            console.error('Error saving food-addon relationships:', error);
           }
         }
         
@@ -624,25 +836,31 @@ const FoodForm = ({ food, onSubmit }) => {
           {/* Allergin Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Allergins</label>
+            
+            {/* Search Input */}
             <div className="relative">
               <input
                 type="text"
                 value={allerginInput}
                 onChange={handleAllerginInputChange}
-                onKeyPress={handleAllerginKeyPress}
-                onFocus={() => setShowAllerginSuggestions(true)}
+                onKeyDown={handleAllerginKeyDown}
+                onFocus={handleAllerginFocus}
                 onBlur={() => setTimeout(() => setShowAllerginSuggestions(false), 200)}
                 className={getInputClasses('allerginInput')}
-                placeholder="Type allergen name and press Enter, or select from suggestions"
+                placeholder="Click to see all allergens, type to search"
               />
               
               {/* Suggestions dropdown */}
               {showAllerginSuggestions && allerginSuggestions.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                  {allerginSuggestions.map((allergin) => (
+                  {allerginSuggestions.map((allergin, index) => (
                     <div
                       key={allergin.id}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                        index === selectedSuggestionIndex 
+                          ? 'bg-primary text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
                       onClick={() => handleAllerginSelect(allergin)}
                     >
                       {allergin.name}
@@ -652,7 +870,7 @@ const FoodForm = ({ food, onSubmit }) => {
               )}
             </div>
             
-            {/* Selected allergens */}
+            {/* Selected allergens tags */}
             {selectedAllergins.length > 0 && (
               <div className="mt-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Selected Allergins:</label>
@@ -838,73 +1056,76 @@ const FoodForm = ({ food, onSubmit }) => {
           </div>
         </div>
 
-        {/* Addons Section */}
+        {/* Adons Section */}
         <div className="mb-8">
           <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
             <Package className="h-5 w-5 text-primaryLight mr-2" />
-            <h2 className="text-lg font-semibold">Addons</h2>
+            <h2 className="text-lg font-semibold">Adons</h2>
           </div>
           
+          {/* Adon Selection */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Addon</label>
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                <select
-                  value={selectedAddon}
-                  onChange={(e) => setSelectedAddon(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight appearance-none pr-8"
-                >
-                  <option value="">Choose an addon to add</option>
-                  {addonsWithValues
-                    .filter(addon => !formData.addons.some(a => a.name === addon.name))
-                    .map(addon => (
-                      <option key={addon.name} value={addon.name}>
-                        {addon.name} (+€{addon.value.toFixed(2)})
-                      </option>
-                    ))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-              </div>
-              <button
-                type="button"
-                onClick={handleAddAddon}
-                disabled={!selectedAddon}
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primaryDark disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Selected Addons</label>
-            {formData.addons.length > 0 ? (
-              <div className="space-y-2">
-                {formData.addons.map((addon, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Adons</label>
+            
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                value={adonInput}
+                onChange={handleAdonInputChange}
+                onKeyDown={handleAdonKeyDown}
+                onFocus={handleAdonFocus}
+                onBlur={() => setTimeout(() => setShowAdonSuggestions(false), 200)}
+                className={getInputClasses('adonInput')}
+                placeholder="Click to see all adons, type to search"
+              />
+              
+              {/* Suggestions dropdown */}
+              {showAdonSuggestions && adonSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {adonSuggestions.map((adon, index) => (
+                    <div
+                      key={adon.id}
+                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                        index === selectedAdonSuggestionIndex 
+                          ? 'bg-primary text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                      onClick={() => handleAdonSelect(adon)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span>{adon.name}</span>
+                        <span className="text-sm font-medium">€{adon.price}</span>
                       </div>
-                      <span className="text-sm font-medium text-gray-700">{addon.name}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-primaryLight">+€{addon.value.toFixed(2)}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Selected adons tags */}
+            {selectedAdons.length > 0 && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Selected Adons:</label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedAdons.map((adon) => (
+                    <div
+                      key={adon.id}
+                      className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      <span>{adon.name}</span>
+                      <span className="ml-2 font-medium">€{adon.price}</span>
                       <button
                         type="button"
-                        onClick={() => handleRemoveAddon(addon.name)}
-                        className="text-red-600 hover:text-red-800"
+                        onClick={() => handleAdonRemove(adon.id)}
+                        className="ml-2 text-green-600 hover:text-green-800"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </button>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">No addons selected</p>
             )}
           </div>
         </div>

@@ -80,7 +80,7 @@ function registerEmployeeIpcHandlers() {
     }
   });
   
-  ipcMain.handle('employee:getAll', async () => getAllEmployees());
+  ipcMain.handle('employee:getAll', async (event, excludeEmployeeId) => getAllEmployees(excludeEmployeeId));
   ipcMain.handle('employee:getById', async (event, id) => getEmployeeById(id));
   ipcMain.handle('employee:login', async (event, code, roll) => loginEmployee(code, roll));
   ipcMain.handle('employee:deleteImage', async (event, employeeId) => deleteEmployeeImage(employeeId));

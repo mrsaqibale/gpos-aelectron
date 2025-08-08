@@ -26,8 +26,13 @@ const fetchAddons = async ()=>{
       }
 
 const hotelId=1;
-const data= await window.myAPI?.getAdonsByHotel?.(hotelId);
-setAddons(data);
+const result = await window.myAPI?.getAdonsByHotel?.(hotelId);
+if (result && result.success) {
+  setAddons(result.data || []);
+} else {
+  console.error('Failed to load adons:', result?.message);
+  setAddons([]);
+}
   }catch(error){
     console.error('Error fetching addons:', error);
   }
@@ -91,8 +96,10 @@ setAddons(data);
         const data = await window.myAPI?.createAdon?.(addonToSave);
         if (data?.success) {
           const hotelId = 1;
-          const updatedAddons = await window.myAPI?.getAdonsByHotel?.(hotelId);
-          setAddons(updatedAddons);
+          const result = await window.myAPI?.getAdonsByHotel?.(hotelId);
+          if (result && result.success) {
+            setAddons(result.data || []);
+          }
           
         }
       } catch (error) {
