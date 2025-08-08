@@ -27,6 +27,14 @@ const { createCategory, updateCategory, getCategoryByRestaurantId, getCategoryBy
 const { createSubcategory, updateSubcategory, getSubcategoriesByCategory, getSubcategoriesByHotelId } = getModelPath('foods/subcategories.js');
 const { createAdon, updateAdon, getAdonsByHotelId } = getModelPath('foods/adons.js');
 const { 
+  createFoodAdon, 
+  getFoodAdons, 
+  getAllFoodAdons, 
+  updateFoodAdons, 
+  deleteFoodAdon, 
+  deleteAllFoodAdons 
+} = getModelPath('foods/food_adons.js');
+const { 
   createAllergin, 
   createAllergins, 
   getAllAllergins, 
@@ -67,6 +75,14 @@ ipcMain.handle('subcategory:getByHotel', (event, hotelId) => getSubcategoriesByH
 ipcMain.handle('adon:create', (event, data) => createAdon(data));
 ipcMain.handle('adon:update', (event, id, updates) => updateAdon(id, updates));
 ipcMain.handle('adon:getByHotel', (event, hotelId) => getAdonsByHotelId(hotelId));
+
+// Food-Adon relationship IPC
+ipcMain.handle('foodAdon:create', (event, foodId, adonId) => createFoodAdon(foodId, adonId));
+ipcMain.handle('foodAdon:getByFood', (event, foodId) => getFoodAdons(foodId));
+ipcMain.handle('foodAdon:getAll', (event) => getAllFoodAdons());
+ipcMain.handle('foodAdon:update', (event, foodId, adonIds) => updateFoodAdons(foodId, adonIds));
+ipcMain.handle('foodAdon:delete', (event, foodId, adonId) => deleteFoodAdon(foodId, adonId));
+ipcMain.handle('foodAdon:deleteAll', (event, foodId) => deleteAllFoodAdons(foodId));
 
 // Allergin IPC
 ipcMain.handle('allergin:create', (event, data) => createAllergin(data));

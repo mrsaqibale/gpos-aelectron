@@ -216,6 +216,15 @@ export function getFoodById(id) {
     `);
     const allergins = allerginsStmt.all(id);
 
+    // Get adons for this food
+    const adonsStmt = db.prepare(`
+      SELECT a.* 
+      FROM adons a
+      INNER JOIN food_adons fa ON a.id = fa.adon_id
+      WHERE fa.food_id = ? AND a.isdeleted = 0 AND fa.isdeleted = 0
+    `);
+    const adons = adonsStmt.all(id);
+
     return {
       success: true,
       data: {
@@ -223,7 +232,8 @@ export function getFoodById(id) {
         category,
         subcategory,
         variations,
-        allergins
+        allergins,
+        adons
       }
     };
   } catch (err) {

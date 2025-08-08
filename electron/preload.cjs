@@ -44,6 +44,14 @@ contextBridge.exposeInMainWorld('myAPI', {
   updateFoodAllergins: (foodId, allerginIds) => ipcRenderer.invoke('foodAllergin:update', foodId, allerginIds),
   getAllFoodAllergins: () => ipcRenderer.invoke('foodAllergin:getAll'),
 
+  // Food-Adon relationships
+  createFoodAdon: (foodId, adonId) => ipcRenderer.invoke('foodAdon:create', foodId, adonId),
+  getFoodAdons: (foodId) => ipcRenderer.invoke('foodAdon:getByFood', foodId),
+  getAllFoodAdons: () => ipcRenderer.invoke('foodAdon:getAll'),
+  updateFoodAdons: (foodId, adonIds) => ipcRenderer.invoke('foodAdon:update', foodId, adonIds),
+  deleteFoodAdon: (foodId, adonId) => ipcRenderer.invoke('foodAdon:delete', foodId, adonId),
+  deleteAllFoodAdons: (foodId) => ipcRenderer.invoke('foodAdon:deleteAll', foodId),
+
   // Food
   createFood: (foodData) => ipcRenderer.invoke('food:create', foodData),
   updateFood: (id, data) => ipcRenderer.invoke('food:update', id, data),

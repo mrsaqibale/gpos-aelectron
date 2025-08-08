@@ -220,8 +220,22 @@ const FoodForm = ({ food, onSubmit }) => {
       }
 
       // Load existing adons if editing
-      if (food.addons && food.addons.length > 0) {
-        setSelectedAdons(food.addons);
+      if (food.adons && food.adons.length > 0) {
+        // If adons are already loaded in the food object
+        setSelectedAdons(food.adons);
+      } else if (food.id) {
+        // If not loaded, fetch them separately
+        const loadFoodAdons = async () => {
+          try {
+            const adonResult = await window.myAPI?.getFoodAdons(food.id);
+            if (adonResult && adonResult.success) {
+              setSelectedAdons(adonResult.data || []);
+            }
+          } catch (error) {
+            console.error('Error loading food adons:', error);
+          }
+        };
+        loadFoodAdons();
       }
     }
   }, [food]);
@@ -591,8 +605,13 @@ const FoodForm = ({ food, onSubmit }) => {
         if (selectedAdons.length > 0) {
           try {
             const adonIds = selectedAdons.map(adon => adon.id);
-            // Note: You'll need to implement updateFoodAdons API
-            console.log('Selected adons for food:', adonIds);
+            const adonResult = await window.myAPI?.updateFoodAdons(result.food_id, adonIds);
+            
+            if (adonResult && adonResult.success) {
+              console.log('Food-addon relationships saved successfully');
+            } else {
+              console.error('Failed to save food-addon relationships:', adonResult?.message);
+            }
           } catch (error) {
             console.error('Error saving food-addon relationships:', error);
           }
