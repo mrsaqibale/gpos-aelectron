@@ -823,7 +823,7 @@ const RunningOrders = () => {
   };
   return (
     <>
-      <div className="flex gap-2.5 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
+      <div className="flex justify-between gap-2 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
         <div className='flex flex-col  gap-2.5 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
           {/* Running Orders */}
