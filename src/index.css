@@ -8,15 +8,50 @@
   --color-secondary:#D4B85F;
 }
 
-/* Test style to see if CSS is loading */
-body {
-  background-color: #f0f0f0;
+/* Ensure full viewport height without scrollbars but maintain original spacing */
+html, body {
+  height: 100vh;
   margin: 0;
   padding: 0;
+  overflow: hidden; /* Prevent body scroll */
+  background-color: #f0f0f0;
 }
 
 #root {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* Prevent root scroll */
+}
+
+/* Dashboard specific styles for full height with original spacing */
+.dashboard-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px; /* Restore original padding */
+}
+
+.dashboard-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 8px; /* Restore original padding */
+}
+
+.dashboard-main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 8px; /* Restore original padding */
+}
+
+.dashboard-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px; /* Restore original padding */
 }
 
 @layer components {
@@ -98,12 +133,6 @@ body {
   }
 }
 
-/* Add to your index.css or global CSS file */
-html, body, #root {
-  height: 100%;
-  overflow: auto; /* or scroll */
-}
-
 /* Make title bar draggable */
 .title-bar {
   -webkit-app-region: drag;
@@ -112,6 +141,7 @@ html, body, #root {
 .title-bar button {
   -webkit-app-region: no-drag;
 }
+
 /* Modal scroll improvements */
 .modal-backdrop {
   scrollbar-width: none; /* Firefox */
@@ -150,6 +180,7 @@ body.modal-open {
 .modal-scrollable::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;                    /* Thin scrollbar */
 }
