@@ -10,13 +10,17 @@ const db = new Database(dbPath);
 // Get adons by hotel (restaurant) id only name, price stock type ,stock and status
 export function getAdonsByHotelId(hotel_id) 
 {
-  const stmt = db.prepare(`
-    SELECT id, name, price, stock_type, addon_stock, status 
-    FROM adons 
-    WHERE restaurant_id = ? AND isdeleted = 0
-  `);
-  // const stmt = db.prepare('SELECT * FROM adons WHERE restaurant_id = ? AND isdeleted = 0');
-  return stmt.all(hotel_id);
+  try {
+    const stmt = db.prepare(`
+      SELECT id, name, price, stock_type, addon_stock, status 
+      FROM adons 
+      WHERE restaurant_id = ? AND isdeleted = 0
+    `);
+    const adons = stmt.all(hotel_id);
+    return { success: true, data: adons };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
 }
 
 // Create a new adon

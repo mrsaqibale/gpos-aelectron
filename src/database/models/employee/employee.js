@@ -238,9 +238,20 @@ export function updateEmployee(id, updates, originalFilename) {
 // Login function: get employee by code and roll
 export function loginEmployee(code, roll) {
   try {
-    const stmt = db.prepare('SELECT * FROM employee WHERE code = ? AND roll = ? AND isDeleted = 0');
+    const stmt = db.prepare('SELECT * FROM employee WHERE code = ? AND roll = ? AND isDeleted = 0 AND isActive = 1');
     const employee = stmt.get(code, roll);
     if (!employee) return errorResponse('Invalid code or roll.');
+    
+    // Check if employee is active
+    if (employee.isActive !== 1) {
+      return errorResponse('Your account is deactivated. Please contact administrator.');
+    }
+    
+    // Check if employee is not deleted
+    if (employee.isDeleted === 1) {
+      return errorResponse('Your account has been deleted. Please contact administrator.');
+    }
+    
     return { success: true, data: employee };
   } catch (err) {
     return errorResponse(err.message);
@@ -248,10 +259,21 @@ export function loginEmployee(code, roll) {
 }
 
 // Get all employees
-export function getAllEmployees() {
+export function getAllEmployees(excludeEmployeeId = null) {
   try {
-    const stmt = db.prepare('SELECT * FROM employee WHERE isDeleted = 0 ORDER BY created_at DESC');
-    const employees = stmt.all();
+    let sql = 'SELECT * FROM employee WHERE isDeleted = 0';
+    let params = [];
+    
+    // Exclude current logged-in employee if provided
+    if (excludeEmployeeId) {
+      sql += ' AND id != ?';
+      params.push(excludeEmployeeId);
+    }
+    
+    sql += ' ORDER BY created_at DESC';
+    
+    const stmt = db.prepare(sql);
+    const employees = stmt.all(...params);
     return { success: true, data: employees };
   } catch (err) {
     return errorResponse(err.message);

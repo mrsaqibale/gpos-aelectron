@@ -28,7 +28,20 @@ const EmployeeManagement = () => {
 
   const fetchEmployees = async () => {
     try {
-      const result = await window.myAPI?.getAllEmployees();
+      // Get current logged-in employee ID to exclude from the list
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      let currentEmployeeId = null;
+      
+      if (currentEmployee) {
+        try {
+          const employeeData = JSON.parse(currentEmployee);
+          currentEmployeeId = employeeData.id;
+        } catch (error) {
+          console.error('Error parsing current employee data:', error);
+        }
+      }
+      
+      const result = await window.myAPI?.getAllEmployees(currentEmployeeId);
       if (result.success) {
         setEmployees(result.data);
         
