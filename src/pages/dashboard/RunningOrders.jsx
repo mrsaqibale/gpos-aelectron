@@ -34,7 +34,8 @@ import {
   Utensils,
   Delete,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Gift
 } from 'lucide-react';
 import CustomerManagement from '../../components/dashboard/CustomerManagement';
 import CustomerSearchModal from '../../components/dashboard/CustomerSearchModal';
@@ -73,7 +74,12 @@ const RunningOrders = () => {
   const [foods, setFoods] = useState([]);
   const [foodsLoading, setFoodsLoading] = useState(false);
   
-
+  // Coupon Modal State
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
 
 
   const orders = [
@@ -544,6 +550,162 @@ const RunningOrders = () => {
     }
   };
 
+  // Coupon-related functions
+  const fetchAvailableCoupons = async () => {
+    try {
+      setCouponsLoading(true);
+      console.log('Fetching available coupons...');
+      
+      if (!window.myAPI) {
+        console.error('myAPI is not available');
+        setAvailableCoupons([]);
+        return;
+      }
+      
+      const result = await window.myAPI.getAllCoupons();
+      console.log('Raw coupons API result:', result);
+      console.log('Result success:', result?.success);
+      console.log('Result data:', result?.data);
+      
+      if (result && result.success) {
+        console.log('Raw coupons data:', result.data);
+        
+        // Transform database data to match frontend format (similar to Coupons.jsx)
+        const transformedCoupons = result.data.map(coupon => {
+          console.log('Processing coupon:', coupon);
+          const transformed = {
+            id: coupon.id,
+            title: coupon.title,
+            code: coupon.code,
+            customerType: coupon.type || 'All Customers',
+            limitForSameUser: coupon.usage_limit || 0,
+            startDate: coupon.start_date ? coupon.start_date.split('T')[0] : '',
+            expireDate: coupon.end_date ? coupon.end_date.split('T')[0] : '',
+            discountType: coupon.discount_type || 'percentage',
+            discount: coupon.amount || 0,
+            maxDiscount: coupon.max_discount || 0,
+            minPurchase: coupon.min_purchase || 0,
+            totalUsers: 0, // This would need to be calculated from usage data
+            status: coupon.status === 1 ? 'active' : 'inactive'
+          };
+          console.log('Transformed coupon:', transformed);
+          return transformed;
+        });
+        
+        console.log('All transformed coupons:', transformedCoupons);
+        
+        // Filter for active/available coupons
+        const activeCoupons = transformedCoupons.filter(coupon => {
+          console.log('Checking coupon status:', coupon.status, 'expireDate:', coupon.expireDate);
+          const isActive = coupon.status === 'active';
+          const notExpired = !coupon.expireDate || new Date(coupon.expireDate) > new Date();
+          console.log('Is active:', isActive, 'Not expired:', notExpired);
+          return isActive && notExpired;
+        });
+        
+        // TEMPORARY: Show all coupons for debugging
+        console.log('All coupons (including inactive):', transformedCoupons);
+        console.log('Active coupons only:', activeCoupons);
+        
+        console.log('Active coupons after filtering:', activeCoupons);
+        setAvailableCoupons(activeCoupons);
+        console.log('Available coupons loaded:', activeCoupons);
+      } else {
+        console.error('Failed to fetch coupons:', result?.message);
+        setAvailableCoupons([]);
+      }
+    } catch (error) {
+      console.error('Error fetching coupons:', error);
+      setAvailableCoupons([]);
+    } finally {
+      setCouponsLoading(false);
+    }
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      alert('Please enter a coupon code');
+      return;
+    }
+
+    try {
+      console.log('Applying coupon code:', couponCode);
+      
+      if (!window.myAPI) {
+        console.error('myAPI is not available');
+        alert('System error: API not available');
+        return;
+      }
+      
+      const result = await window.myAPI.searchCouponByCode(couponCode.trim());
+      console.log('Coupon search result:', result);
+      
+      if (result && result.success && result.data) {
+        const coupon = result.data;
+        
+        // Transform the coupon data to match our frontend format
+        const transformedCoupon = {
+          id: coupon.id,
+          title: coupon.title,
+          code: coupon.code,
+          customerType: coupon.type || 'All Customers',
+          limitForSameUser: coupon.usage_limit || 0,
+          startDate: coupon.start_date ? coupon.start_date.split('T')[0] : '',
+          expireDate: coupon.end_date ? coupon.end_date.split('T')[0] : '',
+          discountType: coupon.discount_type || 'percentage',
+          discount: coupon.amount || 0,
+          maxDiscount: coupon.max_discount || 0,
+          minPurchase: coupon.min_purchase || 0,
+          totalUsers: 0,
+          status: coupon.status === 1 ? 'active' : 'inactive'
+        };
+        
+        // Check if coupon is valid
+        if (transformedCoupon.status !== 'active') {
+          alert('This coupon is not active');
+          return;
+        }
+        
+        if (transformedCoupon.expireDate && new Date(transformedCoupon.expireDate) < new Date()) {
+          alert('This coupon has expired');
+          return;
+        }
+        
+        // Apply the coupon
+        setAppliedCoupon(transformedCoupon);
+        setCouponCode('');
+        alert(`Coupon "${transformedCoupon.code}" applied successfully!`);
+        
+        // Close modal after successful application
+        setTimeout(() => {
+          setShowCouponModal(false);
+        }, 1500);
+        
+      } else {
+        alert('Invalid coupon code. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      alert('Error applying coupon. Please try again.');
+    }
+  };
+
+  const handleOpenCouponModal = () => {
+    setShowCouponModal(true);
+    setCouponCode('');
+    setAppliedCoupon(null);
+    fetchAvailableCoupons();
+  };
+
+  const handleCloseCouponModal = () => {
+    setShowCouponModal(false);
+    setCouponCode('');
+    setAppliedCoupon(null);
+  };
+
+  const removeAppliedCoupon = () => {
+    setAppliedCoupon(null);
+  };
 
 const MenuCard = ({ item }) => (
   <div 
@@ -598,61 +760,67 @@ const MenuGrid = () => {
 };
   return (
     <>
-      <div className="flex justify-center  gap-2.5 overflow-hidden px-1.5 py-2 bg-[#d3D3D3]">
-            {/* Running Orders */}
-            <div className="w-68 bg-[#ffffff] border-r border-gray-200 flex flex-col shadow-lg rounded-xl h-[500px]">
-              <div className="p-3 flex items-center justify-between">
-                <h2 className="font-bold text-gray-800">Running Orders</h2>
-              <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-  <RefreshCw size={12} />
-  Refresh
-</button>
-              </div>
-              
-              <div className="px-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="py-4 mt-2 px-2 space-y-2 h-auto overflow-y-auto">
-                {orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className={`p-4 border-b  cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${
-                      selectedOrder?.id === order.id ? 'bg-blue-50' : ''
-                    }`}
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    <div className="font-semibold text-sm text-gray-800">{order.customer}</div>
-                    <div className="text-xs mt-1  text-gray-700">Order ID: {order.id}</div>
-                    <div className="text-xs  text-gray-700">Order Type: {order.type}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="py-4 px-2 border-t border-gray-200 flex gap-2 text-[10px] ">
-                <button className="flex-1 bg-[#010101] text-white font-medium rounded-lg px-3 py-1 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                  BILL
-                </button>
-                <button className="flex-1 bg-[#4d36eb] text-white font-medium rounded-lg px-3 py-1 cursor-pointer  flex items-center justify-centershadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                  ORDER DETAILS
-                </button>
-                <button className="flex-1 bg-[#f3be25] text-white font-medium rounded-lg px-3 py-1 cursor-pointer  flex items-center justify-center  shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                  MODIFY ORDER
-                </button>
-                <button className="flex-1 bg-[#c81118] text-white justify-center  font-medium rounded-lg px-3 py-1 cursor-pointer  flex items-center  shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                  CANCEL
-                </button>
+      <div className="flex flex-col gap-2.5 overflow-hidden px-1.5 py-2 bg-[#d3D3D3]">
+        {/* Main content row */}
+        <div className="flex justify-center gap-2.5">
+          {/* Running Orders */}
+          <div className="w-68 bg-[#ffffff] border-r border-gray-200 flex flex-col shadow-lg rounded-xl h-[500px]">
+            <div className="p-3 flex items-center justify-between">
+              <h2 className="font-bold text-gray-800">Running Orders</h2>
+            <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+    <RefreshCw size={12} />
+    Refresh
+  </button>
+            </div>
+            
+            <div className="px-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             </div>
 
-            {/* Menu Items */}
+            <div className="py-4 mt-2 px-2 space-y-2 h-auto overflow-y-auto">
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  className={`p-4 border-b  cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${
+                    selectedOrder?.id === order.id ? 'bg-blue-50' : ''
+                  }`}
+                  onClick={() => setSelectedOrder(order)}
+                >
+                  <div className="font-semibold text-sm text-gray-800">{order.customer}</div>
+                  <div className="text-xs mt-1  text-gray-700">Order ID: {order.id}</div>
+                  <div className="text-xs  text-gray-700">Order Type: {order.type}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Order Action Buttons - Below Running Orders Box */}
+        <div className="flex justify-center">
+          <div className="w-68 flex gap-2 text-[10px]">
+            <button className="flex-1 bg-[#010101] text-white font-medium rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+              BILL
+            </button>
+            <button className="flex-1 bg-[#4d36eb] text-white font-medium rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+              ORDER DETAILS
+            </button>
+            <button className="flex-1 bg-[#f3be25] text-white font-medium rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+              MODIFY ORDER
+            </button>
+            <button className="flex-1 bg-[#c81118] text-white font-medium rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+              CANCEL
+            </button>
+          </div>
+        </div>
+
+        {/* Menu Items */}
           <div className="w-[730px] bg-white flex flex-col shadow-lg rounded-xl overflow-hidden">
   {/* Search and categories section */}
   <div className="py-3 px-2 border-b border-gray-200">
@@ -933,7 +1101,10 @@ const MenuGrid = () => {
 
   {/* Action buttons */}
   <div className="flex gap-2 flex-wrap justify-center my-4 pb-5">
-    <button className="bg-[#43a148] text-white px-2.5 btn-lifted  py-1.5  text-[11px] rounded  hover:bg-green-600">
+    <button 
+      onClick={handleOpenCouponModal}
+      className="bg-[#43a148] text-white px-2.5 btn-lifted  py-1.5  text-[11px] rounded  hover:bg-green-600"
+    >
       DISCOUNT
     </button>
     <button className="bg-[#4d35ee] text-white px-2.5 py-1.5 btn-lifted    text-[11px] rounded   hover:bg-blue-700">
@@ -1602,6 +1773,147 @@ const MenuGrid = () => {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Coupon Modal */}
+          {showCouponModal && (
+            <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh]">
+                {/* Header */}
+                <div className="bg-white text-black p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
+                  <h2 className="text-xl font-bold">Coupons & Offers</h2>
+                  <button 
+                    onClick={handleCloseCouponModal}
+                    className="text-black hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 overflow-y-auto max-h-[80vh]">
+                  {/* Enter Coupon Code Section */}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Gift className="w-5 h-5 text-green-600" />
+                      <span className="text-sm font-medium text-gray-800">Enter Coupon Code</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
+                        placeholder="Enter promo code"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleApplyCoupon();
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Separator */}
+                  <div className="border-t border-gray-300 mb-6"></div>
+
+                                     {/* Available Coupons Section */}
+                   <div>
+                     <h3 className="text-lg font-bold text-gray-800 mb-4">Available Coupons</h3>
+                     {couponsLoading ? (
+                       <div className="text-center py-8">
+                         <div className="text-gray-500 text-sm">Loading coupons...</div>
+                       </div>
+                     ) : availableCoupons.length > 0 ? (
+                       <div className="space-y-3">
+                         {availableCoupons.map((coupon) => (
+                           <div
+                             key={coupon.id}
+                             className="border border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors cursor-pointer"
+                             onClick={() => {
+                               setCouponCode(coupon.code);
+                               handleApplyCoupon();
+                             }}
+                           >
+                             <div className="flex justify-between items-start">
+                               <div className="flex-1">
+                                 <h4 className="font-semibold text-gray-800">{coupon.title}</h4>
+                                 <p className="text-sm text-gray-600 mt-1">Customer Type: {coupon.customerType}</p>
+                                 {coupon.discountType === 'percentage' ? (
+                                   <p className="text-green-600 font-medium mt-1">{coupon.discount}% OFF</p>
+                                 ) : (
+                                   <p className="text-green-600 font-medium mt-1">€{coupon.discount} OFF</p>
+                                 )}
+                                 {coupon.minPurchase > 0 && (
+                                   <p className="text-xs text-gray-500 mt-1">Min Purchase: €{coupon.minPurchase}</p>
+                                 )}
+                                 {coupon.maxDiscount > 0 && (
+                                   <p className="text-xs text-gray-500">Max Discount: €{coupon.maxDiscount}</p>
+                                 )}
+                               </div>
+                               <div className="text-right ml-4">
+                                 <span className="text-xs text-gray-500 font-mono">Code: {coupon.code}</span>
+                                 {coupon.expireDate && (
+                                   <p className="text-xs text-gray-500 mt-1">
+                                     Expires: {new Date(coupon.expireDate).toLocaleDateString()}
+                                   </p>
+                                 )}
+                                 {coupon.limitForSameUser > 0 && (
+                                   <p className="text-xs text-gray-500 mt-1">
+                                     Limit: {coupon.limitForSameUser} uses
+                                   </p>
+                                 )}
+                               </div>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     ) : (
+                       <div className="text-center py-8">
+                         <div className="text-gray-500 text-sm">No coupons available</div>
+                         <div className="text-gray-400 text-xs mt-2">Create coupons in the Coupons section</div>
+                         {/* Debug info */}
+                         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                           <p className="text-xs text-yellow-800 font-medium">Debug Info:</p>
+                           <p className="text-xs text-yellow-700">Available coupons count: {availableCoupons.length}</p>
+                           <p className="text-xs text-yellow-700">Loading state: {couponsLoading ? 'true' : 'false'}</p>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+
+                                     {/* Applied Coupon Display */}
+                   {appliedCoupon && (
+                     <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                       <div className="flex justify-between items-center">
+                         <div>
+                           <h4 className="font-semibold text-green-800">Applied Coupon</h4>
+                           <p className="text-sm text-green-600">{appliedCoupon.title}</p>
+                           <p className="text-xs text-green-600">Code: {appliedCoupon.code}</p>
+                           {appliedCoupon.discountType === 'percentage' ? (
+                             <p className="text-green-700 font-medium">{appliedCoupon.discount}% OFF</p>
+                           ) : (
+                             <p className="text-green-700 font-medium">€{appliedCoupon.discount} OFF</p>
+                           )}
+                         </div>
+                         <button
+                           onClick={removeAppliedCoupon}
+                           className="text-red-600 hover:text-red-800 p-1"
+                         >
+                           <X size={16} />
+                         </button>
+                       </div>
+                     </div>
+                   )}
                 </div>
               </div>
             </div>
