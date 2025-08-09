@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload } from 'lucide-react';
-import Keyboard from 'react-simple-keyboard';
-import 'react-simple-keyboard/build/css/index.css';
+import VirtualKeyboard from '../../components/VirtualKeyboard';
 
 const EmployeeManagement = () => {
   const [employees, setEmployees] = useState([]);
@@ -17,8 +16,6 @@ const EmployeeManagement = () => {
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
-  const [keyboardInput, setKeyboardInput] = useState('');
-  const [capsLock, setCapsLock] = useState(false);
   
   const [newEmployee, setNewEmployee] = useState({
     firstName: '',
@@ -35,14 +32,7 @@ const EmployeeManagement = () => {
   const [phoneError, setPhoneError] = useState('');
   const [toggleLoading, setToggleLoading] = useState({});
 
-  // Update keyboard layout when caps lock changes
-  useEffect(() => {
-    if (window.keyboard && showKeyboard) {
-      window.keyboard.setOptions({
-        layoutName: capsLock ? "shift" : "default"
-      });
-    }
-  }, [capsLock, showKeyboard]);
+
 
   const fetchEmployees = async () => {
     try {
@@ -450,17 +440,7 @@ const EmployeeManagement = () => {
   // Keyboard event handlers
   const handleInputFocus = (inputName) => {
     setActiveInput(inputName);
-    setKeyboardInput(newEmployee[inputName] || '');
     setShowKeyboard(true);
-    
-    // Ensure keyboard layout matches caps lock state
-    setTimeout(() => {
-      if (window.keyboard) {
-        window.keyboard.setOptions({
-          layoutName: capsLock ? "shift" : "default"
-        });
-      }
-    }, 100);
   };
 
   const handleInputBlur = (e) => {
@@ -493,27 +473,20 @@ const EmployeeManagement = () => {
     }
   };
 
-  const onKeyboardChange = (input) => {
-    setKeyboardInput(input);
-    
+  const onKeyboardChange = (input, inputName, buttonType) => {
     // Update the corresponding form field
-    if (activeInput) {
+    if (inputName) {
       setNewEmployee(prev => ({
         ...prev,
-        [activeInput]: input
+        [inputName]: input
       }));
     }
-  };
-
-  const onKeyboardChangeAll = (inputs) => {
-    setKeyboardInput(inputs[activeInput] || '');
-  };
-
-  const onKeyboardKeyPress = (button) => {
-    if (button === '{enter}') {
+    
+    // Handle special button presses
+    if (buttonType === 'enter') {
       // Move to next input field or submit form
       const inputFields = ['firstName', 'lastName', 'role', 'phone', 'email', 'pin', 'confirmPin'];
-      const currentIndex = inputFields.indexOf(activeInput);
+      const currentIndex = inputFields.indexOf(inputName);
       if (currentIndex < inputFields.length - 1) {
         const nextField = inputFields[currentIndex + 1];
         const nextInput = document.querySelector(`[name="${nextField}"]`);
@@ -521,16 +494,14 @@ const EmployeeManagement = () => {
           nextInput.focus();
         }
       }
-    } else if (button === '{lock}') {
-      // Toggle caps lock
-      setCapsLock(!capsLock);
-      // Force keyboard to update layout
-      if (window.keyboard) {
-        window.keyboard.setOptions({
-          layoutName: !capsLock ? "shift" : "default"
-        });
-      }
     }
+  };
+
+
+
+  const handleKeyboardClose = () => {
+    setShowKeyboard(false);
+    setActiveInput('');
   };
 
   return (
@@ -1015,74 +986,16 @@ const EmployeeManagement = () => {
         </div>
       )}
 
-      {/* Virtual Keyboard - Always visible when needed */}
-      {showKeyboard && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
-          <div className="p-4 bg-gray-50">
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-4">
-                <label className="block text-xs font-medium text-gray-700">
-                  Current Input: <span className="font-semibold text-primary">{activeInput}</span>
-                </label>
-                {capsLock && (
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-md border border-yellow-200">
-                    CAPS LOCK ON
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setShowKeyboard(false)}
-                className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-200"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            
-            <div 
-              className="keyboard-container w-full" 
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              <Keyboard
-                keyboardRef={(r) => (window.keyboard = r)}
-                input={keyboardInput}
-                onChange={onKeyboardChange}
-                onChangeAll={onKeyboardChangeAll}
-                onKeyPress={onKeyboardKeyPress}
-                theme="hg-theme-default"
-                layoutName={capsLock ? "shift" : "default"}
-                layout={{
-                  default: [
-                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
-                    "{tab} q w e r t y u i o p [ ] \\",
-                    "{lock} a s d f g h j k l ; ' {enter}",
-                    "{shift} z x c v b n m , . / {shift}",
-                    "{space}"
-                  ],
-                  shift: [
-                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
-                    "{tab} Q W E R T Y U I O P { } |",
-                    "{lock} A S D F G H J K L : \" {enter}",
-                    "{shift} Z X C V B N M < > ? {shift}",
-                    "{space}"
-                  ]
-                }}
-                display={{
-                  "{bksp}": "⌫",
-                  "{enter}": "↵",
-                  "{shift}": "⇧",
-                  "{lock}": capsLock ? "⇪ ON" : "⇪",
-                  "{tab}": "⇥",
-                  "{space}": "Space"
-                }}
-                physicalKeyboardHighlight={true}
-                physicalKeyboardHighlightTextColor={"#000000"}
-                physicalKeyboardHighlightBgColor={"#fff475"}
-               />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Virtual Keyboard */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={handleKeyboardClose}
+        activeInput={activeInput}
+        onInputChange={onKeyboardChange}
+        onInputBlur={handleInputBlur}
+        inputValue={newEmployee[activeInput] || ''}
+        placeholder="Type here..."
+      />
     </div>
   );
 };

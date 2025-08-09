@@ -12,8 +12,7 @@ import {
   Users,
   X
 } from 'lucide-react';
-import Keyboard from 'react-simple-keyboard';
-import 'react-simple-keyboard/build/css/index.css';
+import VirtualKeyboard from '../../components/VirtualKeyboard';
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState([]);
@@ -28,22 +27,11 @@ const Coupons = () => {
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
-  const [keyboardInput, setKeyboardInput] = useState('');
-  const [capsLock, setCapsLock] = useState(false);
 
   // Load coupons from database
   useEffect(() => {
     loadCoupons();
   }, []);
-
-  // Update keyboard layout when caps lock changes
-  useEffect(() => {
-    if (window.keyboard && showKeyboard) {
-      window.keyboard.setOptions({
-        layoutName: capsLock ? "shift" : "default"
-      });
-    }
-  }, [capsLock, showKeyboard]);
 
   const loadCoupons = async () => {
     try {
@@ -92,45 +80,10 @@ const Coupons = () => {
 
   const [errors, setErrors] = useState({});
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewCoupon(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Update keyboard input when typing directly
-    if (activeInput === name) {
-      setKeyboardInput(value);
-    }
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
   // Keyboard event handlers
   const handleInputFocus = (inputName) => {
     setActiveInput(inputName);
-    if (inputName === 'searchTerm') {
-      setKeyboardInput(searchTerm || '');
-    } else {
-      setKeyboardInput(newCoupon[inputName] || '');
-    }
     setShowKeyboard(true);
-    
-    // Ensure keyboard layout matches caps lock state
-    setTimeout(() => {
-      if (window.keyboard) {
-        window.keyboard.setOptions({
-          layoutName: capsLock ? "shift" : "default"
-        });
-      }
-    }, 100);
   };
 
   const handleInputBlur = (e) => {
@@ -163,29 +116,22 @@ const Coupons = () => {
     }
   };
 
-  const onKeyboardChange = (input) => {
-    setKeyboardInput(input);
-    
+  const onKeyboardChange = (input, inputName, buttonType) => {
     // Update the corresponding form field
-    if (activeInput === 'searchTerm') {
+    if (inputName === 'searchTerm') {
       setSearchTerm(input);
-    } else if (activeInput) {
+    } else if (inputName) {
       setNewCoupon(prev => ({
         ...prev,
-        [activeInput]: input
+        [inputName]: input
       }));
     }
-  };
-
-  const onKeyboardChangeAll = (inputs) => {
-    setKeyboardInput(inputs[activeInput] || '');
-  };
-
-  const onKeyboardKeyPress = (button) => {
-    if (button === '{enter}') {
+    
+    // Handle special button presses
+    if (buttonType === 'enter') {
       // Move to next input field or submit form
       const inputFields = ['title', 'customerType', 'code', 'limitForSameUser', 'startDate', 'expireDate', 'discount', 'maxDiscount', 'minPurchase'];
-      const currentIndex = inputFields.indexOf(activeInput);
+      const currentIndex = inputFields.indexOf(inputName);
       if (currentIndex < inputFields.length - 1) {
         const nextField = inputFields[currentIndex + 1];
         const nextInput = document.querySelector(`[name="${nextField}"]`);
@@ -193,15 +139,27 @@ const Coupons = () => {
           nextInput.focus();
         }
       }
-    } else if (button === '{lock}') {
-      // Toggle caps lock
-      setCapsLock(!capsLock);
-      // Force keyboard to update layout
-      if (window.keyboard) {
-        window.keyboard.setOptions({
-          layoutName: !capsLock ? "shift" : "default"
-        });
-      }
+    }
+  };
+
+  const handleKeyboardClose = () => {
+    setShowKeyboard(false);
+    setActiveInput('');
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewCoupon(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
 
@@ -220,10 +178,6 @@ const Coupons = () => {
       newErrors.code = 'Code is required';
     }
     
-    if (!newCoupon.discount || newCoupon.discount <= 0) {
-      newErrors.discount = 'Valid discount is required';
-    }
-    
     if (!newCoupon.startDate) {
       newErrors.startDate = 'Start date is required';
     }
@@ -232,8 +186,20 @@ const Coupons = () => {
       newErrors.expireDate = 'Expire date is required';
     }
     
-    if (newCoupon.startDate && newCoupon.expireDate && newCoupon.startDate >= newCoupon.expireDate) {
-      newErrors.expireDate = 'Expire date must be after start date';
+    if (!newCoupon.discount || newCoupon.discount <= 0) {
+      newErrors.discount = 'Discount must be greater than 0';
+    }
+    
+    if (newCoupon.discountType === 'percentage' && newCoupon.discount > 100) {
+      newErrors.discount = 'Percentage discount cannot exceed 100%';
+    }
+    
+    if (newCoupon.minPurchase && newCoupon.minPurchase < 0) {
+      newErrors.minPurchase = 'Minimum purchase cannot be negative';
+    }
+    
+    if (newCoupon.maxDiscount && newCoupon.maxDiscount < 0) {
+      newErrors.maxDiscount = 'Maximum discount cannot be negative';
     }
     
     setErrors(newErrors);
@@ -318,6 +284,8 @@ const Coupons = () => {
       maxDiscount: coupon.maxDiscount.toString(),
       minPurchase: coupon.minPurchase.toString()
     });
+    setActiveInput(''); // Reset keyboard input
+    setShowKeyboard(false); // Hide keyboard when editing coupon
     setShowForm(true);
   };
 
@@ -360,6 +328,8 @@ const Coupons = () => {
       minPurchase: ''
     });
     setErrors({});
+    setActiveInput(''); // Reset keyboard input
+    setShowKeyboard(false); // Hide keyboard when resetting
   };
 
   const handleAddCoupon = () => {
@@ -377,6 +347,8 @@ const Coupons = () => {
       minPurchase: ''
     });
     setErrors({});
+    setActiveInput(''); // Reset keyboard input
+    setShowKeyboard(false); // Hide keyboard when adding new coupon
     setShowForm(true);
   };
 
@@ -446,6 +418,7 @@ const Coupons = () => {
                   setShowForm(false);
                   setEditingCoupon(null);
                   handleReset();
+                  setShowKeyboard(false); // Hide keyboard when closing form
                 }} 
                 className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
               >
@@ -469,7 +442,7 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'title')}
                   onClick={(e) => handleAnyInputClick(e, 'title')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.title ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -492,7 +465,7 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'customerType')}
                   onClick={(e) => handleAnyInputClick(e, 'customerType')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.customerType ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -525,7 +498,7 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'code')}
                   onClick={(e) => handleAnyInputClick(e, 'code')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.code ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -549,7 +522,7 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'limitForSameUser')}
                   onClick={(e) => handleAnyInputClick(e, 'limitForSameUser')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   min="1"
                   className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                   placeholder="Ex:10"
@@ -568,7 +541,7 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'startDate')}
                   onClick={(e) => handleAnyInputClick(e, 'startDate')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.startDate ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -591,7 +564,7 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'expireDate')}
                   onClick={(e) => handleAnyInputClick(e, 'expireDate')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.expireDate ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -633,7 +606,7 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'discount')}
                   onClick={(e) => handleAnyInputClick(e, 'discount')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   min="0"
                   step="0.01"
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
@@ -659,7 +632,7 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'maxDiscount')}
                   onClick={(e) => handleAnyInputClick(e, 'maxDiscount')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   min="0"
                   step="0.01"
                   className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
@@ -679,10 +652,10 @@ const Coupons = () => {
                   onChange={handleInputChange}
                   onFocus={(e) => handleAnyInputFocus(e, 'minPurchase')}
                   onClick={(e) => handleAnyInputClick(e, 'minPurchase')}
-                  onBlur={(e) => handleInputBlur(e)}
+                  onBlur={handleInputBlur}
                   min="0"
                   step="0.01"
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                   placeholder="0"
                 />
               </div>
@@ -752,7 +725,7 @@ const Coupons = () => {
                  onChange={(e) => setSearchTerm(e.target.value)}
                  onFocus={(e) => handleAnyInputFocus(e, 'searchTerm')}
                  onClick={(e) => handleAnyInputClick(e, 'searchTerm')}
-                 onBlur={(e) => handleInputBlur(e)}
+                 onBlur={handleInputBlur}
                  className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                />
              </div>
@@ -968,74 +941,16 @@ const Coupons = () => {
         </div>
       )}
 
-      {/* Virtual Keyboard - Always visible when needed */}
-      {showKeyboard && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
-          <div className="p-4 bg-gray-50">
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-4">
-                <label className="block text-xs font-medium text-gray-700">
-                  Current Input: <span className="font-semibold text-primary">{activeInput}</span>
-                </label>
-                {capsLock && (
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-md border border-yellow-200">
-                    CAPS LOCK ON
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setShowKeyboard(false)}
-                className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-200"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            
-            <div 
-              className="keyboard-container w-full" 
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              <Keyboard
-                keyboardRef={(r) => (window.keyboard = r)}
-                input={keyboardInput}
-                onChange={onKeyboardChange}
-                onChangeAll={onKeyboardChangeAll}
-                onKeyPress={onKeyboardKeyPress}
-                theme="hg-theme-default"
-                layoutName={capsLock ? "shift" : "default"}
-                layout={{
-                  default: [
-                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
-                    "{tab} q w e r t y u i o p [ ] \\",
-                    "{lock} a s d f g h j k l ; ' {enter}",
-                    "{shift} z x c v b n m , . / {shift}",
-                    "{space}"
-                  ],
-                  shift: [
-                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
-                    "{tab} Q W E R T Y U I O P { } |",
-                    "{lock} A S D F G H J K L : \" {enter}",
-                    "{shift} Z X C V B N M < > ? {shift}",
-                    "{space}"
-                  ]
-                }}
-                display={{
-                  "{bksp}": "⌫",
-                  "{enter}": "↵",
-                  "{shift}": "⇧",
-                  "{lock}": capsLock ? "⇪ ON" : "⇪",
-                  "{tab}": "⇥",
-                  "{space}": "Space"
-                }}
-                physicalKeyboardHighlight={true}
-                physicalKeyboardHighlightTextColor={"#000000"}
-                physicalKeyboardHighlightBgColor={"#fff475"}
-               />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Virtual Keyboard */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={handleKeyboardClose}
+        activeInput={activeInput}
+        onInputChange={onKeyboardChange}
+        onInputBlur={handleInputBlur}
+        inputValue={activeInput === 'searchTerm' ? searchTerm : (newCoupon[activeInput] || '')}
+        placeholder="Type here..."
+      />
     </div>
   );
 };
