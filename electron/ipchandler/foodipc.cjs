@@ -59,6 +59,13 @@ const {
   deleteFoodImage
 } = getModelPath('foods/food.js');
 
+const {
+  createVariation,
+  updateVariation,
+  createVariationOption,
+  updateVariationOption
+} = getModelPath('foods/variations.cjs');
+
 // Category IPC
 ipcMain.handle('category:create', (event, data) => createCategory(data));
 ipcMain.handle('category:update', (event, id, updates) => updateCategory(id, updates));
@@ -109,6 +116,12 @@ ipcMain.handle('food:delete', (event, id) => deleteFood(id));
 ipcMain.handle('food:updatePosition', (event, id, position) => updateFoodPosition(id, position));
 ipcMain.handle('food:searchByName', (event, name, restaurantId) => searchFoodsByName(name, restaurantId));
 ipcMain.handle('food:deleteImage', (event, foodId) => deleteFoodImage(foodId));
+
+// Variation IPC
+ipcMain.handle('variation:create', (event, variationData) => createVariation(variationData));
+ipcMain.handle('variation:update', (event, id, updates) => updateVariation(id, updates));
+ipcMain.handle('variationOption:create', (event, optionData) => createVariationOption(optionData));
+ipcMain.handle('variationOption:update', (event, id, updates) => updateVariationOption(id, updates));
 
 // Get food image data
 ipcMain.handle('food:getImage', async (event, imagePath) => {

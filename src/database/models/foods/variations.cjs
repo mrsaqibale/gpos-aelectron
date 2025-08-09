@@ -1,19 +1,16 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import Database from 'better-sqlite3';
+const path = require('path');
+const Database = require('better-sqlite3');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, '../../pos.db');
 const db = new Database(dbPath);
 
 // Universal error response
-export function errorResponse(message) {
+function errorResponse(message) {
   return { success: false, message };
 }
 
 // Create a new variation
-export function createVariation({ food_id, name, type, min, max, is_required }) {
+function createVariation({ food_id, name, type, min, max, is_required }) {
   const now = new Date().toISOString();
   const stmt = db.prepare(`
     INSERT INTO variation (food_id, name, type, min, max, is_required, created_at, updated_at, issyncronized, isdeleted)
@@ -24,7 +21,7 @@ export function createVariation({ food_id, name, type, min, max, is_required }) 
 }
 
 // Update a variation
-export function updateVariation(id, updates) {
+function updateVariation(id, updates) {
   try {
     const fields = [];
     const values = [];
@@ -46,7 +43,7 @@ export function updateVariation(id, updates) {
 }
 
 // Create a new variation option
-export function createVariationOption({ food_id, variation_id, option_name, option_price, total_stock, stock_type, sell_count }) {
+function createVariationOption({ food_id, variation_id, option_name, option_price, total_stock, stock_type, sell_count }) {
   const now = new Date().toISOString();
   const stmt = db.prepare(`
     INSERT INTO variation_options (food_id, variation_id, option_name, option_price, total_stock, stock_type, sell_count, created_at, updated_at, issyncronized, isdeleted)
@@ -57,7 +54,7 @@ export function createVariationOption({ food_id, variation_id, option_name, opti
 }
 
 // Update a variation option
-export function updateVariationOption(id, updates) {
+function updateVariationOption(id, updates) {
   try {
     const fields = [];
     const values = [];
@@ -76,4 +73,11 @@ export function updateVariationOption(id, updates) {
   } catch (err) {
     return errorResponse(err.message);
   }
-} 
+}
+
+module.exports = {
+  createVariation,
+  updateVariation,
+  createVariationOption,
+  updateVariationOption
+}; 
