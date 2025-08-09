@@ -35,8 +35,28 @@ import {
   Delete,
   AlertTriangle,
   CheckCircle,
-  Gift
+  Gift,
+  ShoppingBag,
+  Check,
+  ChefHat,
+  DollarSign,
+  ChevronRight,
+  Calendar,
+  Filter,
+  RotateCcw,
+  Star,
+  Tag,
+  Percent,
+  AlertCircle,
+  Info,
+  CheckSquare,
+  Square,
+  Circle,
+  Hash,
+  HashIcon
 } from 'lucide-react';
+import Keyboard from 'react-simple-keyboard';
+import 'react-simple-keyboard/build/css/index.css';
 import CustomerManagement from '../../components/dashboard/CustomerManagement';
 import CustomerSearchModal from '../../components/dashboard/CustomerSearchModal';
 import FloorPlan3D from '../../components/FloorPlan3D';
@@ -94,6 +114,12 @@ const RunningOrders = () => {
   
   // Feedback state for quantity increase
   const [quantityFeedback, setQuantityFeedback] = useState({ show: false, message: '', itemName: '' });
+  
+  // Keyboard functionality state - exactly like other files
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeInput, setActiveInput] = useState('');
+  const [keyboardInput, setKeyboardInput] = useState('');
+  const [capsLock, setCapsLock] = useState(false);
   
   // Custom CSS animations for modal
   useEffect(() => {
@@ -245,6 +271,15 @@ const RunningOrders = () => {
   useEffect(() => {
     setFilteredFoods(foods);
   }, [foods]);
+
+  // Keyboard useEffect - exactly like other files
+  useEffect(() => {
+    if (capsLock) {
+      // The keyboard will automatically use shift layout when capsLock is true
+    } else {
+      // The keyboard will automatically use default layout when capsLock is false
+    }
+  }, [capsLock]);
 
   // Fetch floors from database
   const fetchFloors = async () => {
@@ -935,6 +970,126 @@ const RunningOrders = () => {
     setAppliedCoupon(null);
   };
 
+  // Keyboard functionality functions - exactly like other files
+  const handleInputFocus = (inputName) => {
+    setActiveInput(inputName);
+    if (inputName === 'searchQuery') {
+      setKeyboardInput(searchQuery || '');
+    } else if (inputName === 'couponCode') {
+      setKeyboardInput(couponCode || '');
+    }
+    setShowKeyboard(true);
+  };
+
+  const handleInputBlur = (e) => {
+    // Don't hide keyboard immediately to allow for keyboard input
+    // setShowKeyboard(false);
+    // Update the form state when input loses focus
+    const { name, value } = e.target;
+    if (name === 'searchQuery') {
+      setSearchQuery(value);
+    } else if (name === 'couponCode') {
+      setCouponCode(value);
+    }
+  };
+
+  const handleAnyInputFocus = (e, inputName) => {
+    setActiveInput(inputName);
+    setShowKeyboard(true);
+    // Set the keyboard input value to match the current form value
+    if (inputName === 'searchQuery') {
+      setKeyboardInput(searchQuery || '');
+    } else if (inputName === 'couponCode') {
+      setKeyboardInput(couponCode || '');
+    }
+  };
+
+  const handleAnyInputClick = (e, inputName) => {
+    if (!showKeyboard || activeInput !== inputName) {
+      handleAnyInputFocus(e, inputName);
+    }
+  };
+
+  const onKeyboardChange = (input) => {
+    setKeyboardInput(input);
+    
+    // Update the corresponding form field
+    if (activeInput === 'searchQuery') {
+      setSearchQuery(input);
+    } else if (activeInput === 'couponCode') {
+      setCouponCode(input);
+    }
+  };
+
+  const onKeyboardChangeAll = (inputs) => {
+    setKeyboardInput(inputs[activeInput] || '');
+  };
+
+  const onKeyboardKeyPress = (button) => {
+    if (activeInput) {
+      if (button === '{bksp}') {
+        const currentValue = keyboardInput || '';
+        const newValue = currentValue.slice(0, -1);
+        setKeyboardInput(newValue);
+        if (activeInput === 'searchQuery') {
+          setSearchQuery(newValue);
+        } else if (activeInput === 'couponCode') {
+          setCouponCode(newValue);
+        }
+      } else if (button === '{enter}') {
+        // Move to next input field or submit form
+        const inputFields = ['searchQuery', 'couponCode'];
+        const currentIndex = inputFields.indexOf(activeInput);
+        if (currentIndex < inputFields.length - 1) {
+          const nextField = inputFields[currentIndex + 1];
+          const nextInput = document.querySelector(`[name="${nextField}"]`);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        }
+      } else if (button === '{lock}') {
+        // Toggle caps lock
+        setCapsLock(!capsLock);
+      } else if (button === '{shift}') {
+        // Toggle shift (this will be handled by the layout change)
+        // The layout will automatically switch between default and shift
+      } else if (button === '{tab}') {
+        // Move to next input field
+        const inputFields = ['searchQuery', 'couponCode'];
+        const currentIndex = inputFields.indexOf(activeInput);
+        if (currentIndex < inputFields.length - 1) {
+          const nextField = inputFields[currentIndex + 1];
+          const nextInput = document.querySelector(`[name="${nextField}"]`);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        } else {
+          // If at last field, go to first
+          const firstInput = document.querySelector(`[name="${inputFields[0]}"]`);
+          if (firstInput) {
+            firstInput.focus();
+          }
+        }
+      } else if (button === '{space}') {
+        const currentValue = keyboardInput || '';
+        const newValue = currentValue + ' ';
+        setKeyboardInput(newValue);
+        if (activeInput === 'searchQuery') {
+          setSearchQuery(newValue);
+        } else if (activeInput === 'couponCode') {
+          setCouponCode(newValue);
+        }
+      }
+    }
+  };
+
+  const resetKeyboardInputs = () => {
+    setKeyboardInput('');
+    setActiveInput('');
+    setShowKeyboard(false);
+    setCapsLock(false);
+  };
+
   // Cart item operations
   const updateCartItemQuantity = (itemId, newQuantity) => {
     if (newQuantity <= 0) {
@@ -1179,6 +1334,7 @@ const RunningOrders = () => {
       </div>
     );
   };
+
   return (
     <>
       {/* Quantity Increase Feedback */}
@@ -1209,7 +1365,13 @@ const RunningOrders = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
                 <input
                   type="text"
+                  name="searchQuery"
                   placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={(e) => handleAnyInputFocus(e, 'searchQuery')}
+                  onClick={(e) => handleAnyInputClick(e, 'searchQuery')}
+                  onBlur={handleInputBlur}
                   className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -1277,9 +1439,13 @@ const RunningOrders = () => {
               </div>
               <input
                 type="text"
+                name="searchQuery"
                 placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={(e) => handleAnyInputFocus(e, 'searchQuery')}
+                onClick={(e) => handleAnyInputClick(e, 'searchQuery')}
+                onBlur={handleInputBlur}
                 className="w-full pl-10 pr-4 py-2 text-sm bg-white placeholder:text-primary font-semibold border border-gray-300 rounded-xl z-10
       shadow-[0_6px_12px_-2px_rgba(50,50,93,0.25),0_3px_7px_-3px_rgba(0,0,0,0.3)]
       focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -2256,8 +2422,12 @@ const RunningOrders = () => {
                   <div className="flex gap-2">
                     <input
                       type="text"
+                      name="couponCode"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
+                      onFocus={(e) => handleAnyInputFocus(e, 'couponCode')}
+                      onClick={(e) => handleAnyInputClick(e, 'couponCode')}
+                      onBlur={handleInputBlur}
                       placeholder="Enter promo code or click a coupon below"
                       className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
                         couponCode.trim() 
@@ -2473,6 +2643,72 @@ const RunningOrders = () => {
                 </svg>
                 Delete All Items
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Keyboard Component - exactly like other files */}
+      {showKeyboard && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Virtual Keyboard</span>
+                {capsLock && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    CAPS LOCK
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowKeyboard(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div 
+              className="keyboard-container w-full" 
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <Keyboard
+                keyboardRef={(r) => (window.keyboard = r)}
+                input={keyboardInput}
+                onChange={onKeyboardChange}
+                onChangeAll={onKeyboardChangeAll}
+                onKeyPress={onKeyboardKeyPress}
+                theme="hg-theme-default"
+                layoutName={capsLock ? "shift" : "default"}
+                layout={{
+                  default: [
+                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
+                    "{tab} q w e r t y u i o p [ ] \\",
+                    "{lock} a s d f g h j k l ; ' {enter}",
+                    "{shift} z x c v b n m , . / {shift}",
+                    "{space}"
+                  ],
+                  shift: [
+                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
+                    "{tab} Q W E R T Y U I O P { } |",
+                    "{lock} A S D F G H J K L : \" {enter}",
+                    "{shift} Z X C V B N M < > ? {shift}",
+                    "{space}"
+                  ]
+                }}
+                display={{
+                  "{bksp}": "⌫",
+                  "{enter}": "↵",
+                  "{shift}": "⇧",
+                  "{lock}": capsLock ? "⇪ ON" : "⇪",
+                  "{tab}": "⇥",
+                  "{space}": "Space"
+                }}
+                physicalKeyboardHighlight={true}
+                physicalKeyboardHighlightTextColor={"#000000"}
+                physicalKeyboardHighlightBgColor={"#fff475"}
+              />
             </div>
           </div>
         </div>
