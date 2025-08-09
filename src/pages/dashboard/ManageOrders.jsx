@@ -17,6 +17,8 @@ import {
   Filter,
   RotateCcw
 } from 'lucide-react';
+import Keyboard from 'react-simple-keyboard';
+import 'react-simple-keyboard/build/css/index.css';
 
 const ManageOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -25,6 +27,12 @@ const ManageOrders = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
   const [appliedDateFilter, setAppliedDateFilter] = useState('');
+  
+  // Keyboard functionality state - exactly like other files
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeInput, setActiveInput] = useState('');
+  const [keyboardInput, setKeyboardInput] = useState('');
+  const [capsLock, setCapsLock] = useState(false);
 
   // Mock data - replace with actual API calls
   useEffect(() => {
@@ -145,6 +153,15 @@ const ManageOrders = () => {
     setOrders(mockOrders);
   }, []);
 
+  // Keyboard useEffect - exactly like other files
+  useEffect(() => {
+    if (capsLock) {
+      // The keyboard will automatically use shift layout when capsLock is true
+    } else {
+      // The keyboard will automatically use default layout when capsLock is false
+    }
+  }, [capsLock]);
+
   const tabs = [
     { id: 'all', label: 'All Orders', count: orders.length },
     { id: 'collection', label: 'Collection', count: orders.filter(o => o.orderMethod === 'Collection').length },
@@ -220,6 +237,126 @@ const ManageOrders = () => {
     setAppliedDateFilter('');
   };
 
+  // Keyboard functionality functions - exactly like other files
+  const handleInputFocus = (inputName) => {
+    setActiveInput(inputName);
+    if (inputName === 'searchTerm') {
+      setKeyboardInput(searchTerm || '');
+    } else if (inputName === 'dateFilter') {
+      setKeyboardInput(dateFilter || '');
+    }
+    setShowKeyboard(true);
+  };
+
+  const handleInputBlur = (e) => {
+    // Don't hide keyboard immediately to allow for keyboard input
+    // setShowKeyboard(false);
+    // Update the form state when input loses focus
+    const { name, value } = e.target;
+    if (name === 'searchTerm') {
+      setSearchTerm(value);
+    } else if (name === 'dateFilter') {
+      setDateFilter(value);
+    }
+  };
+
+  const handleAnyInputFocus = (e, inputName) => {
+    setActiveInput(inputName);
+    setShowKeyboard(true);
+    // Set the keyboard input value to match the current form value
+    if (inputName === 'searchTerm') {
+      setKeyboardInput(searchTerm || '');
+    } else if (inputName === 'dateFilter') {
+      setKeyboardInput(dateFilter || '');
+    }
+  };
+
+  const handleAnyInputClick = (e, inputName) => {
+    if (!showKeyboard || activeInput !== inputName) {
+      handleAnyInputFocus(e, inputName);
+    }
+  };
+
+  const onKeyboardChange = (input) => {
+    setKeyboardInput(input);
+    
+    // Update the corresponding form field
+    if (activeInput === 'searchTerm') {
+      setSearchTerm(input);
+    } else if (activeInput === 'dateFilter') {
+      setDateFilter(input);
+    }
+  };
+
+  const onKeyboardChangeAll = (inputs) => {
+    setKeyboardInput(inputs[activeInput] || '');
+  };
+
+  const onKeyboardKeyPress = (button) => {
+    if (activeInput) {
+      if (button === '{bksp}') {
+        const currentValue = keyboardInput || '';
+        const newValue = currentValue.slice(0, -1);
+        setKeyboardInput(newValue);
+        if (activeInput === 'searchTerm') {
+          setSearchTerm(newValue);
+        } else if (activeInput === 'dateFilter') {
+          setDateFilter(newValue);
+        }
+      } else if (button === '{enter}') {
+        // Move to next input field or submit form
+        const inputFields = ['searchTerm', 'dateFilter'];
+        const currentIndex = inputFields.indexOf(activeInput);
+        if (currentIndex < inputFields.length - 1) {
+          const nextField = inputFields[currentIndex + 1];
+          const nextInput = document.querySelector(`[name="${nextField}"]`);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        }
+      } else if (button === '{lock}') {
+        // Toggle caps lock
+        setCapsLock(!capsLock);
+      } else if (button === '{shift}') {
+        // Toggle shift (this will be handled by the layout change)
+        // The layout will automatically switch between default and shift
+      } else if (button === '{tab}') {
+        // Move to next input field
+        const inputFields = ['searchTerm', 'dateFilter'];
+        const currentIndex = inputFields.indexOf(activeInput);
+        if (currentIndex < inputFields.length - 1) {
+          const nextField = inputFields[currentIndex + 1];
+          const nextInput = document.querySelector(`[name="${nextField}"]`);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        } else {
+          // If at last field, go to first
+          const firstInput = document.querySelector(`[name="${inputFields[0]}"]`);
+          if (firstInput) {
+            firstInput.focus();
+          }
+        }
+      } else if (button === '{space}') {
+        const currentValue = keyboardInput || '';
+        const newValue = currentValue + ' ';
+        setKeyboardInput(newValue);
+        if (activeInput === 'searchTerm') {
+          setSearchTerm(newValue);
+        } else if (activeInput === 'dateFilter') {
+          setDateFilter(newValue);
+        }
+      }
+    }
+  };
+
+  const resetKeyboardInputs = () => {
+    setKeyboardInput('');
+    setActiveInput('');
+    setShowKeyboard(false);
+    setCapsLock(false);
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       new: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -260,10 +397,9 @@ const ManageOrders = () => {
   };
 
   return (
-    <div className="px-4 py-2">
-  
-      {/* Filter Tabs */}
-      <div className="p-4 flex items-center bg-white rounded-lg shadow-sm mb-6">
+    <div className="h-full flex flex-col px-4 py-2">
+      {/* Filter Tabs - Fixed at top */}
+      <div className="flex-shrink-0 p-4 bg-white rounded-lg shadow-sm mb-6">
         <div className="flex flex-wrap gap-2">
           {tabs.map(tab => (
             <button
@@ -284,183 +420,261 @@ const ManageOrders = () => {
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
-        {/* Search and Date Filter */}
-        <div className="mb-6 flex justify-end">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by Order ID"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+      {/* Orders Table - Takes remaining space */}
+      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm overflow-hidden">
+        {/* Search and Date Filter - Fixed */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200">
+          <div className="flex justify-end">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  name="searchTerm"
+                  placeholder="Search by Order ID"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={(e) => handleAnyInputFocus(e, 'searchTerm')}
+                  onClick={(e) => handleAnyInputClick(e, 'searchTerm')}
+                  onBlur={handleInputBlur}
+                  className="w-64 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
               </div>
-            </div>
-            
-            {/* Date Filter */}
-            <div className="relative">
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="px-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
-              />
-              {/* <Calendar className="absolute right-3 top-3 h-4 w-4 text-gray-400 pointer-events-none" /> */}
-            </div>
+              
+              {/* Date Filter */}
+              <div className="relative">
+                <input
+                  type="date"
+                  name="dateFilter"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  onFocus={(e) => handleAnyInputFocus(e, 'dateFilter')}
+                  onClick={(e) => handleAnyInputClick(e, 'dateFilter')}
+                  onBlur={handleInputBlur}
+                  className="px-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                />
+              </div>
 
-            {/* Apply Filters Button */}
-            <button
-              onClick={handleApplyFilters}
-              className="px-4 py-1.5 bg-primaryLight text-white text-sm font-medium rounded-lg  cursor-pointer transition-colors flex items-center gap-2"
-            >
-              <Filter size={16} />
-              Apply Filters
-            </button>
+              {/* Apply Filters Button */}
+              <button
+                onClick={handleApplyFilters}
+                className="px-4 py-1.5 bg-primaryLight text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+              >
+                <Filter size={16} />
+                Apply Filters
+              </button>
 
-            {/* Clear Filters Button */}
-            <button
-              onClick={handleClearFilters}
-              className="px-4 py-1.5 bg-gray-100 text-gray-700  cursor-pointer text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
-            >
-              <RotateCcw size={16} />
-              Clear
-            </button>
+              {/* Clear Filters Button */}
+              <button
+                onClick={handleClearFilters}
+                className="px-4 py-1.5 bg-gray-100 text-gray-700 cursor-pointer text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+              >
+                <RotateCcw size={16} />
+                Clear
+              </button>
+            </div>
           </div>
+
+          {/* Active Filters Display */}
+          {(appliedSearchTerm || appliedDateFilter) && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+              <span className="font-medium">Active Filters:</span>
+              {appliedSearchTerm && (
+                <span className="px-2 py-1 bg-primaryExtraLight text-primary font-medium rounded-full text-xs">
+                  Order ID: {appliedSearchTerm}
+                </span>
+              )}
+              {appliedDateFilter && (
+                <span className="px-2 py-1 bg-primaryExtraLight text-primary font-medium rounded-full text-xs">
+                  Date: {appliedDateFilter}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Active Filters Display */}
-        {(appliedSearchTerm || appliedDateFilter) && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
-            <span className="font-medium">Active Filters:</span>
-            {appliedSearchTerm && (
-              <span className="px-2 py-1 bg-primaryExtraLight text-primary font-medium rounded-full text-xs">
-                Order ID: {appliedSearchTerm}
-              </span>
-            )}
-            {appliedDateFilter && (
-              <span className="px-2 py-1 bg-primaryExtraLight text-primary  font-medium rounded-full text-xs">
-                Date: {appliedDateFilter}
-              </span>
-            )}
-          </div>
-        )}
-
-        <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
-          <thead>
-            <tr className="bg-primaryExtraLight">
-              <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center gap-1">
-                  SI
-                  <ChevronRight size={12} className="rotate-90" />
-                </div>
-              </th>
-              <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center gap-1">
-                  Order ID
-                  <ChevronRight size={12} className="rotate-90" />
-                </div>
-              </th>
-              <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center gap-1">
-                  Order Date
-                  <ChevronRight size={12} className="rotate-90" />
-                </div>
-              </th>
-              <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center gap-1">
-                  Collection Time
-                  <ChevronRight size={12} className="rotate-90" />
-                </div>
-              </th>
-              <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center gap-1">
-                  Customer Information
-                  <ChevronRight size={12} className="rotate-90" />
-                </div>
-              </th>
-              <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center gap-1">
-                  Total Amount
-                  <ChevronRight size={12} className="rotate-90" />
-                </div>
-              </th>
-              <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                <div className="flex items-center gap-1">
-                  Order Status
-                  <ChevronRight size={12} className="rotate-90" />
-                </div>
-              </th>
-              <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {getFilteredOrders().map((order, index) => (
-              <tr key={order.id} className={`border-b border-gray-100 hover:bg-gray-25 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                <td className="py-3 px-4">
-                  <span className="text-sm font-medium text-gray-700">{index + 1}</span>
-                </td>
-                <td className="py-3 px-4">
-                  <span className="text-sm font-medium text-primary">{order.id}</span>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="space-y-1">
-                    <div className="text-sm text-gray-800">{order.orderDate}</div>
-                    <div className="text-xs text-gray-600">{order.orderTime}</div>
+        {/* Table Container - Scrollable */}
+        <div className="flex-1 overflow-auto">
+          <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
+            <thead className="sticky top-0 bg-primaryExtraLight z-10">
+              <tr>
+                <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    SI
+                    <ChevronRight size={12} className="rotate-90" />
                   </div>
-                </td>
-                <td className="py-3 px-4">
-                  <span className="text-sm text-gray-600">{order.collectionTime}</span>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium text-gray-800">{order.customer}</div>
-                    <div className="text-xs text-gray-600">{order.phone}</div>
+                </th>
+                <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Order ID
+                    <ChevronRight size={12} className="rotate-90" />
                   </div>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="space-y-1">
-                    <div className="text-sm font-semibold text-gray-800">{order.total.toFixed(2)} €</div>
-                    <div className="flex gap-1">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentMethod === 'Card' ? 'bg-primaryExtraLight text-primary' : 'bg-green-100 text-green-800'}`}>
-                        {order.paymentMethod}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : order.paymentStatus === 'refunded' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'}`}>
-                        {order.paymentStatus}
-                      </span>
-                    </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Order Date
+                    <ChevronRight size={12} className="rotate-90" />
                   </div>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="space-y-1">
-                    <span className={`px-2 py-1 rounded text-xs font-medium bg-primaryExtraLight text-primary`}>
-                      {getStatusText(order.status)}
-                    </span>
-                    <div className="text-xs text-primary mt-2 pl-1">{order.orderMethod}</div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Collection Time
+                    <ChevronRight size={12} className="rotate-90" />
                   </div>
-                </td>
-                <td className="py-3 px-4">
-                  {getActionButtons(order)}
-                </td>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Customer Information
+                    <ChevronRight size={12} className="rotate-90" />
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Total Amount
+                    <ChevronRight size={12} className="rotate-90" />
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Order Status
+                    <ChevronRight size={12} className="rotate-90" />
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {getFilteredOrders().map((order, index) => (
+                <tr key={order.id} className={`border-b border-gray-100 hover:bg-gray-25 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-700">{index + 1}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-primary">{order.id}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-800">{order.orderDate}</div>
+                      <div className="text-xs text-gray-600">{order.orderTime}</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">{order.collectionTime}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium text-gray-800">{order.customer}</div>
+                      <div className="text-xs text-gray-600">{order.phone}</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-gray-800">{order.total.toFixed(2)} €</div>
+                      <div className="flex gap-1">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentMethod === 'Card' ? 'bg-primaryExtraLight text-primary' : 'bg-green-100 text-green-800'}`}>
+                          {order.paymentMethod}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : order.paymentStatus === 'refunded' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'}`}>
+                          {order.paymentStatus}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="space-y-1">
+                      <span className={`px-2 py-1 rounded text-xs font-medium bg-primaryExtraLight text-primary`}>
+                        {getStatusText(order.status)}
+                      </span>
+                      <div className="text-xs text-primary mt-2 pl-1">{order.orderMethod}</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    {getActionButtons(order)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-      {getFilteredOrders().length === 0 && (
-        <div className="text-center py-8">
-          <div className="text-gray-300 mb-3">
-            <ShoppingBag size={40} className="mx-auto" />
+          {getFilteredOrders().length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-300 mb-3">
+                <ShoppingBag size={40} className="mx-auto" />
+              </div>
+              <p className="text-gray-600 font-medium text-sm">No orders found</p>
+              <p className="text-gray-500 text-xs">Orders matching your filter criteria will appear here.</p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Keyboard Component - exactly like other files */}
+      {showKeyboard && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Virtual Keyboard</span>
+                {capsLock && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    CAPS LOCK
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowKeyboard(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div 
+              className="keyboard-container w-full" 
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <Keyboard
+                keyboardRef={(r) => (window.keyboard = r)}
+                input={keyboardInput}
+                onChange={onKeyboardChange}
+                onChangeAll={onKeyboardChangeAll}
+                onKeyPress={onKeyboardKeyPress}
+                theme="hg-theme-default"
+                layoutName={capsLock ? "shift" : "default"}
+                layout={{
+                  default: [
+                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
+                    "{tab} q w e r t y u i o p [ ] \\",
+                    "{lock} a s d f g h j k l ; ' {enter}",
+                    "{shift} z x c v b n m , . / {shift}",
+                    "{space}"
+                  ],
+                  shift: [
+                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
+                    "{tab} Q W E R T Y U I O P { } |",
+                    "{lock} A S D F G H J K L : \" {enter}",
+                    "{shift} Z X C V B N M < > ? {shift}",
+                    "{space}"
+                  ]
+                }}
+                display={{
+                  "{bksp}": "⌫",
+                  "{enter}": "↵",
+                  "{shift}": "⇧",
+                  "{lock}": capsLock ? "⇪ ON" : "⇪",
+                  "{tab}": "⇥",
+                  "{space}": "Space"
+                }}
+                physicalKeyboardHighlight={true}
+                physicalKeyboardHighlightTextColor={"#000000"}
+                physicalKeyboardHighlightBgColor={"#fff475"}
+              />
+            </div>
           </div>
-          <p className="text-gray-600 font-medium text-sm">No orders found</p>
-          <p className="text-gray-500 text-xs">Orders matching your filter criteria will appear here.</p>
         </div>
       )}
     </div>

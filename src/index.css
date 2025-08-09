@@ -8,15 +8,50 @@
   --color-secondary:#D4B85F;
 }
 
-/* Test style to see if CSS is loading */
-body {
-  background-color: #f0f0f0;
+/* Ensure full viewport height without scrollbars but maintain original spacing */
+html, body {
+  height: 100vh;
   margin: 0;
   padding: 0;
+  overflow: hidden; /* Prevent body scroll */
+  background-color: #f0f0f0;
 }
 
 #root {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden; /* Prevent root scroll */
+}
+
+/* Dashboard specific styles for full height with original spacing */
+.dashboard-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px; /* Restore original padding */
+}
+
+.dashboard-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 8px; /* Restore original padding */
+}
+
+.dashboard-main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 8px; /* Restore original padding */
+}
+
+.dashboard-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px; /* Restore original padding */
 }
 
 @layer components {
@@ -98,12 +133,6 @@ body {
   }
 }
 
-/* Add to your index.css or global CSS file */
-html, body, #root {
-  height: 100%;
-  overflow: auto; /* or scroll */
-}
-
 /* Make title bar draggable */
 .title-bar {
   -webkit-app-region: drag;
@@ -112,6 +141,7 @@ html, body, #root {
 .title-bar button {
   -webkit-app-region: no-drag;
 }
+
 /* Modal scroll improvements */
 .modal-backdrop {
   scrollbar-width: none; /* Firefox */
@@ -150,6 +180,7 @@ body.modal-open {
 .modal-scrollable::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;                    /* Thin scrollbar */
 }
@@ -176,4 +207,188 @@ body.modal-open {
 /* Title bar button hover styles */
 .title-bar button:hover {
   background-color: var(--hover-bg-color) !important;
+}
+
+/* Virtual Keyboard Styles */
+.keyboard-container {
+  margin-top: 1rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Override any default keyboard width constraints */
+.hg-theme-default {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  margin: 0 auto;
+  background: #f8faff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 8px;
+}
+
+.hg-theme-default .hg-row {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+}
+
+.hg-theme-default .hg-button {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  height: 50px;
+  margin: 2px;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Special handling for space bar and function keys */
+.hg-theme-default .hg-button[data-skbtn="{space}"] {
+  flex: 4;
+  min-width: 200px;
+}
+
+.hg-theme-default .hg-button[data-skbtn="{enter}"] {
+  flex: 1.5;
+}
+
+.hg-theme-default .hg-button[data-skbtn="{shift}"] {
+  flex: 1.5;
+}
+
+.hg-theme-default .hg-button[data-skbtn="{lock}"] {
+  flex: 1.5;
+}
+
+.hg-theme-default .hg-button[data-skbtn="{tab}"] {
+  flex: 1.5;
+}
+
+.hg-theme-default .hg-button[data-skbtn="{bksp}"] {
+  flex: 1.5;
+}
+
+.hg-theme-default .hg-button:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.hg-theme-default .hg-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.hg-theme-default .hg-button.hg-functionBtn {
+  background: #f9fafb;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.hg-theme-default .hg-button.hg-functionBtn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.hg-theme-default .hg-button.hg-red {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.hg-theme-default .hg-button.hg-red:hover {
+  background: #fecaca;
+  border-color: #fca5a5;
+}
+
+.hg-theme-default .hg-button.hg-highlight {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.hg-theme-default .hg-button.hg-highlight:hover {
+  background: #bfdbfe;
+  border-color: #60a5fa;
+}
+
+.hg-theme-default .hg-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+.hg-theme-default .hg-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Make keyboard responsive and full-width */
+.hg-theme-default {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.hg-theme-default .hg-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.hg-theme-default .hg-button {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+}
+
+/* Responsive keyboard - full width on all screen sizes */
+@media (max-width: 1200px) {
+  .hg-theme-default .hg-button {
+    height: 45px;
+    font-size: 13px;
+    margin: 1px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hg-theme-default .hg-button {
+    height: 40px;
+    font-size: 12px;
+    margin: 1px;
+  }
+  
+  .hg-theme-default {
+    padding: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hg-theme-default .hg-button {
+    height: 35px;
+    font-size: 11px;
+    margin: 1px;
+  }
+  
+  .hg-theme-default {
+    padding: 4px;
+  }
 }

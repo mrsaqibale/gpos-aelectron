@@ -258,56 +258,59 @@ const DashboardLayout = () => {
         </div>
       )}
 
-      <div className={`min-h-screen ${shouldHideSidebar ? 'bg-[#d3d3d3] p-0' : 'bg-bgColor p-2'} p-2 md:p-2`}>
+      <div className="dashboard-container">
         {/* Check-In Popup */}
         {showCheckIn && (
           <CheckInFlow onComplete={() => setShowCheckIn(false)} />
         )}
         
-        <div className={`flex ${shouldHideSidebar? "h-[calc(100vh-17px)] ":"h-[calc(100vh-24px)] "} overflow-hidden rounded-xl`}>
-          {/* Conditionally render Sidebar */}
-          {!shouldHideSidebar && <Sidebar navigationItems={navigationItems} />}
-          
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Conditional Header Rendering */}
-            {isOrdersRoute ? (
-              // Show OrdersHeader for sales route
-              <OrdersHeader 
-                isOrdersRoute={isOrdersRoute} 
-                onMenuClick={() => setShowDashboardSlider(true)}
-              />
-            ) : isKDSRoute ? (
-              // Show KDS-specific Header for KDS route
-              <div className={shouldHideSidebar ? "" : "md:pl-5"}>
-                <Header 
-                  onRecallClick={() => console.log("Recall clicked")}
-                  onNotificationsClick={() => console.log("Notifications clicked")}
-                  onViewToggle={() => console.log("View toggle clicked")}
-                  currentView="cards" // or manage this state
-                  notificationCount={3} // or manage this state
+        <div className="dashboard-content">
+          <div className={`flex ${shouldHideSidebar? "h-full" : "h-full"} overflow-hidden rounded-xl`}>
+            {/* Conditionally render Sidebar */}
+            {!shouldHideSidebar && <Sidebar navigationItems={navigationItems} />}
+            
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Conditional Header Rendering */}
+              {isOrdersRoute ? (
+                // Show OrdersHeader for sales route
+                <OrdersHeader 
+                  isOrdersRoute={isOrdersRoute} 
+                  onMenuClick={() => setShowDashboardSlider(true)}
                 />
-              </div>
-            ) : (
-              // Show regular Header for other routes
-              <div className={shouldHideSidebar ? "" : "md:pl-5"}>
-                <Header />
-              </div>
-            )}
+              ) : isKDSRoute ? (
+                // Show KDS-specific Header for KDS route
+                <div className={shouldHideSidebar ? "" : "md:pl-5"}>
+                  <Header 
+                    onRecallClick={() => console.log("Recall clicked")}
+                    onNotificationsClick={() => console.log("Notifications clicked")}
+                    onViewToggle={() => console.log("View toggle clicked")}
+                    currentView="cards" // or manage this state
+                    notificationCount={3} // or manage this state
+                  />
+                </div>
+              ) : (
+                // Show regular Header for other routes
+                <div className={shouldHideSidebar ? "" : "md:pl-5"}>
+                  <Header />
+                </div>
+              )}
          
-            <main
-              className={`flex-1 overflow-auto rounded-br-xl ${
-                shouldHideSidebar ? 'bg-[#d3d3d3] p-0 ' : 'bg-bgColor p-2'
-              } ${
-                shouldHideSidebar ? '' : 'md:ml-2'
-              } ${
-                isKDSRoute ? '' : 'mt-6 md:mt-3'
-              }`}
-              style={{
-                transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-            >
-              <Outlet />
-            </main>
+              <main className="dashboard-main">
+                <div className={`dashboard-scrollable rounded-br-xl ${
+                  shouldHideSidebar ? 'bg-[#d3d3d3] p-0' : 'bg-bgColor p-2'
+                } ${
+                  shouldHideSidebar ? '' : 'md:ml-2'
+                } ${
+                  isKDSRoute ? '' : 'mt-6 md:mt-3'
+                }`}
+                  style={{
+                    transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                >
+                  <Outlet />
+                </div>
+              </main>
+            </div>
           </div>
         </div>
       </div>
