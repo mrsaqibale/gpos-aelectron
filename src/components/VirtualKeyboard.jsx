@@ -154,7 +154,7 @@ const VirtualKeyboard = ({
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+    <div className="fixed bottom-0 left-[15%] right-[15%] z-50 bg-white border-t border-gray-200 shadow-lg">
       <div className="p-4 bg-gray-50">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
