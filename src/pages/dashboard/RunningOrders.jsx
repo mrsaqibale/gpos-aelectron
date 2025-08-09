@@ -2698,19 +2698,23 @@ const RunningOrders = () => {
                           layoutName="numeric"
                           layout={{
                             numeric: [
-                              "1 2 3 {bksp}",
-                              "4 5 6 {enter}",
-                              "7 8 9 {tab}",
-                              ". 0 - {space}"
+                              "1 2 3",
+                              "4 5 6",
+                              "7 8 9",
+                              "0"
                             ]
                           }}
                           display={{
-                            "{bksp}": "⌫",
-                            "{enter}": "↵",
-                            "{tab}": "⇥",
-                            "{space}": "Space",
-                            ".": ".",
-                            "-": "-"
+                            "1": "1",
+                            "2": "2",
+                            "3": "3",
+                            "4": "4",
+                            "5": "5",
+                            "6": "6",
+                            "7": "7",
+                            "8": "8",
+                            "9": "9",
+                            "0": "0"
                           }}
                           physicalKeyboardHighlight={true}
                           physicalKeyboardHighlightTextColor={"#000000"}
