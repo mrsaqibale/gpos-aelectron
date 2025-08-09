@@ -12,6 +12,8 @@ import {
   Users,
   X
 } from 'lucide-react';
+import Keyboard from 'react-simple-keyboard';
+import 'react-simple-keyboard/build/css/index.css';
 
 const Coupons = () => {
   const [coupons, setCoupons] = useState([]);
@@ -22,11 +24,26 @@ const Coupons = () => {
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [couponToDelete, setCouponToDelete] = useState(null);
+  
+  // Keyboard state
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeInput, setActiveInput] = useState('');
+  const [keyboardInput, setKeyboardInput] = useState('');
+  const [capsLock, setCapsLock] = useState(false);
 
   // Load coupons from database
   useEffect(() => {
     loadCoupons();
   }, []);
+
+  // Update keyboard layout when caps lock changes
+  useEffect(() => {
+    if (window.keyboard && showKeyboard) {
+      window.keyboard.setOptions({
+        layoutName: capsLock ? "shift" : "default"
+      });
+    }
+  }, [capsLock, showKeyboard]);
 
   const loadCoupons = async () => {
     try {
@@ -82,12 +99,109 @@ const Coupons = () => {
       [name]: value
     }));
     
+    // Update keyboard input when typing directly
+    if (activeInput === name) {
+      setKeyboardInput(value);
+    }
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
       }));
+    }
+  };
+
+  // Keyboard event handlers
+  const handleInputFocus = (inputName) => {
+    setActiveInput(inputName);
+    if (inputName === 'searchTerm') {
+      setKeyboardInput(searchTerm || '');
+    } else {
+      setKeyboardInput(newCoupon[inputName] || '');
+    }
+    setShowKeyboard(true);
+    
+    // Ensure keyboard layout matches caps lock state
+    setTimeout(() => {
+      if (window.keyboard) {
+        window.keyboard.setOptions({
+          layoutName: capsLock ? "shift" : "default"
+        });
+      }
+    }, 100);
+  };
+
+  const handleInputBlur = (e) => {
+    // Check if the focus is moving to a keyboard element
+    if (e.relatedTarget && e.relatedTarget.closest('.hg-theme-default')) {
+      return; // Don't hide keyboard if focus moved to keyboard
+    }
+    
+    // Also check if the click target is within the keyboard
+    if (e.target && e.target.closest('.hg-theme-default')) {
+      return; // Don't hide keyboard if clicking within keyboard
+    }
+    
+    // Small delay to allow keyboard interactions to complete
+    setTimeout(() => {
+      setShowKeyboard(false);
+      setActiveInput('');
+    }, 300);
+  };
+
+  // Auto-show keyboard for any input focus
+  const handleAnyInputFocus = (e, inputName) => {
+    handleInputFocus(inputName);
+  };
+
+  // Auto-show keyboard for any input click
+  const handleAnyInputClick = (e, inputName) => {
+    if (!showKeyboard || activeInput !== inputName) {
+      handleInputFocus(inputName);
+    }
+  };
+
+  const onKeyboardChange = (input) => {
+    setKeyboardInput(input);
+    
+    // Update the corresponding form field
+    if (activeInput === 'searchTerm') {
+      setSearchTerm(input);
+    } else if (activeInput) {
+      setNewCoupon(prev => ({
+        ...prev,
+        [activeInput]: input
+      }));
+    }
+  };
+
+  const onKeyboardChangeAll = (inputs) => {
+    setKeyboardInput(inputs[activeInput] || '');
+  };
+
+  const onKeyboardKeyPress = (button) => {
+    if (button === '{enter}') {
+      // Move to next input field or submit form
+      const inputFields = ['title', 'customerType', 'code', 'limitForSameUser', 'startDate', 'expireDate', 'discount', 'maxDiscount', 'minPurchase'];
+      const currentIndex = inputFields.indexOf(activeInput);
+      if (currentIndex < inputFields.length - 1) {
+        const nextField = inputFields[currentIndex + 1];
+        const nextInput = document.querySelector(`[name="${nextField}"]`);
+        if (nextInput) {
+          nextInput.focus();
+        }
+      }
+    } else if (button === '{lock}') {
+      // Toggle caps lock
+      setCapsLock(!capsLock);
+      // Force keyboard to update layout
+      if (window.keyboard) {
+        window.keyboard.setOptions({
+          layoutName: !capsLock ? "shift" : "default"
+        });
+      }
     }
   };
 
@@ -325,16 +439,19 @@ const Coupons = () => {
             <h2 className="text-xl font-bold text-primary">
               {editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}
             </h2>
-            <button 
-              onClick={() => {
-                setShowForm(false);
-                setEditingCoupon(null);
-                handleReset();
-              }} 
-              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+            
+              <button 
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingCoupon(null);
+                  handleReset();
+                }} 
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -350,6 +467,9 @@ const Coupons = () => {
                   name="title"
                   value={newCoupon.title}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'title')}
+                  onClick={(e) => handleAnyInputClick(e, 'title')}
+                  onBlur={(e) => handleInputBlur(e)}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.title ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -370,6 +490,9 @@ const Coupons = () => {
                   name="customerType"
                   value={newCoupon.customerType}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'customerType')}
+                  onClick={(e) => handleAnyInputClick(e, 'customerType')}
+                  onBlur={(e) => handleInputBlur(e)}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.customerType ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -400,6 +523,9 @@ const Coupons = () => {
                   name="code"
                   value={newCoupon.code}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'code')}
+                  onClick={(e) => handleAnyInputClick(e, 'code')}
+                  onBlur={(e) => handleInputBlur(e)}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.code ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -421,6 +547,9 @@ const Coupons = () => {
                   name="limitForSameUser"
                   value={newCoupon.limitForSameUser}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'limitForSameUser')}
+                  onClick={(e) => handleAnyInputClick(e, 'limitForSameUser')}
+                  onBlur={(e) => handleInputBlur(e)}
                   min="1"
                   className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                   placeholder="Ex:10"
@@ -437,6 +566,9 @@ const Coupons = () => {
                   name="startDate"
                   value={newCoupon.startDate}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'startDate')}
+                  onClick={(e) => handleAnyInputClick(e, 'startDate')}
+                  onBlur={(e) => handleInputBlur(e)}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.startDate ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -457,6 +589,9 @@ const Coupons = () => {
                   name="expireDate"
                   value={newCoupon.expireDate}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'expireDate')}
+                  onClick={(e) => handleAnyInputClick(e, 'expireDate')}
+                  onBlur={(e) => handleInputBlur(e)}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.expireDate ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -476,6 +611,9 @@ const Coupons = () => {
                   name="discountType"
                   value={newCoupon.discountType}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'discountType')}
+                  onClick={(e) => handleAnyInputClick(e, 'discountType')}
+                  onBlur={handleInputBlur}
                   className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                 >
                   <option value="percentage">Percentage (%)</option>
@@ -493,6 +631,9 @@ const Coupons = () => {
                   name="discount"
                   value={newCoupon.discount}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'discount')}
+                  onClick={(e) => handleAnyInputClick(e, 'discount')}
+                  onBlur={(e) => handleInputBlur(e)}
                   min="0"
                   step="0.01"
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
@@ -516,6 +657,9 @@ const Coupons = () => {
                   name="maxDiscount"
                   value={newCoupon.maxDiscount}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'maxDiscount')}
+                  onClick={(e) => handleAnyInputClick(e, 'maxDiscount')}
+                  onBlur={(e) => handleInputBlur(e)}
                   min="0"
                   step="0.01"
                   className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
@@ -533,6 +677,9 @@ const Coupons = () => {
                   name="minPurchase"
                   value={newCoupon.minPurchase}
                   onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'minPurchase')}
+                  onClick={(e) => handleAnyInputClick(e, 'minPurchase')}
+                  onBlur={(e) => handleInputBlur(e)}
                   min="0"
                   step="0.01"
                   className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
@@ -566,6 +713,7 @@ const Coupons = () => {
                 )}
               </button>
             </div>
+
           </form>
         </div>
       )}
@@ -578,15 +726,18 @@ const Coupons = () => {
             <span className="text-2xl">🏷️</span>
             <h2 className="text-lg font-semibold text-gray-800">Coupon List</h2>
           </div>
-          <button
-            onClick={handleAddCoupon}
-            className="px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg flex items-center gap-2 
-            shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
-            active:shadow-none active:translate-y-[4px] transition-all"
-          >
-            <Plus size={16} />
-            Add New Coupon
-          </button>
+          <div className="flex items-center gap-3">
+
+            <button
+              onClick={handleAddCoupon}
+              className="px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg flex items-center gap-2 
+              shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
+              active:shadow-none active:translate-y-[4px] transition-all"
+            >
+              <Plus size={16} />
+              Add New Coupon
+            </button>
+          </div>
         </div>
 
                  {/* Filters */}
@@ -599,9 +750,13 @@ const Coupons = () => {
                  placeholder="Search coupons..."
                  value={searchTerm}
                  onChange={(e) => setSearchTerm(e.target.value)}
+                 onFocus={(e) => handleAnyInputFocus(e, 'searchTerm')}
+                 onClick={(e) => handleAnyInputClick(e, 'searchTerm')}
+                 onBlur={(e) => handleInputBlur(e)}
                  className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                />
              </div>
+             
              
              <select
                value={statusFilter}
@@ -615,6 +770,7 @@ const Coupons = () => {
            </div>
          </div>
 
+         
         {/* Coupons Table */}
         <div className="overflow-x-auto">
           {loading && (
@@ -807,6 +963,75 @@ const Coupons = () => {
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Virtual Keyboard - Always visible when needed */}
+      {showKeyboard && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="p-4 bg-gray-50">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-4">
+                <label className="block text-xs font-medium text-gray-700">
+                  Current Input: <span className="font-semibold text-primary">{activeInput}</span>
+                </label>
+                {capsLock && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-md border border-yellow-200">
+                    CAPS LOCK ON
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowKeyboard(false)}
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-200"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div 
+              className="keyboard-container w-full" 
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <Keyboard
+                keyboardRef={(r) => (window.keyboard = r)}
+                input={keyboardInput}
+                onChange={onKeyboardChange}
+                onChangeAll={onKeyboardChangeAll}
+                onKeyPress={onKeyboardKeyPress}
+                theme="hg-theme-default"
+                layoutName={capsLock ? "shift" : "default"}
+                layout={{
+                  default: [
+                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
+                    "{tab} q w e r t y u i o p [ ] \\",
+                    "{lock} a s d f g h j k l ; ' {enter}",
+                    "{shift} z x c v b n m , . / {shift}",
+                    "{space}"
+                  ],
+                  shift: [
+                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
+                    "{tab} Q W E R T Y U I O P { } |",
+                    "{lock} A S D F G H J K L : \" {enter}",
+                    "{shift} Z X C V B N M < > ? {shift}",
+                    "{space}"
+                  ]
+                }}
+                display={{
+                  "{bksp}": "⌫",
+                  "{enter}": "↵",
+                  "{shift}": "⇧",
+                  "{lock}": capsLock ? "⇪ ON" : "⇪",
+                  "{tab}": "⇥",
+                  "{space}": "Space"
+                }}
+                physicalKeyboardHighlight={true}
+                physicalKeyboardHighlightTextColor={"#000000"}
+                physicalKeyboardHighlightBgColor={"#fff475"}
+               />
             </div>
           </div>
         </div>

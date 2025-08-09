@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload } from 'lucide-react';
+import Keyboard from 'react-simple-keyboard';
+import 'react-simple-keyboard/build/css/index.css';
 
 const EmployeeManagement = () => {
   const [employees, setEmployees] = useState([]);
@@ -11,6 +13,13 @@ const EmployeeManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
   const [imageUrls, setImageUrls] = useState({});
+  
+  // Keyboard state
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeInput, setActiveInput] = useState('');
+  const [keyboardInput, setKeyboardInput] = useState('');
+  const [capsLock, setCapsLock] = useState(false);
+  
   const [newEmployee, setNewEmployee] = useState({
     firstName: '',
     lastName: '',
@@ -25,6 +34,15 @@ const EmployeeManagement = () => {
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [toggleLoading, setToggleLoading] = useState({});
+
+  // Update keyboard layout when caps lock changes
+  useEffect(() => {
+    if (window.keyboard && showKeyboard) {
+      window.keyboard.setOptions({
+        layoutName: capsLock ? "shift" : "default"
+      });
+    }
+  }, [capsLock, showKeyboard]);
 
   const fetchEmployees = async () => {
     try {
@@ -429,6 +447,92 @@ const EmployeeManagement = () => {
     }
   };
 
+  // Keyboard event handlers
+  const handleInputFocus = (inputName) => {
+    setActiveInput(inputName);
+    setKeyboardInput(newEmployee[inputName] || '');
+    setShowKeyboard(true);
+    
+    // Ensure keyboard layout matches caps lock state
+    setTimeout(() => {
+      if (window.keyboard) {
+        window.keyboard.setOptions({
+          layoutName: capsLock ? "shift" : "default"
+        });
+      }
+    }, 100);
+  };
+
+  const handleInputBlur = (e) => {
+    // Check if the focus is moving to a keyboard element
+    if (e.relatedTarget && e.relatedTarget.closest('.hg-theme-default')) {
+      return; // Don't hide keyboard if focus moved to keyboard
+    }
+    
+    // Also check if the click target is within the keyboard
+    if (e.target && e.target.closest('.hg-theme-default')) {
+      return; // Don't hide keyboard if clicking within keyboard
+    }
+    
+    // Small delay to allow keyboard interactions to complete
+    setTimeout(() => {
+      setShowKeyboard(false);
+      setActiveInput('');
+    }, 300);
+  };
+
+  // Auto-show keyboard for any input focus
+  const handleAnyInputFocus = (e, inputName) => {
+    handleInputFocus(inputName);
+  };
+
+  // Auto-show keyboard for any input click
+  const handleAnyInputClick = (e, inputName) => {
+    if (!showKeyboard || activeInput !== inputName) {
+      handleInputFocus(inputName);
+    }
+  };
+
+  const onKeyboardChange = (input) => {
+    setKeyboardInput(input);
+    
+    // Update the corresponding form field
+    if (activeInput) {
+      setNewEmployee(prev => ({
+        ...prev,
+        [activeInput]: input
+      }));
+    }
+  };
+
+  const onKeyboardChangeAll = (inputs) => {
+    setKeyboardInput(inputs[activeInput] || '');
+  };
+
+  const onKeyboardKeyPress = (button) => {
+    if (button === '{enter}') {
+      // Move to next input field or submit form
+      const inputFields = ['firstName', 'lastName', 'role', 'phone', 'email', 'pin', 'confirmPin'];
+      const currentIndex = inputFields.indexOf(activeInput);
+      if (currentIndex < inputFields.length - 1) {
+        const nextField = inputFields[currentIndex + 1];
+        const nextInput = document.querySelector(`[name="${nextField}"]`);
+        if (nextInput) {
+          nextInput.focus();
+        }
+      }
+    } else if (button === '{lock}') {
+      // Toggle caps lock
+      setCapsLock(!capsLock);
+      // Force keyboard to update layout
+      if (window.keyboard) {
+        window.keyboard.setOptions({
+          layoutName: !capsLock ? "shift" : "default"
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Employee Form - NOW AT THE VERY TOP */}
@@ -469,6 +573,9 @@ const EmployeeManagement = () => {
                         name="firstName"
                         value={newEmployee.firstName}
                         onChange={handleInputChange}
+                        onFocus={() => handleAnyInputFocus(null, 'firstName')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'firstName')}
                         className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                         placeholder="Ex: John"
                         required
@@ -484,6 +591,9 @@ const EmployeeManagement = () => {
                         name="lastName"
                         value={newEmployee.lastName}
                         onChange={handleInputChange}
+                        onFocus={() => handleAnyInputFocus(null, 'lastName')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'lastName')}
                         className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                         placeholder="Ex: Doe"
                         required
@@ -498,6 +608,9 @@ const EmployeeManagement = () => {
                         name="role"
                         value={newEmployee.role}
                         onChange={handleInputChange}
+                        onFocus={() => handleAnyInputFocus(null, 'role')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'role')}
                         className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                         required
                       >
@@ -517,6 +630,9 @@ const EmployeeManagement = () => {
                         name="phone"
                         value={newEmployee.phone}
                         onChange={handleInputChange}
+                        onFocus={() => handleAnyInputFocus(null, 'phone')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'phone')}
                         className={`w-[80%] px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                           phoneError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
                         }`}
@@ -601,6 +717,9 @@ const EmployeeManagement = () => {
                     name="email"
                     value={newEmployee.email}
                     onChange={handleInputChange}
+                    onFocus={() => handleAnyInputFocus(null, 'email')}
+                    onBlur={handleInputBlur}
+                    onClick={() => handleAnyInputClick(null, 'email')}
                     className={`w-3/4 px-3 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                       emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
                     }`}
@@ -622,6 +741,9 @@ const EmployeeManagement = () => {
                       name="pin"
                       value={newEmployee.pin}
                       onChange={handleInputChange}
+                      onFocus={() => handleAnyInputFocus(null, 'pin')}
+                      onBlur={handleInputBlur}
+                      onClick={() => handleAnyInputClick(null, 'pin')}
                       className={`w-3/4 px-3 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent pr-6 text-sm ${
                         pinError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
                       }`}
@@ -654,6 +776,9 @@ const EmployeeManagement = () => {
                       name="confirmPin"
                       value={newEmployee.confirmPin}
                       onChange={handleInputChange}
+                      onFocus={() => handleAnyInputFocus(null, 'confirmPin')}
+                      onBlur={handleInputBlur}
+                      onClick={() => handleAnyInputClick(null, 'confirmPin')}
                       className="w-3/4 px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent pr-6 text-sm"
                       placeholder="••••••"
                       minLength="4"
@@ -885,6 +1010,75 @@ const EmployeeManagement = () => {
               >
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Virtual Keyboard - Always visible when needed */}
+      {showKeyboard && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="p-4 bg-gray-50">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-4">
+                <label className="block text-xs font-medium text-gray-700">
+                  Current Input: <span className="font-semibold text-primary">{activeInput}</span>
+                </label>
+                {capsLock && (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-md border border-yellow-200">
+                    CAPS LOCK ON
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowKeyboard(false)}
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-200"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div 
+              className="keyboard-container w-full" 
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <Keyboard
+                keyboardRef={(r) => (window.keyboard = r)}
+                input={keyboardInput}
+                onChange={onKeyboardChange}
+                onChangeAll={onKeyboardChangeAll}
+                onKeyPress={onKeyboardKeyPress}
+                theme="hg-theme-default"
+                layoutName={capsLock ? "shift" : "default"}
+                layout={{
+                  default: [
+                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
+                    "{tab} q w e r t y u i o p [ ] \\",
+                    "{lock} a s d f g h j k l ; ' {enter}",
+                    "{shift} z x c v b n m , . / {shift}",
+                    "{space}"
+                  ],
+                  shift: [
+                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
+                    "{tab} Q W E R T Y U I O P { } |",
+                    "{lock} A S D F G H J K L : \" {enter}",
+                    "{shift} Z X C V B N M < > ? {shift}",
+                    "{space}"
+                  ]
+                }}
+                display={{
+                  "{bksp}": "⌫",
+                  "{enter}": "↵",
+                  "{shift}": "⇧",
+                  "{lock}": capsLock ? "⇪ ON" : "⇪",
+                  "{tab}": "⇥",
+                  "{space}": "Space"
+                }}
+                physicalKeyboardHighlight={true}
+                physicalKeyboardHighlightTextColor={"#000000"}
+                physicalKeyboardHighlightBgColor={"#fff475"}
+               />
             </div>
           </div>
         </div>
