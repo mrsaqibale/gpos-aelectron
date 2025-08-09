@@ -17,6 +17,8 @@ import {
   Filter,
   RotateCcw
 } from 'lucide-react';
+import Keyboard from 'react-simple-keyboard';
+import 'react-simple-keyboard/build/css/index.css';
 
 const ManageOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -25,6 +27,12 @@ const ManageOrders = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
   const [appliedDateFilter, setAppliedDateFilter] = useState('');
+  
+  // Keyboard functionality state - exactly like other files
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeInput, setActiveInput] = useState('');
+  const [keyboardInput, setKeyboardInput] = useState('');
+  const [capsLock, setCapsLock] = useState(false);
 
   // Mock data - replace with actual API calls
   useEffect(() => {
@@ -145,6 +153,15 @@ const ManageOrders = () => {
     setOrders(mockOrders);
   }, []);
 
+  // Keyboard useEffect - exactly like other files
+  useEffect(() => {
+    if (capsLock) {
+      // The keyboard will automatically use shift layout when capsLock is true
+    } else {
+      // The keyboard will automatically use default layout when capsLock is false
+    }
+  }, [capsLock]);
+
   const tabs = [
     { id: 'all', label: 'All Orders', count: orders.length },
     { id: 'collection', label: 'Collection', count: orders.filter(o => o.orderMethod === 'Collection').length },
@@ -220,6 +237,126 @@ const ManageOrders = () => {
     setAppliedDateFilter('');
   };
 
+  // Keyboard functionality functions - exactly like other files
+  const handleInputFocus = (inputName) => {
+    setActiveInput(inputName);
+    if (inputName === 'searchTerm') {
+      setKeyboardInput(searchTerm || '');
+    } else if (inputName === 'dateFilter') {
+      setKeyboardInput(dateFilter || '');
+    }
+    setShowKeyboard(true);
+  };
+
+  const handleInputBlur = (e) => {
+    // Don't hide keyboard immediately to allow for keyboard input
+    // setShowKeyboard(false);
+    // Update the form state when input loses focus
+    const { name, value } = e.target;
+    if (name === 'searchTerm') {
+      setSearchTerm(value);
+    } else if (name === 'dateFilter') {
+      setDateFilter(value);
+    }
+  };
+
+  const handleAnyInputFocus = (e, inputName) => {
+    setActiveInput(inputName);
+    setShowKeyboard(true);
+    // Set the keyboard input value to match the current form value
+    if (inputName === 'searchTerm') {
+      setKeyboardInput(searchTerm || '');
+    } else if (inputName === 'dateFilter') {
+      setKeyboardInput(dateFilter || '');
+    }
+  };
+
+  const handleAnyInputClick = (e, inputName) => {
+    if (!showKeyboard || activeInput !== inputName) {
+      handleAnyInputFocus(e, inputName);
+    }
+  };
+
+  const onKeyboardChange = (input) => {
+    setKeyboardInput(input);
+    
+    // Update the corresponding form field
+    if (activeInput === 'searchTerm') {
+      setSearchTerm(input);
+    } else if (activeInput === 'dateFilter') {
+      setDateFilter(input);
+    }
+  };
+
+  const onKeyboardChangeAll = (inputs) => {
+    setKeyboardInput(inputs[activeInput] || '');
+  };
+
+  const onKeyboardKeyPress = (button) => {
+    if (activeInput) {
+      if (button === '{bksp}') {
+        const currentValue = keyboardInput || '';
+        const newValue = currentValue.slice(0, -1);
+        setKeyboardInput(newValue);
+        if (activeInput === 'searchTerm') {
+          setSearchTerm(newValue);
+        } else if (activeInput === 'dateFilter') {
+          setDateFilter(newValue);
+        }
+      } else if (button === '{enter}') {
+        // Move to next input field or submit form
+        const inputFields = ['searchTerm', 'dateFilter'];
+        const currentIndex = inputFields.indexOf(activeInput);
+        if (currentIndex < inputFields.length - 1) {
+          const nextField = inputFields[currentIndex + 1];
+          const nextInput = document.querySelector(`[name="${nextField}"]`);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        }
+      } else if (button === '{lock}') {
+        // Toggle caps lock
+        setCapsLock(!capsLock);
+      } else if (button === '{shift}') {
+        // Toggle shift (this will be handled by the layout change)
+        // The layout will automatically switch between default and shift
+      } else if (button === '{tab}') {
+        // Move to next input field
+        const inputFields = ['searchTerm', 'dateFilter'];
+        const currentIndex = inputFields.indexOf(activeInput);
+        if (currentIndex < inputFields.length - 1) {
+          const nextField = inputFields[currentIndex + 1];
+          const nextInput = document.querySelector(`[name="${nextField}"]`);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        } else {
+          // If at last field, go to first
+          const firstInput = document.querySelector(`[name="${inputFields[0]}"]`);
+          if (firstInput) {
+            firstInput.focus();
+          }
+        }
+      } else if (button === '{space}') {
+        const currentValue = keyboardInput || '';
+        const newValue = currentValue + ' ';
+        setKeyboardInput(newValue);
+        if (activeInput === 'searchTerm') {
+          setSearchTerm(newValue);
+        } else if (activeInput === 'dateFilter') {
+          setDateFilter(newValue);
+        }
+      }
+    }
+  };
+
+  const resetKeyboardInputs = () => {
+    setKeyboardInput('');
+    setActiveInput('');
+    setShowKeyboard(false);
+    setCapsLock(false);
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       new: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -292,9 +429,13 @@ const ManageOrders = () => {
               <div className="relative">
                 <input
                   type="text"
+                  name="searchTerm"
                   placeholder="Search by Order ID"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={(e) => handleAnyInputFocus(e, 'searchTerm')}
+                  onClick={(e) => handleAnyInputClick(e, 'searchTerm')}
+                  onBlur={handleInputBlur}
                   className="w-64 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -308,8 +449,12 @@ const ManageOrders = () => {
               <div className="relative">
                 <input
                   type="date"
+                  name="dateFilter"
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
+                  onFocus={(e) => handleAnyInputFocus(e, 'dateFilter')}
+                  onClick={(e) => handleAnyInputClick(e, 'dateFilter')}
+                  onBlur={handleInputBlur}
                   className="px-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
                 />
               </div>
@@ -466,6 +611,72 @@ const ManageOrders = () => {
           )}
         </div>
       </div>
+      
+      {/* Keyboard Component - exactly like other files */}
+      {showKeyboard && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Virtual Keyboard</span>
+                {capsLock && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    CAPS LOCK
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowKeyboard(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div 
+              className="keyboard-container w-full" 
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <Keyboard
+                keyboardRef={(r) => (window.keyboard = r)}
+                input={keyboardInput}
+                onChange={onKeyboardChange}
+                onChangeAll={onKeyboardChangeAll}
+                onKeyPress={onKeyboardKeyPress}
+                theme="hg-theme-default"
+                layoutName={capsLock ? "shift" : "default"}
+                layout={{
+                  default: [
+                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
+                    "{tab} q w e r t y u i o p [ ] \\",
+                    "{lock} a s d f g h j k l ; ' {enter}",
+                    "{shift} z x c v b n m , . / {shift}",
+                    "{space}"
+                  ],
+                  shift: [
+                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
+                    "{tab} Q W E R T Y U I O P { } |",
+                    "{lock} A S D F G H J K L : \" {enter}",
+                    "{shift} Z X C V B N M < > ? {shift}",
+                    "{space}"
+                  ]
+                }}
+                display={{
+                  "{bksp}": "⌫",
+                  "{enter}": "↵",
+                  "{shift}": "⇧",
+                  "{lock}": capsLock ? "⇪ ON" : "⇪",
+                  "{tab}": "⇥",
+                  "{space}": "Space"
+                }}
+                physicalKeyboardHighlight={true}
+                physicalKeyboardHighlightTextColor={"#000000"}
+                physicalKeyboardHighlightBgColor={"#fff475"}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
