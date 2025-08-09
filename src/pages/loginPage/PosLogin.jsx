@@ -400,7 +400,6 @@ const POSLogin = () => {
                 ))}
               </div>
 
-
               <div className="grid grid-cols-3 gap-3">
                   <ActionButton
                     onClick={handleClear}
@@ -409,7 +408,6 @@ const POSLogin = () => {
                   >
                     Clear
                   </ActionButton>
-
                                      <NumberButton
                      number={0}
                      onClick={handleNumberClick}
