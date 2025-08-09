@@ -97,6 +97,7 @@ const RunningOrders = () => {
   const [foods, setFoods] = useState([]);
   const [foodsLoading, setFoodsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [runningOrdersSearchQuery, setRunningOrdersSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState([]);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
@@ -999,6 +1000,8 @@ const RunningOrders = () => {
     // Set the keyboard input value to match the current form value
     if (inputName === 'searchQuery') {
       setKeyboardInput(searchQuery || '');
+    } else if (inputName === 'runningOrdersSearchQuery') {
+      setKeyboardInput(runningOrdersSearchQuery || '');
     } else if (inputName === 'couponCode') {
       setKeyboardInput(couponCode || '');
     }
@@ -1016,6 +1019,8 @@ const RunningOrders = () => {
     // Update the corresponding form field
     if (activeInput === 'searchQuery') {
       setSearchQuery(input);
+    } else if (activeInput === 'runningOrdersSearchQuery') {
+      setRunningOrdersSearchQuery(input);
     } else if (activeInput === 'couponCode') {
       setCouponCode(input);
     }
@@ -1033,12 +1038,14 @@ const RunningOrders = () => {
         setKeyboardInput(newValue);
         if (activeInput === 'searchQuery') {
           setSearchQuery(newValue);
+        } else if (activeInput === 'runningOrdersSearchQuery') {
+          setRunningOrdersSearchQuery(newValue);
         } else if (activeInput === 'couponCode') {
           setCouponCode(newValue);
         }
       } else if (button === '{enter}') {
         // Move to next input field or submit form
-        const inputFields = ['searchQuery', 'couponCode'];
+        const inputFields = ['searchQuery', 'runningOrdersSearchQuery', 'couponCode'];
         const currentIndex = inputFields.indexOf(activeInput);
         if (currentIndex < inputFields.length - 1) {
           const nextField = inputFields[currentIndex + 1];
@@ -1055,7 +1062,7 @@ const RunningOrders = () => {
         // The layout will automatically switch between default and shift
       } else if (button === '{tab}') {
         // Move to next input field
-        const inputFields = ['searchQuery', 'couponCode'];
+        const inputFields = ['searchQuery', 'runningOrdersSearchQuery', 'couponCode'];
         const currentIndex = inputFields.indexOf(activeInput);
         if (currentIndex < inputFields.length - 1) {
           const nextField = inputFields[currentIndex + 1];
@@ -1076,6 +1083,8 @@ const RunningOrders = () => {
         setKeyboardInput(newValue);
         if (activeInput === 'searchQuery') {
           setSearchQuery(newValue);
+        } else if (activeInput === 'runningOrdersSearchQuery') {
+          setRunningOrdersSearchQuery(newValue);
         } else if (activeInput === 'couponCode') {
           setCouponCode(newValue);
         }
@@ -1365,12 +1374,12 @@ const RunningOrders = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
                 <input
                   type="text"
-                  name="searchQuery"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={(e) => handleAnyInputFocus(e, 'searchQuery')}
-                  onClick={(e) => handleAnyInputClick(e, 'searchQuery')}
+                  name="runningOrdersSearchQuery"
+                  placeholder="Search Orders"
+                  value={runningOrdersSearchQuery}
+                  onChange={(e) => setRunningOrdersSearchQuery(e.target.value)}
+                  onFocus={(e) => handleAnyInputFocus(e, 'runningOrdersSearchQuery')}
+                  onClick={(e) => handleAnyInputClick(e, 'runningOrdersSearchQuery')}
                   onBlur={handleInputBlur}
                   className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -1440,7 +1449,7 @@ const RunningOrders = () => {
               <input
                 type="text"
                 name="searchQuery"
-                placeholder="Search"
+                placeholder="Search Food Items"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={(e) => handleAnyInputFocus(e, 'searchQuery')}
