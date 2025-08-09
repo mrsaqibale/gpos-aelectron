@@ -107,6 +107,8 @@ const RunningOrders = () => {
   const [availableCoupons, setAvailableCoupons] = useState([]);
   const [couponsLoading, setCouponsLoading] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [discountAmount, setDiscountAmount] = useState('');
+  const [discountType, setDiscountType] = useState('percentage');
 
   // Cart state to store added food items
   const [cartItems, setCartItems] = useState([]);
@@ -959,16 +961,47 @@ const RunningOrders = () => {
     setCouponCode('');
     setAppliedCoupon(null);
     fetchAvailableCoupons();
+    // Automatically show keyboard for discount amount field when modal opens
+    setActiveInput('discountAmount');
+    setKeyboardInput(discountAmount || '');
+    setShowKeyboard(true);
   };
 
   const handleCloseCouponModal = () => {
     setShowCouponModal(false);
     setCouponCode('');
     setAppliedCoupon(null);
+    setDiscountAmount('');
+    setDiscountType('percentage');
+    // Hide keyboard when modal closes
+    setShowKeyboard(false);
+    setActiveInput(null);
   };
 
   const removeAppliedCoupon = () => {
     setAppliedCoupon(null);
+  };
+
+  const handleApplyManualDiscount = () => {
+    if (!discountAmount || parseFloat(discountAmount) <= 0) {
+      alert('Please enter a valid discount amount');
+      return;
+    }
+
+    // Create a manual discount object similar to coupon structure
+    const manualDiscount = {
+      id: 'manual',
+      title: 'Manual Discount',
+      code: 'MANUAL',
+      discount: parseFloat(discountAmount),
+      discountType: discountType,
+      customerType: 'All Customers',
+      status: 'active'
+    };
+
+    setAppliedCoupon(manualDiscount);
+    setDiscountAmount('');
+    setDiscountType('percentage');
   };
 
   // Keyboard functionality functions - exactly like other files
@@ -978,6 +1011,8 @@ const RunningOrders = () => {
       setKeyboardInput(searchQuery || '');
     } else if (inputName === 'couponCode') {
       setKeyboardInput(couponCode || '');
+    } else if (inputName === 'discountAmount') {
+      setKeyboardInput(discountAmount || '');
     }
     setShowKeyboard(true);
   };
@@ -991,6 +1026,8 @@ const RunningOrders = () => {
       setSearchQuery(value);
     } else if (name === 'couponCode') {
       setCouponCode(value);
+    } else if (name === 'discountAmount') {
+      setDiscountAmount(value);
     }
   };
 
@@ -1004,6 +1041,8 @@ const RunningOrders = () => {
       setKeyboardInput(runningOrdersSearchQuery || '');
     } else if (inputName === 'couponCode') {
       setKeyboardInput(couponCode || '');
+    } else if (inputName === 'discountAmount') {
+      setKeyboardInput(discountAmount || '');
     }
   };
 
@@ -1023,6 +1062,8 @@ const RunningOrders = () => {
       setRunningOrdersSearchQuery(input);
     } else if (activeInput === 'couponCode') {
       setCouponCode(input);
+    } else if (activeInput === 'discountAmount') {
+      setDiscountAmount(input);
     }
   };
 
@@ -1042,10 +1083,12 @@ const RunningOrders = () => {
           setRunningOrdersSearchQuery(newValue);
         } else if (activeInput === 'couponCode') {
           setCouponCode(newValue);
+        } else if (activeInput === 'discountAmount') {
+          setDiscountAmount(newValue);
         }
       } else if (button === '{enter}') {
         // Move to next input field or submit form
-        const inputFields = ['searchQuery', 'runningOrdersSearchQuery', 'couponCode'];
+        const inputFields = ['searchQuery', 'runningOrdersSearchQuery', 'couponCode', 'discountAmount'];
         const currentIndex = inputFields.indexOf(activeInput);
         if (currentIndex < inputFields.length - 1) {
           const nextField = inputFields[currentIndex + 1];
@@ -1062,7 +1105,7 @@ const RunningOrders = () => {
         // The layout will automatically switch between default and shift
       } else if (button === '{tab}') {
         // Move to next input field
-        const inputFields = ['searchQuery', 'runningOrdersSearchQuery', 'couponCode'];
+        const inputFields = ['searchQuery', 'runningOrdersSearchQuery', 'couponCode', 'discountAmount'];
         const currentIndex = inputFields.indexOf(activeInput);
         if (currentIndex < inputFields.length - 1) {
           const nextField = inputFields[currentIndex + 1];
@@ -1087,6 +1130,8 @@ const RunningOrders = () => {
           setRunningOrdersSearchQuery(newValue);
         } else if (activeInput === 'couponCode') {
           setCouponCode(newValue);
+        } else if (activeInput === 'discountAmount') {
+          setDiscountAmount(newValue);
         }
       }
     }
@@ -1097,6 +1142,8 @@ const RunningOrders = () => {
     setActiveInput('');
     setShowKeyboard(false);
     setCapsLock(false);
+    setDiscountAmount('');
+    setDiscountType('percentage');
   };
 
   // Cart item operations
@@ -2408,9 +2455,9 @@ const RunningOrders = () => {
         {/* Coupon Modal */}
         {showCouponModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh]">
+            <div className="bg-white rounded-xl shadow-xl w-fit max-h-[90vh]">
               {/* Header */}
-              <div className="bg-white text-black p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
+                              <div className="bg-white text-black p-3 flex justify-between items-center rounded-t-xl border-b border-gray-200">
                 <h2 className="text-xl font-bold">Coupons & Offers</h2>
                 <button
                   onClick={handleCloseCouponModal}
@@ -2421,7 +2468,68 @@ const RunningOrders = () => {
               </div>
 
               {/* Content */}
-              <div className="p-6 overflow-y-auto max-h-[80vh]">
+              <div className="p-4 flex gap-4 overflow-y-auto max-h-[80vh]">
+                <div className="w-96">
+                {/* Discount Amount and Type Section */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Gift className="w-5 h-5 text-green-600" />
+                    <span className="text-sm font-medium text-gray-800">Manual Discount</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Disc. Amount
+                      </label>
+                      <input
+                        type="number"
+                        name="discountAmount"
+                        value={discountAmount}
+                        onChange={(e) => setDiscountAmount(e.target.value)}
+                        onFocus={(e) => handleAnyInputFocus(e, 'discountAmount')}
+                        onClick={(e) => handleAnyInputClick(e, 'discountAmount')}
+                        onBlur={handleInputBlur}
+                        min="0"
+                        step="0.01"
+                        placeholder={discountType === 'percentage' ? '20' : '10'}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Discount Type
+                      </label>
+                      <select
+                        name="discountType"
+                        value={discountType}
+                        onChange={(e) => setDiscountType(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                      >
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount (€)</option>
+                      </select>
+                    </div>
+                  </div>
+                  {discountAmount && (
+                    <div className="mt-2 text-sm text-green-600">
+                      ✓ Manual discount of {discountAmount}{discountType === 'percentage' ? '%' : '€'} is ready to apply.
+                    </div>
+                  )}
+                  <div className="flex justify-end mt-3">
+                    <button
+                      onClick={handleApplyManualDiscount}
+                      disabled={!discountAmount || parseFloat(discountAmount) <= 0}
+                      className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                        discountAmount && parseFloat(discountAmount) > 0
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Apply Manual Discount
+                    </button>
+                  </div>
+                </div>
+
                 {/* Enter Coupon Code Section */}
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
@@ -2490,8 +2598,7 @@ const RunningOrders = () => {
                       </button>
                     </div>
                   </div>
-                )}
-                
+                )}  
                 {/* Separator */}
                 <div className="border-t border-gray-300 my-4"></div>
                 {/* Available Coupons Section */}
@@ -2561,8 +2668,129 @@ const RunningOrders = () => {
                     </div>
                   )}
                 </div>
+                </div>
+                                                                   {/* Numeric Keyboard Component - Inside Modal - Only for numeric fields */}
+                  {activeInput === 'discountAmount' && (
+                  <div className="w-80">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Numeric Keyboard
+                          </span>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                            NUMERIC
+                          </span>
+                        </div>
+                      </div>
+                      <div 
+                        className="keyboard-container w-full" 
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        <Keyboard
+                          keyboardRef={(r) => (window.keyboard = r)}
+                          input={keyboardInput}
+                          onChange={onKeyboardChange}
+                          onChangeAll={onKeyboardChangeAll}
+                          onKeyPress={onKeyboardKeyPress}
+                          theme="hg-theme-default"
+                          layoutName="numeric"
+                          layout={{
+                            numeric: [
+                              "1 2 3 {bksp}",
+                              "4 5 6 {enter}",
+                              "7 8 9 {tab}",
+                              ". 0 - {space}"
+                            ]
+                          }}
+                          display={{
+                            "{bksp}": "⌫",
+                            "{enter}": "↵",
+                            "{tab}": "⇥",
+                            "{space}": "Space",
+                            ".": ".",
+                            "-": "-"
+                          }}
+                          physicalKeyboardHighlight={true}
+                          physicalKeyboardHighlightTextColor={"#000000"}
+                          physicalKeyboardHighlightBgColor={"#fff475"}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
 
                 
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Full QWERTY Keyboard - Outside Modal (floating at bottom of screen) */}
+        {showKeyboard && activeInput !== 'discountAmount' && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+            <div className="p-4 bg-gray-50">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Virtual Keyboard
+                  </span>
+                  {capsLock && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      CAPS LOCK
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowKeyboard(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div 
+                className="keyboard-container w-full" 
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.preventDefault()}
+              >
+                <Keyboard
+                  keyboardRef={(r) => (window.keyboard = r)}
+                  input={keyboardInput}
+                  onChange={onKeyboardChange}
+                  onChangeAll={onKeyboardChangeAll}
+                  onKeyPress={onKeyboardKeyPress}
+                  theme="hg-theme-default"
+                  layoutName={capsLock ? "shift" : "default"}
+                  layout={{
+                    default: [
+                      "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
+                      "{tab} q w e r t y u i o p [ ] \\",
+                      "{lock} a s d f g h j k l ; ' {enter}",
+                      "{shift} z x c v b n m , . / {shift}",
+                      "{space}"
+                    ],
+                    shift: [
+                      "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
+                      "{tab} Q W E R T Y U I O P { } |",
+                      "{lock} A S D F G H J K L : \" {enter}",
+                      "{shift} Z X C V B N M < > ? {shift}",
+                      "{space}"
+                    ]
+                  }}
+                  display={{
+                    "{bksp}": "⌫",
+                    "{enter}": "↵",
+                    "{shift}": "⇧",
+                    "{lock}": capsLock ? "⇪ ON" : "⇪",
+                    "{tab}": "⇥",
+                    "{space}": "Space"
+                  }}
+                  physicalKeyboardHighlight={true}
+                  physicalKeyboardHighlightTextColor={"#000000"}
+                  physicalKeyboardHighlightBgColor={"#fff475"}
+                />
               </div>
             </div>
           </div>
@@ -2657,71 +2885,6 @@ const RunningOrders = () => {
         </div>
       )}
       
-      {/* Keyboard Component - exactly like other files */}
-      {showKeyboard && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
-          <div className="p-4 bg-gray-50">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">Virtual Keyboard</span>
-                {capsLock && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    CAPS LOCK
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setShowKeyboard(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div 
-              className="keyboard-container w-full" 
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.preventDefault()}
-            >
-              <Keyboard
-                keyboardRef={(r) => (window.keyboard = r)}
-                input={keyboardInput}
-                onChange={onKeyboardChange}
-                onChangeAll={onKeyboardChangeAll}
-                onKeyPress={onKeyboardKeyPress}
-                theme="hg-theme-default"
-                layoutName={capsLock ? "shift" : "default"}
-                layout={{
-                  default: [
-                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
-                    "{tab} q w e r t y u i o p [ ] \\",
-                    "{lock} a s d f g h j k l ; ' {enter}",
-                    "{shift} z x c v b n m , . / {shift}",
-                    "{space}"
-                  ],
-                  shift: [
-                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
-                    "{tab} Q W E R T Y U I O P { } |",
-                    "{lock} A S D F G H J K L : \" {enter}",
-                    "{shift} Z X C V B N M < > ? {shift}",
-                    "{space}"
-                  ]
-                }}
-                display={{
-                  "{bksp}": "⌫",
-                  "{enter}": "↵",
-                  "{shift}": "⇧",
-                  "{lock}": capsLock ? "⇪ ON" : "⇪",
-                  "{tab}": "⇥",
-                  "{space}": "Space"
-                }}
-                physicalKeyboardHighlight={true}
-                physicalKeyboardHighlightTextColor={"#000000"}
-                physicalKeyboardHighlightBgColor={"#fff475"}
-              />
-            </div>
-          </div>
-        </div>
-      )}
       
     </>
   );
