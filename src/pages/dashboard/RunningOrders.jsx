@@ -413,6 +413,16 @@ const RunningOrders = () => {
 
   // Handle add to cart
   const handleAddToCart = () => {
+    // Play sound when adding to cart
+    try {
+      const audio = new Audio('/src/assets/ping.mp3');
+      audio.play().catch(error => {
+        console.log('Audio play failed:', error);
+      });
+    } catch (error) {
+      console.log('Audio creation failed:', error);
+    }
+    
     console.log('Adding to cart:', {
       food: selectedFood,
       variations: selectedVariations,
@@ -931,6 +941,14 @@ const RunningOrders = () => {
       // Remove item if quantity is 0 or less
       removeCartItem(itemId);
       return;
+    }
+    try {
+      const audio = new Audio('/src/assets/ping.mp3');
+      audio.play().catch(error => {
+        console.log('Audio play failed:', error);
+      });
+    } catch (error) {
+      console.log('Audio creation failed:', error);
     }
 
     setCartItems(prev => prev.map(item => {
@@ -2437,6 +2455,14 @@ const RunningOrders = () => {
               </button>
               <button
                 onClick={() => {
+                  try {
+                    const audio = new Audio('/src/assets/ping.mp3');
+                    audio.play().catch(error => {
+                      console.log('Audio play failed:', error);
+                    });
+                  } catch (error) {
+                    console.log('Audio creation failed:', error);
+                  }
                   clearCart();
                   setShowDeleteCartModal(false);
                 }}
