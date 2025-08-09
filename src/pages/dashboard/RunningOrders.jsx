@@ -909,7 +909,7 @@ const RunningOrders = () => {
 
   const calculateCartTax = () => {
     const subtotal = calculateCartSubtotal();
-    return subtotal * 0.10; // 10% tax rate
+    return subtotal * 0.13; // 13% tax rate
   };
 
   const calculateCartDiscount = () => {
@@ -1072,7 +1072,7 @@ const RunningOrders = () => {
               </div>
             </div>
 
-            <div className="py-4 mt-2 my-auto px-2 space-y-2 h-auto overflow-y-auto">
+            {/* <div className="py-4 mt-2 my-auto px-2 space-y-2 h-auto overflow-y-auto">
               {cartItems.length > 0 ? (
                 cartItems.map((item) => (
                   <div
@@ -1102,7 +1102,7 @@ const RunningOrders = () => {
                   <div className="text-gray-400 text-xs mt-2">Add items from the menu</div>
                 </div>
               )}
-            </div>
+            </div> */}
           </div>
           {/* Order Action Buttons - Below Running Orders Box */}
           <div className="flex justify-center absolute bottom-0 left-0 w-[100%]">
