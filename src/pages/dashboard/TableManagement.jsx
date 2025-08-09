@@ -6,6 +6,22 @@ import TableManagement from '../../components/dashboard/table/TableManagement';
 const TableManagementPage = () => {
   const [activeTab, setActiveTab] = useState('table'); // Default to table management
 
+  // Keyboard functionality context
+  const keyboardContext = {
+    onKeyboardChange: (input) => {
+      // This will be handled by the child components
+      console.log('Keyboard input:', input);
+    },
+    onKeyboardChangeAll: (inputs) => {
+      // This will be handled by the child components
+      console.log('Keyboard inputs:', inputs);
+    },
+    onKeyboardKeyPress: (button) => {
+      // This will be handled by the child components
+      console.log('Keyboard button:', button);
+    }
+  };
+
   return (
     <div className="px-4 py-2">
       {/* Buttons */}

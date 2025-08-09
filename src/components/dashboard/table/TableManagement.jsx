@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Edit, Plus, X, Trash2, Users, Filter } from 'lucide-react';
+import Keyboard from 'react-simple-keyboard';
+import 'react-simple-keyboard/build/css/index.css';
 
 const TableManagement = () => {
   const [tables, setTables] = useState([]);
@@ -15,6 +17,12 @@ const TableManagement = () => {
   const [tableToDelete, setTableToDelete] = useState(null);
   const [selectedFloorFilter, setSelectedFloorFilter] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'visual'
+  
+  // Keyboard functionality state - exactly like Coupons.jsx
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeInput, setActiveInput] = useState('');
+  const [keyboardInput, setKeyboardInput] = useState('');
+  const [capsLock, setCapsLock] = useState(false);
 
   const fetchTables = async () => {
     try {
@@ -51,6 +59,15 @@ const TableManagement = () => {
     fetchFloors();
   }, []);
 
+  // Keyboard useEffect - exactly like Coupons.jsx
+  useEffect(() => {
+    if (capsLock) {
+      // The keyboard will automatically use shift layout when capsLock is true
+    } else {
+      // The keyboard will automatically use default layout when capsLock is false
+    }
+  }, [capsLock]);
+
   const handleEditTable = (table) => {
     setEditingTable(table);
     setNewTable({
@@ -59,6 +76,7 @@ const TableManagement = () => {
       seat_capacity: table.seat_capacity || 4
     });
     setShowForm(true);
+    resetKeyboardInputs();
   };
 
   const handleAddTable = () => {
@@ -69,6 +87,7 @@ const TableManagement = () => {
       seat_capacity: 4
     });
     setShowForm(true);
+    resetKeyboardInputs();
   };
 
   const handleInputChange = (e) => {
@@ -77,6 +96,122 @@ const TableManagement = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  // Keyboard functionality functions
+  const handleInputFocus = (inputName) => {
+    setActiveInput(inputName);
+    setShowKeyboard(true);
+    // Set the keyboard input value to match the current form value
+    setKeyboardInput(newTable[inputName]?.toString() || '');
+  };
+
+  const handleInputBlur = (e) => {
+    const { name, value } = e.target;
+    // Don't hide keyboard immediately to allow for keyboard input
+    // setShowKeyboard(false);
+    // Update the form state when input loses focus
+    setNewTable(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAnyInputFocus = (e, inputName) => {
+    setActiveInput(inputName);
+    setShowKeyboard(true);
+    // Set the keyboard input value to match the current form value
+    setKeyboardInput(newTable[inputName]?.toString() || '');
+  };
+
+  const handleAnyInputClick = (e, inputName) => {
+    setActiveInput(inputName);
+    setShowKeyboard(true);
+    // Set the keyboard input value to match the current form value
+    setKeyboardInput(newTable[inputName]?.toString() || '');
+  };
+
+  const onKeyboardChange = (input) => {
+    setKeyboardInput(input);
+    if (activeInput) {
+      // Also update the form state in real-time
+      setNewTable(prev => ({
+        ...prev,
+        [activeInput]: input
+      }));
+    }
+  };
+
+  const onKeyboardChangeAll = (inputs) => {
+    setKeyboardInput(inputs);
+    // Update form state with all inputs
+    setNewTable(prev => ({
+      ...prev,
+      ...inputs
+    }));
+  };
+
+  const onKeyboardKeyPress = (button) => {
+    if (activeInput) {
+      if (button === '{bksp}') {
+        const currentValue = keyboardInput || '';
+        const newValue = currentValue.slice(0, -1);
+        setKeyboardInput(newValue);
+        setNewTable(prev => ({
+          ...prev,
+          [activeInput]: newValue
+        }));
+      } else if (button === '{enter}') {
+        // Move to next input field or submit form
+        const inputFields = ['table_no', 'seat_capacity', 'floor_id', 'status'];
+        const currentIndex = inputFields.indexOf(activeInput);
+        if (currentIndex < inputFields.length - 1) {
+          const nextField = inputFields[currentIndex + 1];
+          const nextInput = document.querySelector(`[name="${nextField}"]`);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        }
+      } else if (button === '{lock}') {
+        // Toggle caps lock
+        setCapsLock(!capsLock);
+      } else if (button === '{shift}') {
+        // Toggle shift (this will be handled by the layout change)
+        // The layout will automatically switch between default and shift
+      } else if (button === '{tab}') {
+        // Move to next input field
+        const inputFields = ['table_no', 'seat_capacity', 'floor_id', 'status'];
+        const currentIndex = inputFields.indexOf(activeInput);
+        if (currentIndex < inputFields.length - 1) {
+          const nextField = inputFields[currentIndex + 1];
+          const nextInput = document.querySelector(`[name="${nextField}"]`);
+          if (nextInput) {
+            nextInput.focus();
+          }
+        } else {
+          // If at last field, go to first
+          const firstInput = document.querySelector(`[name="${inputFields[0]}"]`);
+          if (firstInput) {
+            firstInput.focus();
+          }
+        }
+      } else if (button === '{space}') {
+        const currentValue = keyboardInput || '';
+        const newValue = currentValue + ' ';
+        setKeyboardInput(newValue);
+        setNewTable(prev => ({
+          ...prev,
+          [activeInput]: newValue
+        }));
+      }
+    }
+  };
+
+  const resetKeyboardInputs = () => {
+    setKeyboardInput('');
+    setActiveInput('');
+    setShowKeyboard(false);
+    setCapsLock(false);
   };
 
   const handleSubmit = async (e) => {
@@ -106,6 +241,7 @@ const TableManagement = () => {
       }
       fetchTables();
       setShowForm(false);
+      resetKeyboardInputs();
     } catch (error) {
       console.error('Error saving table:', error);
       alert(`Error: ${error.message}`);
@@ -383,7 +519,7 @@ const TableManagement = () => {
                 <h2 className="text-xl font-bold text-gray-800">
                   {editingTable ? 'Edit Table' : 'Add New Table'}
                 </h2>
-                <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-gray-700">
+                <button onClick={() => { setShowForm(false); resetKeyboardInputs(); }} className="text-gray-500 hover:text-gray-700">
                   <X size={24} />
                 </button>
               </div>
@@ -398,6 +534,8 @@ const TableManagement = () => {
                     name="table_no"
                     value={newTable.table_no}
                     onChange={handleInputChange}
+                    onFocus={() => handleAnyInputFocus(null, 'table_no')}
+                    onBlur={handleInputBlur}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                     placeholder="e.g., T1, Booth 3"
                     required
@@ -412,6 +550,8 @@ const TableManagement = () => {
                     name="floor_id"
                     value={newTable.floor_id}
                     onChange={handleInputChange}
+                    onFocus={() => handleAnyInputFocus(null, 'floor_id')}
+                    onBlur={handleInputBlur}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                     required
                   >
@@ -433,6 +573,8 @@ const TableManagement = () => {
                     name="seat_capacity"
                     value={newTable.seat_capacity}
                     onChange={handleInputChange}
+                    onFocus={() => handleAnyInputFocus(null, 'seat_capacity')}
+                    onBlur={handleInputBlur}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                     placeholder="e.g., 4"
                     min="1"
@@ -444,7 +586,7 @@ const TableManagement = () => {
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={() => { setShowForm(false); resetKeyboardInputs(); }}
                     className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight"
                   >
                     Cancel
@@ -457,6 +599,72 @@ const TableManagement = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Keyboard Component - exactly like Coupons.jsx */}
+      {showKeyboard && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
+          <div className="p-4 bg-gray-50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Virtual Keyboard</span>
+                {capsLock && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    CAPS LOCK
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setShowKeyboard(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div 
+              className="keyboard-container w-full" 
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <Keyboard
+                keyboardRef={(r) => (window.keyboard = r)}
+                input={keyboardInput}
+                onChange={onKeyboardChange}
+                onChangeAll={onKeyboardChangeAll}
+                onKeyPress={onKeyboardKeyPress}
+                theme="hg-theme-default"
+                layoutName={capsLock ? "shift" : "default"}
+                layout={{
+                  default: [
+                    "` 1 2 3 4 5 6 7 8 9 0 - = {bksp}",
+                    "{tab} q w e r t y u i o p [ ] \\",
+                    "{lock} a s d f g h j k l ; ' {enter}",
+                    "{shift} z x c v b n m , . / {shift}",
+                    "{space}"
+                  ],
+                  shift: [
+                    "~ ! @ # $ % ^ & * ( ) _ + {bksp}",
+                    "{tab} Q W E R T Y U I O P { } |",
+                    "{lock} A S D F G H J K L : \" {enter}",
+                    "{shift} Z X C V B N M < > ? {shift}",
+                    "{space}"
+                  ]
+                }}
+                display={{
+                  "{bksp}": "⌫",
+                  "{enter}": "↵",
+                  "{shift}": "⇧",
+                  "{lock}": capsLock ? "⇪ ON" : "⇪",
+                  "{tab}": "⇥",
+                  "{space}": "Space"
+                }}
+                physicalKeyboardHighlight={true}
+                physicalKeyboardHighlightTextColor={"#000000"}
+                physicalKeyboardHighlightBgColor={"#fff475"}
+              />
             </div>
           </div>
         </div>
