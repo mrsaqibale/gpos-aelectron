@@ -42,11 +42,13 @@ import CustomerSearchModal from '../../components/dashboard/CustomerSearchModal'
 import FloorPlan3D from '../../components/FloorPlan3D';
 
 const RunningOrders = () => {
+
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showCustomerSearchModal, setShowCustomerSearchModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteCartModal, setShowDeleteCartModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,6 +88,31 @@ const RunningOrders = () => {
   const [cartItems, setCartItems] = useState([]);
   const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
+  
+  // Custom CSS animations for modal
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fade-in {
+        0% {
+          opacity: 0;
+          transform: scale(0.95) translateY(-10px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-out forwards;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Fetch categories from backend
   const fetchCategories = async () => {
@@ -689,12 +716,8 @@ const RunningOrders = () => {
         // Apply the coupon
         setAppliedCoupon(transformedCoupon);
         setCouponCode('');
-        alert(`Coupon "${transformedCoupon.code}" applied successfully!`);
 
-        // Close modal after successful application
-        setTimeout(() => {
-          setShowCouponModal(false);
-        }, 1500);
+        // Don't close modal automatically - let user close it manually
 
       } else {
         alert('Invalid coupon code. Please try again.');
@@ -721,15 +744,12 @@ const RunningOrders = () => {
         return;
       }
 
-      // Apply the coupon
-      setAppliedCoupon(coupon);
-      setCouponCode('');
-      alert(`Coupon "${coupon.code}" applied successfully!`);
+              // Apply the coupon
+        setAppliedCoupon(coupon);
+        setCouponCode('');
+        alert(`Coupon "${coupon.code}" applied successfully!`);
 
-      // Close modal after successful application
-      setTimeout(() => {
-        setShowCouponModal(false);
-      }, 1500);
+        // Don't close modal automatically - let user close it manually
 
     } catch (error) {
       console.error('Error applying coupon directly:', error);
@@ -885,6 +905,16 @@ const RunningOrders = () => {
   const clearCart = () => {
     setCartItems([]);
     setAppliedCoupon(null);
+    setSelectedTable('');
+    setSelectedPersons('');
+    setSelectedFloor('');
+    setSelectedCustomer(null);
+    setMergeTable1('');
+    setMergeTable2('');
+    setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+    setEditingCartItem(null);
+    setFoodQuantity(1);
+    setSelectedVariations({});
   };
 
   // Handle place order
@@ -1103,9 +1133,8 @@ const RunningOrders = () => {
 
         {/* Order Summary */}
         <div className="w-[30%] h-[100%] border border-gray-300 rounded-lg ">
-          <div className="flex px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
+          <div className="flex flex-wrap gap-1.5 px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
             {/* Tabs row */}
-            <div className="flex flex-wrap gap-1.5 mb-4">
               <button className="px-3 py-1 bg-[#d3D3D3] text-black text-[11px] rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted ">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1143,10 +1172,7 @@ const RunningOrders = () => {
                 </svg>
                 Status
               </button>
-            </div>
-
             {/* Status section */}
-            <div className="flex flex-wrap items-center gap-1.5">
 
               <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
                       border border-gray-300 btn-lifted ">
@@ -1190,23 +1216,25 @@ const RunningOrders = () => {
                 <Edit size={17} />
               </button>
               <button
-                //  onClick={() => {
-                //    if (selectedCustomer) {
-                //      setShowDeleteConfirm(true);
-                //    } else {
-                //      alert('No customer selected to delete');
-                //    }
-                //  }}
-                //  disabled={!selectedCustomer}
+                onClick={() => {
+                  if (cartItems.length === 0) {
+                    alert('Cart is already empty');
+                    return;
+                  }
+                  
+                  setShowDeleteCartModal(true);
+                }}
+                disabled={cartItems.length === 0}
                 className={`px-2 py-1.5 text-white text-xs rounded flex items-center gap-1 
-                      border border-gray-300 btn-lifted transition-colors bg-[#c81118] hover:bg-red-700 cursor-pointer 
-                    
-                         
-                      `}>
-                <Trash2 size={14} />
-                Delete
+                      border border-gray-300 btn-lifted transition-colors ${
+                        cartItems.length > 0 
+                          ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer' 
+                          : 'bg-gray-400 cursor-not-allowed'
+                      }`}>
+                <Trash2 size={17} />
+                Delete All
               </button>
-            </div>
+
           </div>
 
           {/* Items table */}
@@ -1242,14 +1270,14 @@ const RunningOrders = () => {
                               className="text-primary flex items-center cursor-pointer justify-center transition-colors"
                               onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
                             >
-                              <Minus size={11} />
+                              <Minus size={15} />
                             </button>
                             <span className="w-8 text-center text-gray-800 py-1 text-sm">{item.quantity}</span>
                             <button 
                               className="flex items-center cursor-pointer justify-center text-primary transition-colors"
                               onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
                             >
-                              <Plus size={11} />
+                              <Plus size={15} />
                             </button>
                           </div>
                         </td>
@@ -1266,7 +1294,7 @@ const RunningOrders = () => {
                   ) : (
                     <tr className="grid grid-cols-4 gap-4 items-center text-sm p-4">
                       <td colSpan="4" className="text-center text-gray-500">
-                        No items in cart
+                        {/* No items in cart */}
                       </td>
                     </tr>
                   )}
@@ -1310,28 +1338,28 @@ const RunningOrders = () => {
               <div className="flex gap-2 justify-center pb-2">
                 <button
                   onClick={handleOpenCouponModal}
-                  className="bg-[#43a148] text-white  btn-lifted  w-[100%]  text-[11px] font-bold rounded  hover:bg-green-600"
+                  className="bg-[#43a148] text-white  btn-lifted py-2 px-1 w-[100%]  text-[11px] font-bold rounded  hover:bg-green-600"
                 >
                   DISCOUNT
                 </button>
                 <button 
                   onClick={clearCart}
-                  className="bg-[#4d35ee] text-white  w-[100%] btn-lifted    text-[11px] font-bold rounded   hover:bg-blue-700"
+                  className="bg-[#4d35ee] text-white  w-[100%] btn-lifted py-2 px-1   text-[11px] font-bold rounded   hover:bg-blue-700"
                 >
                   CLEAR CART
                 </button>
-                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted   text-[11px] font-bold rounded  hover:bg-cyan-500">
+                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-2 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
                 </button>
                 <button 
                   onClick={handlePlaceOrder}
-                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted  text-[11px] font-bold rounded   hover:bg-orange-600"
+                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-2 px-1 text-[11px] font-bold rounded   hover:bg-orange-600"
                 >
                   PLACE ORDER
                 </button>
                 <button 
                   onClick={handlePayment}
-                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted  text-[11px] font-bold rounded  hover:bg-pink-600"
+                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-2 px-1 text-[11px] font-bold rounded  hover:bg-pink-600"
                 >
                   PAY
                 </button>
@@ -1969,7 +1997,7 @@ const RunningOrders = () => {
                         disabled={foodQuantity <= 1}
                         className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
                       >
-                        <Minus size={16} />
+                        <Minus size={6} />
                       </button>
                       <span className="w-12 text-center text-gray-800 font-medium text-lg">
                         {foodQuantity}
@@ -2023,9 +2051,13 @@ const RunningOrders = () => {
                       type="text"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder="Enter promo code"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                      onKeyPress={(e) => {
+                      placeholder="Enter promo code or click a coupon below"
+                      className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+                        couponCode.trim() 
+                          ? 'border-green-400 focus:ring-green-500 focus:border-green-500 bg-green-50' 
+                          : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
+                      }`}
+                      onKeyUp={(e) => {
                         if (e.key === 'Enter') {
                           handleApplyCoupon();
                         }
@@ -2033,16 +2065,49 @@ const RunningOrders = () => {
                     />
                     <button
                       onClick={handleApplyCoupon}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      disabled={!couponCode.trim()}
+                      className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                        couponCode.trim()
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
                     >
                       Apply
                     </button>
                   </div>
+                  {couponCode.trim() && (
+                    <div className="mt-2 text-sm text-green-600">
+                      ✓ Coupon code "{couponCode}" is ready to apply. Click "Apply".
+                    </div>
+                  )}
                 </div>
 
+{/* Applied Coupon Display */}
+{appliedCoupon && (
+                  <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-semibold text-green-800">Applied Coupon</h4>
+                        <p className="text-sm text-green-600">{appliedCoupon.title}</p>
+                        <p className="text-xs text-green-600">Code: {appliedCoupon.code}</p>
+                        {appliedCoupon.discountType === 'percentage' ? (
+                          <p className="text-green-700 font-medium">{appliedCoupon.discount}% OFF</p>
+                        ) : (
+                          <p className="text-green-700 font-medium">€{appliedCoupon.discount} OFF</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={removeAppliedCoupon}
+                        className="text-red-600 hover:text-red-800 p-1"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Separator */}
-                <div className="border-t border-gray-300 mb-6"></div>
-
+                <div className="border-t border-gray-300 my-4"></div>
                 {/* Available Coupons Section */}
                 <div>
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Available Coupons</h3>
@@ -2055,11 +2120,10 @@ const RunningOrders = () => {
                       {availableCoupons.map((coupon) => (
                         <div
                           key={coupon.id}
-                          className="border border-gray-200 rounded-lg p-4 hover:border-green-300 transition-colors cursor-pointer"
+                          className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer group"
                           onClick={() => {
                             setCouponCode(coupon.code);
-                            // Apply the coupon directly without calling handleApplyCoupon
-                            applyCouponDirectly(coupon);
+                            // Don't apply automatically - let user review and apply manually
                           }}
                         >
                           <div className="flex justify-between items-start">
@@ -2092,6 +2156,9 @@ const RunningOrders = () => {
                               )}
                             </div>
                           </div>
+                          <div className="mt-2 text-xs text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Click to use this coupon code
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2109,34 +2176,93 @@ const RunningOrders = () => {
                   )}
                 </div>
 
-                {/* Applied Coupon Display */}
-                {appliedCoupon && (
-                  <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-semibold text-green-800">Applied Coupon</h4>
-                        <p className="text-sm text-green-600">{appliedCoupon.title}</p>
-                        <p className="text-xs text-green-600">Code: {appliedCoupon.code}</p>
-                        {appliedCoupon.discountType === 'percentage' ? (
-                          <p className="text-green-700 font-medium">{appliedCoupon.discount}% OFF</p>
-                        ) : (
-                          <p className="text-green-700 font-medium">€{appliedCoupon.discount} OFF</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={removeAppliedCoupon}
-                        className="text-red-600 hover:text-red-800 p-1"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Delete Cart Confirmation Modal */}
+      {showDeleteCartModal && (
+        <div className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100 animate-fade-in">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Delete Cart Items</h3>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="mb-6">
+                <p className="text-gray-700 text-base leading-relaxed">
+                  Are you sure you want to delete <span className="font-semibold text-red-600">{cartItems.length}</span> item{cartItems.length !== 1 ? 's' : ''} from your cart?
+                </p>
+                <p className="text-gray-500 text-sm mt-2">
+                  This will permanently remove all items and reset your order. You'll need to start over.
+                </p>
+              </div>
+
+              {/* Cart Items Preview */}
+              {cartItems.length > 0 && (
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Items to be deleted:</h4>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {cartItems.slice(0, 5).map((item, index) => (
+                      <div key={item.id} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 truncate flex-1">
+                          {index + 1}. {item.food.name}
+                        </span>
+                        <span className="text-gray-500 ml-2">
+                          Qty: {item.quantity}
+                        </span>
+                      </div>
+                    ))}
+                    {cartItems.length > 5 && (
+                      <div className="text-xs text-gray-400 text-center pt-2 border-t border-gray-200">
+                        +{cartItems.length - 5} more items
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => setShowDeleteCartModal(false)}
+                className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  clearCart();
+                  setShowDeleteCartModal(false);
+                }}
+                className="px-6 py-2.5 text-white bg-red-600 rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
+              >
+                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete All Items
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
     </>
   );
 };
