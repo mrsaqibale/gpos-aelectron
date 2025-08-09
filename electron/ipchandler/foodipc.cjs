@@ -64,7 +64,7 @@ const {
   updateVariation,
   createVariationOption,
   updateVariationOption
-} = getModelPath('foods/variations.cjs');
+} = getModelPath('foods/variations.js');
 
 // Category IPC
 ipcMain.handle('category:create', (event, data) => createCategory(data));

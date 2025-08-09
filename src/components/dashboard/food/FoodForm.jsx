@@ -879,7 +879,7 @@ const FoodForm = ({ food, onSubmit }) => {
             </div>
           </div>
 
-          {/* <div className="mb-4">
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Allergen Ingredients</label>
             <input
               type="text"
@@ -891,7 +891,7 @@ const FoodForm = ({ food, onSubmit }) => {
               className={getInputClasses('allergenIngredients')}
               placeholder="e.g., Contains peanuts, gluten"
             />
-          </div> */}
+          </div>
 
           {/* Allergin Selection */}
           <div className="mb-4">

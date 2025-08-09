@@ -22,6 +22,7 @@ const { registerEmployeeIpcHandlers } = require('./ipchandler/employee.cjs');
 const { registerCustomerIpcHandlers } = require('./ipchandler/customer.cjs');
 const { registerOrdersIpcHandlers } = require('./ipchandler/orders.cjs');
 const { registerCouponIpcHandlers } = require('./ipchandler/coupon.cjs');
+const { initDatabase } = require('./init-database.cjs');
 
 async function createWindow() {
   // Get screen dimensions
@@ -148,6 +149,9 @@ app.whenReady().then(async () => {
   registerCustomerIpcHandlers();
   registerOrdersIpcHandlers();
   registerCouponIpcHandlers();
+  
+  // Initialize database tables
+  initDatabase();
 
   // Window control IPC handlers
   const { ipcMain } = require('electron');
