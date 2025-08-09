@@ -1630,7 +1630,7 @@ const RunningOrders = () => {
               <button
                 onClick={handleOpenEditModal}
                 disabled={!selectedCustomer}
-                className={`btn-lifted transition-colors ${selectedCustomer
+                className={`btn-lifted transition-colors px-2 ${selectedCustomer
                   ? 'text-green-600 hover:text-green-800 cursor-pointer'
                   : 'text-gray-400 cursor-not-allowed'
                   }`}>
@@ -1760,34 +1760,34 @@ const RunningOrders = () => {
               <div className="flex gap-2 justify-center pb-2">
                 <button
                   onClick={handleOpenCouponModal}
-                  className="bg-[#43a148] text-white  btn-lifted py-2 px-1 w-[100%]  text-[11px] font-bold rounded  hover:bg-green-600"
+                  className="bg-[#43a148] text-white  btn-lifted py-1.5 px-1 w-[100%]  text-[11px] font-bold rounded  hover:bg-green-600"
                 >
                   DISCOUNT
                 </button>
                 <button 
                   onClick={clearCart}
-                  className="bg-[#4d35ee] text-white  w-[100%] btn-lifted py-2 px-1   text-[11px] font-bold rounded   hover:bg-blue-700"
+                  className="bg-[#4d35ee] text-white  w-[100%] btn-lifted py-1.5 px-1   text-[11px] font-bold rounded   hover:bg-blue-700"
                 >
                   CLEAR CART
                 </button>
                 <button 
                   onClick={cleanupDuplicateItems}
-                  className="bg-[#ff6b35] text-white  w-[100%] btn-lifted py-2 px-1   text-[11px] font-bold rounded   hover:bg-orange-600"
+                  className="bg-[#ff6b35] text-white  w-[100%] btn-lifted py-1.5 px-1   text-[11px] font-bold rounded   hover:bg-orange-600"
                 >
                   MERGE DUPLICATES
                 </button>
-                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-2 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
+                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
                 </button>
                 <button 
                   onClick={handlePlaceOrder}
-                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-2 px-1 text-[11px] font-bold rounded   hover:bg-orange-600"
+                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded   hover:bg-orange-600"
                 >
                   PLACE ORDER
                 </button>
                 <button 
                   onClick={handlePayment}
-                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-2 px-1 text-[11px] font-bold rounded  hover:bg-pink-600"
+                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded  hover:bg-pink-600"
                 >
                   PAY
                 </button>
