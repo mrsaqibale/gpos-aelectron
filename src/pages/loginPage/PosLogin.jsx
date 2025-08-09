@@ -207,7 +207,7 @@ const POSLogin = () => {
         disabled={!selectedRole}
         className="rounded-xl py-2 px-4 shadow-lg cursor-pointer hover:shadow-xl text-white font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
         style={{
-          background: `linear-gradient(145deg, ${style?.start} 60%, ${style?.end} 100%)`
+          backgroundColor: themeColors.primary
         }}
       >
         {number}
@@ -227,7 +227,7 @@ const POSLogin = () => {
     const isBackspace = variant === "backspace";
 
     const gradientStyle = {
-      background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`,
+      backgroundColor: themeColors.primary,
     };
 
     const variantClasses = isBackspace
@@ -255,7 +255,7 @@ const POSLogin = () => {
     <>
       <div
         className="w-full min-h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
-        style={{ backgroundColor: themeColors.background }}
+        style={{ backgroundColor: 'white' }}
       >
 
         <div className="py-6 rounded-t-xl">
@@ -298,8 +298,8 @@ const POSLogin = () => {
         {/* Main Content */}
         <div className="w-full max-w-4xl flex gap-8 transform perspective-1000">
 
-          {/* Left Section - Role Selection with 3D effect */}
-          <div className="w-1/2 bg-transparent rounded-3xl p-6 border-[#4a7ca3] border shadow-2xl">
+                      {/* Left Section - Role Selection with 3D effect */}
+            <div className="w-1/2 rounded-3xl p-6 border-[#4a7ca3] border shadow-2xl" style={{ backgroundColor: themeColors.primary }}>
             <h2 className="text-2xl font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
@@ -323,22 +323,20 @@ const POSLogin = () => {
                         hover:cursor-pointer transform hover:-translate-y-1 hover:scale-105 active:translate-y-0 
                         border-[2.5px]
                       `}
-                      style={{
-                        transformStyle: 'preserve-3d',
-                        background: isSelected
-                          ? `linear-gradient(135deg, ${themeColors.loginBg} 60%, ${themeColors.buttonHover} 100%)`
-                          : '#ffffff',
-                        borderColor: isSelected ? themeColors.loginBg : '#1e3a5f',
-                        boxShadow: isSelected
-                          ? `0 0 16px 2px ${themeColors.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
-                          : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
-                      }}
+                                                                                              style={{
+                          transformStyle: 'preserve-3d',
+                          background: isSelected ? 'white' : themeColors.primary,
+                          borderColor: isSelected ? themeColors.loginBg : '#1e3a5f',
+                          boxShadow: isSelected
+                            ? `0 0 16px 2px ${themeColors.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
+                            : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
+                        }}
                     >
-                      <IconComponent className="w-6 h-6 mb-1" />
-                      <span className="text-md font-bold">{role.name}</span>
-                      {role.subtitle && (
-                        <span className="text-xs opacity-70">{role.subtitle}</span>
-                      )}
+                      <IconComponent className="w-6 h-6 mb-1" style={{ color: isSelected ? 'black' : 'white' }} />
+                      <span className="text-md font-bold" style={{ color: isSelected ? 'black' : 'white' }}>{role.name}</span>
+                                              {role.subtitle && (
+                          <span className="text-xs opacity-70" style={{ color: isSelected ? 'black' : 'white' }}>{role.subtitle}</span>
+                        )}
                     </button>
 
                 );
@@ -426,7 +424,7 @@ const POSLogin = () => {
                     variant="backspace"
                     disabled={!selectedRole}
                                          style={{
-                       background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`
+                       backgroundColor: themeColors.primary
                      }}
                   >
                     <X className="w-4 h-4" />
@@ -442,7 +440,7 @@ const POSLogin = () => {
                 disabled={!selectedRole || pin.length < 6}
                 className="w-[86%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
                                  style={{
-                     background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`,
+                     backgroundColor: themeColors.primary,
                      borderColor: themeColors.loginBg,
                    }}
               >
