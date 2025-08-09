@@ -268,10 +268,11 @@ const FoodForm = ({ food, onSubmit }) => {
         ...(prev.variations || []),
         { 
           name: '', 
-          selectionType: 'single',
+          type: 'single',
           min: 1,
           max: '',
-          options: [{ name: '', additionalPrice: 0 }]
+          is_required: false,
+          options: [{ option_name: '', option_price: 0, total_stock: 0, stock_type: 'unlimited', sell_count: 0 }]
         }
       ]
     }));
@@ -282,7 +283,13 @@ const FoodForm = ({ food, onSubmit }) => {
     if (!updatedVariations[variationIndex].options) {
       updatedVariations[variationIndex].options = [];
     }
-    updatedVariations[variationIndex].options.push({ name: '', additionalPrice: 0 });
+    updatedVariations[variationIndex].options.push({ 
+      option_name: '', 
+      option_price: 0, 
+      total_stock: 0, 
+      stock_type: 'unlimited', 
+      sell_count: 0 
+    });
     setFormData(prev => ({ ...prev, variations: updatedVariations }));
   };
 
@@ -616,6 +623,59 @@ const FoodForm = ({ food, onSubmit }) => {
             console.error('Error saving food-addon relationships:', error);
           }
         }
+
+        // Save variations and variation options if they exist
+        if (formData.variations && formData.variations.length > 0) {
+          try {
+            for (const variation of formData.variations) {
+              if (variation.name && variation.options && variation.options.length > 0) {
+                // Create variation
+                const variationData = {
+                  food_id: result.food_id,
+                  name: variation.name,
+                  type: variation.type || 'single',
+                  min: parseInt(variation.min) || 1,
+                  max: variation.max ? parseInt(variation.max) : null,
+                  is_required: variation.is_required || false
+                };
+                
+                const variationResult = await window.myAPI?.createVariation(variationData);
+                
+                if (variationResult) {
+                  const variationId = variationResult;
+                  console.log('Variation created successfully:', variationId);
+                  
+                  // Create variation options
+                  for (const option of variation.options) {
+                    if (option.option_name) {
+                      const optionData = {
+                        food_id: result.food_id,
+                        variation_id: variationId,
+                        option_name: option.option_name,
+                        option_price: parseFloat(option.option_price) || 0,
+                        total_stock: parseInt(option.total_stock) || 0,
+                        stock_type: option.stock_type || 'unlimited',
+                        sell_count: parseInt(option.sell_count) || 0
+                      };
+                      
+                      const optionResult = await window.myAPI?.createVariationOption(optionData);
+                      if (optionResult) {
+                        console.log('Variation option created successfully:', optionResult);
+                      } else {
+                        console.error('Failed to create variation option');
+                      }
+                    }
+                  }
+                } else {
+                  console.error('Failed to create variation');
+                }
+              }
+            }
+            console.log('All variations and options saved successfully');
+          } catch (error) {
+            console.error('Error saving variations:', error);
+          }
+        }
         
         navigate('/dashboard/food-management');
       } else {
@@ -819,7 +879,7 @@ const FoodForm = ({ food, onSubmit }) => {
             </div>
           </div>
 
-          {/* <div className="mb-4">
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Allergen Ingredients</label>
             <input
               type="text"
@@ -831,7 +891,7 @@ const FoodForm = ({ food, onSubmit }) => {
               className={getInputClasses('allergenIngredients')}
               placeholder="e.g., Contains peanuts, gluten"
             />
-          </div> */}
+          </div>
 
           {/* Allergin Selection */}
           <div className="mb-4">
@@ -1183,9 +1243,9 @@ const FoodForm = ({ food, onSubmit }) => {
                       <label className="inline-flex items-center">
                         <input
                           type="radio"
-                          name={`selectionType-${vIndex}`}
-                          checked={(variation.selectionType || 'single') === 'single'}
-                          onChange={() => handleVariationChange(vIndex, 'selectionType', 'single')}
+                          name={`type-${vIndex}`}
+                          checked={(variation.type || 'single') === 'single'}
+                          onChange={() => handleVariationChange(vIndex, 'type', 'single')}
                           className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300"
                         />
                         <span className="ml-2 text-sm text-gray-700">Single Selection</span>
@@ -1193,9 +1253,9 @@ const FoodForm = ({ food, onSubmit }) => {
                       <label className="inline-flex items-center">
                         <input
                           type="radio"
-                          name={`selectionType-${vIndex}`}
-                          checked={variation.selectionType === 'multiple'}
-                          onChange={() => handleVariationChange(vIndex, 'selectionType', 'multiple')}
+                          name={`type-${vIndex}`}
+                          checked={variation.type === 'multiple'}
+                          onChange={() => handleVariationChange(vIndex, 'type', 'multiple')}
                           className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300"/>
                        <span className="ml-2 text-sm text-gray-700">Multiple Selection</span>
                      </label>
@@ -1203,7 +1263,7 @@ const FoodForm = ({ food, onSubmit }) => {
                  </div>
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                  <div>
                    <label className="block text-sm font-medium text-gray-700 mb-1">Min Selections</label>
                    <input
@@ -1224,6 +1284,17 @@ const FoodForm = ({ food, onSubmit }) => {
                      min="1"
                    />
                  </div>
+                 <div className="flex items-center pt-6">
+                   <label className="inline-flex items-center">
+                     <input
+                       type="checkbox"
+                       checked={variation.is_required || false}
+                       onChange={(e) => handleVariationChange(vIndex, 'is_required', e.target.checked)}
+                       className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300 rounded"
+                     />
+                     <span className="ml-2 text-sm text-gray-700">Required</span>
+                   </label>
+                 </div>
                </div>
 
                <div className="space-y-4">
@@ -1240,15 +1311,15 @@ const FoodForm = ({ food, onSubmit }) => {
                  </div>
                  
                  {variation.options?.map((option, oIndex) => (
-                   <div key={oIndex} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-white p-4 rounded-lg border">
+                   <div key={oIndex} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end bg-white p-4 rounded-lg border">
                      <div>
                        <label className="block text-sm font-medium text-gray-700 mb-1">
                          Option Name <span className="text-red-500">*</span>
                        </label>
                        <input
                          type="text"
-                         value={option.name || ''}
-                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'name', e.target.value)}
+                         value={option.option_name || ''}
+                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_name', e.target.value)}
                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
                          required
                        />
@@ -1257,12 +1328,34 @@ const FoodForm = ({ food, onSubmit }) => {
                        <label className="block text-sm font-medium text-gray-700 mb-1">Additional Price (€)</label>
                        <input
                          type="number"
-                         value={option.additionalPrice || 0}
-                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'additionalPrice', e.target.value)}
+                         value={option.option_price || 0}
+                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_price', e.target.value)}
                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
                          step="0.01"
                          min="0"
                        />
+                     </div>
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                       <select
+                         value={option.stock_type || 'unlimited'}
+                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'stock_type', e.target.value)}
+                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                       >
+                         <option value="unlimited">Unlimited</option>
+                         <option value="limited">Limited</option>
+                       </select>
+                     </div>
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-1">Total Stock</label>
+                                                <input
+                           type="number"
+                           value={option.total_stock || 0}
+                           onChange={(e) => handleOptionChange(vIndex, oIndex, 'total_stock', e.target.value)}
+                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                           min="0"
+                           disabled={option.stock_type === 'unlimited'}
+                         />
                      </div>
                      <div>
                        <button
