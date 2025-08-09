@@ -2628,9 +2628,6 @@ const RunningOrders = () => {
                     {numericActiveInput === 'discountAmount' && (
                       <div className="w-80">
                         <div className="p-4 bg-gray-50 rounded-lg">
-                          <div className="text-center mb-3">
-                            <span className="text-sm font-medium text-gray-700">Numeric Keypad</span>
-                          </div>
                           <div 
                             className="keyboard-container w-full" 
                             onClick={(e) => e.stopPropagation()}
