@@ -65,6 +65,12 @@ contextBridge.exposeInMainWorld('myAPI', {
   deleteFoodImage: (foodId) => ipcRenderer.invoke('food:deleteImage', foodId),
   getFoodImage: (imagePath) => ipcRenderer.invoke('food:getImage', imagePath),
 
+  // Variations
+  createVariation: (variationData) => ipcRenderer.invoke('variation:create', variationData),
+  updateVariation: (id, updates) => ipcRenderer.invoke('variation:update', id, updates),
+  createVariationOption: (optionData) => ipcRenderer.invoke('variationOption:create', optionData),
+  updateVariationOption: (id, updates) => ipcRenderer.invoke('variationOption:update', id, updates),
+
   // Tables
   tableCreate: (data) => ipcRenderer.invoke('table:create', data),
   tableUpdate: (id, updates) => ipcRenderer.invoke('table:update', id, updates),
