@@ -92,6 +92,9 @@ const RunningOrders = () => {
   const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
   
+  // Feedback state for quantity increase
+  const [quantityFeedback, setQuantityFeedback] = useState({ show: false, message: '', itemName: '' });
+  
   // Custom CSS animations for modal
   useEffect(() => {
     const style = document.createElement('style');
@@ -116,6 +119,8 @@ const RunningOrders = () => {
       document.head.removeChild(style);
     };
   }, []);
+
+  // Auto-cleanup duplicates when cart changes - REMOVED to prevent infinite loops
 
   // Fetch categories from backend
   const fetchCategories = async () => {
@@ -421,25 +426,141 @@ const RunningOrders = () => {
       return;
     }
 
-    // Create cart item with all details
-    const cartItem = {
-      id: cartItemId,
-      food: selectedFood,
-      variations: selectedVariations,
-      quantity: foodQuantity,
-      totalPrice: calculateTotalPrice(),
-      addedAt: new Date().toISOString()
-    };
+    // Check if the same food item with the same variations already exists in cart
+    const existingCartItem = isFoodWithVariationsInCart(selectedFood, selectedVariations);
+    
+    if (existingCartItem) {
+      // If item with same variations exists, increase quantity
+      updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + foodQuantity);
+      console.log('Increased quantity for existing item with variations:', existingCartItem.food.name);
+      
+      // Show feedback message
+      setQuantityFeedback({
+        show: true,
+        message: `Quantity increased for ${existingCartItem.food.name}`,
+        itemName: existingCartItem.food.name
+      });
+      
+      // Hide feedback after 2 seconds
+      setTimeout(() => {
+        setQuantityFeedback({ show: false, message: '', itemName: '' });
+      }, 2000);
+    } else {
+      // Create new cart item with all details
+      const cartItem = {
+        id: cartItemId,
+        food: selectedFood,
+        variations: selectedVariations,
+        quantity: foodQuantity,
+        totalPrice: calculateTotalPrice(),
+        addedAt: new Date().toISOString()
+      };
 
-    // Add to cart
-    setCartItems(prev => [...prev, cartItem]);
-    setCartItemId(prev => prev + 1);
+      // Add to cart
+      setCartItems(prev => {
+        console.log('Previous cart items:', prev);
+        const newCart = [...prev, cartItem];
+        console.log('New cart items:', newCart);
+        return newCart;
+      });
+      setCartItemId(prev => prev + 1);
+      console.log('Added new item to cart:', selectedFood.name);
+    }
 
     // Close modal and reset
     setShowFoodModal(false);
     setSelectedFood(null);
     setSelectedVariations({});
     setFoodQuantity(1); // Reset quantity
+  };
+
+  // Check if food item is already in cart (without variations)
+  const isFoodInCart = (foodItem) => {
+    return cartItems.find(item => 
+      item.food.id === foodItem.id && 
+      JSON.stringify(item.variations) === JSON.stringify({})
+    );
+  };
+
+  // Check if food item with specific variations is already in cart
+  const isFoodWithVariationsInCart = (foodItem, variations) => {
+    return cartItems.find(item => 
+      item.food.id === foodItem.id && 
+      JSON.stringify(item.variations) === JSON.stringify(variations)
+    );
+  };
+
+  // Check if any food item with the same ID exists in cart (regardless of variations)
+  const isAnyFoodInCart = (foodItem) => {
+    return cartItems.find(item => item.food.id === foodItem.id);
+  };
+
+  // Clean up duplicate items in cart by merging quantities
+  const cleanupDuplicateItems = () => {
+    setCartItems(prevItems => {
+      const itemMap = new Map();
+      
+      console.log('Before cleanup - Cart items:', prevItems);
+      
+      prevItems.forEach(item => {
+        const key = `${item.food.id}-${JSON.stringify(item.variations)}`;
+        console.log('Processing item:', item.food.name, 'with key:', key);
+        
+        if (itemMap.has(key)) {
+          // Merge quantities
+          const existing = itemMap.get(key);
+          existing.quantity += item.quantity;
+          existing.totalPrice = (existing.totalPrice / existing.quantity) * existing.quantity;
+          console.log('Merged with existing item:', existing.food.name, 'new quantity:', existing.quantity);
+        } else {
+          // Add new item
+          itemMap.set(key, { ...item });
+          console.log('Added new item to map:', item.food.name);
+        }
+      });
+      
+      const cleanedItems = Array.from(itemMap.values());
+      console.log('After cleanup - Cart items:', cleanedItems);
+      console.log('Cleaned up duplicate items, new count:', cleanedItems.length);
+      
+      return cleanedItems;
+    });
+  };
+
+  // Handle food item click - either increase quantity or show modal
+  const handleFoodItemClick = (foodItem) => {
+    console.log('Food item clicked:', foodItem);
+    
+    // Check if any food item with the same ID exists in cart
+    const existingCartItem = isAnyFoodInCart(foodItem);
+    
+    if (existingCartItem) {
+      // If food is already in cart, increase quantity by 1
+      updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + 1);
+      console.log('Increased quantity for existing item:', existingCartItem.food.name);
+      
+      // Show feedback message
+      setQuantityFeedback({
+        show: true,
+        message: `Quantity increased for ${existingCartItem.food.name}`,
+        itemName: existingCartItem.food.name
+      });
+      
+      // Hide feedback after 2 seconds
+      setTimeout(() => {
+        setQuantityFeedback({ show: false, message: '', itemName: '' });
+      }, 2000);
+    } else {
+      // If food is not in cart, show the modal for customization
+      console.log('Setting selectedFood:', foodItem);
+      setSelectedFood(foodItem);
+      console.log('Setting showFoodModal to true');
+      setShowFoodModal(true);
+      setSelectedVariations({});
+      setFoodQuantity(1); // Reset quantity when opening modal
+      console.log('Opening food modal for:', foodItem.name);
+      console.log('Modal state after setting:', { selectedFood: foodItem, showFoodModal: true });
+    }
   };
 
   // Handle table selection
@@ -988,13 +1109,7 @@ const RunningOrders = () => {
   const MenuCard = ({ item }) => (
     <div
       className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all overflow-hidden transform hover:-translate-y-1 cursor-pointer"
-      onClick={() => {
-        console.log('Food item clicked:', item);
-        setSelectedFood(item);
-        setShowFoodModal(true);
-        setSelectedVariations({});
-        setFoodQuantity(1); // Reset quantity when opening modal
-      }}
+      onClick={() => handleFoodItemClick(item)}
     >
       <div className="h-[88px]">
         <img
@@ -1048,6 +1163,16 @@ const RunningOrders = () => {
   };
   return (
     <>
+      {/* Quantity Increase Feedback */}
+      {quantityFeedback.show && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle size={16} />
+            <span>{quantityFeedback.message}</span>
+          </div>
+        </div>
+      )}
+      
       <div className="flex justify-between gap-2 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
         <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
@@ -1296,6 +1421,7 @@ const RunningOrders = () => {
           {/* Items table */}
           {/* Items table header */}
           <div className='bg-white flex flex-col h-[79%] mb-2 rounded-lg p-2 relative'>
+
             <div className="mt-3 border border-primary overflow-y-auto h-[60%]">
               <table className="w-full">
                 <thead>
@@ -1403,6 +1529,12 @@ const RunningOrders = () => {
                   className="bg-[#4d35ee] text-white  w-[100%] btn-lifted py-2 px-1   text-[11px] font-bold rounded   hover:bg-blue-700"
                 >
                   CLEAR CART
+                </button>
+                <button 
+                  onClick={cleanupDuplicateItems}
+                  className="bg-[#ff6b35] text-white  w-[100%] btn-lifted py-2 px-1   text-[11px] font-bold rounded   hover:bg-orange-600"
+                >
+                  MERGE DUPLICATES
                 </button>
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-2 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
@@ -1806,6 +1938,7 @@ const RunningOrders = () => {
         )}
 
         {/* Food Details Modal */}
+        {console.log('Modal render check:', { showFoodModal, selectedFood: !!selectedFood })}
         {showFoodModal && selectedFood && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh]">
@@ -2053,7 +2186,7 @@ const RunningOrders = () => {
                         disabled={foodQuantity <= 1}
                         className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
                       >
-                        <Minus size={6} />
+                        <Minus size={16} />
                       </button>
                       <span className="w-12 text-center text-gray-800 font-medium text-lg">
                         {foodQuantity}
