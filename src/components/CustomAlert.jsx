@@ -7,7 +7,7 @@ const CustomAlert = ({
   onClose, 
   duration = 1000, 
   type = 'success',
-  position = 'top-right' 
+  position = 'center' 
 }) => {
   const [isShowing, setIsShowing] = useState(false);
 
@@ -18,7 +18,7 @@ const CustomAlert = ({
         setIsShowing(false);
         setTimeout(() => {
           onClose && onClose();
-        }, 300); // Wait for fade out animation
+        }, 1000); // Wait for fade out animation
       }, duration);
 
       return () => clearTimeout(timer);
@@ -28,7 +28,7 @@ const CustomAlert = ({
   if (!isVisible) return null;
 
   const getAlertStyles = () => {
-    const baseStyles = "fixed z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 transform";
+    const baseStyles = "fixed flex flex-col items-center justify-center z-50 w-[400px] bg-white rounded-xl shadow-2xl transition-all duration-300";
     
     // Position styles
     const positionStyles = {
@@ -37,54 +37,141 @@ const CustomAlert = ({
       'top-center': 'top-4 left-1/2 transform -translate-x-1/2',
       'bottom-right': 'bottom-4 right-4',
       'bottom-left': 'bottom-4 left-4',
-      'bottom-center': 'bottom-4 left-1/2 transform -translate-x-1/2'
+      'bottom-center': 'bottom-4 left-1/2 transform -translate-x-1/2',
+      'center': 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
     };
 
     // Type styles
     const typeStyles = {
-      success: 'bg-green-500 text-white',
-      error: 'bg-red-500 text-white',
-      warning: 'bg-yellow-500 text-white',
-      info: 'bg-blue-500 text-white'
+      success: 'border-2 border-primary',
+      error: 'border-2 border-red-500',
+      warning: 'border-2 border-yellow-500',
+      info: 'border-2 border-blue-500'
     };
 
     const visibilityStyles = isShowing 
-      ? 'opacity-100 translate-y-0' 
-      : 'opacity-0 translate-y-2';
+      ? 'opacity-100 scale-100' 
+      : 'opacity-0 scale-95';
 
     return `${baseStyles} ${positionStyles[position]} ${typeStyles[type]} ${visibilityStyles}`;
   };
 
   const getIcon = () => {
+    const iconStyles = {
+      success: 'bg-primary',
+      error: 'bg-red-500',
+      warning: 'bg-yellow-500',
+      info: 'bg-blue-500'
+    };
+
+    const iconColor = {
+      success: 'text-white',
+      error: 'text-white',
+      warning: 'text-white',
+      info: 'text-white'
+    };
+
     switch (type) {
       case 'success':
-        return <Check size={20} className="flex-shrink-0" />;
+        return (
+          <div className={`w-16 h-16 rounded-full ${iconStyles[type]} flex items-center justify-center mb-4`}>
+            <Check size={32} className={iconColor[type]} />
+          </div>
+        );
       case 'error':
-        return <X size={20} className="flex-shrink-0" />;
+        return (
+          <div className={`w-16 h-16 rounded-full ${iconStyles[type]} flex items-center justify-center mb-4`}>
+            <X size={32} className={iconColor[type]} />
+          </div>
+        );
       case 'warning':
-        return <span className="flex-shrink-0 text-lg">⚠</span>;
+        return (
+          <div className={`w-16 h-16 rounded-full ${iconStyles[type]} flex items-center justify-center mb-4`}>
+            <span className={`text-2xl ${iconColor[type]}`}>⚠</span>
+          </div>
+        );
       case 'info':
-        return <span className="flex-shrink-0 text-lg">ℹ</span>;
+        return (
+          <div className={`w-16 h-16 rounded-full ${iconStyles[type]} flex items-center justify-center mb-4`}>
+            <span className={`text-2xl ${iconColor[type]}`}>ℹ</span>
+          </div>
+        );
       default:
-        return <Check size={20} className="flex-shrink-0" />;
+        return (
+          <div className={`w-16 h-16 rounded-full ${iconStyles.success} flex items-center justify-center mb-4`}>
+            <Check size={32} className="text-white" />
+          </div>
+        );
+    }
+  };
+
+  const getTypeTitle = () => {
+    switch (type) {
+      case 'success':
+        return 'Success!';
+      case 'error':
+        return 'Error!';
+      case 'warning':
+        return 'Warning!';
+      case 'info':
+        return 'Info!';
+      default:
+        return 'Success!';
+    }
+  };
+
+  const getTypeColor = () => {
+    switch (type) {
+      case 'success':
+        return 'text-primary';
+      case 'error':
+        return 'text-red-600';
+      case 'warning':
+        return 'text-yellow-600';
+      case 'info':
+        return 'text-blue-600';
+      default:
+        return 'text-primary';
+    }
+  };
+
+  const getButtonColor = () => {
+    switch (type) {
+      case 'success':
+        return 'bg-primary hover:bg-primary/80';
+      case 'error':
+        return 'bg-red-500 hover:bg-red-600';
+      case 'warning':
+        return 'bg-yellow-500 hover:bg-yellow-600';
+      case 'info':
+        return 'bg-blue-500 hover:bg-blue-600';
+      default:
+        return 'bg-primary hover:bg-primary/80';
     }
   };
 
   return (
     <div className={getAlertStyles()}>
-      {getIcon()}
-      <span className="text-sm font-medium">{message}</span>
-      <button
-        onClick={() => {
-          setIsShowing(false);
-          setTimeout(() => {
-            onClose && onClose();
-          }, 300);
-        }}
-        className="ml-2 hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-colors"
-      >
-        <X size={16} />
-      </button>
+      <div className="p-8 text-center flex flex-col items-center justify-center">
+        {getIcon()}
+        <h3 className={`text-xl font-semibold mb-2 ${getTypeColor()}`}>
+          {getTypeTitle()}
+        </h3>
+        <p className="text-gray-600 mb-6 text-sm">
+          {message}
+        </p>
+        <button
+          onClick={() => {
+            setIsShowing(false);
+            setTimeout(() => {
+              onClose && onClose();
+            }, 300);
+          }}
+          className={`${getButtonColor()} text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200 uppercase text-sm`}
+        >
+          Okay
+        </button>
+      </div>
     </div>
   );
 };

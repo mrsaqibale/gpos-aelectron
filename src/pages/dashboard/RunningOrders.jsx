@@ -2394,17 +2394,21 @@ const RunningOrders = () => {
                     </div>
                   )}
                   <div className="flex items-start justify-between gap-4">
-                    {/* Food Image */}
-                    <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                      <FoodImageDisplay food={selectedFood} />
-                    </div>
-                    {/* Food Info */}
-                    <div className="flex-1 text-right">
+                    {/* Food Image and Info */}
+                    <div className="flex-1">
+                      {/* Food Image */}
+                      <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 mb-3">
+                        <FoodImageDisplay food={selectedFood} />
+                      </div>
+                      {/* Food Name and Description */}
                       <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedFood.name}</h3>
-                      <p className="text-2xl font-bold text-primary">€{selectedFood.price?.toFixed(2) || '0.00'}</p>
                       {selectedFood.description && (
-                        <p className="text-sm text-gray-600 mt-2">{selectedFood.description}</p>
+                        <p className="text-sm text-gray-600">{selectedFood.description}</p>
                       )}
+                    </div>
+                    {/* Food Price */}
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-primary">€{selectedFood.price?.toFixed(2) || '0.00'}</p>
                     </div>
                   </div>
                 </div>
