@@ -1288,24 +1288,125 @@ const RunningOrders = () => {
     clearCart();
   };
 
-  const MenuCard = ({ item }) => (
-    <div
-      className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all overflow-hidden transform hover:-translate-y-1 cursor-pointer"
-      onClick={() => handleFoodItemClick(item)}
-    >
-      <div className="h-[88px]">
+  // Function to load food image
+  const loadFoodImage = async (imagePath) => {
+    console.log('Loading food image:', imagePath);
+    if (!imagePath || !imagePath.startsWith('uploads/')) {
+      console.log('Invalid image path:', imagePath);
+      return null;
+    }
+    
+    try {
+      const result = await window.myAPI.getFoodImage(imagePath);
+      console.log('Image loading result:', result);
+      if (result && result.success) {
+        return result.data;
+      } else {
+        console.log('Image loading failed:', result?.message);
+      }
+    } catch (error) {
+      console.error('Error loading food image:', error);
+    }
+    return null;
+  };
+
+  // Component for displaying food images with loading states
+  const FoodImageDisplay = ({ food }) => {
+    const [imageSrc, setImageSrc] = useState(null);
+    const [imageLoading, setImageLoading] = useState(true);
+
+    useEffect(() => {
+      const loadImage = async () => {
+        setImageLoading(true);
+        if (food && food.image) {
+          const loadedImage = await loadFoodImage(food.image);
+          setImageSrc(loadedImage);
+        } else {
+          setImageSrc(null);
+        }
+        setImageLoading(false);
+      };
+
+      loadImage();
+    }, [food?.image]);
+
+    if (imageLoading) {
+      return (
+        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+          <div className="text-gray-400 text-xs">Loading...</div>
+        </div>
+      );
+    }
+
+    if (imageSrc) {
+      return (
         <img
-          src={item.image || "https://via.placeholder.com/150x120?text=Food"}
-          alt={item.name}
-          className="w-full h-[100%] object-cover"
+          src={imageSrc}
+          alt={food?.name || 'Food'}
+          className="w-full h-full object-cover"
+          onError={() => setImageSrc(null)}
         />
+      );
+    }
+
+    return (
+      <img
+        src="https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=400&fit=crop&crop=center"
+        alt={food?.name || 'Food'}
+        className="w-full h-full object-cover"
+      />
+    );
+  };
+
+  const MenuCard = ({ item }) => {
+    const [imageSrc, setImageSrc] = useState(null);
+    const [imageLoading, setImageLoading] = useState(true);
+
+    useEffect(() => {
+      const loadImage = async () => {
+        setImageLoading(true);
+        if (item.image) {
+          const loadedImage = await loadFoodImage(item.image);
+          setImageSrc(loadedImage);
+        } else {
+          setImageSrc(null);
+        }
+        setImageLoading(false);
+      };
+
+      loadImage();
+    }, [item.image]);
+
+    return (
+      <div
+        className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all overflow-hidden transform hover:-translate-y-1 cursor-pointer"
+        onClick={() => handleFoodItemClick(item)}
+      >
+        <div className="h-[88px] relative">
+          {imageLoading ? (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <div className="text-gray-400 text-xs">Loading...</div>
+            </div>
+          ) : imageSrc ? (
+            <img
+              src={imageSrc}
+              alt={item.name}
+              className="w-full h-[100%] object-cover"
+              onError={() => setImageSrc(null)}
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <div className="text-gray-400 text-xs">No Image</div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-center py-2 items-center flex-col">
+          <h3 className="font-semibold text-gray-800 text-sm text-center">{item.name}</h3>
+          <p className="text-gray-600 font-semibold text-xs mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
+        </div>
       </div>
-      <div className="flex justify-center py-2 items-center flex-col">
-        <h3 className="font-semibold text-gray-800 text-sm text-center">{item.name}</h3>
-        <p className="text-gray-600 font-semibold text-xs mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const MenuGrid = () => {
     return (
@@ -2161,11 +2262,7 @@ const RunningOrders = () => {
                   <div className="flex items-start justify-between gap-4">
                     {/* Food Image */}
                     <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                      <img
-                        src={selectedFood.image || "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400&h=400&fit=crop&crop=center"}
-                        alt={selectedFood.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <FoodImageDisplay food={selectedFood} />
                     </div>
                     {/* Food Info */}
                     <div className="flex-1 text-right">
