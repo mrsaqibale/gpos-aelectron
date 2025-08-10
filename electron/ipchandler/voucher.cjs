@@ -43,7 +43,8 @@ function registerVoucherIpcHandlers() {
   ipcMain.handle('voucher:getAll', async (event) => {
     try {
       console.log('Getting all vouchers');
-      const result = getAllVouchers();
+      const voucherModule = await loadVoucherModule();
+      const result = voucherModule.getAllVouchers();
       console.log('Get all vouchers result:', result);
       return result;
     } catch (error) {
@@ -56,7 +57,8 @@ function registerVoucherIpcHandlers() {
   ipcMain.handle('voucher:getById', async (event, id) => {
     try {
       console.log('Getting voucher by ID:', id);
-      const result = getVoucherById(id);
+      const voucherModule = await loadVoucherModule();
+      const result = voucherModule.getVoucherById(id);
       console.log('Get voucher by ID result:', result);
       return result;
     } catch (error) {
