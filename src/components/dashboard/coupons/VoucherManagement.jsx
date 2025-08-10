@@ -883,10 +883,13 @@ const VoucherManagement = () => {
                 Are you sure you want to delete this voucher? This action cannot be undone.
               </p>
               <p className="text-sm text-gray-600 mb-6">
+                Title: <strong>{voucherToDelete.title}</strong>
+              </p>
+              <p className="text-sm text-gray-600 mb-6">
                 Name: <strong>{voucherToDelete.name}</strong>
               </p>
               <p className="text-sm text-gray-600 mb-6">
-                Code: <strong>{voucherToDelete.code}</strong>
+                Voucher Code: <strong>{voucherToDelete.voucherCode}</strong>
               </p>
               <p className="text-sm text-gray-600 mb-6">
                 Amount: <strong>€{voucherToDelete.amount}</strong>
