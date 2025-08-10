@@ -6,8 +6,7 @@ const CustomAlert = ({
   isVisible, 
   onClose, 
   duration = 1000, 
-  type = 'success',
-  position = 'center' 
+  type = 'success'
 }) => {
   const [isShowing, setIsShowing] = useState(false);
 
@@ -28,18 +27,18 @@ const CustomAlert = ({
   if (!isVisible) return null;
 
   const getAlertStyles = () => {
-    const baseStyles = "fixed flex flex-col items-center justify-center z-50 w-[400px] bg-white rounded-xl shadow-2xl transition-all duration-300";
-    
-    // Position styles
-    const positionStyles = {
-      'top-right': 'top-4 right-4',
-      'top-left': 'top-4 left-4',
-      'top-center': 'top-4 left-1/2 transform -translate-x-1/2',
-      'bottom-right': 'bottom-4 right-4',
-      'bottom-left': 'bottom-4 left-4',
-      'bottom-center': 'bottom-4 left-1/2 transform -translate-x-1/2',
-      'center': 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
-    };
+    const baseStyles = "w-[400px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-2xl transition-all duration-300";
+  
+    // // Position styles
+    // const positionStyles = {
+    //   'top-right': 'fixed top-4 right-4',
+    //   'top-left': 'fixed top-4 left-4',
+    //   'top-center': 'fixed top-4 left-1/2 transform -translate-x-1/2',
+    //   'bottom-right': 'fixed bottom-4 right-4',
+    //   'bottom-left': 'fixed bottom-4 left-4',
+    //   'bottom-center': 'fixed bottom-4 left-1/2 transform -translate-x-1/2',
+    //   'center': 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
+    // };
 
     // Type styles
     const typeStyles = {
@@ -53,7 +52,7 @@ const CustomAlert = ({
       ? 'opacity-100 scale-100' 
       : 'opacity-0 scale-95';
 
-    return `${baseStyles} ${positionStyles[position]} ${typeStyles[type]} ${visibilityStyles}`;
+    return `${baseStyles} ${typeStyles[type]} ${visibilityStyles}`;
   };
 
   const getIcon = () => {
