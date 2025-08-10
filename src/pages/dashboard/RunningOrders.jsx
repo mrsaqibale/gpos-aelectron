@@ -62,8 +62,12 @@ import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
 import CustomerManagement from '../../components/dashboard/CustomerManagement';
 import CustomerSearchModal from '../../components/dashboard/CustomerSearchModal';
 import FloorPlan3D from '../../components/FloorPlan3D';
+import CustomAlert from '../../components/CustomAlert';
+import useCustomAlert from '../../hooks/useCustomAlert';
 
 const RunningOrders = () => {
+  // Custom Alert Hook
+  const { alertState, showSuccess, hideAlert } = useCustomAlert();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -117,8 +121,7 @@ const RunningOrders = () => {
   const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
   
-  // Feedback state for quantity increase
-  const [quantityFeedback, setQuantityFeedback] = useState({ show: false, message: '', itemName: '' });
+
   
   // Use the custom hook for keyboard functionality
   const {
@@ -492,17 +495,8 @@ const RunningOrders = () => {
       updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + foodQuantity);
       console.log('Increased quantity for existing item with variations:', existingCartItem.food.name);
       
-      // Show feedback message
-      setQuantityFeedback({
-        show: true,
-        message: `Quantity increased for ${existingCartItem.food.name}`,
-        itemName: existingCartItem.food.name
-      });
-      
-      // Hide feedback after 2 seconds
-      setTimeout(() => {
-        setQuantityFeedback({ show: false, message: '', itemName: '' });
-      }, 2000);
+      // Show success alert
+      showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
       // Create new cart item with all details
       const cartItem = {
@@ -523,6 +517,9 @@ const RunningOrders = () => {
       });
       setCartItemId(prev => prev + 1);
       console.log('Added new item to cart:', selectedFood.name);
+      
+      // Show success alert
+      showSuccess(`${selectedFood.name} added to cart!`);
     }
 
     // Close modal and reset
@@ -597,17 +594,8 @@ const RunningOrders = () => {
       updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + 1);
       console.log('Increased quantity for existing item:', existingCartItem.food.name);
       
-      // Show feedback message
-      setQuantityFeedback({
-        show: true,
-        message: `Quantity increased for ${existingCartItem.food.name}`,
-        itemName: existingCartItem.food.name
-      });
-      
-      // Hide feedback after 2 seconds
-      setTimeout(() => {
-        setQuantityFeedback({ show: false, message: '', itemName: '' });
-      }, 2000);
+      // Show success alert
+      showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
       // If food is not in cart, show the modal for customization
       console.log('Setting selectedFood:', foodItem);
@@ -1163,7 +1151,15 @@ const RunningOrders = () => {
   };
 
   const removeCartItem = (itemId) => {
+    // Get the item name before removing it for the alert message
+    const itemToRemove = cartItems.find(item => item.id === itemId);
+    const itemName = itemToRemove ? itemToRemove.food.name : 'Item';
+    
+    // Remove the item from cart
     setCartItems(prev => prev.filter(item => item.id !== itemId));
+    
+    // Show success alert
+    showSuccess(`${itemName} removed from cart!`);
   };
 
   // Handle editing cart item
@@ -1231,6 +1227,10 @@ const RunningOrders = () => {
 
   // Clear cart function
   const clearCart = () => {
+    // Check if there are items in the cart before clearing
+    const itemCount = cartItems.length;
+    
+    // Clear all cart data
     setCartItems([]);
     setAppliedCoupon(null);
     setSelectedTable('');
@@ -1243,6 +1243,11 @@ const RunningOrders = () => {
     setEditingCartItem(null);
     setFoodQuantity(1);
     setSelectedVariations({});
+    
+    // Show success alert if there were items in the cart
+    if (itemCount > 0) {
+      showSuccess(`All ${itemCount} item${itemCount === 1 ? '' : 's'} removed from cart!`);
+    }
   };
 
   // Handle place order
@@ -1341,15 +1346,7 @@ const RunningOrders = () => {
 
   return (
     <>
-      {/* Quantity Increase Feedback */}
-      {quantityFeedback.show && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="flex items-center gap-2">
-            <CheckCircle size={16} />
-            <span>{quantityFeedback.message}</span>
-          </div>
-        </div>
-      )}
+
       
       <div className="flex justify-between gap-2 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
         <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
@@ -2774,6 +2771,16 @@ const RunningOrders = () => {
           </div>
         </div>
       )}
+      
+      {/* Custom Alert Component */}
+      <CustomAlert
+        isVisible={alertState.isVisible}
+        message={alertState.message}
+        type={alertState.type}
+        position={alertState.position}
+        duration={alertState.duration}
+        onClose={hideAlert}
+      />
       
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard
