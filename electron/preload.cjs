@@ -158,6 +158,14 @@ contextBridge.exposeInMainWorld('myAPI', {
   deleteCoupon: (id) => ipcRenderer.invoke('coupon:delete', id),
   searchCouponByCode: (code) => ipcRenderer.invoke('coupon:searchByCode', code),
 
+  // Voucher
+  createVoucher: (data) => ipcRenderer.invoke('voucher:create', data),
+  updateVoucher: (id, updates) => ipcRenderer.invoke('voucher:update', id, updates),
+  getAllVouchers: () => ipcRenderer.invoke('voucher:getAll'),
+  getVoucherById: (id) => ipcRenderer.invoke('voucher:getById', id),
+  deleteVoucher: (id) => ipcRenderer.invoke('voucher:delete', id),
+  searchVoucherByCode: (code) => ipcRenderer.invoke('voucher:searchByCode', code),
+
 });
 
 contextBridge.exposeInMainWorld('api', {
