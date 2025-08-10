@@ -41,17 +41,13 @@ const VoucherManagement = () => {
         // Transform database data to match frontend format
         const transformedVouchers = result.data.map(voucher => ({
           id: voucher.id,
-          title: voucher.title,
-          customerType: voucher.type || 'All Customers',
-          code: voucher.code,
-          limitForSameUser: voucher.usage_limit || 0,
-          startDate: voucher.start_date ? voucher.start_date.split('T')[0] : '',
-          expireDate: voucher.end_date ? voucher.end_date.split('T')[0] : '',
-          discountType: voucher.discount_type || 'percentage',
-          discount: voucher.amount || 0,
-          maxDiscount: voucher.max_discount || 0,
-          minPurchase: voucher.min_purchase || 0,
-          totalUsers: 0, // This would need to be calculated from usage data
+          name: voucher.name || '',
+          phoneNo: voucher.phone_no || '',
+          email: voucher.email || '',
+          expiryDate: voucher.expiry_date ? voucher.expiry_date.split('T')[0] : '',
+          amount: voucher.amount || 0,
+          code: voucher.code || '',
+          textField: voucher.text_field || '',
           status: voucher.status === 1 ? 'active' : 'inactive'
         }));
         setVoucher(transformedVouchers);
@@ -66,19 +62,23 @@ const VoucherManagement = () => {
   };
 
   const [newVoucher, setNewVoucher] = useState({
-    title: '',
-    customerType: '',
+    name: '',
+    phoneNo: '',
+    email: '',
+    expiryDate: '',
+    amount: '',
     code: '',
-    limitForSameUser: '',
-    startDate: '',
-    expireDate: '',
-    discountType: 'percentage',
-    discount: '',
-    maxDiscount: '',
-    minPurchase: ''
+    textField: ''
   });
 
   const [errors, setErrors] = useState({});
+
+  // Generate auto code
+  const generateCode = () => {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 8);
+    return `VOUCHER-${timestamp}-${random}`.toUpperCase();
+  };
 
   // Keyboard event handlers
   const handleInputFocus = (inputName) => {
@@ -130,7 +130,7 @@ const VoucherManagement = () => {
     // Handle special button presses
     if (buttonType === 'enter') {
       // Move to next input field or submit form
-      const inputFields = ['title', 'customerType', 'code', 'limitForSameUser', 'startDate', 'expireDate', 'discount', 'maxDiscount', 'minPurchase'];
+      const inputFields = ['name', 'phoneNo', 'email', 'expiryDate', 'amount', 'textField'];
       const currentIndex = inputFields.indexOf(inputName);
       if (currentIndex < inputFields.length - 1) {
         const nextField = inputFields[currentIndex + 1];
@@ -166,40 +166,25 @@ const VoucherManagement = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!newVoucher.title.trim()) {
-      newErrors.title = 'Title is required';
+    if (!newVoucher.name.trim()) {
+      newErrors.name = 'Name is required';
     }
     
-    if (!newVoucher.customerType.trim()) {
-      newErrors.customerType = 'Customer type is required';
+    if (!newVoucher.phoneNo.trim()) {
+      newErrors.phoneNo = 'Phone number is required';
     }
     
-    if (!newVoucher.code.trim()) {
-      newErrors.code = 'Code is required';
+    if (!newVoucher.expiryDate) {
+      newErrors.expiryDate = 'Expiry date is required';
     }
     
-    if (!newVoucher.startDate) {
-      newErrors.startDate = 'Start date is required';
+    if (!newVoucher.amount || newVoucher.amount <= 0) {
+      newErrors.amount = 'Amount must be greater than 0';
     }
     
-    if (!newVoucher.expireDate) {
-      newErrors.expireDate = 'Expire date is required';
-    }
-    
-    if (!newVoucher.discount || newVoucher.discount <= 0) {
-      newErrors.discount = 'Discount must be greater than 0';
-    }
-    
-    if (newVoucher.discountType === 'percentage' && newVoucher.discount > 100) {
-      newErrors.discount = 'Percentage discount cannot exceed 100%';
-    }
-    
-    if (newVoucher.minPurchase && newVoucher.minPurchase < 0) {
-      newErrors.minPurchase = 'Minimum purchase cannot be negative';
-    }
-    
-    if (newVoucher.maxDiscount && newVoucher.maxDiscount < 0) {
-      newErrors.maxDiscount = 'Maximum discount cannot be negative';
+    // Email validation (optional field)
+    if (newVoucher.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newVoucher.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
     
     setErrors(newErrors);
@@ -219,19 +204,16 @@ const VoucherManagement = () => {
       if (editingVoucher) {
         // Update existing voucher
         const updateData = {
-          title: newVoucher.title,
-          type: newVoucher.customerType,
+          name: newVoucher.name,
+          phone_no: newVoucher.phoneNo,
+          email: newVoucher.email || null,
+          expiry_date: newVoucher.expiryDate,
+          amount: parseFloat(newVoucher.amount),
           code: newVoucher.code,
-          usage_limit: parseInt(newVoucher.limitForSameUser) || 0,
-          start_date: newVoucher.startDate,
-          end_date: newVoucher.expireDate,
-          discount_type: newVoucher.discountType,
-          amount: parseFloat(newVoucher.discount),
-          max_discount: parseFloat(newVoucher.maxDiscount) || 0,
-          min_purchase: parseFloat(newVoucher.minPurchase) || 0
+          text_field: newVoucher.textField || null
         };
         
-        const result = await window.myAPI.updateCoupon(editingVoucher.id, updateData);
+        const result = await window.myAPI.updateVoucher(editingVoucher.id, updateData);
         if (result.success) {
           await loadVouchers(); // Reload data
           setShowForm(false);
@@ -242,20 +224,17 @@ const VoucherManagement = () => {
       } else {
         // Create new voucher
         const createData = {
-          title: newVoucher.title,
-          type: newVoucher.customerType,
+          name: newVoucher.name,
+          phone_no: newVoucher.phoneNo,
+          email: newVoucher.email || null,
+          expiry_date: newVoucher.expiryDate,
+          amount: parseFloat(newVoucher.amount),
           code: newVoucher.code,
-          usage_limit: parseInt(newVoucher.limitForSameUser) || 0,
-          start_date: newVoucher.startDate,
-          end_date: newVoucher.expireDate,
-          discount_type: newVoucher.discountType,
-          amount: parseFloat(newVoucher.discount),
-          max_discount: parseFloat(newVoucher.maxDiscount) || 0,
-          min_purchase: parseFloat(newVoucher.minPurchase) || 0,
+          text_field: newVoucher.textField || null,
           added_by: 1 // TODO: Get current employee ID from context
         };
         
-        const result = await window.myAPI.createCoupon(createData);
+        const result = await window.myAPI.createVoucher(createData);
         if (result.success) {
           await loadVouchers(); // Reload data
           setShowForm(false);
@@ -273,16 +252,13 @@ const VoucherManagement = () => {
   const handleEdit = (voucher) => {
     setEditingVoucher(voucher);
     setNewVoucher({
-      title: voucher.title,
-      customerType: voucher.customerType,
+      name: voucher.name,
+      phoneNo: voucher.phoneNo,
+      email: voucher.email,
+      expiryDate: voucher.expiryDate,
+      amount: voucher.amount.toString(),
       code: voucher.code,
-      limitForSameUser: voucher.limitForSameUser.toString(),
-      startDate: voucher.startDate,
-      expireDate: voucher.expireDate,
-      discountType: voucher.discountType,
-      discount: voucher.discount.toString(),
-      maxDiscount: voucher.maxDiscount.toString(),
-      minPurchase: voucher.minPurchase.toString()
+      textField: voucher.textField
     });
     setActiveInput(''); // Reset keyboard input
     setShowKeyboard(false); // Hide keyboard when editing voucher
@@ -294,10 +270,10 @@ const VoucherManagement = () => {
     setShowDeleteConfirm(true);
   };
 
-  const deleteCoupon = async (id) => {
+  const deleteVoucher = async (id) => {
     try {
       setLoading(true);
-      const result = await window.myAPI.deleteCoupon(id);
+      const result = await window.myAPI.deleteVoucher(id);
       if (result.success) {
         await loadVouchers(); // Reload data
         setShowDeleteConfirm(false);
@@ -315,36 +291,32 @@ const VoucherManagement = () => {
   };
 
   const handleReset = () => {
+    const generatedCode = generateCode();
     setNewVoucher({
-      title: '',
-      customerType: '',
-      code: '',
-      limitForSameUser: '',
-      startDate: '',
-      expireDate: '',
-      discountType: 'percentage',
-      discount: '',
-      maxDiscount: '',
-      minPurchase: ''
+      name: '',
+      phoneNo: '',
+      email: '',
+      expiryDate: '',
+      amount: '',
+      code: generatedCode,
+      textField: ''
     });
     setErrors({});
     setActiveInput(''); // Reset keyboard input
     setShowKeyboard(false); // Hide keyboard when resetting
   };
 
-  const handleAddCoupon = () => {
+  const handleAddVoucher = () => {
     setEditingVoucher(null);
+    const generatedCode = generateCode();
     setNewVoucher({
-      title: '',
-      customerType: '',
-      code: '',
-      limitForSameUser: '',
-      startDate: '',
-      expireDate: '',
-      discountType: 'percentage',
-      discount: '',
-      maxDiscount: '',
-      minPurchase: ''
+      name: '',
+      phoneNo: '',
+      email: '',
+      expiryDate: '',
+      amount: '',
+      code: generatedCode,
+      textField: ''
     });
     setErrors({});
     setActiveInput(''); // Reset keyboard input
@@ -357,7 +329,7 @@ const VoucherManagement = () => {
       const voucher = voucher.find(c => c.id === voucherId);
       const newStatus = voucher.status === 'active' ? 0 : 1; // Convert to database format
       
-      const result = await window.myAPI.updateCoupon(voucherId, { status: newStatus });
+      const result = await window.myAPI.updateVoucher(voucherId, { status: newStatus });
       if (result.success) {
         await loadVouchers(); // Reload data
       } else {
@@ -368,14 +340,15 @@ const VoucherManagement = () => {
     }
   };
 
-  const getFilteredCoupons = () => {
+  const getFilteredVouchers = () => {
     let filtered = voucher;
 
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(voucher =>
         voucher.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        voucher.title.toLowerCase().includes(searchTerm.toLowerCase())
+        voucher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        voucher.phoneNo.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -398,13 +371,9 @@ const VoucherManagement = () => {
     }
   };
 
-  const getDiscountTypeIcon = (type) => {
-    return type === 'percentage' ? <Percent size={16} /> : <DollarSign size={16} />;
-  };
-
   return (
     <div className="space-y-6">
-      {/* Coupon Form - NOW AT THE VERY TOP */}
+      {/* Voucher Form - NOW AT THE VERY TOP */}
       {showForm && (
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
           <div className="flex justify-between items-center mb-6">
@@ -428,65 +397,135 @@ const VoucherManagement = () => {
           </div>
 
           <form onSubmit={handleSubmit}>
-            {/* First row: Title and Select Customer in 2 columns */}
+            {/* First row: Name and Phone Number */}
             <div className="grid grid-cols-2 gap-5 mb-5">
-              {/* Title */}
+              {/* Name */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Title <span className="text-red-500">*</span>
+                  Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  name="title"
-                  value={newVoucher.title}
+                  name="name"
+                  value={newVoucher.name}
                   onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'title')}
-                  onClick={(e) => handleAnyInputClick(e, 'title')}
+                  onFocus={(e) => handleAnyInputFocus(e, 'name')}
+                  onClick={(e) => handleAnyInputClick(e, 'name')}
                   onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    errors.title ? 'border-red-500' : 'border-gray-300'
+                    errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="New Coupon"
+                  placeholder="Enter name"
                   required
                 />
-                {errors.title && (
-                  <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+                {errors.name && (
+                  <p className="text-red-500 text-xs mt-1">{errors.name}</p>
                 )}
               </div>
 
-              {/* Select Customer */}
+              {/* Phone Number */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Select Customer <span className="text-red-500">*</span>
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
-                <select
-                  name="customerType"
-                  value={newVoucher.customerType}
+                <input
+                  type="tel"
+                  name="phoneNo"
+                  value={newVoucher.phoneNo}
                   onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'customerType')}
-                  onClick={(e) => handleAnyInputClick(e, 'customerType')}
+                  onFocus={(e) => handleAnyInputFocus(e, 'phoneNo')}
+                  onClick={(e) => handleAnyInputClick(e, 'phoneNo')}
                   onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    errors.customerType ? 'border-red-500' : 'border-gray-300'
+                    errors.phoneNo ? 'border-red-500' : 'border-gray-300'
                   }`}
+                  placeholder="Enter phone number"
                   required
-                >
-                  <option value="">Select Customer</option>
-                  <option value="All Customers">All Customers</option>
-                  <option value="New Customers">New Customers</option>
-                  <option value="Loyal Customers">Loyal Customers</option>
-                  <option value="Delivery Only">Delivery Only</option>
-                  <option value="Collection Only">Collection Only</option>
-                </select>
-                {errors.customerType && (
-                  <p className="text-red-500 text-xs mt-1">{errors.customerType}</p>
+                />
+                {errors.phoneNo && (
+                  <p className="text-red-500 text-xs mt-1">{errors.phoneNo}</p>
                 )}
               </div>
-            </div>
+              </div>
 
-            {/* Second row: Rest of the fields in 3 columns */}
-            <div className="grid grid-cols-3 gap-5">
-              {/* Code */}
+            {/* Second row: Email and Expiry Date */}
+            <div className="grid grid-cols-2 gap-5 mb-5">
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={newVoucher.email}
+                  onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'email')}
+                  onClick={(e) => handleAnyInputClick(e, 'email')}
+                  onBlur={handleInputBlur}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter email address"
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
+              </div>
+
+              {/* Expiry Date */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Expiry Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="expiryDate"
+                  value={newVoucher.expiryDate}
+                  onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'expiryDate')}
+                  onClick={(e) => handleAnyInputClick(e, 'expiryDate')}
+                  onBlur={handleInputBlur}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.expiryDate ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                />
+                {errors.expiryDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.expiryDate}</p>
+                )}
+              </div>
+              </div>
+
+            {/* Third row: Amount and Code */}
+            <div className="grid grid-cols-2 gap-5 mb-5">
+              {/* Amount */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="amount"
+                  value={newVoucher.amount}
+                  onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'amount')}
+                  onClick={(e) => handleAnyInputClick(e, 'amount')}
+                  onBlur={handleInputBlur}
+                  min="0"
+                  step="0.01"
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.amount ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter amount"
+                  required
+                />
+                {errors.amount && (
+                  <p className="text-red-500 text-xs mt-1">{errors.amount}</p>
+                )}
+              </div>
+
+              {/* Code (Auto Generated) */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Code <span className="text-red-500">*</span>
@@ -499,166 +538,33 @@ const VoucherManagement = () => {
                   onFocus={(e) => handleAnyInputFocus(e, 'code')}
                   onClick={(e) => handleAnyInputClick(e, 'code')}
                   onBlur={handleInputBlur}
-                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    errors.code ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="e.g., SAVE20"
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-gray-50"
+                  placeholder="Auto generated code"
+                  readOnly={!editingVoucher}
                   required
                 />
-                {errors.code && (
-                  <p className="text-red-500 text-xs mt-1">{errors.code}</p>
+                {!editingVoucher && (
+                  <p className="text-xs text-gray-500 mt-1">Code will be auto-generated</p>
                 )}
               </div>
-
-              {/* Limit for same user */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Limit for same user
-                </label>
-                <input
-                  type="number"
-                  name="limitForSameUser"
-                  value={newVoucher.limitForSameUser}
-                  onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'limitForSameUser')}
-                  onClick={(e) => handleAnyInputClick(e, 'limitForSameUser')}
-                  onBlur={handleInputBlur}
-                  min="1"
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                  placeholder="Ex:10"
-                />
               </div>
 
-              {/* Start Date */}
-              <div>
+            {/* Fourth row: Text Field */}
+            <div className="mb-5">
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Start Date <span className="text-red-500">*</span>
+                Text Field
                 </label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={newVoucher.startDate}
+              <textarea
+                name="textField"
+                value={newVoucher.textField}
                   onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'startDate')}
-                  onClick={(e) => handleAnyInputClick(e, 'startDate')}
+                onFocus={(e) => handleAnyInputFocus(e, 'textField')}
+                onClick={(e) => handleAnyInputClick(e, 'textField')}
                   onBlur={handleInputBlur}
-                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    errors.startDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  required
-                />
-                {errors.startDate && (
-                  <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>
-                )}
-              </div>
-
-              {/* Expire Date */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Expire Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="expireDate"
-                  value={newVoucher.expireDate}
-                  onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'expireDate')}
-                  onClick={(e) => handleAnyInputClick(e, 'expireDate')}
-                  onBlur={handleInputBlur}
-                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    errors.expireDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  required
-                />
-                {errors.expireDate && (
-                  <p className="text-red-500 text-xs mt-1">{errors.expireDate}</p>
-                )}
-              </div>
-
-              {/* Discount Type */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Discount Type
-                </label>
-                <select
-                  name="discountType"
-                  value={newVoucher.discountType}
-                  onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'discountType')}
-                  onClick={(e) => handleAnyInputClick(e, 'discountType')}
-                  onBlur={handleInputBlur}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                >
-                  <option value="percentage">Percentage (%)</option>
-                  <option value="fixed">Fixed Amount (€)</option>
-                </select>
-              </div>
-
-              {/* Discount */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Discount <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  name="discount"
-                  value={newVoucher.discount}
-                  onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'discount')}
-                  onClick={(e) => handleAnyInputClick(e, 'discount')}
-                  onBlur={handleInputBlur}
-                  min="0"
-                  step="0.01"
-                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    errors.discount ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder={newVoucher.discountType === 'percentage' ? '20' : '10'}
-                  required
-                />
-                {errors.discount && (
-                  <p className="text-red-500 text-xs mt-1">{errors.discount}</p>
-                )}
-              </div>
-
-              {/* Max Discount */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Max Discount
-                </label>
-                <input
-                  type="number"
-                  name="maxDiscount"
-                  value={newVoucher.maxDiscount}
-                  onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'maxDiscount')}
-                  onClick={(e) => handleAnyInputClick(e, 'maxDiscount')}
-                  onBlur={handleInputBlur}
-                  min="0"
-                  step="0.01"
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                  placeholder="0 (no limit)"
-                />
-              </div>
-
-              {/* Min Purchase */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Min Purchase
-                </label>
-                <input
-                  type="number"
-                  name="minPurchase"
-                  value={newVoucher.minPurchase}
-                  onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'minPurchase')}
-                  onClick={(e) => handleAnyInputClick(e, 'minPurchase')}
-                  onBlur={handleInputBlur}
-                  min="0"
-                  step="0.01"
-                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                  placeholder="0"
-                />
-              </div>
+                rows="3"
+                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                placeholder="Enter additional notes or description"
+              />
             </div>
 
             <div className="flex justify-end gap-4 mt-6">
@@ -682,7 +588,7 @@ const VoucherManagement = () => {
                     Saving...
                   </div>
                 ) : (
-                  editingVoucher ? 'Update Coupon' : 'Submit'
+                  editingVoucher ? 'Update Voucher' : 'Submit'
                 )}
               </button>
             </div>
@@ -691,18 +597,18 @@ const VoucherManagement = () => {
         </div>
       )}
 
-      {/* Coupons List Section - NOW BELOW THE FORM */}
+      {/* Vouchers List Section - NOW BELOW THE FORM */}
       <div className="bg-white rounded-lg shadow-sm p-4">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🏷️</span>
-            <h2 className="text-lg font-semibold text-gray-800">Coupon List</h2>
+            <h2 className="text-lg font-semibold text-gray-800">Voucher List</h2>
           </div>
           <div className="flex items-center gap-3">
 
             <button
-              onClick={handleAddCoupon}
+              onClick={handleAddVoucher}
               className="px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg flex items-center gap-2 
               shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
               active:shadow-none active:translate-y-[4px] transition-all"
@@ -744,7 +650,7 @@ const VoucherManagement = () => {
          </div>
 
          
-        {/* Coupons Table */}
+        {/* Vouchers Table */}
         <div className="overflow-x-auto">
           {loading && (
             <div className="flex justify-center items-center py-8">
@@ -760,37 +666,25 @@ const VoucherManagement = () => {
                     SI
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Title
+                    Name
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Phone Number
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Email
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
                     Code
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Type
+                    Amount
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Total Users
+                    Expiry Date
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Min Purchase
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Max Discount
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Discount
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Discount Type
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Start Date
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Expire Date
-                  </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Customer Type
+                    Text Field
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
                     Status
@@ -801,49 +695,35 @@ const VoucherManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {getFilteredCoupons().map((voucher, index) => (
+                {getFilteredVouchers().map((voucher, index) => (
                 <tr key={voucher.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                   <td className="py-3 px-4">
                     <span className="text-sm font-medium text-gray-700">{index + 1}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm font-medium text-gray-900">{voucher.title}</span>
+                    <span className="text-sm font-medium text-gray-900">{voucher.name}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">{voucher.phoneNo}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">{voucher.email || '-'}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="font-mono font-medium text-primary">{voucher.code}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{voucher.discountType}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{voucher.totalUsers}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">€{voucher.minPurchase}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">€{voucher.maxDiscount}</span>
-                  </td>
-                                     <td className="py-3 px-4">
-                     <span className="text-sm font-medium text-gray-900">
-                       {voucher.discountType === 'percentage' ? `${voucher.discount}%` : `€${voucher.discount}`}
-                     </span>
-                   </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600 capitalize">{voucher.discountType}</span>
+                    <span className="text-sm font-medium text-gray-900">€{voucher.amount}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">
-                      {new Date(voucher.startDate).toLocaleDateString()}
+                      {new Date(voucher.expiryDate).toLocaleDateString()}
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">
-                      {new Date(voucher.expireDate).toLocaleDateString()}
+                    <span className="text-sm text-gray-600 max-w-xs truncate" title={voucher.textField}>
+                      {voucher.textField || '-'}
                     </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{voucher.customerType}</span>
                   </td>
                   <td className="py-3 px-4">
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -881,7 +761,7 @@ const VoucherManagement = () => {
         )}
         </div>
 
-        {!loading && getFilteredCoupons().length === 0 && (
+        {!loading && getFilteredVouchers().length === 0 && (
           <div className="text-center py-12">
             <Tag size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-600 font-medium">No voucher found</p>
@@ -895,7 +775,7 @@ const VoucherManagement = () => {
         <div className="fixed inset-0 bg-[#000000a1] bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
             <div className="bg-red-700 text-white p-4 flex justify-between items-center rounded-t-xl">
-              <h2 className="text-xl font-bold">Delete Coupon</h2>
+              <h2 className="text-xl font-bold">Delete Voucher</h2>
               <button 
                 onClick={() => {
                   setShowDeleteConfirm(false);
@@ -911,13 +791,13 @@ const VoucherManagement = () => {
                 Are you sure you want to delete this voucher? This action cannot be undone.
               </p>
               <p className="text-sm text-gray-600 mb-6">
-                Coupon: <strong>{voucherToDelete.title}</strong>
+                Name: <strong>{voucherToDelete.name}</strong>
               </p>
               <p className="text-sm text-gray-600 mb-6">
                 Code: <strong>{voucherToDelete.code}</strong>
               </p>
               <p className="text-sm text-gray-600 mb-6">
-                Discount: <strong>{voucherToDelete.discountType === 'percentage' ? `${voucherToDelete.discount}%` : `€${voucherToDelete.discount}`}</strong>
+                Amount: <strong>€{voucherToDelete.amount}</strong>
               </p>
             </div>
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
@@ -931,7 +811,7 @@ const VoucherManagement = () => {
                 Cancel
               </button>
               <button
-                onClick={() => deleteCoupon(voucherToDelete.id)}
+                onClick={() => deleteVoucher(voucherToDelete.id)}
                 className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
               >
                 Delete
