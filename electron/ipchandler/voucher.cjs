@@ -1,19 +1,22 @@
-import { ipcMain } from 'electron';
-import { 
-  createVoucher, 
-  updateVoucher, 
-  getAllVouchers, 
-  getVoucherById, 
-  deleteVoucher, 
-  searchVoucherByCode 
-} from '../../src/database/models/voucher/voucher.js';
+const { ipcMain } = require('electron');
+
+// Dynamic import for ES module
+let voucherModule = null;
+
+async function loadVoucherModule() {
+  if (!voucherModule) {
+    voucherModule = await import('../../src/database/models/voucher/voucher.js');
+  }
+  return voucherModule;
+}
 
 function registerVoucherIpcHandlers() {
   // Create voucher
   ipcMain.handle('voucher:create', async (event, data) => {
     try {
       console.log('Creating voucher with data:', data);
-      const result = createVoucher(data);
+      const voucherModule = await loadVoucherModule();
+      const result = voucherModule.createVoucher(data);
       console.log('Voucher creation result:', result);
       return result;
     } catch (error) {
@@ -26,7 +29,8 @@ function registerVoucherIpcHandlers() {
   ipcMain.handle('voucher:update', async (event, id, updates) => {
     try {
       console.log('Updating voucher with ID:', id, 'updates:', updates);
-      const result = updateVoucher(id, updates);
+      const voucherModule = await loadVoucherModule();
+      const result = voucherModule.updateVoucher(id, updates);
       console.log('Voucher update result:', result);
       return result;
     } catch (error) {

@@ -22,7 +22,7 @@ const { registerEmployeeIpcHandlers } = require('./ipchandler/employee.cjs');
 const { registerCustomerIpcHandlers } = require('./ipchandler/customer.cjs');
 const { registerOrdersIpcHandlers } = require('./ipchandler/orders.cjs');
 const { registerCouponIpcHandlers } = require('./ipchandler/coupon.cjs');
-const { registerVoucherIpcHandlers } = require('./ipchandler/voucher.cjs');
+const { registerVoucherIpcHandlers } = require('./ipchandler/voucher.js');
 const { initDatabase } = require('./init-database.cjs');
 
 async function createWindow() {
