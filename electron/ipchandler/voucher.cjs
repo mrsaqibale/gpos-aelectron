@@ -6,7 +6,7 @@ const {
   getVoucherById, 
   deleteVoucher, 
   searchVoucherByCode 
-} = require('../../src/database/models/voucher/voucher.js');
+} = require('../../src/database/models/voucher/voucher.cjs');
 
 function registerVoucherIpcHandlers() {
   // Create voucher

@@ -4,17 +4,17 @@ const db = require('../../init.js');
 function createVoucher(data) {
   try {
     const {
-      title,
-      start_date,
-      end_date,
-      voucher_code,
-      amount,
-      event,
-      email,
-      phone_no,
-      name,
+      title = null,
+      start_date = null,
+      end_date = null,
+      voucher_code = null,
+      amount = null,
+      event = null,
+      email = null,
+      phone_no = null,
+      name = null,
       status = 'active',
-      added_by
+      added_by = null
     } = data;
 
     const stmt = db.prepare(`

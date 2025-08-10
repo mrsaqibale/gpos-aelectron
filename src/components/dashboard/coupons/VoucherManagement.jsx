@@ -170,30 +170,6 @@ const VoucherManagement = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!newVoucher.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-    
-    if (!newVoucher.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-    
-    if (!newVoucher.phoneNo.trim()) {
-      newErrors.phoneNo = 'Phone number is required';
-    }
-    
-    if (!newVoucher.startDate) {
-      newErrors.startDate = 'Start date is required';
-    }
-    
-    if (!newVoucher.endDate) {
-      newErrors.endDate = 'End date is required';
-    }
-    
-    if (!newVoucher.amount || newVoucher.amount <= 0) {
-      newErrors.amount = 'Amount must be greater than 0';
-    }
-    
     // Email validation (optional field)
     if (newVoucher.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newVoucher.email)) {
       newErrors.email = 'Please enter a valid email address';
@@ -202,6 +178,11 @@ const VoucherManagement = () => {
     // Date validation
     if (newVoucher.startDate && newVoucher.endDate && newVoucher.startDate > newVoucher.endDate) {
       newErrors.endDate = 'End date must be after start date';
+    }
+    
+    // Amount validation (if provided, must be positive)
+    if (newVoucher.amount && parseFloat(newVoucher.amount) <= 0) {
+      newErrors.amount = 'Amount must be greater than 0';
     }
     
     setErrors(newErrors);
@@ -430,7 +411,7 @@ const VoucherManagement = () => {
               {/* Title */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Title <span className="text-red-500">*</span>
+                  Title
                 </label>
                 <input
                   type="text"
@@ -444,7 +425,6 @@ const VoucherManagement = () => {
                     errors.title ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter voucher title"
-                  required
                 />
                 {errors.title && (
                   <p className="text-red-500 text-xs mt-1">{errors.title}</p>
@@ -454,7 +434,7 @@ const VoucherManagement = () => {
               {/* Name */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Name <span className="text-red-500">*</span>
+                  Name
                 </label>
                 <input
                   type="text"
@@ -468,7 +448,6 @@ const VoucherManagement = () => {
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter name"
-                  required
                 />
                 {errors.name && (
                   <p className="text-red-500 text-xs mt-1">{errors.name}</p>
@@ -481,7 +460,7 @@ const VoucherManagement = () => {
               {/* Phone Number */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Phone Number <span className="text-red-500">*</span>
+                  Phone Number
                 </label>
                 <input
                   type="tel"
@@ -495,7 +474,6 @@ const VoucherManagement = () => {
                     errors.phoneNo ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter phone number"
-                  required
                 />
                 {errors.phoneNo && (
                   <p className="text-red-500 text-xs mt-1">{errors.phoneNo}</p>
@@ -531,7 +509,7 @@ const VoucherManagement = () => {
               {/* Start Date */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Start Date <span className="text-red-500">*</span>
+                  Start Date
                 </label>
                 <input
                   type="date"
@@ -544,7 +522,6 @@ const VoucherManagement = () => {
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.startDate ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  required
                 />
                 {errors.startDate && (
                   <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>
@@ -554,7 +531,7 @@ const VoucherManagement = () => {
               {/* End Date */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  End Date <span className="text-red-500">*</span>
+                  End Date
                 </label>
                 <input
                   type="date"
@@ -567,7 +544,6 @@ const VoucherManagement = () => {
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
                     errors.endDate ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  required
                 />
                 {errors.endDate && (
                   <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>
@@ -580,7 +556,7 @@ const VoucherManagement = () => {
               {/* Amount */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Amount <span className="text-red-500">*</span>
+                  Amount
                 </label>
                 <input
                   type="number"
@@ -596,7 +572,6 @@ const VoucherManagement = () => {
                     errors.amount ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter amount"
-                  required
                 />
                 {errors.amount && (
                   <p className="text-red-500 text-xs mt-1">{errors.amount}</p>
@@ -606,7 +581,7 @@ const VoucherManagement = () => {
               {/* Voucher Code (Auto Generated) */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Voucher Code <span className="text-red-500">*</span>
+                  Voucher Code
                 </label>
                 <input
                   type="text"
@@ -619,7 +594,6 @@ const VoucherManagement = () => {
                   className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-gray-50"
                   placeholder="Auto generated code"
                   readOnly={!editingVoucher}
-                  required
                 />
                 {!editingVoucher && (
                   <p className="text-xs text-gray-500 mt-1">Code will be auto-generated</p>
