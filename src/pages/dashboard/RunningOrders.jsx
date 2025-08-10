@@ -499,15 +499,10 @@ const RunningOrders = () => {
 
   // Handle add to cart
   const handleAddToCart = () => {
-    // Validate required variations
-    if (foodDetails?.variations) {
-      const requiredVariations = foodDetails.variations.filter(v => v.is_required);
-      for (const variation of requiredVariations) {
-        if (!selectedVariations[variation.id]) {
-          showSuccess(`Please select at least one option for ${variation.name}`, 'error');
-          return;
-        }
-      }
+    // Validate variation selections using the new validation function
+    if (!validateVariationSelections()) {
+      showSuccess('Please complete all required selections before adding to cart', 'error');
+      return;
     }
 
     // Play sound when adding to cart
@@ -2436,10 +2431,31 @@ const RunningOrders = () => {
                         <div key={variation.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-3">
                             <h5 className="font-medium text-gray-800">{variation.name}</h5>
-                            {variation.is_required && (
-                              <span className="text-xs text-red-600 font-medium">Required</span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {variation.is_required && (
+                                <span className="text-xs text-red-600 font-medium">Required</span>
+                              )}
+                              <span className="text-xs text-gray-500">
+                                {variation.type === 'multiple' ? 'Multiple' : 'Single'}
+                              </span>
+                            </div>
                           </div>
+                          
+                          {/* Show min/max constraints */}
+                          {(variation.min || variation.max) && (
+                            <div className="mb-3 text-xs text-gray-600">
+                              {variation.min && variation.max && (
+                                <span>Select {variation.min} to {variation.max} options</span>
+                              )}
+                              {variation.min && !variation.max && (
+                                <span>Select at least {variation.min} option{variation.min > 1 ? 's' : ''}</span>
+                              )}
+                              {!variation.min && variation.max && (
+                                <span>Select up to {variation.max} option{variation.max > 1 ? 's' : ''}</span>
+                              )}
+                            </div>
+                          )}
+                          
                           <div className="space-y-2">
                             {variation.options?.map((option) => {
                               const isSelected = variation.type === 'multiple' 
@@ -2481,11 +2497,37 @@ const RunningOrders = () => {
                               );
                             })}
                           </div>
-                          {variation.is_required && !selectedVariations[variation.id] && (
-                            <div className="mt-2 text-xs text-red-600">
-                              Please select at least one option for {variation.name}
-                            </div>
-                          )}
+                          
+                          {/* Show validation messages */}
+                          {(() => {
+                            const selectedOptions = selectedVariations[variation.id];
+                            const selectionCount = selectedOptions ? (Array.isArray(selectedOptions) ? selectedOptions.length : 1) : 0;
+                            const messages = [];
+                            
+                            if (variation.is_required && !selectedOptions) {
+                              messages.push(`Required: ${variation.name}`);
+                            }
+                            
+                            if (selectedOptions) {
+                              if (variation.min && selectionCount < variation.min) {
+                                messages.push(`Minimum selection: ${variation.min}`);
+                              }
+                              
+                              if (variation.max && selectionCount > variation.max) {
+                                messages.push(`Maximum selection: ${variation.max}`);
+                              }
+                            }
+                            
+                            return messages.length > 0 ? (
+                              <div className="mt-2 space-y-1">
+                                {messages.map((message, index) => (
+                                  <div key={index} className="text-xs text-red-600">
+                                    {message}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       ))}
                     </div>
@@ -2560,6 +2602,23 @@ const RunningOrders = () => {
                   </div>
                 </div>
 
+                {/* Validation Messages */}
+                {(() => {
+                  const validationMessages = getVariationValidationMessages();
+                  return validationMessages.length > 0 ? (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="text-sm font-medium text-red-800 mb-2">Please complete the following:</div>
+                      <div className="space-y-1">
+                        {validationMessages.map((message, index) => (
+                          <div key={index} className="text-xs text-red-600">
+                            • {message}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
                 {/* Action Buttons */}
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex gap-3">
@@ -2584,7 +2643,12 @@ const RunningOrders = () => {
                     </div>
                     <button
                       onClick={handleAddToCart}
-                      className="flex-1 px-4 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                      disabled={!validateVariationSelections()}
+                      className={`flex-1 px-4 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                        validateVariationSelections()
+                          ? 'bg-primary text-white hover:bg-primary/90'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
                     >
                       <ShoppingCart size={18} />
                       {editingCartItem ? 'Update' : 'Add'}
@@ -2945,3 +3009,58 @@ const RunningOrders = () => {
                 className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
               >
                 Cancel
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    const audio = new Audio('/src/assets/ping.mp3');
+                    audio.play().catch(error => {
+                      console.log('Audio play failed:', error);
+                    });
+                  } catch (error) {
+                    console.log('Audio creation failed:', error);
+                  }
+                  clearCart();
+                  setShowDeleteCartModal(false);
+                }}
+                className="px-6 py-2.5 text-white bg-red-600 rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
+              >
+                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete All Items
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Custom Alert Component */}
+      <CustomAlert
+        isVisible={alertState.isVisible}
+        message={alertState.message}
+        type={alertState.type}
+        position={alertState.position}
+        duration={alertState.duration}
+        onClose={hideAlert}
+      />
+      
+      {/* Virtual Keyboard Component */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={(onBeforeHide) => hideKeyboard(() => {
+          // Save the current input value before hiding the keyboard
+          if (virtualKeyboardActiveInput && virtualKeyboardInput !== undefined) {
+            handleKeyboardChange(virtualKeyboardInput, virtualKeyboardActiveInput);
+          }
+        })}
+        activeInput={virtualKeyboardActiveInput}
+        onInputChange={handleKeyboardChange}
+        inputValue={virtualKeyboardInput}
+        onKeyPress={handleKeyboardKeyPress}
+      />
+    </>
+  );
+};
+
+export default RunningOrders;
