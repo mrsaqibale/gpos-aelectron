@@ -150,6 +150,7 @@ app.whenReady().then(async () => {
   registerCustomerIpcHandlers();
   registerOrdersIpcHandlers();
   registerCouponIpcHandlers();
+  registerVoucherIpcHandlers();
   
   // Initialize database tables
   initDatabase();
