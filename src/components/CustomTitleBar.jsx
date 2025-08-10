@@ -20,16 +20,16 @@ const CustomTitleBar = () => {
         if (savedTheme) {
           const themes = {
             default: {
-              primary: '#032d81',
-              primaryLight: '#20407f',
+              primary: '#003C58',
+              primaryLight: '#005a9c',
             },
             blue: {
-              primary: '#00428C',
+              primary: '#032D81',
               primaryLight: '#4f8cff',
             },
             green: {
-              primary: '#25A18E',
-              primaryLight: '#34A0A4',
+              primary: '#136F63',
+              primaryLight: '#1a8a7a',
             },
           };
           
