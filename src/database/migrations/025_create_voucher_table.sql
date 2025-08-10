@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS voucher (
     email TEXT,
     phone_no TEXT,
     name TEXT,
-    status TEXT DEFAULT 'active',
+    status INTEGER DEFAULT 1,
     added_by INTEGER,
     FOREIGN KEY (added_by) REFERENCES employee(id)
 ); 

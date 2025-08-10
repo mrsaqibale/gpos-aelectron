@@ -27,7 +27,7 @@ export function createVoucher(data) {
       email = null,
       phone_no = null,
       name = null,
-      status = 'active',
+      status = 1,
       added_by = null
     } = data;
 

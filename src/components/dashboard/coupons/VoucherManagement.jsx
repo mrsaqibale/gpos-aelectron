@@ -50,7 +50,7 @@ const VoucherManagement = () => {
           amount: voucher.amount || 0,
           voucherCode: voucher.voucher_code || '',
           event: voucher.event || '',
-          status: voucher.status === 'active' ? 'active' : 'inactive'
+          status: voucher.status === 1 ? 'active' : 'inactive'
         }));
         setVoucher(transformedVouchers);
       } else {
@@ -334,8 +334,8 @@ const VoucherManagement = () => {
 
   const toggleStatus = async (voucherId) => {
     try {
-      const voucher = voucher.find(c => c.id === voucherId);
-      const newStatus = voucher.status === 'active' ? 0 : 1; // Convert to database format
+      const voucherToToggle = voucher.find(v => v.id === voucherId);
+      const newStatus = voucherToToggle.status === 'active' ? 0 : 1; // Convert to database format
       
       const result = await window.myAPI.updateVoucher(voucherId, { status: newStatus });
       if (result.success) {
