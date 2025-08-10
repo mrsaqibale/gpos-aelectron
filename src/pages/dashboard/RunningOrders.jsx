@@ -125,9 +125,9 @@ const RunningOrders = () => {
   const [cartItems, setCartItems] = useState([]);
   const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
-  
 
-  
+
+
   // Use the custom hook for keyboard functionality
   const {
     showKeyboard,
@@ -148,7 +148,7 @@ const RunningOrders = () => {
   // Separate state for numeric keyboard
   const [numericActiveInput, setNumericActiveInput] = useState('');
   const [numericKeyboardInput, setNumericKeyboardInput] = useState('');
-  
+
   // Custom CSS animations for modal
   useEffect(() => {
     const style = document.createElement('style');
@@ -168,7 +168,7 @@ const RunningOrders = () => {
       }
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       document.head.removeChild(style);
     };
@@ -196,7 +196,7 @@ const RunningOrders = () => {
         // Filter categories to only show active ones (status = 1)
         const activeCategories = result.data.filter(category => category.status === 1);
         console.log('Active categories:', activeCategories);
-        
+
         setCategories(activeCategories);
         console.log('Active categories loaded successfully:', activeCategories);
 
@@ -291,7 +291,7 @@ const RunningOrders = () => {
     if (debouncedSearchQuery.trim() === '') {
       setFilteredFoods(foods);
     } else {
-      const filtered = foods.filter(food => 
+      const filtered = foods.filter(food =>
         food.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
         (food.description && food.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
       );
@@ -396,12 +396,12 @@ const RunningOrders = () => {
       // Check if this variation is single or multiple selection
       const variation = foodDetails?.variations?.find(v => v.id === variationId);
       const isMultiple = variation?.type === 'multiple';
-      
+
       if (isMultiple) {
         // Multiple selection - toggle the option
         const currentSelections = prev[variationId] || [];
         const isCurrentlySelected = currentSelections.includes(optionId);
-        
+
         let newSelections;
         if (isCurrentlySelected) {
           // Removing an option
@@ -514,7 +514,7 @@ const RunningOrders = () => {
     } catch (error) {
       console.log('Audio creation failed:', error);
     }
-    
+
     console.log('Adding to cart:', {
       food: selectedFood,
       variations: selectedVariations,
@@ -531,12 +531,12 @@ const RunningOrders = () => {
 
     // Check if the same food item with the same variations and adons already exists in cart
     const existingCartItem = isFoodWithVariationsInCart(selectedFood, selectedVariations, selectedAdons);
-    
+
     if (existingCartItem) {
       // If item with same variations and adons exists, increase quantity
       updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + foodQuantity);
       console.log('Increased quantity for existing item with variations and adons:', existingCartItem.food.name);
-      
+
       // Show success alert
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
@@ -560,7 +560,7 @@ const RunningOrders = () => {
       });
       setCartItemId(prev => prev + 1);
       console.log('Added new item to cart:', selectedFood.name);
-      
+
       // Show success alert
       showSuccess(`${selectedFood.name} added to cart!`);
     }
@@ -575,16 +575,16 @@ const RunningOrders = () => {
 
   // Check if food item is already in cart (without variations)
   const isFoodInCart = (foodItem) => {
-    return cartItems.find(item => 
-      item.food.id === foodItem.id && 
+    return cartItems.find(item =>
+      item.food.id === foodItem.id &&
       JSON.stringify(item.variations) === JSON.stringify({})
     );
   };
 
   // Check if food item with specific variations is already in cart
   const isFoodWithVariationsInCart = (foodItem, variations, adons = []) => {
-    return cartItems.find(item => 
-      item.food.id === foodItem.id && 
+    return cartItems.find(item =>
+      item.food.id === foodItem.id &&
       JSON.stringify(item.variations) === JSON.stringify(variations) &&
       JSON.stringify(item.adons || []) === JSON.stringify(adons)
     );
@@ -599,13 +599,13 @@ const RunningOrders = () => {
   const cleanupDuplicateItems = () => {
     setCartItems(prevItems => {
       const itemMap = new Map();
-      
+
       console.log('Before cleanup - Cart items:', prevItems);
-      
+
       prevItems.forEach(item => {
         const key = `${item.food.id}-${JSON.stringify(item.variations)}`;
         console.log('Processing item:', item.food.name, 'with key:', key);
-        
+
         if (itemMap.has(key)) {
           // Merge quantities
           const existing = itemMap.get(key);
@@ -618,11 +618,11 @@ const RunningOrders = () => {
           console.log('Added new item to map:', item.food.name);
         }
       });
-      
+
       const cleanedItems = Array.from(itemMap.values());
       console.log('After cleanup - Cart items:', cleanedItems);
       console.log('Cleaned up duplicate items, new count:', cleanedItems.length);
-      
+
       return cleanedItems;
     });
   };
@@ -630,27 +630,27 @@ const RunningOrders = () => {
   // Handle food item click - either increase quantity or show modal
   const handleFoodItemClick = async (foodItem) => {
     console.log('Food item clicked:', foodItem);
-    
+
     // Check if any food item with the same ID exists in cart
     const existingCartItem = isAnyFoodInCart(foodItem);
-    
+
     if (existingCartItem) {
       // If food is already in cart, increase quantity by 1
       updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + 1);
       console.log('Increased quantity for existing item:', existingCartItem.food.name);
-      
+
       // Show success alert
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
       // If food is not in cart, fetch detailed food data and show the modal for customization
       console.log('Fetching detailed food data for:', foodItem.name);
       setFoodDetailsLoading(true);
-      
+
       try {
         // Fetch detailed food data with variations and adons
         const result = await window.myAPI.getFoodById(foodItem.id);
         console.log('Food details API result:', result);
-        
+
         if (result && result.success) {
           console.log('Food details loaded successfully:', result.data);
           setFoodDetails(result.data);
@@ -1014,12 +1014,12 @@ const RunningOrders = () => {
         return;
       }
 
-              // Apply the coupon
-        setAppliedCoupon(coupon);
-        setCouponCode('');
-        alert(`Coupon "${coupon.code}" applied successfully!`);
+      // Apply the coupon
+      setAppliedCoupon(coupon);
+      setCouponCode('');
+      alert(`Coupon "${coupon.code}" applied successfully!`);
 
-        // Don't close modal automatically - let user close it manually
+      // Don't close modal automatically - let user close it manually
 
     } catch (error) {
       console.error('Error applying coupon directly:', error);
@@ -1091,9 +1091,9 @@ const RunningOrders = () => {
   // Custom blur handler that saves the current keyboard input
   const handleCustomInputBlur = (e, inputName) => {
     // Save the current keyboard input to the appropriate state
-          if (virtualKeyboardActiveInput === inputName && virtualKeyboardInput !== undefined) {
-        handleKeyboardChange(virtualKeyboardInput, inputName);
-      }
+    if (virtualKeyboardActiveInput === inputName && virtualKeyboardInput !== undefined) {
+      handleKeyboardChange(virtualKeyboardInput, inputName);
+    }
     // Call the hook's blur handler
     handleInputBlur(e);
   };
@@ -1227,10 +1227,10 @@ const RunningOrders = () => {
     // Get the item name before removing it for the alert message
     const itemToRemove = cartItems.find(item => item.id === itemId);
     const itemName = itemToRemove ? itemToRemove.food.name : 'Item';
-    
+
     // Remove the item from cart
     setCartItems(prev => prev.filter(item => item.id !== itemId));
-    
+
     // Show success alert
     showSuccess(`${itemName} removed from cart!`);
   };
@@ -1284,7 +1284,7 @@ const RunningOrders = () => {
 
   const calculateCartDiscount = () => {
     if (!appliedCoupon) return 0;
-    
+
     const subtotal = calculateCartSubtotal();
     if (appliedCoupon.discountType === 'percentage') {
       const discount = subtotal * (appliedCoupon.discount / 100);
@@ -1305,7 +1305,7 @@ const RunningOrders = () => {
   const clearCart = () => {
     // Check if there are items in the cart before clearing
     const itemCount = cartItems.length;
-    
+
     // Clear all cart data
     setCartItems([]);
     setAppliedCoupon(null);
@@ -1320,7 +1320,7 @@ const RunningOrders = () => {
     setFoodQuantity(1);
     setSelectedVariations({});
     setSelectedAdons([]);
-    
+
     // Show success alert if there were items in the cart
     if (itemCount > 0) {
       showSuccess(`All ${itemCount} item${itemCount === 1 ? '' : 's'} removed from cart!`);
@@ -1333,7 +1333,7 @@ const RunningOrders = () => {
       alert('Please add items to cart before placing order');
       return;
     }
-    
+
     // TODO: Implement order placement logic
     console.log('Placing order:', {
       items: cartItems,
@@ -1341,7 +1341,7 @@ const RunningOrders = () => {
       total: calculateCartTotal(),
       coupon: appliedCoupon
     });
-    
+
     alert('Order placed successfully!');
     clearCart();
   };
@@ -1352,7 +1352,7 @@ const RunningOrders = () => {
       alert('Please add items to cart before proceeding to payment');
       return;
     }
-    
+
     // TODO: Implement payment logic
     console.log('Processing payment:', {
       items: cartItems,
@@ -1360,7 +1360,7 @@ const RunningOrders = () => {
       total: calculateCartTotal(),
       coupon: appliedCoupon
     });
-    
+
     alert('Payment processed successfully!');
     clearCart();
   };
@@ -1372,7 +1372,7 @@ const RunningOrders = () => {
       console.log('Invalid image path:', imagePath);
       return null;
     }
-    
+
     try {
       const result = await window.myAPI.getFoodImage(imagePath);
       console.log('Image loading result:', result);
@@ -1528,61 +1528,61 @@ const RunningOrders = () => {
 
     for (const variation of foodDetails.variations) {
       const selectedOptions = selectedVariations[variation.id];
-      
+
       if (variation.is_required && !selectedOptions) {
         return false; // Required variation not selected
       }
 
       if (selectedOptions) {
         const selectionCount = Array.isArray(selectedOptions) ? selectedOptions.length : 1;
-        
+
         // Check minimum selection
         if (variation.min && selectionCount < variation.min) {
           return false;
         }
-        
+
         // Check maximum selection
         if (variation.max && selectionCount > variation.max) {
           return false;
         }
       }
     }
-    
+
     return true;
   };
 
   // Get validation messages for variations
   const getVariationValidationMessages = () => {
     const messages = [];
-    
+
     if (!foodDetails?.variations) return messages;
 
     for (const variation of foodDetails.variations) {
       const selectedOptions = selectedVariations[variation.id];
       const selectionCount = selectedOptions ? (Array.isArray(selectedOptions) ? selectedOptions.length : 1) : 0;
-      
+
       if (variation.is_required && !selectedOptions) {
         messages.push(`Required: ${variation.name}`);
       }
-      
+
       if (selectedOptions) {
         if (variation.min && selectionCount < variation.min) {
           messages.push(`Minimum selection for ${variation.name}: ${variation.min}`);
         }
-        
+
         if (variation.max && selectionCount > variation.max) {
           messages.push(`Maximum selection for ${variation.name}: ${variation.max}`);
         }
       }
     }
-    
+
     return messages;
   };
 
   return (
     <>
 
-      
+
       <div className="flex justify-between gap-2 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
         <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
@@ -1695,7 +1695,7 @@ const RunningOrders = () => {
                 </button>
               )}
             </div>
-            
+
             {/* Search results info */}
             {debouncedSearchQuery && (
               <div className="mb-2 text-xs text-gray-600">
@@ -1736,105 +1736,104 @@ const RunningOrders = () => {
         <div className="w-[30%] h-[100%] border border-gray-300 rounded-lg ">
           <div className="flex flex-wrap gap-1.5 px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
             {/* Tabs row */}
-              <button className="px-3 py-1 bg-[#d3D3D3] text-black text-[11px] rounded flex items-center gap-1 
+            <button className="px-3 py-1 bg-[#d3D3D3] text-black text-[11px] rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted ">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                </svg>
-                In Store
-              </button>
-              <button
-                onClick={() => setShowTableModal(true)}
-                className="px-3 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              </svg>
+              In Store
+            </button>
+            <button
+              onClick={() => setShowTableModal(true)}
+              className="px-3 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted hover:bg-gray-200 transition-colors">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                </svg>
-                Table
-              </button>
-              <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              </svg>
+              Table
+            </button>
+            <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted ">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                </svg>
-                Collection
-              </button>
-              <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+              </svg>
+              Collection
+            </button>
+            <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted ">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
-                </svg>
-                Delivery
-              </button>
-              <button className="px-2 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
+              </svg>
+              Delivery
+            </button>
+            <button className="px-2 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted ">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
-                </svg>
-                Status
-              </button>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
+              </svg>
+              Status
+            </button>
             {/* Status section */}
 
-              <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
+            <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
                       border border-gray-300 btn-lifted ">
-                <Clock size={14} />
-                Due to
-              </button>
-              <button
-                onClick={() => setShowCustomerSearchModal(true)}
-                className="px-2.5 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
+              <Clock size={14} />
+              Due to
+            </button>
+            <button
+              onClick={() => setShowCustomerSearchModal(true)}
+              className="px-2.5 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
                      btn-lifted hover:bg-primary/90 transition-colors">
-                <Users2 size={12} />
-                Customer
-              </button>
+              <Users2 size={12} />
+              Customer
+            </button>
 
 
-              <button
-                onClick={() => setSelectedCustomer(null)}
-                className={`px-1.5 py-1 text-[11px] rounded flex items-center gap-1 
+            <button
+              onClick={() => setSelectedCustomer(null)}
+              className={`px-1.5 py-1 text-[11px] rounded flex items-center gap-1 
                       border border-gray-300 btn-lifted transition-colors ${!selectedCustomer ? 'bg-primary text-white' : 'bg-[#d3D3D3] text-black'
-                  }`}>
-                {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
-              </button>
+                }`}>
+              {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
+            </button>
 
-              <button
-                onClick={() => setShowCustomerModal(true)}
-                className=" px-2 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
+            <button
+              onClick={() => setShowCustomerModal(true)}
+              className=" px-2 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
                       border border-[#1e4a9a] btn-lifted hover:bg-primary/90 transition-colors">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12h14"></path>
-                </svg>
-                Add New Customer
-              </button>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+              Add New Customer
+            </button>
 
-              <button
-                onClick={handleOpenEditModal}
-                disabled={!selectedCustomer}
-                className={`btn-lifted transition-colors px-2 ${selectedCustomer
-                  ? 'text-green-600 hover:text-green-800 cursor-pointer'
-                  : 'text-gray-400 cursor-not-allowed'
-                  }`}>
-                <Edit size={17} />
-              </button>
-              <button
-                onClick={() => {
-                  if (cartItems.length === 0) {
-                    alert('Cart is already empty');
-                    return;
-                  }
-                  
-                  setShowDeleteCartModal(true);
-                }}
-                disabled={cartItems.length === 0}
-                className={`px-2 py-1.5 text-white text-xs rounded flex items-center gap-1 
-                      border border-gray-300 btn-lifted transition-colors ${
-                        cartItems.length > 0 
-                          ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer' 
-                          : 'bg-gray-400 cursor-not-allowed'
-                      }`}>
-                <Trash2 size={17} />
-                Delete All
-              </button>
+            <button
+              onClick={handleOpenEditModal}
+              disabled={!selectedCustomer}
+              className={`btn-lifted transition-colors px-2 ${selectedCustomer
+                ? 'text-green-600 hover:text-green-800 cursor-pointer'
+                : 'text-gray-400 cursor-not-allowed'
+                }`}>
+              <Edit size={17} />
+            </button>
+            <button
+              onClick={() => {
+                if (cartItems.length === 0) {
+                  alert('Cart is already empty');
+                  return;
+                }
+
+                setShowDeleteCartModal(true);
+              }}
+              disabled={cartItems.length === 0}
+              className={`px-2 py-1.5 text-white text-xs rounded flex items-center gap-1 
+                      border border-gray-300 btn-lifted transition-colors ${cartItems.length > 0
+                  ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
+                  : 'bg-gray-400 cursor-not-allowed'
+                }`}>
+              <Trash2 size={17} />
+              Delete All
+            </button>
 
           </div>
 
@@ -1856,29 +1855,29 @@ const RunningOrders = () => {
                 <tbody className="bg-white">
                   {cartItems.length > 0 ? (
                     cartItems.map((item) => (
-                        <tr key={item.id} className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
-                         <td className="flex items-center justify-center w-8">
-                           <Edit2 
-                             size={13} 
-                             className="text-primary cursor-pointer hover:text-primary-dark transition-colors" 
-                             onClick={() => handleEditCartItem(item)}
-                             title="Edit item"
-                           />
-                         </td>
-                         <td className="text-gray-800 text-sm truncate">
-                           <span>{item.food.name}</span>
-                         </td>
+                      <tr key={item.id} className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
+                        <td className="flex items-center justify-center w-8">
+                          <Edit2
+                            size={13}
+                            className="text-primary cursor-pointer hover:text-primary-dark transition-colors"
+                            onClick={() => handleEditCartItem(item)}
+                            title="Edit item"
+                          />
+                        </td>
+                        <td className="text-gray-800 text-sm truncate">
+                          <span>{item.food.name}</span>
+                        </td>
                         <td className="text-gray-800 text-center">€{(item.totalPrice / item.quantity).toFixed(2)}</td>
                         <td className="flex items-center justify-center">
                           <div className="flex items-center rounded">
-                            <button 
+                            <button
                               className="text-primary flex items-center cursor-pointer justify-center transition-colors"
                               onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
                             >
                               <Minus size={15} />
                             </button>
                             <span className="w-8 text-center text-gray-800 py-1 text-sm">{item.quantity}</span>
-                            <button 
+                            <button
                               className="flex items-center cursor-pointer justify-center text-primary transition-colors"
                               onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
                             >
@@ -1888,9 +1887,9 @@ const RunningOrders = () => {
                         </td>
                         <td className="flex items-center justify-center gap-1">
                           <span className="text-gray-800">€{item.totalPrice.toFixed(2)}</span>
-                          <Trash2 
-                            size={14} 
-                            className="text-[#c81118] mt-0.5 cursor-pointer" 
+                          <Trash2
+                            size={14}
+                            className="text-[#c81118] mt-0.5 cursor-pointer"
                             onClick={() => removeCartItem(item.id)}
                           />
                         </td>
@@ -1947,13 +1946,13 @@ const RunningOrders = () => {
                 >
                   DISCOUNT
                 </button>
-                <button 
+                <button
                   onClick={clearCart}
                   className="bg-[#4d35ee] text-white  w-[100%] btn-lifted py-1.5 px-1   text-[11px] font-bold rounded   hover:bg-blue-700"
                 >
                   CLEAR CART
                 </button>
-                <button 
+                <button
                   onClick={cleanupDuplicateItems}
                   className="bg-[#ff6b35] text-white  w-[100%] btn-lifted py-1.5 px-1   text-[11px] font-bold rounded   hover:bg-orange-600"
                 >
@@ -1962,13 +1961,13 @@ const RunningOrders = () => {
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
                 </button>
-                <button 
+                <button
                   onClick={handlePlaceOrder}
                   className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded   hover:bg-orange-600"
                 >
                   PLACE ORDER
                 </button>
-                <button 
+                <button
                   onClick={handlePayment}
                   className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded  hover:bg-pink-600"
                 >
@@ -2396,19 +2395,22 @@ const RunningOrders = () => {
                       </p>
                     </div>
                   )}
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center justify-between gap-4">
                     {/* Food Image and Info */}
-                    <div className="flex-1">
-                      {/* Food Image */}
-                      <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 mb-3">
-                        <FoodImageDisplay food={selectedFood} />
-                      </div>
-                      {/* Food Name and Description */}
+                    {/* Food Image */}
+                    <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 mb-3">
+                      <FoodImageDisplay food={selectedFood} />
+                    </div>
+                    {/* Food Name and Description */}
+                    <div className="flex flex-col gap-2">
                       <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedFood.name}</h3>
                       {selectedFood.description && (
                         <p className="text-sm text-gray-600">{selectedFood.description}</p>
                       )}
                     </div>
+                    </div>
+
                     {/* Food Price */}
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">€{selectedFood.price?.toFixed(2) || '0.00'}</p>
@@ -2447,7 +2449,7 @@ const RunningOrders = () => {
                               </span>
                             </div>
                           </div>
-                          
+
                           {/* Show min/max constraints */}
                           {(variation.min || variation.max) && (
                             <div className="mb-3 text-xs text-gray-600">
@@ -2462,69 +2464,65 @@ const RunningOrders = () => {
                               )}
                             </div>
                           )}
-                          
+
                           <div className="space-y-2">
                             {variation.options?.map((option) => {
-                              const isSelected = variation.type === 'multiple' 
+                              const isSelected = variation.type === 'multiple'
                                 ? selectedVariations[variation.id]?.includes(option.id)
                                 : selectedVariations[variation.id] === option.id;
-                              
+
                               return (
                                 <button
                                   key={option.id}
                                   onClick={() => handleVariationSelect(variation.id, option.id)}
-                                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                                    isSelected
+                                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${isSelected
                                       ? 'bg-primary/10 border-primary'
                                       : 'bg-white border-gray-200 hover:bg-gray-50'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                      isSelected
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
                                         ? 'border-primary bg-primary'
                                         : 'border-gray-300'
-                                    }`}>
+                                      }`}>
                                       {isSelected && (
                                         <div className="w-2 h-2 bg-white rounded-full"></div>
                                       )}
                                     </div>
-                                    <span className={`font-medium ${
-                                      isSelected ? 'text-primary' : 'text-gray-700'
-                                    }`}>
+                                    <span className={`font-medium ${isSelected ? 'text-primary' : 'text-gray-700'
+                                      }`}>
                                       {option.option_name}
                                     </span>
                                   </div>
-                                  <span className={`font-semibold ${
-                                    isSelected ? 'text-primary' : 'text-gray-600'
-                                  }`}>
+                                  <span className={`font-semibold ${isSelected ? 'text-primary' : 'text-gray-600'
+                                    }`}>
                                     {option.option_price > 0 ? `+€${option.option_price.toFixed(2)}` : 'Free'}
                                   </span>
                                 </button>
                               );
                             })}
                           </div>
-                          
+
                           {/* Show validation messages */}
                           {(() => {
                             const selectedOptions = selectedVariations[variation.id];
                             const selectionCount = selectedOptions ? (Array.isArray(selectedOptions) ? selectedOptions.length : 1) : 0;
                             const messages = [];
-                            
+
                             if (variation.is_required && !selectedOptions) {
                               messages.push(`Required: ${variation.name}`);
                             }
-                            
+
                             if (selectedOptions) {
                               if (variation.min && selectionCount < variation.min) {
                                 messages.push(`Minimum selection: ${variation.min}`);
                               }
-                              
+
                               if (variation.max && selectionCount > variation.max) {
                                 messages.push(`Maximum selection: ${variation.max}`);
                               }
                             }
-                            
+
                             return messages.length > 0 ? (
                               <div className="mt-2 space-y-1">
                                 {messages.map((message, index) => (
@@ -2566,31 +2564,27 @@ const RunningOrders = () => {
                             <button
                               key={adon.id}
                               onClick={() => handleAdonSelect(adon.id)}
-                              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                                isSelected
+                              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${isSelected
                                   ? 'bg-primary/10 border-primary'
                                   : 'bg-white border-gray-200 hover:bg-gray-50'
-                              }`}
+                                }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                  isSelected
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
                                     ? 'border-primary bg-primary'
                                     : 'border-gray-300'
-                                }`}>
+                                  }`}>
                                   {isSelected && (
                                     <div className="w-2 h-2 bg-white rounded-full"></div>
                                   )}
                                 </div>
-                                <span className={`font-medium ${
-                                  isSelected ? 'text-primary' : 'text-gray-700'
-                                }`}>
+                                <span className={`font-medium ${isSelected ? 'text-primary' : 'text-gray-700'
+                                  }`}>
                                   {adon.name}
                                 </span>
                               </div>
-                              <span className={`font-semibold ${
-                                isSelected ? 'text-primary' : 'text-gray-600'
-                              }`}>
+                              <span className={`font-semibold ${isSelected ? 'text-primary' : 'text-gray-600'
+                                }`}>
                                 +€{adon.price.toFixed(2)}
                               </span>
                             </button>
@@ -2635,11 +2629,10 @@ const RunningOrders = () => {
                   <button
                     onClick={handleAddToCart}
                     disabled={!validateVariationSelections()}
-                    className={`flex-1 px-4 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                      validateVariationSelections()
+                    className={`flex-1 px-4 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${validateVariationSelections()
                         ? 'bg-primary text-white hover:bg-primary/90'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <ShoppingCart size={18} />
                     {editingCartItem ? 'Update' : 'Add'}
@@ -2655,7 +2648,7 @@ const RunningOrders = () => {
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl min-w-[800px] max-h-[90vh]">
               {/* Header */}
-                              <div className="bg-white text-black p-3 flex justify-between items-center rounded-t-xl border-b border-gray-200">
+              <div className="bg-white text-black p-3 flex justify-between items-center rounded-t-xl border-b border-gray-200">
                 <h2 className="text-xl font-bold">Coupons & Offers</h2>
                 <button
                   onClick={handleCloseCouponModal}
@@ -2668,266 +2661,263 @@ const RunningOrders = () => {
               {/* Content */}
               <div className="p-4 flex gap-4 overflow-y-auto max-h-[80vh]">
                 <div className="">
-                {/* Discount Amount and Type Section */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Gift className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-medium text-gray-800">Manual Discount</span>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Discount Type
-                          </label>
-                          <select
-                            name="discountType"
-                            value={discountType}
-                            onChange={(e) => setDiscountType(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                          >
-                            <option value="percentage">Percentage (%)</option>
-                            <option value="fixed">Fixed Amount (€)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Disc. Amount
-                          </label>
-                          <input
-                            type="number"
-                            name="discountAmount"
-                            value={discountAmount}
-                            onChange={(e) => setDiscountAmount(e.target.value)}
-                            onFocus={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
-                            onClick={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
-                            onBlur={(e) => {
-                              // Save the current keyboard input to the discount amount state
-                                                        if (numericActiveInput === 'discountAmount' && numericKeyboardInput !== undefined) {
-                            setDiscountAmount(numericKeyboardInput);
-                          }
-                                                              // Clear the active input
+                  {/* Discount Amount and Type Section */}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Gift className="w-5 h-5 text-green-600" />
+                      <span className="text-sm font-medium text-gray-800">Manual Discount</span>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Discount Type
+                            </label>
+                            <select
+                              name="discountType"
+                              value={discountType}
+                              onChange={(e) => setDiscountType(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                            >
+                              <option value="percentage">Percentage (%)</option>
+                              <option value="fixed">Fixed Amount (€)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Disc. Amount
+                            </label>
+                            <input
+                              type="number"
+                              name="discountAmount"
+                              value={discountAmount}
+                              onChange={(e) => setDiscountAmount(e.target.value)}
+                              onFocus={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
+                              onClick={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
+                              onBlur={(e) => {
+                                // Save the current keyboard input to the discount amount state
+                                if (numericActiveInput === 'discountAmount' && numericKeyboardInput !== undefined) {
+                                  setDiscountAmount(numericKeyboardInput);
+                                }
+                                // Clear the active input
                                 setNumericActiveInput('');
-                            }}
-                            min="0"
-                            step="0.01"
-                            placeholder={discountType === 'percentage' ? '20' : '10'}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                          />
-                        </div>
-                      </div>
-                      {discountAmount && (
-                        <div className="mt-2 text-sm text-green-600">
-                          ✓ Manual discount of {discountAmount}{discountType === 'percentage' ? '%' : '€'} is ready to apply.
-                        </div>
-                      )}
-                      <div className="flex justify-end mt-3">
-                        <button
-                          onClick={handleApplyManualDiscount}
-                          disabled={!discountAmount || parseFloat(discountAmount) <= 0}
-                          className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                            discountAmount && parseFloat(discountAmount) > 0
-                              ? 'bg-green-600 text-white hover:bg-green-700'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          }`}
-                        >
-                          Apply Manual Discount
-                        </button>
-                      </div>
-                      {/* Enter Coupon Code Section */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Gift className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-medium text-gray-800">Enter Coupon Code</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      name="couponCode"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      onFocus={(e) => handleAnyInputFocus(e, 'couponCode')}
-                      onClick={(e) => handleAnyInputClick(e, 'couponCode')}
-                      onBlur={(e) => handleCustomInputBlur(e, 'couponCode')}
-                      placeholder="Enter promo code or click a coupon below"
-                      className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
-                        couponCode.trim() 
-                          ? 'border-green-400 focus:ring-green-500 focus:ring-green-500 bg-green-50' 
-                          : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
-                      }`}
-                      onKeyUp={(e) => {
-                        if (e.key === 'Enter') {
-                          handleApplyCoupon();
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={handleApplyCoupon}
-                      disabled={!couponCode.trim()}
-                      className={`px-4 py-2 rounded-lg transition-colors font-medium ${
-                        couponCode.trim()
-                          ? 'bg-green-600 text-white hover:bg-green-700'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      Apply
-                    </button>
-                  </div>
-                  {couponCode.trim() && (
-                    <div className="mt-2 text-sm text-green-600">
-                      ✓ Coupon code "{couponCode}" is ready to apply. Click "Apply".
-                    </div>
-                  )}
-                </div>
-                      {/* Applied Coupon Display */}
-{appliedCoupon && (
-                  <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-semibold text-green-800">Applied Coupon</h4>
-                        <p className="text-sm text-green-600">{appliedCoupon.title}</p>
-                        <p className="text-xs text-green-600">Code: {appliedCoupon.code}</p>
-                        {appliedCoupon.discountType === 'percentage' ? (
-                          <p className="text-green-700 font-medium">{appliedCoupon.discount}% OFF</p>
-                        ) : (
-                          <p className="text-green-700 font-medium">€{appliedCoupon.discount} OFF</p>
-                        )}
-                      </div>
-                      <button
-                        onClick={removeAppliedCoupon}
-                        className="text-red-600 hover:text-red-800 p-1"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                )}  
-                {/* Separator */}
-                <div className="border-t border-gray-300 my-4"></div>
-                {/* Available Coupons Section */}
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">Available Coupons</h3>
-                  {couponsLoading ? (
-                    <div className="text-center py-8">
-                      <div className="text-gray-500 text-sm">Loading coupons...</div>
-                    </div>
-                  ) : availableCoupons.length > 0 ? (
-                    <div className="space-y-3">
-                      {availableCoupons.map((coupon) => (
-                        <div
-                          key={coupon.id}
-                          className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer group"
-                          onClick={() => {
-                            setCouponCode(coupon.code);
-                            // Don't apply automatically - let user review and apply manually
-                          }}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-800">{coupon.title}</h4>
-                              <p className="text-sm text-gray-600 mt-1">Customer Type: {coupon.customerType}</p>
-                              {coupon.discountType === 'percentage' ? (
-                                <p className="text-green-600 font-medium mt-1">{coupon.discount}% OFF</p>
-                              ) : (
-                                <p className="text-green-600 font-medium mt-1">€{coupon.discount} OFF</p>
-                              )}
-                              {coupon.minPurchase > 0 && (
-                                <p className="text-xs text-gray-500 mt-1">Min Purchase: €{coupon.minPurchase}</p>
-                              )}
-                              {coupon.maxDiscount > 0 && (
-                                <p className="text-xs text-gray-500">Max Discount: €{coupon.maxDiscount}</p>
-                              )}
-                            </div>
-                            <div className="text-right ml-4">
-                              <span className="text-xs text-gray-500 font-mono">Code: {coupon.code}</span>
-                              {coupon.expireDate && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Expires: {new Date(coupon.expireDate).toLocaleDateString()}
-                                </p>
-                              )}
-                              {coupon.limitForSameUser > 0 && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Limit: {coupon.limitForSameUser} uses
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="mt-2 text-xs text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                            Click to use this coupon code
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-gray-500 text-sm">No coupons available</div>
-                      <div className="text-gray-400 text-xs mt-2">Create coupons in the Coupons section</div>
-                      {/* Debug info */}
-                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-xs text-yellow-800 font-medium">Debug Info:</p>
-                        <p className="text-xs text-yellow-700">Available coupons count: {availableCoupons.length}</p>
-                        <p className="text-xs text-yellow-700">Loading state: {couponsLoading ? 'true' : 'false'}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                    </div>
-                    
-                    {/* Numeric Keyboard Component - Positioned next to discount fields */}
-                    {numericActiveInput === 'discountAmount' && (
-                      <div className="w-80">
-                        <div className="p-4 bg-gray-50 rounded-lg">
-                          <div 
-                            className="keyboard-container w-full" 
-                            onClick={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.preventDefault()}
-                          >
-                            <Keyboard
-                              keyboardRef={(r) => (window.keyboard = r)}
-                              input={numericKeyboardInput}
-                              onChange={handleNumericKeyboardChange}
-                              // onChangeAll removed - no longer needed
-                              onKeyPress={handleNumericKeyboardKeyPress}
-                              theme="hg-theme-default"
-                              layoutName="numeric"
-                              layout={{
-                                numeric: [
-                                  "1 2 3",
-                                  "4 5 6",
-                                  "7 8 9",
-                                  "0 {bksp}"
-                                ]
                               }}
-                              display={{
-                                "1": "1",
-                                "2": "2",
-                                "3": "3",
-                                "4": "4",
-                                "5": "5",
-                                "6": "6",
-                                "7": "7",
-                                "8": "8",
-                                "9": "9",
-                                "0": "0",
-                                "{bksp}": "⌫"
-                              }}
-                              physicalKeyboardHighlight={true}
-                              physicalKeyboardHighlightTextColor={"#000000"}
-                              physicalKeyboardHighlightBgColor={"#fff475"}
+                              min="0"
+                              step="0.01"
+                              placeholder={discountType === 'percentage' ? '20' : '10'}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
                             />
                           </div>
                         </div>
+                        {discountAmount && (
+                          <div className="mt-2 text-sm text-green-600">
+                            ✓ Manual discount of {discountAmount}{discountType === 'percentage' ? '%' : '€'} is ready to apply.
+                          </div>
+                        )}
+                        <div className="flex justify-end mt-3">
+                          <button
+                            onClick={handleApplyManualDiscount}
+                            disabled={!discountAmount || parseFloat(discountAmount) <= 0}
+                            className={`px-4 py-2 rounded-lg transition-colors font-medium ${discountAmount && parseFloat(discountAmount) > 0
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
+                          >
+                            Apply Manual Discount
+                          </button>
+                        </div>
+                        {/* Enter Coupon Code Section */}
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Gift className="w-5 h-5 text-green-600" />
+                            <span className="text-sm font-medium text-gray-800">Enter Coupon Code</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              name="couponCode"
+                              value={couponCode}
+                              onChange={(e) => setCouponCode(e.target.value)}
+                              onFocus={(e) => handleAnyInputFocus(e, 'couponCode')}
+                              onClick={(e) => handleAnyInputClick(e, 'couponCode')}
+                              onBlur={(e) => handleCustomInputBlur(e, 'couponCode')}
+                              placeholder="Enter promo code or click a coupon below"
+                              className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${couponCode.trim()
+                                  ? 'border-green-400 focus:ring-green-500 focus:ring-green-500 bg-green-50'
+                                  : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
+                                }`}
+                              onKeyUp={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleApplyCoupon();
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={handleApplyCoupon}
+                              disabled={!couponCode.trim()}
+                              className={`px-4 py-2 rounded-lg transition-colors font-medium ${couponCode.trim()
+                                  ? 'bg-green-600 text-white hover:bg-green-700'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                }`}
+                            >
+                              Apply
+                            </button>
+                          </div>
+                          {couponCode.trim() && (
+                            <div className="mt-2 text-sm text-green-600">
+                              ✓ Coupon code "{couponCode}" is ready to apply. Click "Apply".
+                            </div>
+                          )}
+                        </div>
+                        {/* Applied Coupon Display */}
+                        {appliedCoupon && (
+                          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h4 className="font-semibold text-green-800">Applied Coupon</h4>
+                                <p className="text-sm text-green-600">{appliedCoupon.title}</p>
+                                <p className="text-xs text-green-600">Code: {appliedCoupon.code}</p>
+                                {appliedCoupon.discountType === 'percentage' ? (
+                                  <p className="text-green-700 font-medium">{appliedCoupon.discount}% OFF</p>
+                                ) : (
+                                  <p className="text-green-700 font-medium">€{appliedCoupon.discount} OFF</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={removeAppliedCoupon}
+                                className="text-red-600 hover:text-red-800 p-1"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        {/* Separator */}
+                        <div className="border-t border-gray-300 my-4"></div>
+                        {/* Available Coupons Section */}
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-800 mb-4">Available Coupons</h3>
+                          {couponsLoading ? (
+                            <div className="text-center py-8">
+                              <div className="text-gray-500 text-sm">Loading coupons...</div>
+                            </div>
+                          ) : availableCoupons.length > 0 ? (
+                            <div className="space-y-3">
+                              {availableCoupons.map((coupon) => (
+                                <div
+                                  key={coupon.id}
+                                  className="border border-gray-200 rounded-lg p-4 hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer group"
+                                  onClick={() => {
+                                    setCouponCode(coupon.code);
+                                    // Don't apply automatically - let user review and apply manually
+                                  }}
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <h4 className="font-semibold text-gray-800">{coupon.title}</h4>
+                                      <p className="text-sm text-gray-600 mt-1">Customer Type: {coupon.customerType}</p>
+                                      {coupon.discountType === 'percentage' ? (
+                                        <p className="text-green-600 font-medium mt-1">{coupon.discount}% OFF</p>
+                                      ) : (
+                                        <p className="text-green-600 font-medium mt-1">€{coupon.discount} OFF</p>
+                                      )}
+                                      {coupon.minPurchase > 0 && (
+                                        <p className="text-xs text-gray-500 mt-1">Min Purchase: €{coupon.minPurchase}</p>
+                                      )}
+                                      {coupon.maxDiscount > 0 && (
+                                        <p className="text-xs text-gray-500">Max Discount: €{coupon.maxDiscount}</p>
+                                      )}
+                                    </div>
+                                    <div className="text-right ml-4">
+                                      <span className="text-xs text-gray-500 font-mono">Code: {coupon.code}</span>
+                                      {coupon.expireDate && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Expires: {new Date(coupon.expireDate).toLocaleDateString()}
+                                        </p>
+                                      )}
+                                      {coupon.limitForSameUser > 0 && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Limit: {coupon.limitForSameUser} uses
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="mt-2 text-xs text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Click to use this coupon code
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <div className="text-gray-500 text-sm">No coupons available</div>
+                              <div className="text-gray-400 text-xs mt-2">Create coupons in the Coupons section</div>
+                              {/* Debug info */}
+                              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p className="text-xs text-yellow-800 font-medium">Debug Info:</p>
+                                <p className="text-xs text-yellow-700">Available coupons count: {availableCoupons.length}</p>
+                                <p className="text-xs text-yellow-700">Loading state: {couponsLoading ? 'true' : 'false'}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
+
+                      {/* Numeric Keyboard Component - Positioned next to discount fields */}
+                      {numericActiveInput === 'discountAmount' && (
+                        <div className="w-80">
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <div
+                              className="keyboard-container w-full"
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.preventDefault()}
+                            >
+                              <Keyboard
+                                keyboardRef={(r) => (window.keyboard = r)}
+                                input={numericKeyboardInput}
+                                onChange={handleNumericKeyboardChange}
+                                // onChangeAll removed - no longer needed
+                                onKeyPress={handleNumericKeyboardKeyPress}
+                                theme="hg-theme-default"
+                                layoutName="numeric"
+                                layout={{
+                                  numeric: [
+                                    "1 2 3",
+                                    "4 5 6",
+                                    "7 8 9",
+                                    "0 {bksp}"
+                                  ]
+                                }}
+                                display={{
+                                  "1": "1",
+                                  "2": "2",
+                                  "3": "3",
+                                  "4": "4",
+                                  "5": "5",
+                                  "6": "6",
+                                  "7": "7",
+                                  "8": "8",
+                                  "9": "9",
+                                  "0": "0",
+                                  "{bksp}": "⌫"
+                                }}
+                                physicalKeyboardHighlight={true}
+                                physicalKeyboardHighlightTextColor={"#000000"}
+                                physicalKeyboardHighlightBgColor={"#fff475"}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+
                 </div>
 
-              
-                </div>
-                
 
-                
+
               </div>
             </div>
           </div>
@@ -3024,7 +3014,7 @@ const RunningOrders = () => {
           </div>
         </div>
       )}
-      
+
       {/* Custom Alert Component */}
       <CustomAlert
         isVisible={alertState.isVisible}
@@ -3034,7 +3024,7 @@ const RunningOrders = () => {
         duration={alertState.duration}
         onClose={hideAlert}
       />
-      
+
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard
         isVisible={showKeyboard}
