@@ -38,6 +38,18 @@ const {
   deleteOrder
 } = getModelPath('orders/orders.js');
 
+const {
+  createOrderDetail,
+  updateOrderDetail,
+  getOrderDetailById,
+  getOrderDetailsByOrderId,
+  getOrderDetailsByFoodId,
+  deleteOrderDetail,
+  getAllOrderDetails,
+  getOrderDetailsStatistics,
+  createMultipleOrderDetails
+} = getModelPath('orders/orderDetails.js');
+
 function registerOrdersIpcHandlers() {
   // Basic CRUD operations
   ipcMain.handle('order:create', async (event, data) => createOrder(data));
