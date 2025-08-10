@@ -62,13 +62,15 @@ const VoucherManagement = () => {
   };
 
   const [newVoucher, setNewVoucher] = useState({
+    title: '',
     name: '',
     phoneNo: '',
     email: '',
-    expiryDate: '',
+    startDate: '',
+    endDate: '',
     amount: '',
-    code: '',
-    textField: ''
+    voucherCode: '',
+    event: ''
   });
 
   const [errors, setErrors] = useState({});
