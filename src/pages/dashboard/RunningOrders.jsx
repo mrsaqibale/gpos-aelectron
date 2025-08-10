@@ -233,6 +233,10 @@ const RunningOrders = () => {
       if (result && result.success) {
         setFoods(result.data);
         console.log('Foods loaded successfully:', result.data);
+        // Log image paths for debugging
+        result.data.forEach(food => {
+          console.log(`Food: ${food.name}, Image: ${food.image}`);
+        });
       } else {
         console.error('Failed to fetch foods:', result?.message);
         setFoods([]);
