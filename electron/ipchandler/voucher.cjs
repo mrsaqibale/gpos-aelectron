@@ -71,7 +71,8 @@ function registerVoucherIpcHandlers() {
   ipcMain.handle('voucher:delete', async (event, id) => {
     try {
       console.log('Deleting voucher with ID:', id);
-      const result = deleteVoucher(id);
+      const voucherModule = await loadVoucherModule();
+      const result = voucherModule.deleteVoucher(id);
       console.log('Delete voucher result:', result);
       return result;
     } catch (error) {
@@ -84,7 +85,8 @@ function registerVoucherIpcHandlers() {
   ipcMain.handle('voucher:searchByCode', async (event, code) => {
     try {
       console.log('Searching voucher by code:', code);
-      const result = searchVoucherByCode(code);
+      const voucherModule = await loadVoucherModule();
+      const result = voucherModule.searchVoucherByCode(code);
       console.log('Search voucher by code result:', result);
       return result;
     } catch (error) {
@@ -94,4 +96,4 @@ function registerVoucherIpcHandlers() {
   });
 }
 
-export { registerVoucherIpcHandlers }; 
+module.exports = { registerVoucherIpcHandlers }; 
