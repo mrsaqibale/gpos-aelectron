@@ -76,6 +76,7 @@ const VoucherManagement = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [phoneError, setPhoneError] = useState('');
 
   // Generate auto code
   const generateCode = () => {
@@ -121,6 +122,36 @@ const VoucherManagement = () => {
   };
 
   const onKeyboardChange = (input, inputName, buttonType) => {
+    // Phone number validation for keyboard input
+    if (inputName === 'phoneNo') {
+      // Only allow numbers
+      const numericValue = input.replace(/\D/g, '');
+      
+      // Limit to 10 digits
+      if (numericValue.length > 10) {
+        return;
+      }
+      
+      // If user is typing and has entered some digits, validate the pattern
+      if (numericValue.length > 0 && numericValue.length >= 2) {
+        if (!numericValue.startsWith('08')) {
+          // If they've typed 2+ digits and it doesn't start with 08, don't allow it
+          return;
+        }
+      }
+      
+      setNewVoucher(prev => ({
+        ...prev,
+        [inputName]: numericValue
+      }));
+      
+      // Clear phone error when typing
+      if (phoneError) {
+        setPhoneError('');
+      }
+      return;
+    }
+    
     // Update the corresponding form field
     if (inputName === 'searchTerm') {
       setSearchTerm(input);
@@ -153,6 +184,37 @@ const VoucherManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Phone number validation - more user-friendly
+    if (name === 'phoneNo') {
+      // Only allow numbers
+      const numericValue = value.replace(/\D/g, '');
+      
+      // Limit to 10 digits
+      if (numericValue.length > 10) {
+        return;
+      }
+      
+      // If user is typing and has entered some digits, validate the pattern
+      if (numericValue.length > 0 && numericValue.length >= 2) {
+        if (!numericValue.startsWith('08')) {
+          // If they've typed 2+ digits and it doesn't start with 08, don't allow it
+          return;
+        }
+      }
+      
+      setNewVoucher(prev => ({
+        ...prev,
+        [name]: numericValue
+      }));
+      
+      // Clear phone error when typing
+      if (phoneError) {
+        setPhoneError('');
+      }
+      return;
+    }
+    
     setNewVoucher(prev => ({
       ...prev,
       [name]: value
@@ -169,6 +231,12 @@ const VoucherManagement = () => {
 
   const validateForm = () => {
     const newErrors = {};
+    
+    // Phone number validation
+    if (!newVoucher.phoneNo || newVoucher.phoneNo.length !== 10 || !newVoucher.phoneNo.startsWith('08')) {
+      setPhoneError('Phone number must be 10 digits and start with 08');
+      return false;
+    }
     
     // Email validation (optional field)
     if (newVoucher.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newVoucher.email)) {
@@ -264,6 +332,8 @@ const VoucherManagement = () => {
       voucherCode: voucher.voucherCode,
       event: voucher.event || ''
     });
+    setErrors({});
+    setPhoneError(''); // Clear phone error
     setActiveInput(''); // Reset keyboard input
     setShowKeyboard(false); // Hide keyboard when editing voucher
     setShowForm(true);
@@ -308,6 +378,7 @@ const VoucherManagement = () => {
       event: ''
     });
     setErrors({});
+    setPhoneError(''); // Clear phone error
     setActiveInput(''); // Reset keyboard input
     setShowKeyboard(false); // Hide keyboard when resetting
   };
@@ -327,6 +398,7 @@ const VoucherManagement = () => {
       event: ''
     });
     setErrors({});
+    setPhoneError(''); // Clear phone error
     setActiveInput(''); // Reset keyboard input
     setShowKeyboard(false); // Hide keyboard when adding new voucher
     setShowForm(true);
@@ -406,12 +478,12 @@ const VoucherManagement = () => {
           </div>
 
           <form onSubmit={handleSubmit}>
-            {/* First row: Title and Name */}
-            <div className="grid grid-cols-2 gap-5 mb-5">
+            {/* First row: Title, Name, and Phone Number */}
+            <div className="grid grid-cols-3 gap-5 mb-5">
               {/* Title */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Title
+                  Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -434,7 +506,7 @@ const VoucherManagement = () => {
               {/* Name */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Name
+                  Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -453,17 +525,14 @@ const VoucherManagement = () => {
                   <p className="text-red-500 text-xs mt-1">{errors.name}</p>
                 )}
               </div>
-            </div>
 
-            {/* Second row: Phone Number and Email */}
-            <div className="grid grid-cols-2 gap-5 mb-5">
               {/* Phone Number */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Phone Number
+                  Phone Number <span className="text-red-500">*</span> <span className="text-xs text-gray-500">(Must start with 08 and be 10 digits)</span>
                 </label>
                 <input
-                  type="tel"
+                  type="text"
                   name="phoneNo"
                   value={newVoucher.phoneNo}
                   onChange={handleInputChange}
@@ -471,15 +540,27 @@ const VoucherManagement = () => {
                   onClick={(e) => handleAnyInputClick(e, 'phoneNo')}
                   onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    errors.phoneNo ? 'border-red-500' : 'border-gray-300'
+                    phoneError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
                   }`}
-                  placeholder="Enter phone number"
+                  placeholder="08xxxxxxxx"
+                  maxLength="10"
+                  required
                 />
-                {errors.phoneNo && (
-                  <p className="text-red-500 text-xs mt-1">{errors.phoneNo}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {newVoucher.phoneNo.length > 0 && (
+                    <span className={newVoucher.phoneNo.length === 10 && newVoucher.phoneNo.startsWith('08') ? 'text-green-600' : 'text-red-500'}>
+                      {newVoucher.phoneNo.length}/10 digits
+                    </span>
+                  )}
+                </p>
+                {phoneError && (
+                  <p className="mt-1 text-xs text-red-600">{phoneError}</p>
                 )}
               </div>
+            </div>
 
+            {/* Second row: Email, Start Date, and End Date */}
+            <div className="grid grid-cols-3 gap-5 mb-5">
               {/* Email */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -502,14 +583,11 @@ const VoucherManagement = () => {
                   <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                 )}
               </div>
-            </div>
 
-            {/* Third row: Start Date and End Date */}
-            <div className="grid grid-cols-2 gap-5 mb-5">
               {/* Start Date */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Start Date
+                  Start Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -531,7 +609,7 @@ const VoucherManagement = () => {
               {/* End Date */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  End Date
+                  End Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -551,12 +629,12 @@ const VoucherManagement = () => {
               </div>
             </div>
 
-            {/* Fourth row: Amount and Voucher Code */}
+            {/* Third row: Amount and Voucher Code */}
             <div className="grid grid-cols-2 gap-5 mb-5">
               {/* Amount */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Amount
+                  Amount <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"

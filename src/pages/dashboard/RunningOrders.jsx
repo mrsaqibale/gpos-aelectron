@@ -2609,22 +2609,7 @@ const RunningOrders = () => {
                   </div>
                 </div>
 
-                {/* Validation Messages */}
-                {(() => {
-                  const validationMessages = getVariationValidationMessages();
-                  return validationMessages.length > 0 ? (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="text-sm font-medium text-red-800 mb-2">Please complete the following:</div>
-                      <div className="space-y-1">
-                        {validationMessages.map((message, index) => (
-                          <div key={index} className="text-xs text-red-600">
-                            • {message}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
+                
 
                 {/* Action Buttons */}
                 <div className="border-t border-gray-200 pt-4">
