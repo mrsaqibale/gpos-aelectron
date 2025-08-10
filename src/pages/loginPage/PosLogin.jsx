@@ -53,7 +53,7 @@ const POSLogin = () => {
       setError('⚠ Please select a role first.');
       return;
     }
-    if (pin.length < 6) {
+    if (pin.length < 4) {
       setPin(prev => prev + number);
       setError(''); // Clear error when user starts typing
     }
@@ -72,11 +72,11 @@ const POSLogin = () => {
       setError('⚠ Please select a role first.');
       return;
     }
-    if (pin.length < 6) {
-      setError('⚠ PIN must be 6 digits.');
+    if (pin.length < 4) {
+      setError('⚠ PIN must be 4 digits.');
       return;
     }
-    if (selectedRole && pin.length >= 6) {
+    if (selectedRole && pin.length >= 4) {
       try {
         console.log('Login attempt:', { role: selectedRole, pin });
 
@@ -163,7 +163,7 @@ const POSLogin = () => {
   }, []);
 
   const renderPinDisplay = () => {
-    const boxes = Array.from({ length: 6 }, (_, index) => {
+    const boxes = Array.from({ length: 4 }, (_, index) => {
       const hasDigit = index < pin.length;
       const digit = pin[index] || '';
       const isEmpty = !hasDigit;
@@ -205,9 +205,11 @@ const POSLogin = () => {
       <button
         onClick={() => onClick(number)}
         disabled={!selectedRole}
-        className="rounded-xl py-2 px-4 shadow-lg cursor-pointer hover:shadow-xl text-white font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+        className="rounded-xl py-2 px-4 shadow-lg cursor-pointer hover:shadow-xl font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
         style={{
-          backgroundColor: themeColors.primary
+          backgroundColor: 'white',
+          color: themeColors.primary,
+          border: `2px solid ${themeColors.primary}`
         }}
       >
         {number}
@@ -224,30 +226,22 @@ const POSLogin = () => {
     const baseClasses =
       "h-11 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
-    const isBackspace = variant === "backspace";
-
-    const gradientStyle = {
-      backgroundColor: themeColors.primary,
+    const buttonStyle = {
+      backgroundColor: selectedRole ? themeColors.primary : 'white',
+      color: selectedRole ? 'white' : themeColors.primary,
+      border: selectedRole ? 'none' : `2px solid ${themeColors.primary}`,
     };
-
-    const variantClasses = isBackspace
-      ? disabled
-        ? "text-red-300 cursor-not-allowed border-[#4a7ca3]"
-        : "hover:bg-[#2d5a87] border-[#4a7ca3] cursor-pointer text-white hover:border-[#4a7ca3]"
-      : disabled
-      ? "text-red-300 cursor-not-allowed border-[#4a7ca3]"
-      : "cursor-pointer text-white border-[#4a7ca3]";
 
     return (
       <button
         onClick={onClick}
         disabled={disabled}
-        className={`${baseClasses} ${variantClasses} ${className}`}
-        style={gradientStyle}
+        className={`${baseClasses} ${className}`}
+        style={buttonStyle}
       >
         {children}
       </button>
-    );
+      );
   };
 
 
@@ -287,8 +281,11 @@ const POSLogin = () => {
               <span className="text-white font-bold text-5xl">G</span>
               <span className="text-white font-medium text-base">POS</span>
             </div>
-            <p className="text-xl text-white font-semibold">
+            <p className="text-xl text-white font-semibold mb-2">
               Smart Restaurant Billing System
+            </p>
+            <p className="text-lg text-black font-bold">
+              Welcome to GPOS – Smart & Simplified Point of Sale
             </p>
           </div>
 
@@ -296,10 +293,10 @@ const POSLogin = () => {
 
 
         {/* Main Content */}
-        <div className="w-full max-w-4xl flex gap-8 transform perspective-1000">
+        <div className="w-full max-w-4xl flex transform perspective-1000">
 
                       {/* Left Section - Role Selection with 3D effect */}
-            <div className="w-1/2 rounded-3xl p-6 border-[#4a7ca3] border shadow-2xl" style={{ backgroundColor: themeColors.primary }}>
+            <div className="w-1/2 rounded-l-3xl border-r p-6 border-[#4a7ca3] border shadow-2xl" style={{ backgroundColor: themeColors.primary }}>
             <h2 className="text-2xl font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
@@ -325,17 +322,17 @@ const POSLogin = () => {
                       `}
                                                                                               style={{
                           transformStyle: 'preserve-3d',
-                          background: isSelected ? 'white' : themeColors.primary,
+                          background: isSelected ? themeColors.primary : 'white',
                           borderColor: isSelected ? themeColors.loginBg : '#1e3a5f',
                           boxShadow: isSelected
                             ? `0 0 16px 2px ${themeColors.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
                             : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
                         }}
                     >
-                      <IconComponent className="w-6 h-6 mb-1" style={{ color: isSelected ? 'black' : 'white' }} />
-                      <span className="text-md font-bold" style={{ color: isSelected ? 'black' : 'white' }}>{role.name}</span>
+                      <IconComponent className="w-6 h-6 mb-1" style={{ color: isSelected ? 'white' : 'black' }} />
+                      <span className="text-md font-bold" style={{ color: isSelected ? 'white' : 'black' }}>{role.name}</span>
                                               {role.subtitle && (
-                          <span className="text-xs opacity-70" style={{ color: isSelected ? 'black' : 'white' }}>{role.subtitle}</span>
+                          <span className="text-xs opacity-70" style={{ color: isSelected ? 'white' : 'black' }}>{role.subtitle}</span>
                         )}
                     </button>
 
@@ -346,7 +343,7 @@ const POSLogin = () => {
 
           {/* Right Section - PIN Entry with 3D effect */}
           <div
-            className="w-1/2 bg-[#ffffff] text-black rounded-2xl p-6 shadow-2xl border-1 border-[#2d5a87]"
+            className="w-1/2 bg-[#ffffff] text-black rounded-r-3xl border-l p-6 shadow-2xl border-1 border-[#2d5a87]"
             style={{
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
             }}
@@ -371,13 +368,13 @@ const POSLogin = () => {
             <div className="mb-4">
               {renderPinDisplay()}
               <p className="text-center text-xs text-gray-400 mt-2">
-                {pin.length}/6 digits
+                {pin.length}/4 digits
               </p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-4 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
+              <div className="mb-6 mx-10 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">{error}</span>
               </div>
@@ -435,7 +432,7 @@ const POSLogin = () => {
             <div className="mb-4 flex justify-center">
               <button
                 onClick={handleLogin}
-                disabled={!selectedRole || pin.length < 6}
+                disabled={!selectedRole || pin.length < 4}
                 className="w-[86%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
                                  style={{
                      backgroundColor: themeColors.primary,
@@ -451,7 +448,10 @@ const POSLogin = () => {
             <div className="text-center">
               <button
                 onClick={handleForgotPinClick}
-                className="text-gray-300 hover:text-white cursor-pointer text-sm font-semibold transition-colors hover:-translate-y-0.5"
+                className="text-gray-300 hover:text-white text-underline cursor-pointer text-sm font-bold transition-colors hover:-translate-y-0.5"
+                                 style={{
+                     color: themeColors.primary,
+                   }}
               >
                 Forgot PIN?
               </button>
