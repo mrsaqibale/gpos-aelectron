@@ -41,14 +41,16 @@ const VoucherManagement = () => {
         // Transform database data to match frontend format
         const transformedVouchers = result.data.map(voucher => ({
           id: voucher.id,
+          title: voucher.title || '',
           name: voucher.name || '',
           phoneNo: voucher.phone_no || '',
           email: voucher.email || '',
-          expiryDate: voucher.expiry_date ? voucher.expiry_date.split('T')[0] : '',
+          startDate: voucher.start_date ? voucher.start_date.split('T')[0] : '',
+          endDate: voucher.end_date ? voucher.end_date.split('T')[0] : '',
           amount: voucher.amount || 0,
-          code: voucher.code || '',
-          textField: voucher.text_field || '',
-          status: voucher.status === 1 ? 'active' : 'inactive'
+          voucherCode: voucher.voucher_code || '',
+          event: voucher.event || '',
+          status: voucher.status === 'active' ? 'active' : 'inactive'
         }));
         setVoucher(transformedVouchers);
       } else {
@@ -132,7 +134,7 @@ const VoucherManagement = () => {
     // Handle special button presses
     if (buttonType === 'enter') {
       // Move to next input field or submit form
-      const inputFields = ['name', 'phoneNo', 'email', 'expiryDate', 'amount', 'textField'];
+      const inputFields = ['title', 'name', 'phoneNo', 'email', 'startDate', 'endDate', 'amount', 'event'];
       const currentIndex = inputFields.indexOf(inputName);
       if (currentIndex < inputFields.length - 1) {
         const nextField = inputFields[currentIndex + 1];
@@ -168,6 +170,10 @@ const VoucherManagement = () => {
   const validateForm = () => {
     const newErrors = {};
     
+    if (!newVoucher.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
+    
     if (!newVoucher.name.trim()) {
       newErrors.name = 'Name is required';
     }
@@ -176,8 +182,12 @@ const VoucherManagement = () => {
       newErrors.phoneNo = 'Phone number is required';
     }
     
-    if (!newVoucher.expiryDate) {
-      newErrors.expiryDate = 'Expiry date is required';
+    if (!newVoucher.startDate) {
+      newErrors.startDate = 'Start date is required';
+    }
+    
+    if (!newVoucher.endDate) {
+      newErrors.endDate = 'End date is required';
     }
     
     if (!newVoucher.amount || newVoucher.amount <= 0) {
@@ -187,6 +197,11 @@ const VoucherManagement = () => {
     // Email validation (optional field)
     if (newVoucher.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newVoucher.email)) {
       newErrors.email = 'Please enter a valid email address';
+    }
+    
+    // Date validation
+    if (newVoucher.startDate && newVoucher.endDate && newVoucher.startDate > newVoucher.endDate) {
+      newErrors.endDate = 'End date must be after start date';
     }
     
     setErrors(newErrors);
@@ -206,13 +221,15 @@ const VoucherManagement = () => {
       if (editingVoucher) {
         // Update existing voucher
         const updateData = {
+          title: newVoucher.title,
           name: newVoucher.name,
           phone_no: newVoucher.phoneNo,
           email: newVoucher.email || null,
-          expiry_date: newVoucher.expiryDate,
+          start_date: newVoucher.startDate,
+          end_date: newVoucher.endDate,
           amount: parseFloat(newVoucher.amount),
-          code: newVoucher.code,
-          text_field: newVoucher.textField || null
+          voucher_code: newVoucher.voucherCode,
+          event: newVoucher.event || null
         };
         
         const result = await window.myAPI.updateVoucher(editingVoucher.id, updateData);
@@ -226,13 +243,15 @@ const VoucherManagement = () => {
       } else {
         // Create new voucher
         const createData = {
+          title: newVoucher.title,
           name: newVoucher.name,
           phone_no: newVoucher.phoneNo,
           email: newVoucher.email || null,
-          expiry_date: newVoucher.expiryDate,
+          start_date: newVoucher.startDate,
+          end_date: newVoucher.endDate,
           amount: parseFloat(newVoucher.amount),
-          code: newVoucher.code,
-          text_field: newVoucher.textField || null,
+          voucher_code: newVoucher.voucherCode,
+          event: newVoucher.event || null,
           added_by: 1 // TODO: Get current employee ID from context
         };
         
@@ -254,13 +273,15 @@ const VoucherManagement = () => {
   const handleEdit = (voucher) => {
     setEditingVoucher(voucher);
     setNewVoucher({
+      title: voucher.title || '',
       name: voucher.name,
       phoneNo: voucher.phoneNo,
       email: voucher.email,
-      expiryDate: voucher.expiryDate,
+      startDate: voucher.startDate,
+      endDate: voucher.endDate,
       amount: voucher.amount.toString(),
-      code: voucher.code,
-      textField: voucher.textField
+      voucherCode: voucher.voucherCode,
+      event: voucher.event || ''
     });
     setActiveInput(''); // Reset keyboard input
     setShowKeyboard(false); // Hide keyboard when editing voucher
@@ -295,13 +316,15 @@ const VoucherManagement = () => {
   const handleReset = () => {
     const generatedCode = generateCode();
     setNewVoucher({
+      title: '',
       name: '',
       phoneNo: '',
       email: '',
-      expiryDate: '',
+      startDate: '',
+      endDate: '',
       amount: '',
-      code: generatedCode,
-      textField: ''
+      voucherCode: generatedCode,
+      event: ''
     });
     setErrors({});
     setActiveInput(''); // Reset keyboard input
@@ -312,13 +335,15 @@ const VoucherManagement = () => {
     setEditingVoucher(null);
     const generatedCode = generateCode();
     setNewVoucher({
+      title: '',
       name: '',
       phoneNo: '',
       email: '',
-      expiryDate: '',
+      startDate: '',
+      endDate: '',
       amount: '',
-      code: generatedCode,
-      textField: ''
+      voucherCode: generatedCode,
+      event: ''
     });
     setErrors({});
     setActiveInput(''); // Reset keyboard input
@@ -348,7 +373,8 @@ const VoucherManagement = () => {
     // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(voucher =>
-        voucher.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        voucher.voucherCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        voucher.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         voucher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         voucher.phoneNo.toLowerCase().includes(searchTerm.toLowerCase())
       );
