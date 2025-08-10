@@ -86,6 +86,11 @@ const RunningOrders = () => {
   const [showTableModal, setShowTableModal] = useState(false);
   const [showMergeTableModal, setShowMergeTableModal] = useState(false);
 
+  // Food details state
+  const [foodDetails, setFoodDetails] = useState(null);
+  const [foodDetailsLoading, setFoodDetailsLoading] = useState(false);
+  const [selectedAdons, setSelectedAdons] = useState([]);
+
   // Floor and Table Management State
   const [floors, setFloors] = useState([]);
   const [selectedFloor, setSelectedFloor] = useState('');
@@ -388,24 +393,49 @@ const RunningOrders = () => {
   // Handle variation selection
   const handleVariationSelect = (variationId, optionId) => {
     setSelectedVariations(prev => {
-      if (variationId === 'size' || variationId === 'addons' || variationId === 'toppings') {
-        // Size, addons and toppings can be multiple selection
+      // Check if this variation is single or multiple selection
+      const variation = foodDetails?.variations?.find(v => v.id === variationId);
+      const isMultiple = variation?.type === 'multiple';
+      
+      if (isMultiple) {
+        // Multiple selection - toggle the option
         const currentSelections = prev[variationId] || [];
-        const newSelections = currentSelections.includes(optionId)
-          ? currentSelections.filter(id => id !== optionId)
-          : [...currentSelections, optionId];
+        const isCurrentlySelected = currentSelections.includes(optionId);
+        
+        let newSelections;
+        if (isCurrentlySelected) {
+          // Removing an option
+          newSelections = currentSelections.filter(id => id !== optionId);
+        } else {
+          // Adding an option - check max constraint
+          if (variation.max && currentSelections.length >= variation.max) {
+            // If max is reached, don't add more
+            return prev;
+          }
+          newSelections = [...currentSelections, optionId];
+        }
 
         return {
           ...prev,
           [variationId]: newSelections
         };
       } else {
-        // Default to single selection
+        // Single selection - replace the current selection
         return {
           ...prev,
           [variationId]: optionId
         };
       }
+    });
+  };
+
+  // Handle adon selection
+  const handleAdonSelect = (adonId) => {
+    setSelectedAdons(prev => {
+      const newSelections = prev.includes(adonId)
+        ? prev.filter(id => id !== adonId)
+        : [...prev, adonId];
+      return newSelections;
     });
   };
 
@@ -415,42 +445,43 @@ const RunningOrders = () => {
 
     let basePrice = selectedFood.price || 0;
     let variationPrice = 0;
+    let adonPrice = 0;
 
-    // Mock variation prices - replace with actual API data
-    const variationPrices = {
-      size: {
-        'Small': 0,
-        'Medium': 2.50,
-        'Large': 5.00
-      },
-      toppings: {
-        'Extra Cheese': 1.50,
-        'Bacon': 2.00,
-        'Mushrooms': 1.00,
-        'Olives': 0.75
-      },
-      addons: {
-        'Extra Cheese': 1.50,
-        'Bacon': 2.00,
-        'Mushrooms': 1.00,
-        'Olives': 0.75,
-        'Extra Sauce': 0.50,
-        'Double Portion': 3.00
-      }
-    };
-
-    // Add variation prices
-    Object.entries(selectedVariations).forEach(([type, selection]) => {
-      if ((type === 'size' || type === 'toppings' || type === 'addons') && Array.isArray(selection)) {
-        selection.forEach(item => {
-          if (variationPrices[type] && variationPrices[type][item]) {
-            variationPrice += variationPrices[type][item];
+    // Calculate variation prices from real data
+    if (foodDetails?.variations) {
+      Object.entries(selectedVariations).forEach(([variationId, selections]) => {
+        const variation = foodDetails.variations.find(v => v.id === parseInt(variationId));
+        if (variation) {
+          if (Array.isArray(selections)) {
+            // Multiple selection
+            selections.forEach(optionId => {
+              const option = variation.options?.find(o => o.id === parseInt(optionId));
+              if (option) {
+                variationPrice += option.option_price || 0;
+              }
+            });
+          } else {
+            // Single selection
+            const option = variation.options?.find(o => o.id === parseInt(selections));
+            if (option) {
+              variationPrice += option.option_price || 0;
+            }
           }
-        });
-      }
-    });
+        }
+      });
+    }
 
-    const totalPricePerItem = basePrice + variationPrice;
+    // Calculate adon prices from real data
+    if (foodDetails?.adons) {
+      selectedAdons.forEach(adonId => {
+        const adon = foodDetails.adons.find(a => a.id === parseInt(adonId));
+        if (adon) {
+          adonPrice += adon.price || 0;
+        }
+      });
+    }
+
+    const totalPricePerItem = basePrice + variationPrice + adonPrice;
     return totalPricePerItem * foodQuantity;
   };
 
@@ -468,6 +499,17 @@ const RunningOrders = () => {
 
   // Handle add to cart
   const handleAddToCart = () => {
+    // Validate required variations
+    if (foodDetails?.variations) {
+      const requiredVariations = foodDetails.variations.filter(v => v.is_required);
+      for (const variation of requiredVariations) {
+        if (!selectedVariations[variation.id]) {
+          showSuccess(`Please select at least one option for ${variation.name}`, 'error');
+          return;
+        }
+      }
+    }
+
     // Play sound when adding to cart
     try {
       const audio = new Audio('/src/assets/ping.mp3');
@@ -481,6 +523,7 @@ const RunningOrders = () => {
     console.log('Adding to cart:', {
       food: selectedFood,
       variations: selectedVariations,
+      adons: selectedAdons,
       quantity: foodQuantity,
       totalPrice: calculateTotalPrice()
     });
@@ -491,13 +534,13 @@ const RunningOrders = () => {
       return;
     }
 
-    // Check if the same food item with the same variations already exists in cart
-    const existingCartItem = isFoodWithVariationsInCart(selectedFood, selectedVariations);
+    // Check if the same food item with the same variations and adons already exists in cart
+    const existingCartItem = isFoodWithVariationsInCart(selectedFood, selectedVariations, selectedAdons);
     
     if (existingCartItem) {
-      // If item with same variations exists, increase quantity
+      // If item with same variations and adons exists, increase quantity
       updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + foodQuantity);
-      console.log('Increased quantity for existing item with variations:', existingCartItem.food.name);
+      console.log('Increased quantity for existing item with variations and adons:', existingCartItem.food.name);
       
       // Show success alert
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
@@ -507,6 +550,7 @@ const RunningOrders = () => {
         id: cartItemId,
         food: selectedFood,
         variations: selectedVariations,
+        adons: selectedAdons,
         quantity: foodQuantity,
         totalPrice: calculateTotalPrice(),
         addedAt: new Date().toISOString()
@@ -530,6 +574,7 @@ const RunningOrders = () => {
     setShowFoodModal(false);
     setSelectedFood(null);
     setSelectedVariations({});
+    setSelectedAdons([]);
     setFoodQuantity(1); // Reset quantity
   };
 
@@ -542,10 +587,11 @@ const RunningOrders = () => {
   };
 
   // Check if food item with specific variations is already in cart
-  const isFoodWithVariationsInCart = (foodItem, variations) => {
+  const isFoodWithVariationsInCart = (foodItem, variations, adons = []) => {
     return cartItems.find(item => 
       item.food.id === foodItem.id && 
-      JSON.stringify(item.variations) === JSON.stringify(variations)
+      JSON.stringify(item.variations) === JSON.stringify(variations) &&
+      JSON.stringify(item.adons || []) === JSON.stringify(adons)
     );
   };
 
@@ -587,7 +633,7 @@ const RunningOrders = () => {
   };
 
   // Handle food item click - either increase quantity or show modal
-  const handleFoodItemClick = (foodItem) => {
+  const handleFoodItemClick = async (foodItem) => {
     console.log('Food item clicked:', foodItem);
     
     // Check if any food item with the same ID exists in cart
@@ -601,15 +647,43 @@ const RunningOrders = () => {
       // Show success alert
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
-      // If food is not in cart, show the modal for customization
-      console.log('Setting selectedFood:', foodItem);
-      setSelectedFood(foodItem);
-      console.log('Setting showFoodModal to true');
-      setShowFoodModal(true);
-      setSelectedVariations({});
-      setFoodQuantity(1); // Reset quantity when opening modal
-      console.log('Opening food modal for:', foodItem.name);
-      console.log('Modal state after setting:', { selectedFood: foodItem, showFoodModal: true });
+      // If food is not in cart, fetch detailed food data and show the modal for customization
+      console.log('Fetching detailed food data for:', foodItem.name);
+      setFoodDetailsLoading(true);
+      
+      try {
+        // Fetch detailed food data with variations and adons
+        const result = await window.myAPI.getFoodById(foodItem.id);
+        console.log('Food details API result:', result);
+        
+        if (result && result.success) {
+          console.log('Food details loaded successfully:', result.data);
+          setFoodDetails(result.data);
+          setSelectedFood(result.data);
+          setShowFoodModal(true);
+          setSelectedVariations({});
+          setSelectedAdons([]);
+          setFoodQuantity(1);
+        } else {
+          console.error('Failed to fetch food details:', result?.message);
+          // Fallback to basic food data
+          setSelectedFood(foodItem);
+          setShowFoodModal(true);
+          setSelectedVariations({});
+          setSelectedAdons([]);
+          setFoodQuantity(1);
+        }
+      } catch (error) {
+        console.error('Error fetching food details:', error);
+        // Fallback to basic food data
+        setSelectedFood(foodItem);
+        setShowFoodModal(true);
+        setSelectedVariations({});
+        setSelectedAdons([]);
+        setFoodQuantity(1);
+      } finally {
+        setFoodDetailsLoading(false);
+      }
     }
   };
 
@@ -1170,7 +1244,8 @@ const RunningOrders = () => {
   const handleEditCartItem = (cartItem) => {
     setEditingCartItem(cartItem);
     setSelectedFood(cartItem.food);
-    setSelectedVariations(cartItem.variations);
+    setSelectedVariations(cartItem.variations || {});
+    setSelectedAdons(cartItem.adons || []);
     setFoodQuantity(cartItem.quantity);
     setShowFoodModal(true);
   };
@@ -1185,6 +1260,7 @@ const RunningOrders = () => {
         return {
           ...item,
           variations: selectedVariations,
+          adons: selectedAdons,
           quantity: foodQuantity,
           totalPrice: calculateTotalPrice()
         };
@@ -1197,6 +1273,7 @@ const RunningOrders = () => {
     setShowFoodModal(false);
     setSelectedFood(null);
     setSelectedVariations({});
+    setSelectedAdons([]);
     setFoodQuantity(1);
   };
 
@@ -1247,6 +1324,7 @@ const RunningOrders = () => {
     setEditingCartItem(null);
     setFoodQuantity(1);
     setSelectedVariations({});
+    setSelectedAdons([]);
     
     // Show success alert if there were items in the cart
     if (itemCount > 0) {
@@ -1447,6 +1525,63 @@ const RunningOrders = () => {
         )}
       </div>
     );
+  };
+
+  // Validate minimum and maximum selections for variations
+  const validateVariationSelections = () => {
+    if (!foodDetails?.variations) return true;
+
+    for (const variation of foodDetails.variations) {
+      const selectedOptions = selectedVariations[variation.id];
+      
+      if (variation.is_required && !selectedOptions) {
+        return false; // Required variation not selected
+      }
+
+      if (selectedOptions) {
+        const selectionCount = Array.isArray(selectedOptions) ? selectedOptions.length : 1;
+        
+        // Check minimum selection
+        if (variation.min && selectionCount < variation.min) {
+          return false;
+        }
+        
+        // Check maximum selection
+        if (variation.max && selectionCount > variation.max) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  };
+
+  // Get validation messages for variations
+  const getVariationValidationMessages = () => {
+    const messages = [];
+    
+    if (!foodDetails?.variations) return messages;
+
+    for (const variation of foodDetails.variations) {
+      const selectedOptions = selectedVariations[variation.id];
+      const selectionCount = selectedOptions ? (Array.isArray(selectedOptions) ? selectedOptions.length : 1) : 0;
+      
+      if (variation.is_required && !selectedOptions) {
+        messages.push(`Required: ${variation.name}`);
+      }
+      
+      if (selectedOptions) {
+        if (variation.min && selectionCount < variation.min) {
+          messages.push(`Minimum selection for ${variation.name}: ${variation.min}`);
+        }
+        
+        if (variation.max && selectionCount > variation.max) {
+          messages.push(`Maximum selection for ${variation.name}: ${variation.max}`);
+        }
+      }
+    }
+    
+    return messages;
   };
 
   return (
@@ -2280,179 +2415,142 @@ const RunningOrders = () => {
                 </div>
 
                 {/* Select Variation Section */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Edit2 size={18} className="text-primary" />
-                    Select Variation
-                  </h4>
+                {foodDetailsLoading ? (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Edit2 size={18} className="text-primary" />
+                      Select Variation
+                    </h4>
+                    <div className="text-center py-8">
+                      <div className="text-gray-500 text-sm">Loading variations...</div>
+                    </div>
+                  </div>
+                ) : foodDetails?.variations && foodDetails.variations.length > 0 ? (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Edit2 size={18} className="text-primary" />
+                      Select Variation
+                    </h4>
+                    <div className="space-y-4">
+                      {foodDetails.variations.map((variation) => (
+                        <div key={variation.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-medium text-gray-800">{variation.name}</h5>
+                            {variation.is_required && (
+                              <span className="text-xs text-red-600 font-medium">Required</span>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            {variation.options?.map((option) => {
+                              const isSelected = variation.type === 'multiple' 
+                                ? selectedVariations[variation.id]?.includes(option.id)
+                                : selectedVariations[variation.id] === option.id;
+                              
+                              return (
+                                <button
+                                  key={option.id}
+                                  onClick={() => handleVariationSelect(variation.id, option.id)}
+                                  className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                    isSelected
+                                      ? 'bg-primary/10 border-primary'
+                                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                      isSelected
+                                        ? 'border-primary bg-primary'
+                                        : 'border-gray-300'
+                                    }`}>
+                                      {isSelected && (
+                                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                                      )}
+                                    </div>
+                                    <span className={`font-medium ${
+                                      isSelected ? 'text-primary' : 'text-gray-700'
+                                    }`}>
+                                      {option.option_name}
+                                    </span>
+                                  </div>
+                                  <span className={`font-semibold ${
+                                    isSelected ? 'text-primary' : 'text-gray-600'
+                                  }`}>
+                                    {option.option_price > 0 ? `+€${option.option_price.toFixed(2)}` : 'Free'}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {variation.is_required && !selectedVariations[variation.id] && (
+                            <div className="mt-2 text-xs text-red-600">
+                              Please select at least one option for {variation.name}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
-                  {/* Mock variations data - replace with actual API call */}
-                  <div className="space-y-4">
-                    {/* Size Variation */}
+                {/* Select Add on Section */}
+                {foodDetailsLoading ? (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Plus size={18} className="text-primary" />
+                      Select Add on
+                    </h4>
+                    <div className="text-center py-8">
+                      <div className="text-gray-500 text-sm">Loading addons...</div>
+                    </div>
+                  </div>
+                ) : foodDetails?.adons && foodDetails.adons.length > 0 ? (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                      <Plus size={18} className="text-primary" />
+                      Select Add on
+                    </h4>
                     <div className="border border-gray-200 rounded-lg p-4">
-                      <h5 className="font-medium text-gray-800 mb-3">Size</h5>
                       <div className="space-y-2">
-                        {[
-                          { name: 'Small', price: 0 },
-                          { name: 'Medium', price: 2.50 },
-                          { name: 'Large', price: 5.00 }
-                        ].map((size) => {
-                          const isSelected = selectedVariations.size && selectedVariations.size.includes(size.name);
+                        {foodDetails.adons.map((adon) => {
+                          const isSelected = selectedAdons.includes(adon.id);
                           return (
                             <button
-                              key={size.name}
-                              onClick={() => handleVariationSelect('size', size.name)}
-                              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${isSelected
-                                ? 'bg-primary/10 border-primary'
-                                : 'bg-white border-gray-200 hover:bg-gray-50'
-                                }`}
+                              key={adon.id}
+                              onClick={() => handleAdonSelect(adon.id)}
+                              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                isSelected
+                                  ? 'bg-primary/10 border-primary'
+                                  : 'bg-white border-gray-200 hover:bg-gray-50'
+                              }`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
-                                  ? 'border-primary bg-primary'
-                                  : 'border-gray-300'
-                                  }`}>
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                  isSelected
+                                    ? 'border-primary bg-primary'
+                                    : 'border-gray-300'
+                                }`}>
                                   {isSelected && (
                                     <div className="w-2 h-2 bg-white rounded-full"></div>
                                   )}
                                 </div>
-                                <span className={`font-medium ${isSelected ? 'text-primary' : 'text-gray-700'
-                                  }`}>
-                                  {size.name}
+                                <span className={`font-medium ${
+                                  isSelected ? 'text-primary' : 'text-gray-700'
+                                }`}>
+                                  {adon.name}
                                 </span>
                               </div>
-                              <span className={`font-semibold ${isSelected ? 'text-primary' : 'text-gray-600'
-                                }`}>
-                                {size.price > 0 ? `+€${size.price.toFixed(2)}` : 'Free'}
+                              <span className={`font-semibold ${
+                                isSelected ? 'text-primary' : 'text-gray-600'
+                              }`}>
+                                +€{adon.price.toFixed(2)}
                               </span>
                             </button>
                           );
                         })}
                       </div>
                     </div>
-
-                    {/* Toppings Variation */}
-                    {/* <div className="border border-gray-200 rounded-lg p-4">
-                        <h5 className="font-medium text-gray-800 mb-3">Toppings</h5>
-                        <div className="space-y-2">
-                          {[
-                            { name: 'Extra Cheese', price: 1.50 },
-                            { name: 'Bacon', price: 2.00 },
-                            { name: 'Mushrooms', price: 1.00 },
-                            { name: 'Olives', price: 0.75 }
-                          ].map((topping) => {
-                            const isSelected = selectedVariations.toppings && selectedVariations.toppings.includes(topping.name);
-                            return (
-                              <button
-                                key={topping.name}
-                                onClick={() => handleVariationSelect('toppings', topping.name)}
-                                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                                  isSelected
-                                    ? 'bg-primary/10 border-primary'
-                                    : 'bg-white border-gray-200 hover:bg-gray-50'
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                    isSelected
-                                      ? 'border-primary bg-primary'
-                                      : 'border-gray-300'
-                                  }`}>
-                                    {isSelected && (
-                                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                                    )}
-                                  </div>
-                                  <span className={`font-medium ${
-                                    isSelected ? 'text-primary' : 'text-gray-700'
-                                  }`}>
-                                    {topping.name}
-                                  </span>
-                                </div>
-                                <span className={`font-semibold ${
-                                  isSelected ? 'text-primary' : 'text-gray-600'
-                                }`}>
-                                  +€{topping.price.toFixed(2)}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div> */}
                   </div>
-                </div>
-
-                {/* Select Add on Section */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Plus size={18} className="text-primary" />
-                    Select Add on
-                  </h4>
-
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <div className="space-y-2">
-                      {[
-                        { name: 'Extra Cheese', price: 1.50 },
-                        { name: 'Bacon', price: 2.00 },
-                        { name: 'Mushrooms', price: 1.00 },
-                        { name: 'Olives', price: 0.75 },
-                        { name: 'Extra Sauce', price: 0.50 },
-                        { name: 'Double Portion', price: 3.00 }
-                      ].map((addon) => {
-                        const isSelected = selectedVariations.addons && selectedVariations.addons.includes(addon.name);
-                        return (
-                          <button
-                            key={addon.name}
-                            onClick={() => handleVariationSelect('addons', addon.name)}
-                            className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${isSelected
-                              ? 'bg-primary/10 border-primary'
-                              : 'bg-white border-gray-200 hover:bg-gray-50'
-                              }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
-                                ? 'border-primary bg-primary'
-                                : 'border-gray-300'
-                                }`}>
-                                {isSelected && (
-                                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                                )}
-                              </div>
-                              <span className={`font-medium ${isSelected ? 'text-primary' : 'text-gray-700'
-                                }`}>
-                                {addon.name}
-                              </span>
-                            </div>
-                            <span className={`font-semibold ${isSelected ? 'text-primary' : 'text-gray-600'
-                              }`}>
-                              +€{addon.price.toFixed(2)}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Allergens Section */}
-                {/* <div className="mb-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <AlertTriangle size={18} className="text-orange-500" />
-                    Allergens
-                  </h4>
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                    <div className="flex flex-wrap gap-2">
-                      {['Gluten', 'Dairy', 'Nuts', 'Eggs'].map((allergen) => (
-                        <span
-                          key={allergen}
-                          className="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full flex items-center gap-1"
-                        >
-                          <AlertTriangle size={12} />
-                          {allergen}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div> */}
+                ) : null}
 
                 {/* Total Price Display */}
                 <div className="border-t border-gray-200 pt-4 mb-4">
@@ -2847,58 +2945,3 @@ const RunningOrders = () => {
                 className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
               >
                 Cancel
-              </button>
-              <button
-                onClick={() => {
-                  try {
-                    const audio = new Audio('/src/assets/ping.mp3');
-                    audio.play().catch(error => {
-                      console.log('Audio play failed:', error);
-                    });
-                  } catch (error) {
-                    console.log('Audio creation failed:', error);
-                  }
-                  clearCart();
-                  setShowDeleteCartModal(false);
-                }}
-                className="px-6 py-2.5 text-white bg-red-600 rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
-              >
-                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Delete All Items
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Custom Alert Component */}
-      <CustomAlert
-        isVisible={alertState.isVisible}
-        message={alertState.message}
-        type={alertState.type}
-        position={alertState.position}
-        duration={alertState.duration}
-        onClose={hideAlert}
-      />
-      
-      {/* Virtual Keyboard Component */}
-      <VirtualKeyboard
-        isVisible={showKeyboard}
-        onClose={(onBeforeHide) => hideKeyboard(() => {
-          // Save the current input value before hiding the keyboard
-          if (virtualKeyboardActiveInput && virtualKeyboardInput !== undefined) {
-            handleKeyboardChange(virtualKeyboardInput, virtualKeyboardActiveInput);
-          }
-        })}
-        activeInput={virtualKeyboardActiveInput}
-        onInputChange={handleKeyboardChange}
-        inputValue={virtualKeyboardInput}
-        onKeyPress={handleKeyboardKeyPress}
-      />
-    </>
-  );
-};
-
-export default RunningOrders;
