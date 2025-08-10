@@ -1,25 +1,43 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import Database from 'better-sqlite3';
+import fs from 'fs';
 
-// Dynamic database path resolution
-const getDatabasePath = () => {
-  const devPath = path.join(__dirname, '../../../database.db');
-  const prodPath = path.join(__dirname, '../../../../database.db');
-  
-  if (fs.existsSync(devPath)) {
-    return devPath;
-  } else if (fs.existsSync(prodPath)) {
-    return prodPath;
-  } else {
-    throw new Error('Database file not found');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in development by looking for src/database
+    const devPath = path.join(__dirname, '../../', relativePath);
+    const prodPath = path.join(__dirname, '../../../', relativePath);
+    
+    if (fs.existsSync(devPath)) {
+      return devPath;
+    } else if (fs.existsSync(prodPath)) {
+      return prodPath;
+    } else {
+      // Fallback to development path
+      return devPath;
+    }
+  } catch (error) {
+    console.error(`Failed to resolve path: ${relativePath}`, error);
+    // Fallback to development path
+    return path.join(__dirname, '../../', relativePath);
   }
 };
 
-const db = new Database(getDatabasePath());
+const dbPath = getDynamicPath('pos.db');
+const db = new Database(dbPath);
+
+// Universal error response
+export function errorResponse(message) {
+  return { success: false, message };
+}
 
 // Create order detail
-const createOrderDetail = (data) => {
+export function createOrderDetail(data) {
   try {
     const {
       food_id,
@@ -48,15 +66,15 @@ const createOrderDetail = (data) => {
       discount_on_food, discount_type, quantity, tax_amount, total_add_on_price
     );
 
-    return { id: result.lastInsertRowid, ...data };
+    return { success: true, id: result.lastInsertRowid, ...data };
   } catch (error) {
     console.error('Error creating order detail:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
+}
 
 // Update order detail
-const updateOrderDetail = (id, updates) => {
+export function updateOrderDetail(id, updates) {
   try {
     const allowedFields = [
       'price', 'food_details', 'item_note', 'variation', 'add_ons',
@@ -75,7 +93,7 @@ const updateOrderDetail = (id, updates) => {
     });
 
     if (updateFields.length === 0) {
-      throw new Error('No valid fields to update');
+      return errorResponse('No valid fields to update');
     }
 
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
@@ -88,29 +106,30 @@ const updateOrderDetail = (id, updates) => {
     `);
 
     const result = stmt.run(...updateValues);
-    return result.changes > 0;
+    return { success: result.changes > 0, changes: result.changes };
   } catch (error) {
     console.error('Error updating order detail:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
+}
 
 // Get order detail by ID
-const getOrderDetailById = (id) => {
+export function getOrderDetailById(id) {
   try {
     const stmt = db.prepare(`
       SELECT * FROM order_details 
       WHERE id = ? AND isdeleted = 0
     `);
-    return stmt.get(id);
+    const result = stmt.get(id);
+    return { success: true, data: result };
   } catch (error) {
     console.error('Error getting order detail by ID:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
+}
 
 // Get order details by order ID
-const getOrderDetailsByOrderId = (orderId) => {
+export function getOrderDetailsByOrderId(orderId) {
   try {
     const stmt = db.prepare(`
       SELECT od.*, f.name as food_name, f.image as food_image
@@ -119,15 +138,16 @@ const getOrderDetailsByOrderId = (orderId) => {
       WHERE od.order_id = ? AND od.isdeleted = 0
       ORDER BY od.created_at ASC
     `);
-    return stmt.all(orderId);
+    const results = stmt.all(orderId);
+    return { success: true, data: results };
   } catch (error) {
     console.error('Error getting order details by order ID:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
+}
 
 // Get order details by food ID
-const getOrderDetailsByFoodId = (foodId) => {
+export function getOrderDetailsByFoodId(foodId) {
   try {
     const stmt = db.prepare(`
       SELECT od.*, o.order_status, o.customer_id
@@ -136,15 +156,16 @@ const getOrderDetailsByFoodId = (foodId) => {
       WHERE od.food_id = ? AND od.isdeleted = 0
       ORDER BY od.created_at DESC
     `);
-    return stmt.all(foodId);
+    const results = stmt.all(foodId);
+    return { success: true, data: results };
   } catch (error) {
     console.error('Error getting order details by food ID:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
+}
 
 // Delete order detail (soft delete)
-const deleteOrderDetail = (id) => {
+export function deleteOrderDetail(id) {
   try {
     const stmt = db.prepare(`
       UPDATE order_details 
@@ -152,15 +173,15 @@ const deleteOrderDetail = (id) => {
       WHERE id = ?
     `);
     const result = stmt.run(id);
-    return result.changes > 0;
+    return { success: result.changes > 0, changes: result.changes };
   } catch (error) {
     console.error('Error deleting order detail:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
+}
 
 // Get all order details (with pagination)
-const getAllOrderDetails = (limit = 100, offset = 0) => {
+export function getAllOrderDetails(limit = 100, offset = 0) {
   try {
     const stmt = db.prepare(`
       SELECT od.*, f.name as food_name, o.order_status
@@ -171,15 +192,16 @@ const getAllOrderDetails = (limit = 100, offset = 0) => {
       ORDER BY od.created_at DESC
       LIMIT ? OFFSET ?
     `);
-    return stmt.all(limit, offset);
+    const results = stmt.all(limit, offset);
+    return { success: true, data: results };
   } catch (error) {
     console.error('Error getting all order details:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
+}
 
 // Get order details statistics
-const getOrderDetailsStatistics = (startDate, endDate) => {
+export function getOrderDetailsStatistics(startDate, endDate) {
   try {
     const stmt = db.prepare(`
       SELECT 
@@ -194,15 +216,16 @@ const getOrderDetailsStatistics = (startDate, endDate) => {
       WHERE od.isdeleted = 0 
         AND o.created_at BETWEEN ? AND ?
     `);
-    return stmt.get(startDate, endDate);
+    const result = stmt.get(startDate, endDate);
+    return { success: true, data: result };
   } catch (error) {
     console.error('Error getting order details statistics:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
+}
 
 // Bulk create order details
-const createMultipleOrderDetails = (orderDetailsArray) => {
+export function createMultipleOrderDetails(orderDetailsArray) {
   try {
     const stmt = db.prepare(`
       INSERT INTO order_details (
@@ -224,21 +247,10 @@ const createMultipleOrderDetails = (orderDetailsArray) => {
       return results;
     });
 
-    return insertMany(orderDetailsArray);
+    const results = insertMany(orderDetailsArray);
+    return { success: true, data: results };
   } catch (error) {
     console.error('Error creating multiple order details:', error);
-    throw error;
+    return errorResponse(error.message);
   }
-};
-
-module.exports = {
-  createOrderDetail,
-  updateOrderDetail,
-  getOrderDetailById,
-  getOrderDetailsByOrderId,
-  getOrderDetailsByFoodId,
-  deleteOrderDetail,
-  getAllOrderDetails,
-  getOrderDetailsStatistics,
-  createMultipleOrderDetails
-}; 
+} 

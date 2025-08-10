@@ -72,6 +72,17 @@ function registerOrdersIpcHandlers() {
   
   // Statistics
   ipcMain.handle('order:getStatistics', async (event, restaurantId, startDate, endDate) => getOrderStatistics(restaurantId, startDate, endDate));
+  
+  // Order Details handlers
+  ipcMain.handle('orderDetail:create', async (event, data) => createOrderDetail(data));
+  ipcMain.handle('orderDetail:update', async (event, id, updates) => updateOrderDetail(id, updates));
+  ipcMain.handle('orderDetail:getById', async (event, id) => getOrderDetailById(id));
+  ipcMain.handle('orderDetail:getByOrderId', async (event, orderId) => getOrderDetailsByOrderId(orderId));
+  ipcMain.handle('orderDetail:getByFoodId', async (event, foodId) => getOrderDetailsByFoodId(foodId));
+  ipcMain.handle('orderDetail:delete', async (event, id) => deleteOrderDetail(id));
+  ipcMain.handle('orderDetail:getAll', async (event, limit, offset) => getAllOrderDetails(limit, offset));
+  ipcMain.handle('orderDetail:getStatistics', async (event, startDate, endDate) => getOrderDetailsStatistics(startDate, endDate));
+  ipcMain.handle('orderDetail:createMultiple', async (event, orderDetailsArray) => createMultipleOrderDetails(orderDetailsArray));
 }
 
 module.exports = { registerOrdersIpcHandlers }; 

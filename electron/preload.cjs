@@ -149,6 +149,17 @@ contextBridge.exposeInMainWorld('myAPI', {
   getOrderStatistics: (restaurantId, startDate, endDate) => ipcRenderer.invoke('order:getStatistics', restaurantId, startDate, endDate),
   deleteOrder: (id) => ipcRenderer.invoke('order:delete', id),
 
+  // Order Details
+  createOrderDetail: (data) => ipcRenderer.invoke('orderDetail:create', data),
+  updateOrderDetail: (id, updates) => ipcRenderer.invoke('orderDetail:update', id, updates),
+  getOrderDetailById: (id) => ipcRenderer.invoke('orderDetail:getById', id),
+  getOrderDetailsByOrderId: (orderId) => ipcRenderer.invoke('orderDetail:getByOrderId', orderId),
+  getOrderDetailsByFoodId: (foodId) => ipcRenderer.invoke('orderDetail:getByFoodId', foodId),
+  deleteOrderDetail: (id) => ipcRenderer.invoke('orderDetail:delete', id),
+  getAllOrderDetails: (limit, offset) => ipcRenderer.invoke('orderDetail:getAll', limit, offset),
+  getOrderDetailsStatistics: (startDate, endDate) => ipcRenderer.invoke('orderDetail:getStatistics', startDate, endDate),
+  createMultipleOrderDetails: (orderDetailsArray) => ipcRenderer.invoke('orderDetail:createMultiple', orderDetailsArray),
+
   // Coupon
   createCoupon: (data) => ipcRenderer.invoke('coupon:create', data),
   updateCoupon: (id, updates) => ipcRenderer.invoke('coupon:update', id, updates),
