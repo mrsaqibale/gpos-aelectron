@@ -1845,8 +1845,9 @@ const RunningOrders = () => {
             <div className="mt-3 border border-primary overflow-y-auto h-[60%]">
               <table className="w-full">
                 <thead>
-                  <tr className="grid grid-cols-4 gap-4 text-sm font-medium text-gray-700 p-3">
-                    <th className="text-center">Items</th>
+                  <tr className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 text-sm font-medium text-gray-700 p-3">
+                    <th className="text-center w-8">Edit</th>
+                    <th className="text-left">Items</th>
                     <th className="text-center">Price</th>
                     <th className="text-center">Qty</th>
                     <th className="text-center">Total</th>
@@ -1855,15 +1856,17 @@ const RunningOrders = () => {
                 <tbody className="bg-white">
                   {cartItems.length > 0 ? (
                     cartItems.map((item) => (
-                                             <tr key={item.id} className="grid grid-cols-4 gap-4 items-center text-sm p-2 border-b border-gray-200">
-                         <td className="flex items-center gap-2">
+                        <tr key={item.id} className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
+                         <td className="flex items-center justify-center w-8">
                            <Edit2 
                              size={13} 
                              className="text-primary cursor-pointer hover:text-primary-dark transition-colors" 
                              onClick={() => handleEditCartItem(item)}
                              title="Edit item"
                            />
-                           <span className="text-gray-800 text-sm">{item.food.name}</span>
+                         </td>
+                         <td className="text-gray-800 text-sm truncate">
+                           <span>{item.food.name}</span>
                          </td>
                         <td className="text-gray-800 text-center">€{(item.totalPrice / item.quantity).toFixed(2)}</td>
                         <td className="flex items-center justify-center">
@@ -1883,7 +1886,7 @@ const RunningOrders = () => {
                             </button>
                           </div>
                         </td>
-                        <td className="flex items-center justify-center gap-2">
+                        <td className="flex items-center justify-center gap-1">
                           <span className="text-gray-800">€{item.totalPrice.toFixed(2)}</span>
                           <Trash2 
                             size={14} 
@@ -1894,8 +1897,8 @@ const RunningOrders = () => {
                       </tr>
                     ))
                   ) : (
-                    <tr className="grid grid-cols-4 gap-4 items-center text-sm p-4">
-                      <td colSpan="4" className="text-center text-gray-500">
+                    <tr className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 items-center text-sm p-4">
+                      <td colSpan="5" className="text-center text-gray-500">
                         {/* No items in cart */}
                       </td>
                     </tr>
