@@ -425,8 +425,32 @@ const VoucherManagement = () => {
           </div>
 
           <form onSubmit={handleSubmit}>
-            {/* First row: Name and Phone Number */}
+            {/* First row: Title and Name */}
             <div className="grid grid-cols-2 gap-5 mb-5">
+              {/* Title */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={newVoucher.title}
+                  onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'title')}
+                  onClick={(e) => handleAnyInputClick(e, 'title')}
+                  onBlur={handleInputBlur}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.title ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter voucher title"
+                  required
+                />
+                {errors.title && (
+                  <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+                )}
+              </div>
+
               {/* Name */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -450,7 +474,10 @@ const VoucherManagement = () => {
                   <p className="text-red-500 text-xs mt-1">{errors.name}</p>
                 )}
               </div>
+            </div>
 
+            {/* Second row: Phone Number and Email */}
+            <div className="grid grid-cols-2 gap-5 mb-5">
               {/* Phone Number */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -474,10 +501,7 @@ const VoucherManagement = () => {
                   <p className="text-red-500 text-xs mt-1">{errors.phoneNo}</p>
                 )}
               </div>
-              </div>
 
-            {/* Second row: Email and Expiry Date */}
-            <div className="grid grid-cols-2 gap-5 mb-5">
               {/* Email */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -500,32 +524,58 @@ const VoucherManagement = () => {
                   <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                 )}
               </div>
+            </div>
 
-              {/* Expiry Date */}
+            {/* Third row: Start Date and End Date */}
+            <div className="grid grid-cols-2 gap-5 mb-5">
+              {/* Start Date */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Expiry Date <span className="text-red-500">*</span>
+                  Start Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
-                  name="expiryDate"
-                  value={newVoucher.expiryDate}
+                  name="startDate"
+                  value={newVoucher.startDate}
                   onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'expiryDate')}
-                  onClick={(e) => handleAnyInputClick(e, 'expiryDate')}
+                  onFocus={(e) => handleAnyInputFocus(e, 'startDate')}
+                  onClick={(e) => handleAnyInputClick(e, 'startDate')}
                   onBlur={handleInputBlur}
                   className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    errors.expiryDate ? 'border-red-500' : 'border-gray-300'
+                    errors.startDate ? 'border-red-500' : 'border-gray-300'
                   }`}
                   required
                 />
-                {errors.expiryDate && (
-                  <p className="text-red-500 text-xs mt-1">{errors.expiryDate}</p>
+                {errors.startDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>
                 )}
               </div>
-              </div>
 
-            {/* Third row: Amount and Code */}
+              {/* End Date */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="endDate"
+                  value={newVoucher.endDate}
+                  onChange={handleInputChange}
+                  onFocus={(e) => handleAnyInputFocus(e, 'endDate')}
+                  onClick={(e) => handleAnyInputClick(e, 'endDate')}
+                  onBlur={handleInputBlur}
+                  className={`w-full px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                    errors.endDate ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  required
+                />
+                {errors.endDate && (
+                  <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Fourth row: Amount and Voucher Code */}
             <div className="grid grid-cols-2 gap-5 mb-5">
               {/* Amount */}
               <div>
@@ -553,18 +603,18 @@ const VoucherManagement = () => {
                 )}
               </div>
 
-              {/* Code (Auto Generated) */}
+              {/* Voucher Code (Auto Generated) */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Code <span className="text-red-500">*</span>
+                  Voucher Code <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  name="code"
-                  value={newVoucher.code}
+                  name="voucherCode"
+                  value={newVoucher.voucherCode}
                   onChange={handleInputChange}
-                  onFocus={(e) => handleAnyInputFocus(e, 'code')}
-                  onClick={(e) => handleAnyInputClick(e, 'code')}
+                  onFocus={(e) => handleAnyInputFocus(e, 'voucherCode')}
+                  onClick={(e) => handleAnyInputClick(e, 'voucherCode')}
                   onBlur={handleInputBlur}
                   className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm bg-gray-50"
                   placeholder="Auto generated code"
@@ -575,23 +625,23 @@ const VoucherManagement = () => {
                   <p className="text-xs text-gray-500 mt-1">Code will be auto-generated</p>
                 )}
               </div>
-              </div>
+            </div>
 
-            {/* Fourth row: Text Field */}
+            {/* Fifth row: Event Description */}
             <div className="mb-5">
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                Text Field
+                Event Description
                 </label>
               <textarea
-                name="textField"
-                value={newVoucher.textField}
+                name="event"
+                value={newVoucher.event}
                   onChange={handleInputChange}
-                onFocus={(e) => handleAnyInputFocus(e, 'textField')}
-                onClick={(e) => handleAnyInputClick(e, 'textField')}
+                onFocus={(e) => handleAnyInputFocus(e, 'event')}
+                onClick={(e) => handleAnyInputClick(e, 'event')}
                   onBlur={handleInputBlur}
                 rows="3"
                 className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                placeholder="Enter additional notes or description"
+                placeholder="Enter event description or additional notes"
               />
             </div>
 
@@ -694,6 +744,9 @@ const VoucherManagement = () => {
                     SI
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Title
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
                     Name
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
@@ -703,16 +756,19 @@ const VoucherManagement = () => {
                     Email
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Code
+                    Voucher Code
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
                     Amount
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Expiry Date
+                    Start Date
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                    Text Field
+                    End Date
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                    Event
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
                     Status
@@ -729,6 +785,9 @@ const VoucherManagement = () => {
                     <span className="text-sm font-medium text-gray-700">{index + 1}</span>
                   </td>
                   <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-900">{voucher.title}</span>
+                  </td>
+                  <td className="py-3 px-4">
                     <span className="text-sm font-medium text-gray-900">{voucher.name}</span>
                   </td>
                   <td className="py-3 px-4">
@@ -738,19 +797,24 @@ const VoucherManagement = () => {
                     <span className="text-sm text-gray-600">{voucher.email || '-'}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="font-mono font-medium text-primary">{voucher.code}</span>
+                    <span className="font-mono font-medium text-primary">{voucher.voucherCode}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm font-medium text-gray-900">€{voucher.amount}</span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">
-                      {new Date(voucher.expiryDate).toLocaleDateString()}
+                      {voucher.startDate ? new Date(voucher.startDate).toLocaleDateString() : '-'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600 max-w-xs truncate" title={voucher.textField}>
-                      {voucher.textField || '-'}
+                    <span className="text-sm text-gray-600">
+                      {voucher.endDate ? new Date(voucher.endDate).toLocaleDateString() : '-'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600 max-w-xs truncate" title={voucher.event}>
+                      {voucher.event || '-'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
