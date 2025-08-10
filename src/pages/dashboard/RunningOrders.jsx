@@ -2364,9 +2364,9 @@ const RunningOrders = () => {
         {console.log('Modal render check:', { showFoodModal, selectedFood: !!selectedFood })}
         {showFoodModal && selectedFood && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh]">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
               {/* Header */}
-              <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+              <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">
                   {editingCartItem ? 'Edit Food Item' : 'Food Details'}
                 </h2>
@@ -2384,8 +2384,8 @@ const RunningOrders = () => {
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="p-6 overflow-y-auto max-h-[80vh] custom-scrollbar">
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
 
                 {/* Food Header Section */}
                 <div className="mb-6">
@@ -2608,44 +2608,42 @@ const RunningOrders = () => {
                     <span className="text-2xl font-bold text-primary">€{calculateTotalPrice().toFixed(2)}</span>
                   </div>
                 </div>
+              </div>
 
-                
-
-                {/* Action Buttons */}
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="flex gap-3">
-                    {/* Quantity Controls */}
-                    <div className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg bg-white">
-                      <button
-                        onClick={handleQuantityDecrease}
-                        disabled={foodQuantity <= 1}
-                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <Minus size={16} />
-                      </button>
-                      <span className="w-12 text-center text-gray-800 font-medium text-lg">
-                        {foodQuantity}
-                      </span>
-                      <button
-                        onClick={handleQuantityIncrease}
-                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
+              {/* Fixed Bottom Section */}
+              <div className="border-t border-gray-200 p-6 bg-white rounded-b-xl flex-shrink-0">
+                <div className="flex gap-3">
+                  {/* Quantity Controls */}
+                  <div className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-lg bg-white">
                     <button
-                      onClick={handleAddToCart}
-                      disabled={!validateVariationSelections()}
-                      className={`flex-1 px-4 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                        validateVariationSelections()
-                          ? 'bg-primary text-white hover:bg-primary/90'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
+                      onClick={handleQuantityDecrease}
+                      disabled={foodQuantity <= 1}
+                      className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
                     >
-                      <ShoppingCart size={18} />
-                      {editingCartItem ? 'Update' : 'Add'}
+                      <Minus size={16} />
+                    </button>
+                    <span className="w-12 text-center text-gray-800 font-medium text-lg">
+                      {foodQuantity}
+                    </span>
+                    <button
+                      onClick={handleQuantityIncrease}
+                      className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                    >
+                      <Plus size={16} />
                     </button>
                   </div>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={!validateVariationSelections()}
+                    className={`flex-1 px-4 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                      validateVariationSelections()
+                        ? 'bg-primary text-white hover:bg-primary/90'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <ShoppingCart size={18} />
+                    {editingCartItem ? 'Update' : 'Add'}
+                  </button>
                 </div>
               </div>
             </div>
