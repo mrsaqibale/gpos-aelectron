@@ -1,7 +1,21 @@
-const db = require('../../init.js');
+import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Get the database path
+const dbPath = path.join(__dirname, '../../pos.db');
+const db = new Database(dbPath);
+
+// Universal error response
+function errorResponse(message) {
+  return { success: false, message };
+}
 
 // Create voucher
-function createVoucher(data) {
+export function createVoucher(data) {
   try {
     const {
       title = null,
@@ -44,7 +58,7 @@ function createVoucher(data) {
 }
 
 // Update voucher
-function updateVoucher(id, updates) {
+export function updateVoucher(id, updates) {
   try {
     const allowedFields = [
       'title', 'start_date', 'end_date', 'voucher_code', 'amount',
@@ -104,7 +118,7 @@ function updateVoucher(id, updates) {
 }
 
 // Get all vouchers (excluding deleted ones)
-function getAllVouchers() {
+export function getAllVouchers() {
   try {
     const stmt = db.prepare(`
       SELECT v.*, e.fname as employee_fname, e.lname as employee_lname
@@ -129,7 +143,7 @@ function getAllVouchers() {
 }
 
 // Get voucher by ID
-function getVoucherById(id) {
+export function getVoucherById(id) {
   try {
     const stmt = db.prepare(`
       SELECT v.*, e.fname as employee_fname, e.lname as employee_lname
@@ -161,7 +175,7 @@ function getVoucherById(id) {
 }
 
 // Delete voucher (soft delete)
-function deleteVoucher(id) {
+export function deleteVoucher(id) {
   try {
     const stmt = db.prepare(`
       UPDATE voucher 
@@ -192,7 +206,7 @@ function deleteVoucher(id) {
 }
 
 // Search voucher by code
-function searchVoucherByCode(code) {
+export function searchVoucherByCode(code) {
   try {
     const stmt = db.prepare(`
       SELECT v.*, e.fname as employee_fname, e.lname as employee_lname
@@ -223,11 +237,4 @@ function searchVoucherByCode(code) {
   }
 }
 
-module.exports = {
-  createVoucher,
-  updateVoucher,
-  getAllVouchers,
-  getVoucherById,
-  deleteVoucher,
-  searchVoucherByCode
-}; 
+ 

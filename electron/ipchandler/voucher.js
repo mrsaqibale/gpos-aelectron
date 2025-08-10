@@ -1,12 +1,12 @@
-const { ipcMain } = require('electron');
-const { 
+import { ipcMain } from 'electron';
+import { 
   createVoucher, 
   updateVoucher, 
   getAllVouchers, 
   getVoucherById, 
   deleteVoucher, 
   searchVoucherByCode 
-} = require('../../src/database/models/voucher/voucher.cjs');
+} from '../../src/database/models/voucher/voucher.js';
 
 function registerVoucherIpcHandlers() {
   // Create voucher
@@ -88,4 +88,4 @@ function registerVoucherIpcHandlers() {
   });
 }
 
-module.exports = { registerVoucherIpcHandlers }; 
+export { registerVoucherIpcHandlers }; 
