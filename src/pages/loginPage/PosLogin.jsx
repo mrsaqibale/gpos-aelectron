@@ -241,7 +241,7 @@ const POSLogin = () => {
       <button
         onClick={() => onClick(number)}
         disabled={!selectedRole}
-        className="rounded-xl py-2 px-4 shadow-lg cursor-pointer hover:shadow-xl font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+        className="rounded-xl py-1 px-0 shadow-lg cursor-pointer hover:shadow-xl font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
         style={{
           backgroundColor: 'white',
           color: themeColors.primary,
@@ -260,7 +260,7 @@ const POSLogin = () => {
     disabled = false,
   }) => {
     const baseClasses =
-      "py-2 px-4 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
+      "py-1 px-0 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
     const buttonStyle = {
       backgroundColor: selectedRole ? (variant === "clear" ? '#ffebee' : themeColors.primary) : 'white',
@@ -326,15 +326,15 @@ const POSLogin = () => {
 
 
         {/* Main Content */}
-        <div className="w-full max-w-4xl flex transform perspective-1000">
+        <div className="w-full h-[500px] max-w-4xl flex transform perspective-1000">
 
                       {/* Left Section - Role Selection with 3D effect */}
             <div className="w-1/2 rounded-l-3xl border-r p-6 border-[#4a7ca3] border shadow-2xl" style={{ backgroundColor: themeColors.primary }}>
-            <h2 className="text-3xl mt-2 font-bold text-white mb-6 text-center">
+            <h2 className="text-2xl mt-2 font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
 
-            <div className="grid h-[500px] grid-cols-2 gap-4">
+            <div className="grid h-[380px] grid-cols-2 gap-4">
               {roles.map((role) => {
                 const IconComponent = role.icon;
                 const isSelected = selectedRole === role.id;
@@ -383,7 +383,7 @@ const POSLogin = () => {
           >
             {/* Logging in as Role Header */}
             {selectedRole && (
-              <div className="mb-3 p-2] rounded-md border border-[#4a7ca3] shadow-inner max-w-xs mx-auto">
+              <div className="mb-2 p-2] rounded-md border border-[#4a7ca3] shadow-inner max-w-xs mx-auto">
                 <div className="flex items-center justify-center gap-1 text-black">
                   <BarChart3 className="w-3 h-3" />
                   <span className="text-sm font-medium">
@@ -393,7 +393,7 @@ const POSLogin = () => {
               </div>
             )}
 
-            <h2 className="text-3xl mt-2 font-semibold text-black mb-6 text-center transform transition-transform hover:scale-105">
+            <h2 className="text-2xl mt-0 font-semibold text-black mb-2 text-center transform transition-transform hover:scale-105">
               Enter PIN To Continue
             </h2>
 
@@ -470,11 +470,11 @@ const POSLogin = () => {
             </div>
 
             {/* Login Button with 3D effect */}
-            <div className="mb-4 flex justify-center">
+            <div className="mb-2 flex justify-center">
               <button
                 onClick={handleLogin}
                 disabled={!selectedRole || pin.length < 4 || isLoading}
-                className="w-[86%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
+                className="w-[80%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
                                  style={{
                      backgroundColor: themeColors.primary,
                      borderColor: themeColors.loginBg,
@@ -506,19 +506,19 @@ const POSLogin = () => {
             </div>
 
             {/* Current Time Display */}
-            <div className="text-center mt-4">
+            <div className="text-center mt-2">
               <div className="text-lg flex items-start justify-start ml-10 font-semibold text-gray-600">
                 <span
                   className="inline-flex items-center justify-center rounded-full mr-2"
                   style={{
                     backgroundColor: themeColors.primary,
-                    width: 28,
-                    height: 28,
+                    width: 24,
+                    height: 24,
                   }}
                 >
                   <svg
-                    width="18"
-                    height="18"
+                    width="14"
+                    height="14"
                     viewBox="0 0 20 20"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -532,7 +532,7 @@ const POSLogin = () => {
                     />
                   </svg>
                 </span>
-                <p className='text-md'>Time In logged at {formatTime(currentTime)}
+                <p className='text-[16px]'>Time In logged at {formatTime(currentTime)}
                 </p>
               </div>
             </div>
