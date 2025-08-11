@@ -126,6 +126,16 @@ const RunningOrders = () => {
   const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
 
+  // Split Pizza Modal State
+  const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
+  const [pizzaSlices, setPizzaSlices] = useState(8);
+  const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [availableIngredients] = useState([
+    'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
+    'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach', 'Tomatoes', 
+    'Cheese', 'Basil', 'Garlic', 'Chicken', 'Beef', 'Shrimp'
+  ]);
+
 
 
   // Use the custom hook for keyboard functionality
@@ -1393,6 +1403,59 @@ const RunningOrders = () => {
     }
   };
 
+  // Split Pizza Modal Functions
+  const handleOpenSplitPizzaModal = () => {
+    setShowSplitPizzaModal(true);
+  };
+
+  const handleCloseSplitPizzaModal = () => {
+    setShowSplitPizzaModal(false);
+    setPizzaSlices(8);
+    setSelectedIngredients([]);
+  };
+
+  const handlePizzaSlicesChange = (e) => {
+    const value = parseInt(e.target.value);
+    if (value >= 2 && value <= 16) {
+      setPizzaSlices(value);
+    }
+  };
+
+  const handleIngredientSelect = (ingredient) => {
+    if (!selectedIngredients.includes(ingredient)) {
+      setSelectedIngredients([...selectedIngredients, ingredient]);
+    }
+  };
+
+  const handleRemoveIngredient = (ingredient) => {
+    setSelectedIngredients(selectedIngredients.filter(item => item !== ingredient));
+  };
+
+  const renderPizzaSlices = () => {
+    const lines = [];
+    const angleStep = 360 / pizzaSlices;
+    
+    for (let i = 0; i < pizzaSlices; i++) {
+      const angle = i * angleStep;
+      const x = 100 + 80 * Math.cos(angle * Math.PI / 180);
+      const y = 100 + 80 * Math.sin(angle * Math.PI / 180);
+      
+      lines.push(
+        <line
+          key={i}
+          x1="100"
+          y1="100"
+          x2={x}
+          y2={y}
+          stroke="#FF8C00"
+          strokeWidth="2"
+        />
+      );
+    }
+    
+    return lines;
+  };
+
   // Handle place order
   const handlePlaceOrder = () => {
     if (cartItems.length === 0) {
@@ -1906,7 +1969,6 @@ const RunningOrders = () => {
           {/* Items table */}
           {/* Items table header */}
           <div className='bg-white flex flex-col h-[79%] mb-2 rounded-lg p-2 relative'>
-
             <div className="mt-3 border border-primary overflow-y-auto h-[60%]">
               <table className="w-full">
                 <thead>
@@ -2013,16 +2075,10 @@ const RunningOrders = () => {
                   DISCOUNT
                 </button>
                 <button
-                  onClick={clearCart}
+                  onClick={handleOpenSplitPizzaModal}
                   className="bg-[#4d35ee] text-white  w-[100%] btn-lifted py-1.5 px-1   text-[11px] font-bold rounded   hover:bg-blue-700"
                 >
-                  CLEAR CART
-                </button>
-                <button
-                  onClick={cleanupDuplicateItems}
-                  className="bg-[#ff6b35] text-white  w-[100%] btn-lifted py-1.5 px-1   text-[11px] font-bold rounded   hover:bg-orange-600"
-                >
-                  MERGE DUPLICATES
+                  SPLIT PIZZA
                 </button>
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
@@ -2040,7 +2096,6 @@ const RunningOrders = () => {
                   PAY
                 </button>
               </div>
-
             </div>
           </div>
 
@@ -2068,6 +2123,123 @@ const RunningOrders = () => {
             onCustomerSelect={handleEditCustomer}
             editingCustomer={selectedCustomer}
           />
+        )}
+
+        {/* Split Pizza Modal */}
+        {showSplitPizzaModal && (
+          <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
+                <h2 className="text-xl font-bold">Split Pizza</h2>
+                <button
+                  onClick={handleCloseSplitPizzaModal}
+                  className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 flex-1 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-8">
+                  {/* First Column - Pizza Slices */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Pizza Configuration</h3>
+                    
+                    {/* Number of Slices Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Number of Slices
+                      </label>
+                      <input
+                        type="number"
+                        min="2"
+                        max="16"
+                        value={pizzaSlices}
+                        onChange={handlePizzaSlicesChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+
+                    {/* Pizza Visualization */}
+                    <div className="flex justify-center">
+                      <div className="relative">
+                        <svg width="200" height="200" viewBox="0 0 200 200">
+                          {/* Pizza base circle */}
+                          <circle
+                            cx="100"
+                            cy="100"
+                            r="80"
+                            fill="#FFD700"
+                            stroke="#FF8C00"
+                            strokeWidth="3"
+                          />
+                          {/* Pizza slices */}
+                          {renderPizzaSlices()}
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Second Column - Ingredients */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Ingredients Selection</h3>
+                    
+                    {/* Ingredients Dropdown */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select Ingredients
+                      </label>
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleIngredientSelect(e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="">Choose an ingredient...</option>
+                        {availableIngredients.map((ingredient) => (
+                          <option key={ingredient} value={ingredient}>
+                            {ingredient}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Selected Ingredients Tags */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Selected Ingredients
+                      </label>
+                      <div className="flex flex-wrap gap-2 min-h-[60px] p-3 border border-gray-300 rounded-lg">
+                        {selectedIngredients.length === 0 ? (
+                          <span className="text-gray-400 text-sm">No ingredients selected</span>
+                        ) : (
+                          selectedIngredients.map((ingredient) => (
+                            <span
+                              key={ingredient}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-primary text-white text-sm rounded-full"
+                            >
+                              {ingredient}
+                              <button
+                                onClick={() => handleRemoveIngredient(ingredient)}
+                                className="ml-1 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Table Management Modal */}

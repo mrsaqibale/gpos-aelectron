@@ -532,11 +532,8 @@ const POSLogin = () => {
                     />
                   </svg>
                 </span>
-                <div className='flex flex-col items-start justify-start'>
                 <p className='text-md'>Time In logged at {formatTime(currentTime)}
                 </p>
-                <p className='text-sm'>(Select before logging in)</p>
-                </div>
               </div>
             </div>
           </div>
