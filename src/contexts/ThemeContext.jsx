@@ -17,6 +17,8 @@ export const themes = {
     primary: '#003C58',
     primaryLight: '#005a9c',
     primaryExtraLight: '#005a9c1b',
+    // Dashboard background color
+    dashboardBackground: '#f0f8ff',
   },
   blue: {
     background: '#032D81',
@@ -31,6 +33,8 @@ export const themes = {
     primary: '#032D81',
     primaryLight: '#4f8cff',
     primaryExtraLight: '#4f8cff1b',
+    // Dashboard background color
+    dashboardBackground: '#f0f4ff',
   },
   green: {
     background: '#136F63',
@@ -45,6 +49,8 @@ export const themes = {
     primary: '#136F63',
     primaryLight: '#1a8a7a',
     primaryExtraLight: '#1a8a7a1b',
+    // Dashboard background color
+    dashboardBackground: '#f0fff4',
   },
 };
 
@@ -73,6 +79,7 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty('--color-primary', themeColors.primary);
     root.style.setProperty('--color-primaryLight', themeColors.primaryLight);
     root.style.setProperty('--color-primaryExtraLight', themeColors.primaryExtraLight);
+    root.style.setProperty('--color-dashboardBackground', themeColors.dashboardBackground);
   }, [themeColors]);
 
   // Set initial CSS custom properties immediately
@@ -82,6 +89,7 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty('--color-primary', initialTheme.primary);
     root.style.setProperty('--color-primaryLight', initialTheme.primaryLight);
     root.style.setProperty('--color-primaryExtraLight', initialTheme.primaryExtraLight);
+    root.style.setProperty('--color-dashboardBackground', initialTheme.dashboardBackground);
   }, []);
 
   const changeTheme = (themeKey) => {

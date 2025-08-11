@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @theme {
 
-  --color-bgColor:#f8faff;
+  --color-bgColor: var(--color-dashboardBackground, #f0f8ff);
   --color-primary:#003C58;
   --color-primaryLight:#005a9c;
   --color-primaryExtraLight:#005a9c1b;
@@ -14,12 +14,13 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden; /* Prevent body scroll */
-  background-color: #f0f0f0;
+  background-color: var(--color-dashboardBackground, #f0f8ff);
 }
 
 #root {
   height: 100vh;
   overflow: hidden; /* Prevent root scroll */
+  background-color: var(--color-dashboardBackground, #f0f8ff);
 }
 
 /* Dashboard specific styles for full height with original spacing */
@@ -29,6 +30,7 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   padding: 8px; /* Restore original padding */
+  background-color: var(--color-dashboardBackground, #f0f8ff);
 }
 
 .dashboard-content {
@@ -102,6 +104,18 @@ html, body {
   
   .border-primaryExtraLight {
     border-color: var(--color-primaryExtraLight);
+  }
+  
+  .bg-dashboardBackground {
+    background-color: var(--color-dashboardBackground);
+  }
+  
+  .text-dashboardBackground {
+    color: var(--color-dashboardBackground);
+  }
+  
+  .border-dashboardBackground {
+    border-color: var(--color-dashboardBackground);
   }
   
   .bg-brown-400 {

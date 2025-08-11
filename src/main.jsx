@@ -36,16 +36,16 @@ const ErrorBoundary = ({ children }) => {
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <ErrorBoundary><App /></ErrorBoundary>,
+    element: <ErrorBoundary><ThemeProvider><App /></ThemeProvider></ErrorBoundary>,
     children: [
       { index: true, element: <Navigate to="/login" replace /> },
       {
         path: 'login',
-        element: <ErrorBoundary><ThemeProvider><POSLogin /></ThemeProvider></ErrorBoundary>,
+        element: <ErrorBoundary><POSLogin /></ErrorBoundary>,
       },
       {
         path: 'dashboard',
-        element: <ErrorBoundary><ThemeProvider><DashboardLayout /></ThemeProvider></ErrorBoundary>,
+        element: <ErrorBoundary><DashboardLayout /></ErrorBoundary>,
         children: [
           {
             path: 'manage-orders',

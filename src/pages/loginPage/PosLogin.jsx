@@ -263,9 +263,9 @@ const POSLogin = () => {
       "py-1 px-0 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
     const buttonStyle = {
-      backgroundColor: selectedRole ? (variant === "clear" ? '#ffebee' : themeColors.primary) : 'white',
+      backgroundColor: selectedRole ? (variant === "clear" ? '#ffebee' : variant === "backspace" ? themeColors.primary + '20' : themeColors.primary) : 'white',
       color: selectedRole ? (variant === "clear" ? '#d32f2f' : 'white') : themeColors.primary,
-      border: selectedRole ? (variant === "clear" ? `2px solid #d32f2f` : 'none') : `2px solid ${themeColors.primary}`,
+      border: selectedRole ? (variant === "clear" ? `2px solid #d32f2f` : variant === "backspace" ? `2px solid ${themeColors.primary}` : 'none') : `2px solid ${themeColors.primary}`,
     };
 
     return (
@@ -451,19 +451,17 @@ const POSLogin = () => {
                     onClick={handleBackspace}
                     variant="backspace"
                     disabled={!selectedRole}
-                                         style={{
-                       backgroundColor: themeColors.primary
-                     }}
                   >
-                    <svg className="w-7 h-7" viewBox="0 0 20 20" fill="none">
-                      <path
-                        d="M7.5 10H15M5.5 5L2 10L5.5 15M15 5V15"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                                         <svg className="w-7 h-7" viewBox="0 0 20 20" fill="none">
+                       <path
+                         d="M7.5 10H15M5.5 5L2 10L5.5 15M15 5V15"
+                         stroke={themeColors.primary}
+                         strokeWidth="1.5"
+                         strokeLinecap="round"
+                         strokeLinejoin="round"
+                         style={{ opacity: 0.6 }}
+                       />
+                     </svg>
                   </ActionButton>
                 </div>
 

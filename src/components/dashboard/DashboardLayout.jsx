@@ -180,7 +180,7 @@ const DashboardLayout = () => {
           {/* Dashboard Slider */}
           <div 
             className="w-64 h-full shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-xl"
-            style={{ backgroundColor: themeColors.primaryLight }}
+            style={{ backgroundColor: themeColors.primary }}
           >
             {/* Header */}
             <div 
@@ -303,14 +303,15 @@ const DashboardLayout = () => {
          
               <main className="dashboard-main">
                 <div className={`dashboard-scrollable rounded-br-xl ${
-                  shouldHideSidebar ? 'bg-[#d3d3d3] p-0' : 'bg-bgColor p-2'
+                  shouldHideSidebar ? 'bg-[#d3d3d3] p-0' : 'p-2'
                 } ${
                   shouldHideSidebar ? '' : 'md:ml-2'
                 } ${
                   isKDSRoute ? '' : 'mt-6 md:mt-3'
                 }`}
                   style={{
-                    transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+                    transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    backgroundColor: shouldHideSidebar ? '#d3d3d3' : themeColors.dashboardBackground
                   }}
                 >
                   <Outlet />

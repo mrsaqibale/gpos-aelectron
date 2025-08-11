@@ -117,11 +117,11 @@ const Sidebar = ({ navigationItems }) => {
         className={`lg:hidden fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-300 ease-in-out ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } shadow-xl rounded-r-xl`}
-        style={{ backgroundColor: themeColors.primaryLight }}
+        style={{ backgroundColor: themeColors.primary }}
       >
         <div 
           className="p-4 border-b flex justify-between items-center"
-          style={{ borderColor: themeColors.primary }}
+          style={{ borderColor: themeColors.primaryLight }}
         >
           <div className="cursor-pointer">
             <h1 className="font-bold text-white text-xl">
@@ -147,7 +147,7 @@ const Sidebar = ({ navigationItems }) => {
         style={{
           width: isOpen ? "200px" : "60px",
           transition: "width 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-          backgroundColor: themeColors.primaryLight,
+          backgroundColor: themeColors.primary,
         }}
       >
         <div className="h-full flex flex-col">
