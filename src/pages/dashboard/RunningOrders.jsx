@@ -642,7 +642,7 @@ const RunningOrders = () => {
       // Show success alert
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
-      // If food is not in cart, fetch detailed food data and check for variations
+      // If food is not in cart, fetch detailed food data to check for variations
       console.log('Fetching detailed food data for:', foodItem.name);
       setFoodDetailsLoading(true);
 
@@ -657,7 +657,8 @@ const RunningOrders = () => {
           
           // Check if the food has variations
           const hasVariations = result.data.variations && result.data.variations.length > 0;
-          
+          console.log('Food has variations:', hasVariations);
+
           if (hasVariations) {
             // If food has variations, show the modal for customization
             setSelectedFood(result.data);
@@ -667,68 +668,84 @@ const RunningOrders = () => {
             setFoodQuantity(1);
           } else {
             // If food has no variations, add directly to cart
-            addFoodDirectlyToCart(result.data);
+            const cartItem = {
+              id: cartItemId,
+              food: result.data,
+              variations: {},
+              adons: [],
+              quantity: 1,
+              totalPrice: result.data.price,
+              addedAt: new Date().toISOString()
+            };
+
+            // Add to cart
+            setCartItems(prev => {
+              console.log('Previous cart items:', prev);
+              const newCart = [...prev, cartItem];
+              console.log('New cart items:', newCart);
+              return newCart;
+            });
+            setCartItemId(prev => prev + 1);
+            console.log('Added food without variations directly to cart:', result.data.name);
+
+            // Show success alert
+            showSuccess(`${result.data.name} added to cart!`);
           }
         } else {
           console.error('Failed to fetch food details:', result?.message);
-          // Fallback to basic food data - show modal
-          setSelectedFood(foodItem);
-          setShowFoodModal(true);
-          setSelectedVariations({});
-          setSelectedAdons([]);
-          setFoodQuantity(1);
+          // Fallback to basic food data - add directly to cart
+          const cartItem = {
+            id: cartItemId,
+            food: foodItem,
+            variations: {},
+            adons: [],
+            quantity: 1,
+            totalPrice: foodItem.price,
+            addedAt: new Date().toISOString()
+          };
+
+          // Add to cart
+          setCartItems(prev => {
+            console.log('Previous cart items:', prev);
+            const newCart = [...prev, cartItem];
+            console.log('New cart items:', newCart);
+            return newCart;
+          });
+          setCartItemId(prev => prev + 1);
+          console.log('Added food without variations directly to cart (fallback):', foodItem.name);
+
+          // Show success alert
+          showSuccess(`${foodItem.name} added to cart!`);
         }
       } catch (error) {
         console.error('Error fetching food details:', error);
-        // Fallback to basic food data - show modal
-        setSelectedFood(foodItem);
-        setShowFoodModal(true);
-        setSelectedVariations({});
-        setSelectedAdons([]);
-        setFoodQuantity(1);
+        // Fallback to basic food data - add directly to cart
+        const cartItem = {
+          id: cartItemId,
+          food: foodItem,
+          variations: {},
+          adons: [],
+          quantity: 1,
+          totalPrice: foodItem.price,
+          addedAt: new Date().toISOString()
+        };
+
+        // Add to cart
+        setCartItems(prev => {
+          console.log('Previous cart items:', prev);
+          const newCart = [...prev, cartItem];
+          console.log('New cart items:', newCart);
+          return newCart;
+        });
+        setCartItemId(prev => prev + 1);
+        console.log('Added food without variations directly to cart (error fallback):', foodItem.name);
+
+        // Show success alert
+        showSuccess(`${foodItem.name} added to cart!`);
       } finally {
         setFoodDetailsLoading(false);
       }
     }
-  };
-
-  // Add food directly to cart without showing modal (for foods without variations)
-  const addFoodDirectlyToCart = (foodData) => {
-    // Play sound when adding to cart
-    try {
-      const audio = new Audio('/src/assets/ping.mp3');
-      audio.play().catch(error => {
-        console.log('Audio play failed:', error);
-      });
-    } catch (error) {
-      console.log('Audio creation failed:', error);
-    }
-
-    console.log('Adding food directly to cart:', foodData.name);
-
-    // Create new cart item with basic details (no variations or adons)
-    const cartItem = {
-      id: cartItemId,
-      food: foodData,
-      variations: {},
-      adons: [],
-      quantity: 1,
-      totalPrice: foodData.price || 0,
-      addedAt: new Date().toISOString()
-    };
-
-    // Add to cart
-    setCartItems(prev => {
-      console.log('Previous cart items:', prev);
-      const newCart = [...prev, cartItem];
-      console.log('New cart items:', newCart);
-      return newCart;
-    });
-    setCartItemId(prev => prev + 1);
-    console.log('Added new item to cart:', foodData.name);
-
-    // Show success alert
-    showSuccess(`${foodData.name} added to cart!`);
   };
 
   // Handle table selection
