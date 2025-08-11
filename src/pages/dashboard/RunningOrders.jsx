@@ -130,6 +130,7 @@ const RunningOrders = () => {
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
   const [pizzaSlices, setPizzaSlices] = useState(8);
   const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [selectedSlices, setSelectedSlices] = useState([]);
   const [availableIngredients] = useState([
     'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach', 'Tomatoes', 
@@ -1412,6 +1413,7 @@ const RunningOrders = () => {
     setShowSplitPizzaModal(false);
     setPizzaSlices(8);
     setSelectedIngredients([]);
+    setSelectedSlices([]);
   };
 
   const handlePizzaSlicesChange = (e) => {
@@ -1431,29 +1433,58 @@ const RunningOrders = () => {
     setSelectedIngredients(selectedIngredients.filter(item => item !== ingredient));
   };
 
+  const handleSliceClick = (sliceIndex) => {
+    setSelectedSlices(prev => {
+      if (prev.includes(sliceIndex)) {
+        return prev.filter(index => index !== sliceIndex);
+      } else {
+        return [...prev, sliceIndex];
+      }
+    });
+  };
+
   const renderPizzaSlices = () => {
-    const lines = [];
+    const slices = [];
     const angleStep = 360 / pizzaSlices;
     
     for (let i = 0; i < pizzaSlices; i++) {
-      const angle = i * angleStep;
-      const x = 100 + 80 * Math.cos(angle * Math.PI / 180);
-      const y = 100 + 80 * Math.sin(angle * Math.PI / 180);
+      const startAngle = i * angleStep;
+      const endAngle = (i + 1) * angleStep;
+      const isSelected = selectedSlices.includes(i);
       
-      lines.push(
-        <line
-          key={i}
-          x1="100"
-          y1="100"
-          x2={x}
-          y2={y}
-          stroke="#FF8C00"
-          strokeWidth="2"
-        />
+      // Calculate the slice path
+      const x1 = 100 + 80 * Math.cos(startAngle * Math.PI / 180);
+      const y1 = 100 + 80 * Math.sin(startAngle * Math.PI / 180);
+      const x2 = 100 + 80 * Math.cos(endAngle * Math.PI / 180);
+      const y2 = 100 + 80 * Math.sin(endAngle * Math.PI / 180);
+      
+      // Create large arc flag (1 if angle > 180 degrees, 0 otherwise)
+      const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
+      
+      slices.push(
+        <g key={i}>
+          {/* Invisible clickable area */}
+          <path
+            d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+            fill="transparent"
+            stroke="none"
+            style={{ cursor: 'pointer' }}
+            onClick={() => handleSliceClick(i)}
+          />
+          {/* Visible slice with darker color if selected */}
+          <path
+            d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+            fill={isSelected ? "#E6C200" : "#FFD700"}
+            stroke="#FF8C00"
+            strokeWidth="2"
+            style={{ cursor: 'pointer' }}
+            onClick={() => handleSliceClick(i)}
+          />
+        </g>
       );
     }
     
-    return lines;
+    return slices;
   };
 
   // Handle place order
@@ -2166,19 +2197,23 @@ const RunningOrders = () => {
                     <div className="flex justify-center">
                       <div className="relative">
                         <svg width="200" height="200" viewBox="0 0 200 200">
-                          {/* Pizza base circle */}
-                          <circle
-                            cx="100"
-                            cy="100"
-                            r="80"
-                            fill="#FFD700"
-                            stroke="#FF8C00"
-                            strokeWidth="3"
-                          />
                           {/* Pizza slices */}
                           {renderPizzaSlices()}
                         </svg>
                       </div>
+                    </div>
+
+                    {/* Selected Slices Info */}
+                    <div className="text-center mt-3">
+                      <p className="text-sm text-gray-600">
+                        {selectedSlices.length === 0 ? (
+                          "No slices selected"
+                        ) : selectedSlices.length === 1 ? (
+                          "1 slice selected"
+                        ) : (
+                          `${selectedSlices.length} slices selected`
+                        )}
+                      </p>
                     </div>
                   </div>
 
@@ -2234,6 +2269,21 @@ const RunningOrders = () => {
                           ))
                         )}
                       </div>
+                    </div>
+
+                    {/* Add Button */}
+                    <div className="mt-4">
+                      <button
+                        disabled={selectedIngredients.length === 0}
+                        onClick={handleCloseSplitPizzaModal}
+                        className={`w-fit py-2 px-4 rounded-lg transition-colors font-medium ${
+                          selectedIngredients.length === 0
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-primary text-white hover:bg-primary-dark'
+                        }`}
+                      >
+                        Add
+                      </button>
                     </div>
                   </div>
                 </div>
