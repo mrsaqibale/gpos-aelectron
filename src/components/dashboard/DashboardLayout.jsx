@@ -68,19 +68,20 @@ const DashboardLayout = () => {
   // Check if we should show check-in popup
   useEffect(() => {
     const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
+    const triggerCheckIn = sessionStorage.getItem('triggerCheckIn');
     const currentEmployee = localStorage.getItem('currentEmployee');
 
-    // Show check-in popup if:
-    // 1. We're on dashboard page
-    // 2. User is not admin
-    // 3. Hasn't checked in this session
-    // 4. Has valid employee data
-    if (location.pathname === '/dashboard' && 
-        userRole !== 'admin' && 
-        !hasCheckedIn && 
-        currentEmployee) {
+    // Show check-in popup if landing on dashboard with a login trigger or normal rules
+    const onDashboard = location.pathname === '/dashboard';
+    const shouldTriggerFromLogin = triggerCheckIn === 'true';
+    const shouldShowByRules = userRole !== 'admin' && !hasCheckedIn && currentEmployee;
+
+    if (onDashboard && (shouldTriggerFromLogin || shouldShowByRules)) {
       setShowCheckIn(true);
       sessionStorage.setItem('hasCheckedIn', 'true');
+      if (shouldTriggerFromLogin) {
+        sessionStorage.removeItem('triggerCheckIn');
+      }
     }
   }, [location, userRole]);
 

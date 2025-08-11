@@ -134,6 +134,8 @@ const POSLogin = () => {
             localStorage.setItem('currentEmployee', JSON.stringify(result.data));
           }
           
+          // Navigate to dashboard and trigger Check-In popup there
+          sessionStorage.setItem('triggerCheckIn', 'true');
           navigate('/dashboard');
         } else {
           setError('⚠ Invalid PIN or role. Please try again.');
@@ -543,6 +545,7 @@ const POSLogin = () => {
         isOpen={showForgotPinModal}
         onClose={handleForgotPinClose}
       />
+
 
     </>
   );
