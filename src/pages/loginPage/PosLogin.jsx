@@ -12,6 +12,7 @@ const POSLogin = () => {
   const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
   const [showForgotPinModal, setShowForgotPinModal] = useState(false);
@@ -94,11 +95,19 @@ const POSLogin = () => {
       return;
     }
     if (selectedRole && pin.length >= 4) {
+      setIsLoading(true);
+      
+      // Add a minimum loading time of 1 second
+      const loadingPromise = new Promise(resolve => setTimeout(resolve, 1000));
+      
       try {
         console.log('Login attempt:', { role: selectedRole, pin });
 
         // Call the backend login function
-        const result = await window.myAPI?.loginEmployee(pin, selectedRole);
+        const loginPromise = window.myAPI?.loginEmployee(pin, selectedRole);
+        
+        // Wait for both the minimum loading time and the actual login
+        const [result] = await Promise.all([loginPromise, loadingPromise]);
 
         if (result.success) {
           console.log('Login successful:', result.data);
@@ -134,6 +143,8 @@ const POSLogin = () => {
         console.error('Login error:', error);
         setError('⚠ Login failed. Please try again.');
         setPin(''); // Clear PIN on error
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -462,14 +473,21 @@ const POSLogin = () => {
             <div className="mb-4 flex justify-center">
               <button
                 onClick={handleLogin}
-                disabled={!selectedRole || pin.length < 4}
+                disabled={!selectedRole || pin.length < 4 || isLoading}
                 className="w-[86%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
                                  style={{
                      backgroundColor: themeColors.primary,
                      borderColor: themeColors.loginBg,
                    }}
               >
-                Login
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Logging in...
+                  </>
+                ) : (
+                  'Login'
+                )}
               </button>
 
             </div>
