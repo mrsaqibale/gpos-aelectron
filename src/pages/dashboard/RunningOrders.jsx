@@ -2230,9 +2230,9 @@ const RunningOrders = () => {
 
               {/* Content */}
               <div className="p-6 flex-1 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-10 gap-8">
                   {/* First Column - Pizza Slices */}
-                  <div className="space-y-4">
+                  <div className="col-span-3 space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Pizza Configuration</h3>
                     
                     {/* Number of Slices Input */}
@@ -2246,14 +2246,19 @@ const RunningOrders = () => {
                         max="16"
                         value={pizzaSlices}
                         onChange={handlePizzaSlicesChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                        disabled={completedSlices.length === pizzaSlices}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
+                          completedSlices.length === pizzaSlices
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'border-gray-300 bg-white'
+                        }`}
                       />
                     </div>
 
                     {/* Pizza Visualization */}
                     <div className="flex justify-center">
                       <div className="relative">
-                        <svg width="200" height="200" viewBox="0 0 200 200">
+                        <svg width="280" height="280" viewBox="0 0 200 200">
                           {/* Pizza slices */}
                           {renderPizzaSlices()}
                         </svg>
@@ -2287,7 +2292,7 @@ const RunningOrders = () => {
                   </div>
 
                   {/* Second Column - Ingredients */}
-                  <div className="space-y-4">
+                  <div className="col-span-7 space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Ingredients Selection</h3>
                     
                     {/* All Ingredients as Removable Tags */}
@@ -2387,10 +2392,10 @@ const RunningOrders = () => {
                     {/* Final Done Button */}
                     {completedSlices.length === pizzaSlices && (
                       <div className="mt-6 pt-6 border-t border-gray-200">
-                        <div className="text-center">
+                        <div className="text-end">
                           <button
                             onClick={handleCloseSplitPizzaModal}
-                            className="w-full py-3 px-4 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
+                            className="w-fit py-3 px-4 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
                           >
                             Done
                           </button>
