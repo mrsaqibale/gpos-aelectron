@@ -129,8 +129,15 @@ const RunningOrders = () => {
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
   const [pizzaSlices, setPizzaSlices] = useState(8);
-  const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [selectedIngredients, setSelectedIngredients] = useState([
+    'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
+    'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach', 'Tomatoes', 
+    'Cheese', 'Basil', 'Garlic', 'Chicken', 'Beef', 'Shrimp'
+  ]);
   const [selectedSlices, setSelectedSlices] = useState([]);
+  const [completedSlices, setCompletedSlices] = useState([]);
+  const [sliceIngredients, setSliceIngredients] = useState({});
+  const [currentSliceSelection, setCurrentSliceSelection] = useState([]);
   const [availableIngredients] = useState([
     'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach', 'Tomatoes', 
@@ -1407,13 +1414,39 @@ const RunningOrders = () => {
   // Split Pizza Modal Functions
   const handleOpenSplitPizzaModal = () => {
     setShowSplitPizzaModal(true);
+    // Reset to all available ingredients when opening the modal
+    setSelectedIngredients([...availableIngredients]);
+    setCompletedSlices([]);
+    setSliceIngredients({});
+    setCurrentSliceSelection([]);
   };
 
   const handleCloseSplitPizzaModal = () => {
     setShowSplitPizzaModal(false);
     setPizzaSlices(8);
-    setSelectedIngredients([]);
     setSelectedSlices([]);
+    setCompletedSlices([]);
+    setSliceIngredients({});
+    setCurrentSliceSelection([]);
+    // Don't reset selectedIngredients here - keep user's selection
+  };
+
+  const handleAddSliceIngredients = () => {
+    if (selectedSlices.length > 0) {
+      // Add selected slices to completed slices
+      setCompletedSlices(prev => [...prev, ...selectedSlices]);
+      
+      // Save ingredients for these slices
+      const newSliceIngredients = { ...sliceIngredients };
+      selectedSlices.forEach(sliceIndex => {
+        newSliceIngredients[sliceIndex] = [...selectedIngredients];
+      });
+      setSliceIngredients(newSliceIngredients);
+      
+      // Clear current selection
+      setSelectedSlices([]);
+      setSelectedIngredients([...availableIngredients]);
+    }
   };
 
   const handlePizzaSlicesChange = (e) => {
@@ -1423,17 +1456,18 @@ const RunningOrders = () => {
     }
   };
 
-  const handleIngredientSelect = (ingredient) => {
-    if (!selectedIngredients.includes(ingredient)) {
-      setSelectedIngredients([...selectedIngredients, ingredient]);
-    }
-  };
+
 
   const handleRemoveIngredient = (ingredient) => {
     setSelectedIngredients(selectedIngredients.filter(item => item !== ingredient));
   };
 
   const handleSliceClick = (sliceIndex) => {
+    // Don't allow selecting completed slices
+    if (completedSlices.includes(sliceIndex)) {
+      return;
+    }
+    
     setSelectedSlices(prev => {
       if (prev.includes(sliceIndex)) {
         return prev.filter(index => index !== sliceIndex);
@@ -1451,6 +1485,7 @@ const RunningOrders = () => {
       const startAngle = i * angleStep;
       const endAngle = (i + 1) * angleStep;
       const isSelected = selectedSlices.includes(i);
+      const isCompleted = completedSlices.includes(i);
       
       // Calculate the slice path
       const x1 = 100 + 80 * Math.cos(startAngle * Math.PI / 180);
@@ -1461,24 +1496,34 @@ const RunningOrders = () => {
       // Create large arc flag (1 if angle > 180 degrees, 0 otherwise)
       const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
       
+      // Determine fill color based on state
+      let fillColor = "#FFD700"; // Default gold
+      if (isCompleted) {
+        fillColor = "#22C55E"; // Green for completed
+      } else if (isSelected) {
+        fillColor = "#E6C200"; // Darker gold for selected
+      }
+      
       slices.push(
         <g key={i}>
-          {/* Invisible clickable area */}
+          {/* Invisible clickable area - only if not completed */}
+          {!isCompleted && (
+            <path
+              d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+              fill="transparent"
+              stroke="none"
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleSliceClick(i)}
+            />
+          )}
+          {/* Visible slice */}
           <path
             d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-            fill="transparent"
-            stroke="none"
-            style={{ cursor: 'pointer' }}
-            onClick={() => handleSliceClick(i)}
-          />
-          {/* Visible slice with darker color if selected */}
-          <path
-            d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-            fill={isSelected ? "#E6C200" : "#FFD700"}
+            fill={fillColor}
             stroke="#FF8C00"
             strokeWidth="2"
-            style={{ cursor: 'pointer' }}
-            onClick={() => handleSliceClick(i)}
+            style={{ cursor: isCompleted ? 'default' : 'pointer' }}
+            onClick={() => !isCompleted && handleSliceClick(i)}
           />
         </g>
       );
@@ -2206,12 +2251,24 @@ const RunningOrders = () => {
                     {/* Selected Slices Info */}
                     <div className="text-center mt-3">
                       <p className="text-sm text-gray-600">
-                        {selectedSlices.length === 0 ? (
+                        {selectedSlices.length === 0 && completedSlices.length === 0 ? (
                           "No slices selected"
-                        ) : selectedSlices.length === 1 ? (
-                          "1 slice selected"
                         ) : (
-                          `${selectedSlices.length} slices selected`
+                          <>
+                            {selectedSlices.length > 0 && (
+                              <span className="text-yellow-600">
+                                {selectedSlices.length} slice{selectedSlices.length !== 1 ? 's' : ''} selected
+                              </span>
+                            )}
+                            {selectedSlices.length > 0 && completedSlices.length > 0 && (
+                              <span className="mx-2">•</span>
+                            )}
+                            {completedSlices.length > 0 && (
+                              <span className="text-green-600">
+                                {completedSlices.length} slice{completedSlices.length !== 1 ? 's' : ''} completed
+                              </span>
+                            )}
+                          </>
                         )}
                       </p>
                     </div>
@@ -2221,70 +2278,104 @@ const RunningOrders = () => {
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Ingredients Selection</h3>
                     
-                    {/* Ingredients Dropdown */}
+                    {/* All Ingredients as Removable Tags */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Ingredients
+                      <label className={`block text-sm font-medium mb-2 ${selectedSlices.length > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
+                        {selectedSlices.length > 0 ? 'Remove ingredients you don\'t want' : 'Select at least 1 slice to configure ingredients'}
                       </label>
-                      <select
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            handleIngredientSelect(e.target.value);
-                            e.target.value = '';
-                          }
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                      >
-                        <option value="">Choose an ingredient...</option>
-                        {availableIngredients.map((ingredient) => (
-                          <option key={ingredient} value={ingredient}>
-                            {ingredient}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Selected Ingredients Tags */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Selected Ingredients
-                      </label>
-                      <div className="flex flex-wrap gap-2 min-h-[60px] p-3 border border-gray-300 rounded-lg">
+                      <div className={`flex flex-wrap gap-2 min-h-[120px] p-3 border rounded-lg transition-colors ${
+                        selectedSlices.length > 0 
+                          ? 'border-gray-300 bg-gray-50' 
+                          : 'border-gray-200 bg-gray-100'
+                      }`}>
                         {selectedIngredients.length === 0 ? (
-                          <span className="text-gray-400 text-sm">No ingredients selected</span>
+                          <span className="text-gray-400 text-sm">All ingredients removed</span>
                         ) : (
                           selectedIngredients.map((ingredient) => (
                             <span
                               key={ingredient}
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-primary text-white text-sm rounded-full"
+                              className={`inline-flex items-center gap-1 px-3 py-2 text-sm rounded-full shadow-sm transition-all ${
+                                selectedSlices.length > 0
+                                  ? 'bg-primary text-white hover:shadow-md'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
                             >
                               {ingredient}
-                              <button
-                                onClick={() => handleRemoveIngredient(ingredient)}
-                                className="ml-1 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5"
-                              >
-                                <X size={12} />
-                              </button>
+                              {selectedSlices.length > 0 && (
+                                <button
+                                  onClick={() => handleRemoveIngredient(ingredient)}
+                                  className="ml-1 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors"
+                                  title={`Remove ${ingredient}`}
+                                >
+                                  <X size={12} />
+                                </button>
+                              )}
                             </span>
                           ))
                         )}
                       </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {selectedIngredients.length} of {availableIngredients.length} ingredients selected
+                      </p>
                     </div>
 
                     {/* Add Button */}
                     <div className="mt-4">
                       <button
-                        disabled={selectedIngredients.length === 0}
-                        onClick={handleCloseSplitPizzaModal}
+                        disabled={selectedSlices.length === 0}
+                        onClick={handleAddSliceIngredients}
                         className={`w-fit py-2 px-4 rounded-lg transition-colors font-medium ${
-                          selectedIngredients.length === 0
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-primary text-white hover:bg-primary-dark'
+                          selectedSlices.length > 0
+                            ? 'bg-primary text-white hover:bg-primary-dark'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
                         Add
                       </button>
                     </div>
+
+                    {/* Completed Slices Section */}
+                    {completedSlices.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <h4 className="text-md font-semibold text-gray-800 mb-3">Completed Slices</h4>
+                        <div className="space-y-3">
+                          {completedSlices.map((sliceIndex) => (
+                            <div key={sliceIndex} className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium text-green-800">Slice {sliceIndex + 1}</span>
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                  {sliceIngredients[sliceIndex]?.length || 0} ingredients
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {sliceIngredients[sliceIndex]?.map((ingredient) => (
+                                  <span
+                                    key={ingredient}
+                                    className="inline-flex items-center px-2 py-1 bg-green-200 text-green-800 text-xs rounded-full"
+                                  >
+                                    {ingredient}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Final Done Button */}
+                    {completedSlices.length === pizzaSlices && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <div className="text-center">
+                          <button
+                            onClick={handleCloseSplitPizzaModal}
+                            className="w-full py-3 px-4 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
