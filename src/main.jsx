@@ -13,6 +13,7 @@ import EmployeeManagement from './pages/dashboard/EmployeeManagement.jsx'
 import TableManagementPage from './pages/dashboard/TableManagement.jsx'
 import Coupons from './pages/dashboard/Coupons.jsx'
 import RunningOrders from './pages/dashboard/RunningOrders.jsx'
+import CustomerManagement from './pages/dashboard/CustomerManagement.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 
 console.log('main.jsx loading...');
@@ -69,6 +70,10 @@ const router = createBrowserRouter([
           {
             path: 'employee-management',
             element: <ErrorBoundary><EmployeeManagement /></ErrorBoundary>
+          },
+          {
+            path: 'customer-management',
+            element: <ErrorBoundary><CustomerManagement /></ErrorBoundary>
           },
           {
             path: 'table-management',
