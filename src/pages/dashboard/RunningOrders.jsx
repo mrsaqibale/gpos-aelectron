@@ -131,8 +131,7 @@ const RunningOrders = () => {
   const [pizzaSlices, setPizzaSlices] = useState(8);
   const [selectedIngredients, setSelectedIngredients] = useState([
     'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
-    'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach', 'Tomatoes', 
-    'Cheese', 'Basil', 'Garlic', 'Chicken', 'Beef', 'Shrimp'
+    'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
   ]);
   const [selectedSlices, setSelectedSlices] = useState([]);
   const [completedSlices, setCompletedSlices] = useState([]);
@@ -141,8 +140,7 @@ const RunningOrders = () => {
   const [completedBatches, setCompletedBatches] = useState([]);
   const [availableIngredients] = useState([
     'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
-    'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach', 'Tomatoes', 
-    'Cheese', 'Basil', 'Garlic', 'Chicken', 'Beef', 'Shrimp'
+    'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
   ]);
 
 
