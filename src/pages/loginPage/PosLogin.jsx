@@ -11,6 +11,7 @@ const POSLogin = () => {
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   const navigate = useNavigate();
   const [showForgotPinModal, setShowForgotPinModal] = useState(false);
@@ -43,6 +44,21 @@ const POSLogin = () => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [pin, selectedRole, showForgotPinModal]);
+
+  // Update time every minute
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date());
+    };
+
+    // Update immediately
+    updateTime();
+
+    // Set interval to update every minute
+    const interval = setInterval(updateTime, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleRoleSelect = (roleId) => {
     setSelectedRole(roleId);
@@ -129,6 +145,14 @@ const POSLogin = () => {
   const getSelectedRoleName = () => {
     const role = roles.find(r => r.id === selectedRole);
     return role ? role.name : '';
+  };
+
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   const handleForgotPinClick = () => {
@@ -225,12 +249,12 @@ const POSLogin = () => {
     disabled = false,
   }) => {
     const baseClasses =
-      "h-11 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
+      "py-2 px-4 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
     const buttonStyle = {
-      backgroundColor: selectedRole ? themeColors.primary : 'white',
-      color: selectedRole ? 'white' : themeColors.primary,
-      border: selectedRole ? 'none' : `2px solid ${themeColors.primary}`,
+      backgroundColor: selectedRole ? (variant === "clear" ? '#ffebee' : themeColors.primary) : 'white',
+      color: selectedRole ? (variant === "clear" ? '#d32f2f' : 'white') : themeColors.primary,
+      border: selectedRole ? (variant === "clear" ? `2px solid #d32f2f` : 'none') : `2px solid ${themeColors.primary}`,
     };
 
     return (
@@ -282,9 +306,6 @@ const POSLogin = () => {
               <span className="text-white font-bold text-5xl">G</span>
               <span className="text-white font-medium text-base">POS</span>
             </div>
-            <p className="text-xl text-white font-semibold mb-2">
-              Smart Restaurant Billing System
-            </p>
             <p className="text-lg text-black font-bold">
               Welcome to GPOS – Smart & Simplified Point of Sale
             </p>
@@ -361,7 +382,7 @@ const POSLogin = () => {
               </div>
             )}
 
-            <h2 className="text-2xl font-semibold text-black mb-6 text-center transform transition-transform hover:scale-105">
+            <h2 className="text-3xl mt-2 font-semibold text-black mb-6 text-center transform transition-transform hover:scale-105">
               Enter PIN To Continue
             </h2>
 
@@ -423,7 +444,15 @@ const POSLogin = () => {
                        backgroundColor: themeColors.primary
                      }}
                   >
-                    <X className="w-4 h-4" />
+                    <svg className="w-7 h-7" viewBox="0 0 20 20" fill="none">
+                      <path
+                        d="M7.5 10H15M5.5 5L2 10L5.5 15M15 5V15"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </ActionButton>
                 </div>
 
@@ -456,6 +485,41 @@ const POSLogin = () => {
               >
                 Forgot PIN?
               </button>
+            </div>
+
+            {/* Current Time Display */}
+            <div className="text-center mt-4">
+              <div className="text-lg flex items-start justify-start ml-10 font-semibold text-gray-600">
+                <span
+                  className="inline-flex items-center justify-center rounded-full mr-2"
+                  style={{
+                    backgroundColor: themeColors.primary,
+                    width: 28,
+                    height: 28,
+                  }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M5 10.5L9 14.5L15 7.5"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <div className='flex flex-col items-start justify-start'>
+                <p className='text-md'>Time In logged at {formatTime(currentTime)}
+                </p>
+                <p className='text-sm'>(Select before logging in)</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
