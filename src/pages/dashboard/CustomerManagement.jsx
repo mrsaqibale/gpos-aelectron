@@ -263,6 +263,7 @@ const CustomerManagement = () => {
 
   // Handle modal open
   const handleModalOpen = (customer) => {
+    console.log('Opening modal for customer:', customer);
     setSelectedCustomer(customer);
     setShowModal(true);
   };
@@ -579,7 +580,7 @@ const CustomerManagement = () => {
 
       {/* Modal for Customer Details */}
       {showModal && selectedCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
@@ -602,26 +603,6 @@ const CustomerManagement = () => {
                   </div>
                 </div>
                 
-                {/* Search Bar */}
-                <div className="flex gap-3 mb-4">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      placeholder="Ex: Search Here by ID..."
-                      className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                    />
-                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                  </div>
-                  <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm">
-                    <Search size={16} />
-                    Search
-                  </button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm">
-                    <Download size={16} />
-                    Export
-                    <ChevronDown size={14} />
-                  </button>
-                </div>
                 
                 {/* Order Table */}
                 <div className="flex-1 overflow-auto">
@@ -719,11 +700,11 @@ const CustomerManagement = () => {
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
                       <Home size={16} className="text-gray-400 mt-0.5" />
-                      <span className="text-sm text-gray-800">{selectedCustomer.address}</span>
+                      <span className="text-sm text-gray-800">{selectedCustomer.address || 'No address available'}</span>
                     </div>
                     <div className="flex items-start gap-3">
                       <Home size={16} className="text-gray-400 mt-0.5" />
-                      <span className="text-sm text-gray-800">{selectedCustomer.address}</span>
+                      <span className="text-sm text-gray-800">{selectedCustomer.address || 'No address available'}</span>
                     </div>
                   </div>
                 </div>
