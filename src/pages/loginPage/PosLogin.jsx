@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Crown, Settings, DollarSign, ChefHat, X, BarChart3, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Crown, Settings, DollarSign, ChefHat, X, BarChart3, AlertCircle, User } from 'lucide-react';
 import ForgotPinModals from './ForgotPassword';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -20,7 +20,8 @@ const POSLogin = () => {
     { id: 'Admin', name: 'Admin', icon: Crown },
     { id: 'Manager', name: 'Manager', icon: Settings },
     { id: 'Cashier', name: 'Cashier', icon: DollarSign, subtitle: 'Multiple Users' },
-    { id: 'Chef', name: 'Chef', icon: ChefHat }
+    { id: 'Chef', name: 'Chef', icon: ChefHat },
+    { id: 'Waiter', name: 'Waiter', icon: User }
   ];
 
   // Handle keyboard input
@@ -248,11 +249,11 @@ const POSLogin = () => {
   return (
     <>
       <div
-        className="w-full min-h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
+        className="w-full h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
         style={{ backgroundColor: 'white' }}
       >
 
-        <div className="py-6 rounded-t-xl">
+        <div className="py-4 rounded-t-xl">
           <div className="absolute top-4 right-6 flex gap-2">
            <button
               onClick={() => changeTheme("default")}
@@ -273,7 +274,7 @@ const POSLogin = () => {
 
 
           <div
-            className="flex flex-col items-center justify-center text-center mt-6"
+            className="flex flex-col items-center justify-center text-center mt-4"
           >
             <div className="w-24 h-20 rounded-2xl border-2 flex flex-col items-center justify-center mb-3 shadow-md shadow-black"
             style={{ backgroundColor: themeColors.logo, borderColor: themeColors.logo_border  }} 
@@ -297,11 +298,11 @@ const POSLogin = () => {
 
                       {/* Left Section - Role Selection with 3D effect */}
             <div className="w-1/2 rounded-l-3xl border-r p-6 border-[#4a7ca3] border shadow-2xl" style={{ backgroundColor: themeColors.primary }}>
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
+            <h2 className="text-3xl mt-2 font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid h-[500px] grid-cols-2 gap-4">
               {roles.map((role) => {
                 const IconComponent = role.icon;
                 const isSelected = selectedRole === role.id;
@@ -315,8 +316,8 @@ const POSLogin = () => {
                         ${isSelected
                           ? 'text-white scale-[1.04] z-[1]'
                           : 'text-black hover:bg-transparent hover:border-white'}
-                        p-4 rounded-xl transition-all duration-300 
-                        flex flex-col items-center justify-center h-24 
+                         rounded-xl transition-all duration-300 
+                        flex flex-col items-center justify-center
                         hover:cursor-pointer transform hover:-translate-y-1 hover:scale-105 active:translate-y-0 
                         border-[2.5px]
                       `}
@@ -329,8 +330,8 @@ const POSLogin = () => {
                             : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
                         }}
                     >
-                      <IconComponent className="w-6 h-6 mb-1" style={{ color: isSelected ? 'white' : 'black' }} />
-                      <span className="text-md font-bold" style={{ color: isSelected ? 'white' : 'black' }}>{role.name}</span>
+                      <IconComponent className="w-8 h-8 mb-1" style={{ color: isSelected ? 'white' : 'black' }} />
+                      <span className="text-xl font-bold" style={{ color: isSelected ? 'white' : 'black' }}>{role.name}</span>
                                               {role.subtitle && (
                           <span className="text-xs opacity-70" style={{ color: isSelected ? 'white' : 'black' }}>{role.subtitle}</span>
                         )}
