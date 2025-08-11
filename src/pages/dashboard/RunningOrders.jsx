@@ -138,6 +138,7 @@ const RunningOrders = () => {
   const [completedSlices, setCompletedSlices] = useState([]);
   const [sliceIngredients, setSliceIngredients] = useState({});
   const [currentSliceSelection, setCurrentSliceSelection] = useState([]);
+  const [completedBatches, setCompletedBatches] = useState([]);
   const [availableIngredients] = useState([
     'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach', 'Tomatoes', 
@@ -1419,6 +1420,7 @@ const RunningOrders = () => {
     setCompletedSlices([]);
     setSliceIngredients({});
     setCurrentSliceSelection([]);
+    setCompletedBatches([]);
   };
 
   const handleCloseSplitPizzaModal = () => {
@@ -1428,6 +1430,7 @@ const RunningOrders = () => {
     setCompletedSlices([]);
     setSliceIngredients({});
     setCurrentSliceSelection([]);
+    setCompletedBatches([]);
     // Don't reset selectedIngredients here - keep user's selection
   };
 
@@ -1443,11 +1446,20 @@ const RunningOrders = () => {
       });
       setSliceIngredients(newSliceIngredients);
       
+      // Create a new batch with current slices and ingredients
+      const newBatch = {
+        slices: [...selectedSlices],
+        ingredients: [...selectedIngredients]
+      };
+      setCompletedBatches(prev => [...prev, newBatch]);
+      
       // Clear current selection
       setSelectedSlices([]);
       setSelectedIngredients([...availableIngredients]);
     }
   };
+
+
 
   const handlePizzaSlicesChange = (e) => {
     const value = parseInt(e.target.value);
@@ -2335,27 +2347,36 @@ const RunningOrders = () => {
                     </div>
 
                     {/* Completed Slices Section */}
-                    {completedSlices.length > 0 && (
+                    {completedBatches.length > 0 && (
                       <div className="mt-6 pt-6 border-t border-gray-200">
                         <h4 className="text-md font-semibold text-gray-800 mb-3">Completed Slices</h4>
                         <div className="space-y-3">
-                          {completedSlices.map((sliceIndex) => (
-                            <div key={sliceIndex} className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-green-800">Slice {sliceIndex + 1}</span>
+                          {completedBatches.map((batch, batchIndex) => (
+                            <div key={batchIndex} className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="font-medium text-green-800">
+                                  Slices: {batch.slices.map(index => index + 1).join(', ')}
+                                </span>
                                 <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                  {sliceIngredients[sliceIndex]?.length || 0} ingredients
+                                  {batch.slices.length} slice{batch.slices.length !== 1 ? 's' : ''}
                                 </span>
                               </div>
-                              <div className="flex flex-wrap gap-1">
-                                {sliceIngredients[sliceIndex]?.map((ingredient) => (
-                                  <span
-                                    key={ingredient}
-                                    className="inline-flex items-center px-2 py-1 bg-green-200 text-green-800 text-xs rounded-full"
-                                  >
-                                    {ingredient}
-                                  </span>
-                                ))}
+                              <div>
+                                <span className="text-sm font-medium text-green-700 mb-2 block">Selected ingredients:</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {batch.ingredients.length > 0 ? (
+                                    batch.ingredients.map((ingredient) => (
+                                      <span
+                                        key={ingredient}
+                                        className="inline-flex items-center px-2 py-1 bg-green-200 text-green-800 text-xs rounded-full"
+                                      >
+                                        {ingredient}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-gray-500 text-xs">No ingredients selected</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}
