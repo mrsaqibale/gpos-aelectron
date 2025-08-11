@@ -3,12 +3,30 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, Save, ArrowRight } from 'lucide-react';
 
 const CheckInFlow = ({ onComplete }) => {
+  // Get user name from localStorage
+  const [userName, setUserName] = useState('');
   const [showSuccess, setShowSuccess] = useState(true);
   const [showCashInput, setShowCashInput] = useState(false);
   const [openingCash, setOpeningCash] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const currentEmployee = localStorage.getItem('currentEmployee');
+    if (currentEmployee) {
+      try {
+        const employeeData = JSON.parse(currentEmployee);
+        const fullName = `${employeeData.fname || ''} ${employeeData.lname || ''}`.trim();
+        setUserName(fullName || 'User');
+      } catch (error) {
+        console.error('Error parsing employee data:', error);
+        setUserName('User');
+      }
+    } else {
+      setUserName('User');
+    }
+  }, []);
 
   useEffect(() => {
     // Update time every minute
@@ -122,7 +140,7 @@ const CheckInFlow = ({ onComplete }) => {
                 <CheckCircle className="w-16 h-16 text-green-500 animate-bounce" />
               </div>
               <h4 className="text-xl font-semibold text-gray-800 mb-2">
-                You are now checked in
+                {userName} is now checked in
               </h4>
               <p className="text-gray-600 mb-6">
                 at {currentTime}
