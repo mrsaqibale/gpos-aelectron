@@ -32,33 +32,27 @@ const CustomerManagement = () => {
     { value: 'discount_customer', label: 'Discount Customers' }
   ];
 
-  // Dummy order data for the modal
-  const dummyOrders = [
-    {
-      id: '100040',
-      status: 'Confirmed',
-      totalAmount: 24.55,
-      date: '2025-01-15'
-    },
-    {
-      id: '100024',
-      status: 'Confirmed',
-      totalAmount: 24.55,
-      date: '2025-01-10'
-    },
-    {
-      id: '100013',
-      status: 'Confirmed',
-      totalAmount: 28.90,
-      date: '2025-01-05'
-    },
-    {
-      id: '100010',
-      status: 'Confirmed',
-      totalAmount: 22.70,
-      date: '2025-01-01'
+  // Generate dummy orders for each customer based on their total orders
+  const generateCustomerOrders = (customerId, totalOrders, totalAmount) => {
+    const orders = [];
+    const baseOrderId = 100000 + (customerId * 10);
+    const averageOrderAmount = totalAmount / totalOrders;
+    
+    for (let i = 0; i < totalOrders; i++) {
+      // Vary the order amount slightly around the average
+      const variation = (Math.random() - 0.5) * 0.4; // ±20% variation
+      const orderAmount = Math.max(5, averageOrderAmount * (1 + variation));
+      
+      orders.push({
+        id: (baseOrderId + i).toString(),
+        status: 'Confirmed',
+        totalAmount: parseFloat(orderAmount.toFixed(2)),
+        date: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Random date within last 90 days
+      });
     }
-  ];
+    
+    return orders.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
+  };
 
   // Dummy customer data
   const dummyCustomers = [
@@ -603,7 +597,7 @@ const CustomerManagement = () => {
                   <div className="flex items-center gap-2">
                     <h4 className="text-lg font-semibold text-gray-800">Order List</h4>
                     <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
-                      {dummyOrders.length}
+                      {selectedCustomer.totalOrders}
                     </span>
                   </div>
                 </div>
@@ -653,38 +647,38 @@ const CustomerManagement = () => {
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Action</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {dummyOrders.map((order, index) => (
-                        <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            {index + 1}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="text-primary font-medium cursor-pointer hover:underline">
-                              {order.id}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm font-medium text-gray-800">
-                            {order.totalAmount.toFixed(2)} €
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex gap-2">
-                              <button className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors">
-                                <Eye size={14} />
-                              </button>
-                              <button className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
-                                <Printer size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+                                         <tbody>
+                       {generateCustomerOrders(selectedCustomer.id, selectedCustomer.totalOrders, selectedCustomer.totalAmount).map((order, index) => (
+                         <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
+                           <td className="py-3 px-4 text-sm text-gray-600">
+                             {index + 1}
+                           </td>
+                           <td className="py-3 px-4">
+                             <span className="text-primary font-medium cursor-pointer hover:underline">
+                               {order.id}
+                             </span>
+                           </td>
+                           <td className="py-3 px-4">
+                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                               {order.status}
+                             </span>
+                           </td>
+                           <td className="py-3 px-4 text-sm font-medium text-gray-800">
+                             {order.totalAmount.toFixed(2)} €
+                           </td>
+                           <td className="py-3 px-4">
+                             <div className="flex gap-2">
+                               <button className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors">
+                                 <Eye size={14} />
+                               </button>
+                               <button className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
+                                 <Printer size={14} />
+                               </button>
+                             </div>
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
                   </table>
                 </div>
               </div>
