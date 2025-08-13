@@ -133,6 +133,15 @@ ipcMain.handle('variation:update', (event, id, updates) => updateVariation(id, u
 ipcMain.handle('variationOption:create', (event, optionData) => createVariationOption(optionData));
 ipcMain.handle('variationOption:update', (event, id, updates) => updateVariationOption(id, updates));
 
+// Ingredient IPC
+ipcMain.handle('ingredient:create', (event, data) => createIngredient(data));
+ipcMain.handle('ingredient:getAll', (event) => getAllIngredients());
+ipcMain.handle('ingredient:getById', (event, id) => getIngredientById(id));
+ipcMain.handle('ingredient:getByCategory', (event, categoryId) => getIngredientsByCategory(categoryId));
+ipcMain.handle('ingredient:update', (event, id, updates) => updateIngredient(id, updates));
+ipcMain.handle('ingredient:delete', (event, id) => deleteIngredient(id));
+ipcMain.handle('ingredient:searchByName', (event, name) => searchIngredientsByName(name));
+
 // Get food image data
 ipcMain.handle('food:getImage', async (event, imagePath) => {
   try {

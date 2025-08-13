@@ -71,6 +71,15 @@ contextBridge.exposeInMainWorld('myAPI', {
   createVariationOption: (optionData) => ipcRenderer.invoke('variationOption:create', optionData),
   updateVariationOption: (id, updates) => ipcRenderer.invoke('variationOption:update', id, updates),
 
+  // Ingredients
+  createIngredient: (data) => ipcRenderer.invoke('ingredient:create', data),
+  getAllIngredients: () => ipcRenderer.invoke('ingredient:getAll'),
+  getIngredientById: (id) => ipcRenderer.invoke('ingredient:getById', id),
+  getIngredientsByCategory: (categoryId) => ipcRenderer.invoke('ingredient:getByCategory', categoryId),
+  updateIngredient: (id, updates) => ipcRenderer.invoke('ingredient:update', id, updates),
+  deleteIngredient: (id) => ipcRenderer.invoke('ingredient:delete', id),
+  searchIngredientsByName: (name) => ipcRenderer.invoke('ingredient:searchByName', name),
+
   // Tables
   tableCreate: (data) => ipcRenderer.invoke('table:create', data),
   tableUpdate: (id, updates) => ipcRenderer.invoke('table:update', id, updates),
