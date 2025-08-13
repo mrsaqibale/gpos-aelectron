@@ -14,13 +14,6 @@ export function getCategoryByRestaurantId(hotel_id) {
   return { success: true, data: categories };
 }
 
-// Get active categories by restaurant (hotel) id
-export function getActiveCategoriesByRestaurantId(hotel_id) {
-  const stmt = db.prepare('SELECT * FROM categories WHERE hotel_id = ? AND status = 1 AND isDelete = 0 ORDER BY name ASC');
-  const categories = stmt.all(hotel_id);
-  return { success: true, data: categories };
-}
-
 // Create a new category
 export function createCategory({ name, image, parent_id, position, status, priority, slug, description, hotel_id }) {
   const now = new Date().toISOString();

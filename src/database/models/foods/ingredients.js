@@ -158,4 +158,76 @@ export function searchIngredientsByName(name) {
     console.error('Error searching ingredients:', error);
     return { success: false, message: error.message };
   }
+}
+
+// Get active categories (status = 1)
+export function getActiveCategories() {
+  try {
+    const stmt = db.prepare(`
+      SELECT id, name, status 
+      FROM categories 
+      WHERE status = 1 AND isDelete = 0
+      ORDER BY name ASC
+    `);
+    
+    const categories = stmt.all();
+    return { success: true, data: categories };
+  } catch (error) {
+    console.error('Error getting active categories:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Create category-ingredient relationship
+export function createCategoryIngredient(categoryId, ingredientId) {
+  try {
+    const now = new Date().toISOString();
+    
+    const stmt = db.prepare(`
+      INSERT INTO category_ingredients (category_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+      VALUES (?, ?, 1, 0, 0, ?, ?)
+    `);
+    
+    const result = stmt.run(categoryId, ingredientId, now, now);
+    return { success: true, id: result.lastInsertRowid };
+  } catch (error) {
+    console.error('Error creating category-ingredient relationship:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Check if category-ingredient relationship exists
+export function checkCategoryIngredientExists(categoryId, ingredientId) {
+  try {
+    const stmt = db.prepare(`
+      SELECT id FROM category_ingredients 
+      WHERE category_id = ? AND ingredient_id = ? AND isdeleted = 0
+    `);
+    
+    const result = stmt.get(categoryId, ingredientId);
+    return { success: true, exists: !!result };
+  } catch (error) {
+    console.error('Error checking category-ingredient relationship:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Get ingredients by category with pagination
+export function getIngredientsByCategoryPaginated(categoryId, limit = 50, offset = 0) {
+  try {
+    const stmt = db.prepare(`
+      SELECT i.id, i.name, i.status, ci.status as relationship_status
+      FROM ingredients i
+      INNER JOIN category_ingredients ci ON i.id = ci.ingredient_id
+      WHERE ci.category_id = ? AND ci.isdeleted = 0 AND i.isdeleted = 0
+      ORDER BY i.name ASC
+      LIMIT ? OFFSET ?
+    `);
+    
+    const ingredients = stmt.all(categoryId, limit, offset);
+    return { success: true, data: ingredients };
+  } catch (error) {
+    console.error('Error getting ingredients by category:', error);
+    return { success: false, message: error.message };
+  }
 } 

@@ -17,7 +17,6 @@ contextBridge.exposeInMainWorld('myAPI', {
  createCategory : (data) => ipcRenderer.invoke('category:create', data),
   updateCategory: (id, updates) => ipcRenderer.invoke('category:update', id, updates),
   getCategoriesByHotel: (hotelId) => ipcRenderer.invoke('category:getByHotel', hotelId),
-  getActiveCategoriesByHotel: (hotelId) => ipcRenderer.invoke('category:getActiveByHotel', hotelId),
   getCategoryById: (id) => ipcRenderer.invoke('category:getById', id),
 
   // Subcategory
@@ -80,14 +79,6 @@ contextBridge.exposeInMainWorld('myAPI', {
   updateIngredient: (id, updates) => ipcRenderer.invoke('ingredient:update', id, updates),
   deleteIngredient: (id) => ipcRenderer.invoke('ingredient:delete', id),
   searchIngredientsByName: (name) => ipcRenderer.invoke('ingredient:searchByName', name),
-
-  // Category-Ingredients
-  createCategoryIngredient: (data) => ipcRenderer.invoke('categoryIngredient:create', data),
-  getCategoryIngredients: (categoryId) => ipcRenderer.invoke('categoryIngredient:getByCategory', categoryId),
-  checkIngredientInCategory: (categoryId, ingredientId) => ipcRenderer.invoke('categoryIngredient:checkExists', categoryId, ingredientId),
-  updateCategoryIngredient: (id, updates) => ipcRenderer.invoke('categoryIngredient:update', id, updates),
-  deleteCategoryIngredient: (id) => ipcRenderer.invoke('categoryIngredient:delete', id),
-  getAllCategoryIngredients: () => ipcRenderer.invoke('categoryIngredient:getAll'),
 
   // Tables
   tableCreate: (data) => ipcRenderer.invoke('table:create', data),
