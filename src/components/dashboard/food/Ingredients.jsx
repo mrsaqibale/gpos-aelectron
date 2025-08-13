@@ -15,6 +15,10 @@ const Ingredients = () => {
   const [ingredientToDelete, setIngredientToDelete] = useState(null);
   const [selectedIngredients, setSelectedIngredients] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All categories');
+  
+  const categories = ['Traditional', 'Burgers', 'Pizza', 'Beverages'];
   
   // Random ingredients for dropdown
   const randomIngredients = [
@@ -203,59 +207,86 @@ const Ingredients = () => {
     }
   };
 
+  // Filter ingredients based on search term and category
+  const filteredIngredients = ingredients.filter(item => {
+    if (searchTerm && 
+        !item.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+    if (categoryFilter && categoryFilter !== 'All categories' && 
+        item.category !== categoryFilter) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-semibold text-gray-800">Ingredients List</h2>
-        <button
-          onClick={handleAddIngredient}
-          className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
-        >
-          <Plus size={16} />
-          Add New Ingredient
-        </button>
-      </div>
+             <div className="flex justify-between items-center mb-6">
+         <h2 className="text-lg font-semibold text-gray-800">Ingredients List</h2>
+         <div className="flex items-center gap-3">
+           <div className="relative">
+             <select
+               value={categoryFilter}
+               onChange={(e) => setCategoryFilter(e.target.value)}
+               className="w-48 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+             >
+               <option>All categories</option>
+               <option>Out Of Stock Foods</option>
+               {categories.map(cat => (
+                 <option key={cat}>{cat}</option>
+               ))}
+             </select>
+           </div>
+           
+           <div className="relative">
+             <input
+               type="text"
+               placeholder="Search ingredients..."
+               value={searchTerm}
+               onChange={(e) => setSearchTerm(e.target.value)}
+               className="w-64 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+             />
+           </div>
 
-      <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
+           <button
+             onClick={handleAddIngredient}
+             className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+           >
+             <Plus size={16} />
+             Add New Ingredient
+           </button>
+         </div>
+       </div>
+
+       <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
         <thead>
           <tr className="bg-primaryExtraLight">
                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                SI
              </th>
-             <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                Name
              </th>
-            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-              Position
-            </th>
-            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-              Priority
-            </th>
-            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-              Status
-            </th>
+             <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+               Status
+             </th>
             <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
               Action
             </th>
           </tr>
         </thead>
-        <tbody>
-          {ingredients.map((ingredient, index) => (
+                 <tbody>
+           {filteredIngredients.map((ingredient, index) => (
             <tr key={ingredient.id} className={`border-b border-gray-100 hover:bg-gray-25 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                              <td className="py-3 px-4">
                  <span className="text-sm font-medium text-gray-700">{index + 1}</span>
                </td>
-               <td className="py-3 px-4">
+                              <td className="py-3 px-4">
                  <span className="text-sm font-medium text-gray-800">{ingredient.name}</span>
                </td>
-              <td className="py-3 px-4">
-                <span className="text-sm text-gray-600">{ingredient.position}</span>
-              </td>
-              <td className="py-3 px-4">
-                <span className="text-sm text-gray-600">-</span>
-              </td>
-              <td className="py-3 px-4">
-                <label className="relative inline-flex items-center cursor-pointer">
+               <td className="py-3 px-4">
+                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={!!ingredient.status}
@@ -288,7 +319,7 @@ const Ingredients = () => {
         </tbody>
       </table>
 
-      {ingredients.length === 0 && (
+             {filteredIngredients.length === 0 && (
         <div className="text-center py-8">
           <p className="text-gray-600 font-medium text-sm">No ingredients found</p>
           <p className="text-gray-500 text-xs">Ingredients will appear here once added.</p>
@@ -346,18 +377,18 @@ const Ingredients = () => {
                      </label>
                      <div className="flex flex-wrap gap-2">
                        {selectedIngredients.map((ingredient, index) => (
-                         <span
-                           key={index}
-                           className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primaryLight text-white"
-                         >
+                                                   <span
+                            key={index}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white text-gray-800 border border-2 border-primaryLight"
+                          >
                            {ingredient}
-                           <button
-                             type="button"
-                             onClick={() => removeTag(ingredient)}
-                             className="ml-2 text-white hover:text-red-200"
-                           >
-                             <X size={14} />
-                           </button>
+                                                       <button
+                              type="button"
+                              onClick={() => removeTag(ingredient)}
+                              className="ml-2 text-red-500 hover:text-red-700"
+                            >
+                              <X size={14} />
+                            </button>
                          </span>
                        ))}
                      </div>
