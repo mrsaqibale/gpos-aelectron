@@ -89,6 +89,7 @@ const {
 ipcMain.handle('category:create', (event, data) => createCategory(data));
 ipcMain.handle('category:update', (event, id, updates) => updateCategory(id, updates));
 ipcMain.handle('category:getByHotel', (event, hotelId) => getCategoryByRestaurantId(hotelId));
+ipcMain.handle('category:getActiveByHotel', (event, hotelId) => getActiveCategoriesByRestaurantId(hotelId));
 ipcMain.handle('category:getById', (event, id) => getCategoryById(id));
 
 // Subcategory IPC
