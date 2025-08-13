@@ -79,6 +79,10 @@ contextBridge.exposeInMainWorld('myAPI', {
   updateIngredient: (id, updates) => ipcRenderer.invoke('ingredient:update', id, updates),
   deleteIngredient: (id) => ipcRenderer.invoke('ingredient:delete', id),
   searchIngredientsByName: (name) => ipcRenderer.invoke('ingredient:searchByName', name),
+  getActiveCategories: () => ipcRenderer.invoke('ingredient:getActiveCategories'),
+  createCategoryIngredient: (categoryId, ingredientId) => ipcRenderer.invoke('ingredient:createCategoryIngredient', categoryId, ingredientId),
+  checkCategoryIngredientExists: (categoryId, ingredientId) => ipcRenderer.invoke('ingredient:checkCategoryIngredientExists', categoryId, ingredientId),
+  getIngredientsByCategoryPaginated: (categoryId, limit, offset) => ipcRenderer.invoke('ingredient:getByCategoryPaginated', categoryId, limit, offset),
 
   // Tables
   tableCreate: (data) => ipcRenderer.invoke('table:create', data),

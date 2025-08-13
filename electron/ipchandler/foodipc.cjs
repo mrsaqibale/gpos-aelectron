@@ -73,7 +73,11 @@ const {
   getIngredientsByCategory,
   updateIngredient,
   deleteIngredient,
-  searchIngredientsByName
+  searchIngredientsByName,
+  getActiveCategories,
+  createCategoryIngredient,
+  checkCategoryIngredientExists,
+  getIngredientsByCategoryPaginated
 } = getModelPath('foods/ingredients.js');
 
 // Category IPC
@@ -141,6 +145,10 @@ ipcMain.handle('ingredient:getByCategory', (event, categoryId) => getIngredients
 ipcMain.handle('ingredient:update', (event, id, updates) => updateIngredient(id, updates));
 ipcMain.handle('ingredient:delete', (event, id) => deleteIngredient(id));
 ipcMain.handle('ingredient:searchByName', (event, name) => searchIngredientsByName(name));
+ipcMain.handle('ingredient:getActiveCategories', (event) => getActiveCategories());
+ipcMain.handle('ingredient:createCategoryIngredient', (event, categoryId, ingredientId) => createCategoryIngredient(categoryId, ingredientId));
+ipcMain.handle('ingredient:checkCategoryIngredientExists', (event, categoryId, ingredientId) => checkCategoryIngredientExists(categoryId, ingredientId));
+ipcMain.handle('ingredient:getByCategoryPaginated', (event, categoryId, limit, offset) => getIngredientsByCategoryPaginated(categoryId, limit, offset));
 
 // Get food image data
 ipcMain.handle('food:getImage', async (event, imagePath) => {
