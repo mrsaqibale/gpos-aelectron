@@ -81,6 +81,14 @@ contextBridge.exposeInMainWorld('myAPI', {
   deleteIngredient: (id) => ipcRenderer.invoke('ingredient:delete', id),
   searchIngredientsByName: (name) => ipcRenderer.invoke('ingredient:searchByName', name),
 
+  // Category-Ingredients
+  createCategoryIngredient: (data) => ipcRenderer.invoke('categoryIngredient:create', data),
+  getCategoryIngredients: (categoryId) => ipcRenderer.invoke('categoryIngredient:getByCategory', categoryId),
+  checkIngredientInCategory: (categoryId, ingredientId) => ipcRenderer.invoke('categoryIngredient:checkExists', categoryId, ingredientId),
+  updateCategoryIngredient: (id, updates) => ipcRenderer.invoke('categoryIngredient:update', id, updates),
+  deleteCategoryIngredient: (id) => ipcRenderer.invoke('categoryIngredient:delete', id),
+  getAllCategoryIngredients: () => ipcRenderer.invoke('categoryIngredient:getAll'),
+
   // Tables
   tableCreate: (data) => ipcRenderer.invoke('table:create', data),
   tableUpdate: (id, updates) => ipcRenderer.invoke('table:update', id, updates),
