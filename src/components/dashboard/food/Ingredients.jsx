@@ -22,6 +22,7 @@ const Ingredients = () => {
   const [updateIngredientStatus, setUpdateIngredientStatus] = useState(1);
   const [updateIngredientCategory, setUpdateIngredientCategory] = useState('');
   const [ingredientCategories, setIngredientCategories] = useState({});
+  const [newlyAddedIngredients, setNewlyAddedIngredients] = useState([]);
   
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -47,10 +48,12 @@ const Ingredients = () => {
       } else {
         console.error('Error fetching ingredients:', result.message);
         setIngredients([]);
+        setIngredientCategories({});
       }
     } catch (error) {
       console.error('Error fetching ingredients:', error);
       setIngredients([]);
+      setIngredientCategories({});
     } finally {
       setLoading(false);
     }
@@ -228,6 +231,18 @@ const Ingredients = () => {
   };
 
   const handleIngredientSelect = (ingredient) => {
+    // Check if ingredient already exists in the selected category
+    const existingIngredient = ingredients.find(ing => 
+      ing.id === ingredient.id && 
+      ingredientCategories[ing.id]?.category_id === parseInt(selectedCategory)
+    );
+    
+    if (existingIngredient) {
+      alert('This ingredient already exists in the selected category!');
+      return;
+    }
+    
+    // Check if ingredient is already in selected ingredients list
     if (!selectedIngredients.find(item => item.id === ingredient.id)) {
       setSelectedIngredients([...selectedIngredients, ingredient]);
     }
@@ -243,6 +258,17 @@ const Ingredients = () => {
     try {
       setLoading(true);
       
+      // Check if ingredient already exists in the selected category
+      const existingIngredient = ingredients.find(ing => 
+        ing.name.toLowerCase() === searchTerm.trim().toLowerCase() && 
+        ingredientCategories[ing.id]?.category_id === parseInt(selectedCategory)
+      );
+      
+      if (existingIngredient) {
+        alert('This ingredient already exists in the selected category!');
+        return;
+      }
+      
       // Create new ingredient
       const ingredientId = await createNewIngredient(searchTerm.trim());
       if (!ingredientId) {
@@ -253,8 +279,14 @@ const Ingredients = () => {
       // Add to category
       const added = await addIngredientToCategory(selectedCategory, ingredientId);
       if (added) {
-        // Refresh ingredients list
-        await fetchIngredients();
+        // Add to selected ingredients list
+        const newIngredient = {
+          id: ingredientId,
+          name: searchTerm.trim(),
+          status: 1
+        };
+        setSelectedIngredients([...selectedIngredients, newIngredient]);
+        
         // Clear search term but keep modal open
         setSearchTerm('');
         setShowDropdown(false);
