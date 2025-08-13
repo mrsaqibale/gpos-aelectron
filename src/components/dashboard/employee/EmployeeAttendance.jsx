@@ -83,6 +83,7 @@ const EmployeeAttendance = () => {
   const dummyEmployees = [
     {
       id: 1,
+      employeeId: 'EMP001',
       name: 'John Smith',
       email: 'john.smith@restaurant.com',
       phone: '0871234567',
@@ -90,12 +91,15 @@ const EmployeeAttendance = () => {
       totalDays: 30,
       presentDays: 28,
       lateDays: 3,
+      totalHours: 224,
+      salary: 3500,
       joiningDate: '2024-01-15',
-      isActive: true,
+      isPaid: true,
       address: '123 Main Street, Dublin, Co. Dublin, D01 AB12, Ireland'
     },
     {
       id: 2,
+      employeeId: 'EMP002',
       name: 'Sarah Johnson',
       email: 'sarah.johnson@restaurant.com',
       phone: '0862345678',
@@ -103,12 +107,15 @@ const EmployeeAttendance = () => {
       totalDays: 30,
       presentDays: 25,
       lateDays: 5,
+      totalHours: 200,
+      salary: 2800,
       joiningDate: '2024-02-20',
-      isActive: true,
+      isPaid: false,
       address: '456 Oak Avenue, Cork, Co. Cork, T12 CD34, Ireland'
     },
     {
       id: 3,
+      employeeId: 'EMP003',
       name: 'Michael O\'Connor',
       email: 'michael.oconnor@restaurant.com',
       phone: '0853456789',
@@ -116,12 +123,15 @@ const EmployeeAttendance = () => {
       totalDays: 30,
       presentDays: 30,
       lateDays: 1,
+      totalHours: 240,
+      salary: 3200,
       joiningDate: '2023-11-10',
-      isActive: true,
+      isPaid: true,
       address: '789 River Road, Galway, Co. Galway, H91 EF56, Ireland'
     },
     {
       id: 4,
+      employeeId: 'EMP004',
       name: 'Emma Walsh',
       email: 'emma.walsh@restaurant.com',
       phone: '0844567890',
@@ -129,12 +139,15 @@ const EmployeeAttendance = () => {
       totalDays: 30,
       presentDays: 22,
       lateDays: 8,
+      totalHours: 176,
+      salary: 2600,
       joiningDate: '2024-03-05',
-      isActive: true,
+      isPaid: false,
       address: '321 Hill Street, Limerick, Co. Limerick, V94 GH78, Ireland'
     },
     {
       id: 5,
+      employeeId: 'EMP005',
       name: 'David Murphy',
       email: 'david.murphy@restaurant.com',
       phone: '0835678901',
@@ -142,8 +155,10 @@ const EmployeeAttendance = () => {
       totalDays: 30,
       presentDays: 27,
       lateDays: 2,
+      totalHours: 216,
+      salary: 3100,
       joiningDate: '2023-12-15',
-      isActive: true,
+      isPaid: true,
       address: '654 Park Lane, Waterford, Co. Waterford, X91 IJ90, Ireland'
     }
   ];
@@ -187,12 +202,12 @@ const EmployeeAttendance = () => {
     setCurrentPage(pageNumber);
   };
 
-  // Handle employee status toggle
-  const handleStatusToggle = (employeeId) => {
+  // Handle employee payment toggle
+  const handlePaymentToggle = (employeeId) => {
     setEmployees(prevEmployees =>
       prevEmployees.map(employee =>
         employee.id === employeeId
-          ? { ...employee, isActive: !employee.isActive }
+          ? { ...employee, isPaid: !employee.isPaid }
           : employee
       )
     );
@@ -387,12 +402,6 @@ const EmployeeAttendance = () => {
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             </div>
-            {/* Export Button */}
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm">
-              <Download size={16} />
-              Export
-              <ChevronDown size={14} />
-            </button>
           </div>
         </div>
 
@@ -403,6 +412,10 @@ const EmployeeAttendance = () => {
               <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">SI</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
+                  Employee ID
+                  <ChevronDown className="inline ml-1" size={12} />
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
                   Employee Name
                   <ChevronDown className="inline ml-1" size={12} />
                 </th>
@@ -412,6 +425,14 @@ const EmployeeAttendance = () => {
                 </th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
                   Role
+                  <ChevronDown className="inline ml-1" size={12} />
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
+                  Hours
+                  <ChevronDown className="inline ml-1" size={12} />
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
+                  Salary
                   <ChevronDown className="inline ml-1" size={12} />
                 </th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
@@ -430,7 +451,7 @@ const EmployeeAttendance = () => {
                   Joining Date
                   <ChevronDown className="inline ml-1" size={12} />
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Active/Inactive</th>
+                                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Paid/Unpaid</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Actions</th>
               </tr>
             </thead>
@@ -443,6 +464,9 @@ const EmployeeAttendance = () => {
                   <tr key={employee.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {indexOfFirstEmployee + index + 1}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {employee.employeeId}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
@@ -457,6 +481,12 @@ const EmployeeAttendance = () => {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {employee.role}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {employee.totalHours}h
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      €{employee.salary.toLocaleString()}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
@@ -477,20 +507,20 @@ const EmployeeAttendance = () => {
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {formatDate(employee.joiningDate)}
                     </td>
-                    <td className="py-3 px-4">
-                      <button
-                        onClick={() => handleStatusToggle(employee.id)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          employee.isActive ? 'bg-primary' : 'bg-gray-300'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            employee.isActive ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </td>
+                                         <td className="py-3 px-4">
+                       <button
+                         onClick={() => handlePaymentToggle(employee.id)}
+                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                           employee.isPaid ? 'bg-primary' : 'bg-gray-300'
+                         }`}
+                       >
+                         <span
+                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                             employee.isPaid ? 'translate-x-6' : 'translate-x-1'
+                           }`}
+                         />
+                       </button>
+                     </td>
                     <td className="py-3 px-4">
                       <button
                         onClick={() => handleModalOpen(employee)}
