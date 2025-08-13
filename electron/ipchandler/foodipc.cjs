@@ -152,6 +152,14 @@ ipcMain.handle('ingredient:update', (event, id, updates) => updateIngredient(id,
 ipcMain.handle('ingredient:delete', (event, id) => deleteIngredient(id));
 ipcMain.handle('ingredient:searchByName', (event, name) => searchIngredientsByName(name));
 
+// Category-Ingredient IPC
+ipcMain.handle('categoryIngredient:create', (event, data) => createCategoryIngredient(data));
+ipcMain.handle('categoryIngredient:getByCategory', (event, categoryId) => getCategoryIngredients(categoryId));
+ipcMain.handle('categoryIngredient:checkExists', (event, categoryId, ingredientId) => checkIngredientInCategory(categoryId, ingredientId));
+ipcMain.handle('categoryIngredient:update', (event, id, updates) => updateCategoryIngredient(id, updates));
+ipcMain.handle('categoryIngredient:delete', (event, id) => deleteCategoryIngredient(id));
+ipcMain.handle('categoryIngredient:getAll', (event) => getAllCategoryIngredients());
+
 // Get food image data
 ipcMain.handle('food:getImage', async (event, imagePath) => {
   try {

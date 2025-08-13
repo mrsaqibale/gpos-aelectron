@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('myAPI', {
  createCategory : (data) => ipcRenderer.invoke('category:create', data),
   updateCategory: (id, updates) => ipcRenderer.invoke('category:update', id, updates),
   getCategoriesByHotel: (hotelId) => ipcRenderer.invoke('category:getByHotel', hotelId),
+  getActiveCategoriesByHotel: (hotelId) => ipcRenderer.invoke('category:getActiveByHotel', hotelId),
   getCategoryById: (id) => ipcRenderer.invoke('category:getById', id),
 
   // Subcategory
