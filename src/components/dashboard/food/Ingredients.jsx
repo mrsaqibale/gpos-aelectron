@@ -1,191 +1,245 @@
 import React, { useEffect, useState } from 'react';
-import { Edit, Plus, X, Trash2 } from 'lucide-react';
+import { Edit, Plus, X, Trash2, Search } from 'lucide-react';
 
 const Ingredients = () => {
   const [ingredients, setIngredients] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState(null);
-  const [newIngredient, setNewIngredient] = useState({
-    name: '',
-    position: '',
-    image: null
-  });
-  const [nameError, setNameError] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredIngredients, setFilteredIngredients] = useState([]);
+  const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [customIngredientName, setCustomIngredientName] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [ingredientToDelete, setIngredientToDelete] = useState(null);
-  const [selectedIngredients, setSelectedIngredients] = useState([]);
-  const [tagInput, setTagInput] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All categories');
-  
-  const categories = ['Traditional', 'Burgers', 'Pizza', 'Beverages'];
-  
-  // Random ingredients for dropdown
-  const randomIngredients = [
-    'Tomatoes', 'Onions', 'Garlic', 'Bell Peppers', 'Mushrooms',
-    'Spinach', 'Salt', 'Black Pepper', 'Paprika',
-    'Cumin', 'Coriander', 'Turmeric', 'Ginger', 'Lemon',
-    'Lime', 'Parsley', 'Cilantro', 'Mint', 'Chives'
-  ];
 
-  const fetchIngredients = async()=>{
-    try{
-      const dummyIngredients = [
-        { id: 1, name: 'Tomatoes', position: 1, status: 1 },
-        { id: 2, name: 'Onions', position: 2, status: 1 },
-        { id: 3, name: 'Garlic', position: 3, status: 0 },
-        { id: 4, name: 'Bell Peppers', position: 4, status: 1 },
-        { id: 5, name: 'Mushrooms', position: 5, status: 1 },
-        { id: 6, name: 'Spinach', position: 6, status: 0 },
-        { id: 7, name: 'Basil', position: 7, status: 1 },
-        { id: 8, name: 'Oregano', position: 8, status: 1 }
-      ];
-      setIngredients(dummyIngredients);
-    }catch(error){
+  // Fetch all ingredients
+  const fetchIngredients = async () => {
+    try {
+      setLoading(true);
+      const result = await window.myAPI?.getAllIngredients();
+      if (result.success) {
+        setIngredients(result.data);
+      } else {
+        console.error('Error fetching ingredients:', result.message);
+        setIngredients([]);
+      }
+    } catch (error) {
       console.error('Error fetching ingredients:', error);
       setIngredients([]);
+    } finally {
+      setLoading(false);
     }
-  }
-  
-  useEffect(()=>{
-    fetchIngredients();
-  }, [])
-
-  const handleEditIngredient = (ingredient) => {
-    setEditingIngredient(ingredient);
-    setNewIngredient({
-      name: ingredient.name,
-      position: ingredient.position,
-      image: ingredient.image || null
-    });
-    setNameError('');
-    setShowForm(true);
   };
+
+  // Fetch active categories
+  const fetchCategories = async () => {
+    try {
+      const result = await window.myAPI?.getActiveCategories();
+      if (result.success) {
+        setCategories(result.data);
+      } else {
+        console.error('Error fetching categories:', result.message);
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setCategories([]);
+    }
+  };
+
+  // Search ingredients by name
+  const searchIngredients = async (searchTerm) => {
+    if (!searchTerm.trim()) {
+      setFilteredIngredients([]);
+      return;
+    }
+
+    try {
+      const result = await window.myAPI?.searchIngredientsByName(searchTerm);
+      if (result.success) {
+        setFilteredIngredients(result.data);
+      } else {
+        setFilteredIngredients([]);
+      }
+    } catch (error) {
+      console.error('Error searching ingredients:', error);
+      setFilteredIngredients([]);
+    }
+  };
+
+  // Check if ingredient already exists in category
+  const checkIngredientExists = async (categoryId, ingredientId) => {
+    try {
+      const result = await window.myAPI?.checkCategoryIngredientExists(categoryId, ingredientId);
+      return result.success && result.exists;
+    } catch (error) {
+      console.error('Error checking ingredient existence:', error);
+      return false;
+    }
+  };
+
+  // Add ingredient to category
+  const addIngredientToCategory = async (categoryId, ingredientId) => {
+    try {
+      const result = await window.myAPI?.createCategoryIngredient(categoryId, ingredientId);
+      return result.success;
+    } catch (error) {
+      console.error('Error adding ingredient to category:', error);
+      return false;
+    }
+  };
+
+  // Create new ingredient and add to category
+  const createNewIngredient = async (name) => {
+    try {
+      const result = await window.myAPI?.createIngredient({ name, status: 1 });
+      if (result.success) {
+        return result.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error creating ingredient:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    fetchIngredients();
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchIngredients(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   const handleAddIngredient = () => {
     setEditingIngredient(null);
-    setNewIngredient({
-      name: '',
-      position: '',
-      image: null
-    });
+    setSelectedCategory('');
+    setSearchTerm('');
+    setFilteredIngredients([]);
     setSelectedIngredients([]);
-    setTagInput('');
-    setNameError('');
+    setCustomIngredientName('');
     setShowForm(true);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewIngredient(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    if (name === 'name') {
-      const trimmedValue = value.trim().toLowerCase();
-      const existingIngredient = ingredients.find(ing => 
-        ing.name.toLowerCase() === trimmedValue && 
-        (!editingIngredient || ing.id !== editingIngredient.id)
-      );
-      
-      if (existingIngredient) {
-        setNameError('⚠ Ingredient with this name already exists');
-      } else {
-        setNameError('');
-      }
+  const handleEditIngredient = (ingredient) => {
+    setEditingIngredient(ingredient);
+    setSelectedCategory('');
+    setSearchTerm('');
+    setFilteredIngredients([]);
+    setSelectedIngredients([]);
+    setCustomIngredientName('');
+    setShowForm(true);
+  };
+
+  const handleCategoryChange = (e) => {
+    setSelectedCategory(e.target.value);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleIngredientSelect = (ingredient) => {
+    if (!selectedIngredients.find(item => item.id === ingredient.id)) {
+      setSelectedIngredients([...selectedIngredients, ingredient]);
     }
+    setSearchTerm('');
+    setFilteredIngredients([]);
   };
 
-  const handleDropdownChange = (e) => {
-    const selectedValue = e.target.value;
-    if (selectedValue && !selectedIngredients.includes(selectedValue)) {
-      setSelectedIngredients([...selectedIngredients, selectedValue]);
-    }
-  };
-
-  const handleTagInputChange = (e) => {
-    setTagInput(e.target.value);
-  };
-
-  const handleTagInputKeyPress = (e) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      if (!selectedIngredients.includes(tagInput.trim())) {
-        setSelectedIngredients([...selectedIngredients, tagInput.trim()]);
-      }
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove) => {
-    setSelectedIngredients(selectedIngredients.filter(tag => tag !== tagToRemove));
-  };
-
-  const handleFileChange = (e) => {
-    setNewIngredient(prev => ({
-      ...prev,
-      image: e.target.files[0]
-    }));
-  };
-
-  const handleSubmit = async (e) => {
+  const handleCustomIngredientSubmit = async (e) => {
     e.preventDefault();
-    
-    const trimmedName = newIngredient.name.trim().toLowerCase();
-    const existingIngredient = ingredients.find(ing => 
-      ing.name.toLowerCase() === trimmedName && 
-      (!editingIngredient || ing.id !== editingIngredient.id)
-    );
-    
-    if (existingIngredient) {
-      setNameError('⚠ Ingredient with this name already exists');
-      return;
-    }
-    
+    if (!customIngredientName.trim() || !selectedCategory) return;
+
     try {
-      let imageBase64 = null;
-      if (newIngredient.image) {
-        imageBase64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(newIngredient.image);
-        });
+      setLoading(true);
+      
+      // Create new ingredient
+      const ingredientId = await createNewIngredient(customIngredientName.trim());
+      if (!ingredientId) {
+        alert('Failed to create ingredient');
+        return;
       }
-      
-      // TODO: Implement API calls for creating/updating ingredients
-      // if (editingIngredient) {
-      //   await window.myAPI?.updateIngredient(editingIngredient.id, {
-      //     name: newIngredient.name,
-      //     position: parseInt(newIngredient.position),
-      //     image: imageBase64,
-      //   });
-      // } else {
-      //   await window.myAPI?.createIngredient({
-      //     name: newIngredient.name,
-      //     position: parseInt(newIngredient.position),
-      //     image: imageBase64,
-      //     status: 1,
-      //   });
-      // }
-      
-      fetchIngredients();
-      setShowForm(false);
-      setNameError('');
+
+      // Add to category
+      const added = await addIngredientToCategory(selectedCategory, ingredientId);
+      if (added) {
+        // Refresh ingredients list
+        await fetchIngredients();
+        setShowForm(false);
+        setCustomIngredientName('');
+        setSelectedCategory('');
+        setSelectedIngredients([]);
+      } else {
+        alert('Failed to add ingredient to category');
+      }
     } catch (error) {
-      console.error('Error saving ingredient:', error);
+      console.error('Error creating ingredient:', error);
+      alert('Error creating ingredient');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleExistingIngredientSubmit = async (e) => {
+    e.preventDefault();
+    if (selectedIngredients.length === 0 || !selectedCategory) return;
+
+    try {
+      setLoading(true);
+      let successCount = 0;
+
+      for (const ingredient of selectedIngredients) {
+        // Check if already exists
+        const exists = await checkIngredientExists(selectedCategory, ingredient.id);
+        if (!exists) {
+          const added = await addIngredientToCategory(selectedCategory, ingredient.id);
+          if (added) successCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        await fetchIngredients();
+        setShowForm(false);
+        setSelectedIngredients([]);
+        setSelectedCategory('');
+      }
+
+      if (successCount < selectedIngredients.length) {
+        alert(`${selectedIngredients.length - successCount} ingredients were already in this category`);
+      }
+    } catch (error) {
+      console.error('Error adding ingredients to category:', error);
+      alert('Error adding ingredients to category');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeSelectedIngredient = (ingredientId) => {
+    setSelectedIngredients(selectedIngredients.filter(item => item.id !== ingredientId));
   };
 
   const toggleStatus = async (id) => {
     try {
       const ingredient = ingredients.find(ing => ing.id === id);
       if (!ingredient) return;
+      
       const newStatus = ingredient.status ? 0 : 1;
-      // TODO: Implement API call to update ingredient status
-      // await window.myAPI?.updateIngredient(id, { status: newStatus });
-      fetchIngredients();
+      const result = await window.myAPI?.updateIngredient(id, { status: newStatus });
+      
+      if (result.success) {
+        await fetchIngredients();
+      }
     } catch (error) {
       console.error('Error toggling status:', error);
     }
@@ -198,95 +252,82 @@ const Ingredients = () => {
 
   const deleteIngredient = async (id) => {
     try {
-      fetchIngredients();
-      setShowForm(false);
-      setShowDeleteConfirm(false);
-      setIngredientToDelete(null);
+      const result = await window.myAPI?.deleteIngredient(id);
+      if (result.success) {
+        await fetchIngredients();
+        setShowDeleteConfirm(false);
+        setIngredientToDelete(null);
+      }
     } catch (error) {
       console.error('Error deleting ingredient:', error);
     }
   };
 
-  // Filter ingredients based on search term and category
-  const filteredIngredients = ingredients.filter(item => {
-    if (searchTerm && 
-        !item.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-    if (categoryFilter && categoryFilter !== 'All categories' && 
-        item.category !== categoryFilter) {
-      return false;
+  // Filter ingredients based on category filter
+  const displayIngredients = ingredients.filter(item => {
+    if (categoryFilter && categoryFilter !== 'All categories') {
+      // This would need to be implemented based on your data structure
+      return true; // For now, show all
     }
     return true;
   });
 
   return (
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
-             <div className="flex justify-between items-center mb-6">
-         <h2 className="text-lg font-semibold text-gray-800">Ingredients List</h2>
-         <div className="flex items-center gap-3">
-           <div className="relative">
-             <select
-               value={categoryFilter}
-               onChange={(e) => setCategoryFilter(e.target.value)}
-               className="w-48 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
-             >
-               <option>All categories</option>
-               <option>Out Of Stock Foods</option>
-               {categories.map(cat => (
-                 <option key={cat}>{cat}</option>
-               ))}
-             </select>
-           </div>
-           
-           <div className="relative">
-             <input
-               type="text"
-               placeholder="Search ingredients..."
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-               className="w-64 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
-             />
-           </div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-semibold text-gray-800">Ingredients List</h2>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-48 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+            >
+              <option>All categories</option>
+              {categories.map(cat => (
+                <option key={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
 
-           <button
-             onClick={handleAddIngredient}
-             className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
-           >
-             <Plus size={16} />
-             Add New Ingredient
-           </button>
-         </div>
-       </div>
+          <button
+            onClick={handleAddIngredient}
+            className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add New Ingredient
+          </button>
+        </div>
+      </div>
 
-       <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
+      <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
         <thead>
           <tr className="bg-primaryExtraLight">
-                         <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-               SI
-             </th>
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-               Name
-             </th>
-             <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-               Status
-             </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              SI
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Name
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Status
+            </th>
             <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
               Action
             </th>
           </tr>
         </thead>
-                 <tbody>
-           {filteredIngredients.map((ingredient, index) => (
+        <tbody>
+          {displayIngredients.map((ingredient, index) => (
             <tr key={ingredient.id} className={`border-b border-gray-100 hover:bg-gray-25 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                             <td className="py-3 px-4">
-                 <span className="text-sm font-medium text-gray-700">{index + 1}</span>
-               </td>
-                              <td className="py-3 px-4">
-                 <span className="text-sm font-medium text-gray-800">{ingredient.name}</span>
-               </td>
-               <td className="py-3 px-4">
-                 <label className="relative inline-flex items-center cursor-pointer">
+              <td className="py-3 px-4">
+                <span className="text-sm font-medium text-gray-700">{index + 1}</span>
+              </td>
+              <td className="py-3 px-4">
+                <span className="text-sm font-medium text-gray-800">{ingredient.name}</span>
+              </td>
+              <td className="py-3 px-4">
+                <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={!!ingredient.status}
@@ -319,7 +360,7 @@ const Ingredients = () => {
         </tbody>
       </table>
 
-             {filteredIngredients.length === 0 && (
+      {displayIngredients.length === 0 && !loading && (
         <div className="text-center py-8">
           <p className="text-gray-600 font-medium text-sm">No ingredients found</p>
           <p className="text-gray-500 text-xs">Ingredients will appear here once added.</p>
@@ -328,91 +369,141 @@ const Ingredients = () => {
 
       {showForm && (
         <div className="fixed inset-0 bg-[#0000008e] bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-800">
-                  {editingIngredient ? 'Edit Ingredient' : 'Add New Ingredient'}
+                  {editingIngredient ? 'Edit Ingredient' : 'Add Ingredients to Category'}
                 </h2>
                 <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-gray-700">
                   <X size={24} />
                 </button>
               </div>
 
-                             <form onSubmit={handleSubmit}>
-                 <div className="mb-4">
-                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                     Select Ingredients*
-                   </label>
-                   <select
-                     onChange={handleDropdownChange}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
-                     defaultValue=""
-                   >
-                     <option value="" disabled>Choose from ingredients...</option>
-                     {randomIngredients.map((ingredient, index) => (
-                       <option key={index} value={ingredient}>{ingredient}</option>
-                     ))}
-                   </select>
-                 </div>
-
-                 <div className="mb-4">
-                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                     Add Custom Ingredient
-                   </label>
-                   <input
-                     type="text"
-                     value={tagInput}
-                     onChange={handleTagInputChange}
-                     onKeyPress={handleTagInputKeyPress}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
-                     placeholder="Type ingredient name and press Enter"
-                   />
-                 </div>
-
-                 {selectedIngredients.length > 0 && (
-                   <div className="mb-4">
-                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                       Selected Ingredients
-                     </label>
-                     <div className="flex flex-wrap gap-2">
-                       {selectedIngredients.map((ingredient, index) => (
-                                                   <span
-                            key={index}
-                            className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white text-gray-800 border border-2 border-primaryLight"
-                          >
-                           {ingredient}
-                                                       <button
-                              type="button"
-                              onClick={() => removeTag(ingredient)}
-                              className="ml-2 text-red-500 hover:text-red-700"
-                            >
-                              <X size={14} />
-                            </button>
-                         </span>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-
-                
-
-                <div className="mt-6 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight"
+              <div className="space-y-6">
+                {/* Category Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Category*
+                  </label>
+                  <select
+                    value={selectedCategory}
+                    onChange={handleCategoryChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                    required
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primaryLight hover:bg-primaryDark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight"
-                  >
-                    {editingIngredient ? 'Update Ingredient' : 'Add Ingredient'}
-                  </button>
+                    <option value="">Choose a category...</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </form>
+
+                {/* Search Existing Ingredients */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Search Existing Ingredients
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                      placeholder="Type ingredient name to search..."
+                      className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                    />
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  </div>
+                  
+                  {/* Search Results */}
+                  {filteredIngredients.length > 0 && (
+                    <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md">
+                      {filteredIngredients.map(ingredient => (
+                        <div
+                          key={ingredient.id}
+                          onClick={() => handleIngredientSelect(ingredient)}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <span className="text-sm text-gray-800">{ingredient.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected Ingredients */}
+                {selectedIngredients.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Selected Ingredients ({selectedIngredients.length})
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedIngredients.map((ingredient) => (
+                        <span
+                          key={ingredient.id}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white text-gray-800 border border-2 border-primaryLight"
+                        >
+                          {ingredient.name}
+                          <button
+                            type="button"
+                            onClick={() => removeSelectedIngredient(ingredient.id)}
+                            className="ml-2 text-red-500 hover:text-red-700"
+                          >
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add Existing Ingredients Button */}
+                {selectedIngredients.length > 0 && (
+                  <button
+                    onClick={handleExistingIngredientSubmit}
+                    disabled={loading || !selectedCategory}
+                    className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s) to Category`}
+                  </button>
+                )}
+
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">OR</span>
+                  </div>
+                </div>
+
+                {/* Create New Ingredient */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Create New Ingredient
+                  </label>
+                  <form onSubmit={handleCustomIngredientSubmit} className="space-y-3">
+                    <input
+                      type="text"
+                      value={customIngredientName}
+                      onChange={(e) => setCustomIngredientName(e.target.value)}
+                      placeholder="Enter new ingredient name..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading || !selectedCategory || !customIngredientName.trim()}
+                      className="w-full px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Creating...' : 'Create New Ingredient'}
+                    </button>
+                  </form>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -436,7 +527,7 @@ const Ingredients = () => {
             </div>
             <div className="p-6">
               <p className="text-gray-700 mb-4">
-                Do you want to delete this ingredient?
+                Do you want to delete the ingredient "{ingredientToDelete.name}"?
               </p>
             </div>
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
