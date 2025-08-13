@@ -489,7 +489,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
               {/* Loyal Customer Toggle */}
               <div className="flex items-center justify-between py-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Loyal Customer
+                  Favourite Customer
                 </label>
                 <div className="flex items-center">
                   <input
