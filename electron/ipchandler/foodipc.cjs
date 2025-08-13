@@ -76,6 +76,15 @@ const {
   searchIngredientsByName
 } = getModelPath('foods/ingredients.js');
 
+const { 
+  createCategoryIngredient,
+  getIngredientsByCategory: getCategoryIngredients,
+  checkIngredientInCategory,
+  updateCategoryIngredient,
+  deleteCategoryIngredient,
+  getAllCategoryIngredients
+} = getModelPath('foods/category_ingredients.js');
+
 // Category IPC
 ipcMain.handle('category:create', (event, data) => createCategory(data));
 ipcMain.handle('category:update', (event, id, updates) => updateCategory(id, updates));
