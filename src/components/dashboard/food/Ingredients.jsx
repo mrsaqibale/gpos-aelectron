@@ -17,6 +17,9 @@ const Ingredients = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedDropdownIndex, setSelectedDropdownIndex] = useState(-1);
   const [filteredIngredientsByCategory, setFilteredIngredientsByCategory] = useState([]);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [updateIngredientName, setUpdateIngredientName] = useState('');
+  const [updateIngredientStatus, setUpdateIngredientStatus] = useState(1);
   
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -170,13 +173,9 @@ const Ingredients = () => {
 
   const handleEditIngredient = (ingredient) => {
     setEditingIngredient(ingredient);
-    setSelectedCategory('');
-    setSearchTerm('');
-    setFilteredIngredients([]);
-    setSelectedIngredients([]);
-    setShowDropdown(false);
-    setSelectedDropdownIndex(-1);
-    setShowForm(true);
+    setUpdateIngredientName(ingredient.name);
+    setUpdateIngredientStatus(ingredient.status);
+    setShowUpdateForm(true);
   };
 
   const handleCategoryChange = (e) => {
@@ -240,18 +239,49 @@ const Ingredients = () => {
       if (added) {
         // Refresh ingredients list
         await fetchIngredients();
-        setShowForm(false);
+        // Clear search term but keep modal open
         setSearchTerm('');
-        setSelectedCategory('');
-        setSelectedIngredients([]);
         setShowDropdown(false);
         setSelectedDropdownIndex(-1);
+        // Show success message
+        alert(`Ingredient "${searchTerm.trim()}" added successfully!`);
       } else {
         alert('Failed to add ingredient to category');
       }
     } catch (error) {
       console.error('Error creating ingredient:', error);
       alert('Error creating ingredient');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateIngredient = async (e) => {
+    e.preventDefault();
+    if (!updateIngredientName.trim() || !editingIngredient) return;
+
+    try {
+      setLoading(true);
+      
+      const result = await window.myAPI?.updateIngredient(editingIngredient.id, {
+        name: updateIngredientName.trim(),
+        status: updateIngredientStatus
+      });
+      
+      if (result.success) {
+        // Refresh ingredients list
+        await fetchIngredients();
+        setShowUpdateForm(false);
+        setEditingIngredient(null);
+        setUpdateIngredientName('');
+        setUpdateIngredientStatus(1);
+        alert('Ingredient updated successfully!');
+      } else {
+        alert('Failed to update ingredient');
+      }
+    } catch (error) {
+      console.error('Error updating ingredient:', error);
+      alert('Error updating ingredient');
     } finally {
       setLoading(false);
     }
@@ -264,6 +294,7 @@ const Ingredients = () => {
     try {
       setLoading(true);
       let successCount = 0;
+      let alreadyExistsIngredients = [];
 
       for (const ingredient of selectedIngredients) {
         // Check if already exists
@@ -271,18 +302,22 @@ const Ingredients = () => {
         if (!exists) {
           const added = await addIngredientToCategory(selectedCategory, ingredient.id);
           if (added) successCount++;
+        } else {
+          alreadyExistsIngredients.push(ingredient.name);
         }
       }
 
       if (successCount > 0) {
         await fetchIngredients();
-        setShowForm(false);
+        // Clear selected ingredients but keep modal open
         setSelectedIngredients([]);
-        setSelectedCategory('');
+        // Show success message
+        alert(`${successCount} ingredient(s) added successfully!`);
       }
 
-      if (successCount < selectedIngredients.length) {
-        alert(`${selectedIngredients.length - successCount} ingredients were already in this category`);
+      if (alreadyExistsIngredients.length > 0) {
+        const ingredientNames = alreadyExistsIngredients.join(', ');
+        alert(`${alreadyExistsIngredients.length} ingredient(s) were already in this category: ${ingredientNames}`);
       }
     } catch (error) {
       console.error('Error adding ingredients to category:', error);
@@ -319,14 +354,18 @@ const Ingredients = () => {
 
   const deleteIngredient = async (id) => {
     try {
-      const result = await window.myAPI?.deleteIngredient(id);
+      const result = await window.myAPI?.updateIngredient(id, { isdeleted: 1 });
       if (result.success) {
         await fetchIngredients();
         setShowDeleteConfirm(false);
         setIngredientToDelete(null);
+        alert('Ingredient deleted successfully!');
+      } else {
+        alert('Failed to delete ingredient');
       }
     } catch (error) {
       console.error('Error deleting ingredient:', error);
+      alert('Error deleting ingredient');
     }
   };
 
@@ -476,7 +515,7 @@ const Ingredients = () => {
                       value={searchTerm}
                       onChange={handleSearchChange}
                       onKeyDown={handleSearchKeyDown}
-                      placeholder="Type ingredient name and press Enter to search or create..."
+                      placeholder="Type ingredient name and press Enter to add (can add multiple)..."
                       className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                       required
                     />
@@ -507,7 +546,9 @@ const Ingredients = () => {
                   <div className="mt-2 text-xs text-gray-500">
                     <p>• Use ↑↓ arrow keys to navigate dropdown</p>
                     <p>• Press Enter to select highlighted item or create new ingredient</p>
+                    <p>• Press Enter multiple times to add multiple ingredients</p>
                     <p>• Press Escape to close dropdown</p>
+                    <p>• Click Close when done adding ingredients</p>
                   </div>
                 </div>
 
@@ -537,17 +578,109 @@ const Ingredients = () => {
                   </div>
                 )}
 
-                {/* Add Existing Ingredients Button */}
-                {selectedIngredients.length > 0 && (
+                {/* Close Button */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button
-                    onClick={handleExistingIngredientSubmit}
-                    disabled={loading || !selectedCategory}
-                    className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    onClick={() => setShowForm(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s) to Category`}
+                    Close
                   </button>
-                )}
+                  {selectedIngredients.length > 0 && (
+                    <button
+                      onClick={handleExistingIngredientSubmit}
+                      disabled={loading || !selectedCategory}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s)`}
+                    </button>
+                  )}
+                </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Ingredient Modal */}
+      {showUpdateForm && editingIngredient && (
+        <div className="fixed inset-0 bg-[#0000008e] bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800">
+                  Update Ingredient
+                </h2>
+                <button 
+                  onClick={() => {
+                    setShowUpdateForm(false);
+                    setEditingIngredient(null);
+                    setUpdateIngredientName('');
+                    setUpdateIngredientStatus(1);
+                  }} 
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateIngredient} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ingredient Name*
+                  </label>
+                  <input
+                    type="text"
+                    value={updateIngredientName}
+                    onChange={(e) => setUpdateIngredientName(e.target.value)}
+                    placeholder="Enter ingredient name..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!updateIngredientStatus}
+                      onChange={(e) => setUpdateIngredientStatus(e.target.checked ? 1 : 0)}
+                      className="sr-only"
+                    />
+                    <div className={`w-10 h-5 rounded-full transition-colors ${updateIngredientStatus ? 'bg-primary' : 'bg-gray-200'}`}>
+                      <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${updateIngredientStatus ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`}></div>
+                    </div>
+                    <span className="ml-3 text-sm text-gray-700">
+                      {updateIngredientStatus ? 'Active' : 'Inactive'}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUpdateForm(false);
+                      setEditingIngredient(null);
+                      setUpdateIngredientName('');
+                      setUpdateIngredientStatus(1);
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !updateIngredientName.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Updating...' : 'Update Ingredient'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
