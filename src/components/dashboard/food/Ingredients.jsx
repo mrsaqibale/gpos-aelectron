@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Edit, Plus, X, Trash2, Search } from 'lucide-react';
 
 const Ingredients = () => {
@@ -15,6 +15,12 @@ const Ingredients = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [ingredientToDelete, setIngredientToDelete] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState('All categories');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedDropdownIndex, setSelectedDropdownIndex] = useState(-1);
+  const [filteredIngredientsByCategory, setFilteredIngredientsByCategory] = useState([]);
+  
+  const searchInputRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Fetch all ingredients
   const fetchIngredients = async () => {
@@ -38,7 +44,7 @@ const Ingredients = () => {
   // Fetch active categories
   const fetchCategories = async () => {
     try {
-      const result = await window.myAPI?.getActiveCategories(null); // Pass null to get all active categories
+      const result = await window.myAPI?.getActiveCategories(null);
       if (result.success) {
         setCategories(result.data);
       } else {
@@ -51,10 +57,26 @@ const Ingredients = () => {
     }
   };
 
+  // Fetch ingredients by category
+  const fetchIngredientsByCategory = async (categoryId) => {
+    try {
+      const result = await window.myAPI?.getIngredientsByCategoryPaginated(categoryId);
+      if (result.success) {
+        setFilteredIngredientsByCategory(result.data);
+      } else {
+        setFilteredIngredientsByCategory([]);
+      }
+    } catch (error) {
+      console.error('Error fetching ingredients by category:', error);
+      setFilteredIngredientsByCategory([]);
+    }
+  };
+
   // Search ingredients by name
   const searchIngredients = async (searchTerm) => {
     if (!searchTerm.trim()) {
       setFilteredIngredients([]);
+      setShowDropdown(false);
       return;
     }
 
@@ -62,12 +84,16 @@ const Ingredients = () => {
       const result = await window.myAPI?.searchIngredientsByName(searchTerm);
       if (result.success) {
         setFilteredIngredients(result.data);
+        setShowDropdown(result.data.length > 0);
+        setSelectedDropdownIndex(-1);
       } else {
         setFilteredIngredients([]);
+        setShowDropdown(false);
       }
     } catch (error) {
       console.error('Error searching ingredients:', error);
       setFilteredIngredients([]);
+      setShowDropdown(false);
     }
   };
 
@@ -120,6 +146,18 @@ const Ingredients = () => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
+  // Handle category filter change
+  useEffect(() => {
+    if (categoryFilter && categoryFilter !== 'All categories') {
+      const selectedCat = categories.find(cat => cat.name === categoryFilter);
+      if (selectedCat) {
+        fetchIngredientsByCategory(selectedCat.id);
+      }
+    } else {
+      setFilteredIngredientsByCategory([]);
+    }
+  }, [categoryFilter, categories]);
+
   const handleAddIngredient = () => {
     setEditingIngredient(null);
     setSelectedCategory('');
@@ -127,6 +165,8 @@ const Ingredients = () => {
     setFilteredIngredients([]);
     setSelectedIngredients([]);
     setCustomIngredientName('');
+    setShowDropdown(false);
+    setSelectedDropdownIndex(-1);
     setShowForm(true);
   };
 
@@ -137,6 +177,8 @@ const Ingredients = () => {
     setFilteredIngredients([]);
     setSelectedIngredients([]);
     setCustomIngredientName('');
+    setShowDropdown(false);
+    setSelectedDropdownIndex(-1);
     setShowForm(true);
   };
 
@@ -148,16 +190,42 @@ const Ingredients = () => {
     setSearchTerm(e.target.value);
   };
 
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (selectedDropdownIndex >= 0 && filteredIngredients[selectedDropdownIndex]) {
+        // Select the highlighted ingredient
+        handleIngredientSelect(filteredIngredients[selectedDropdownIndex]);
+      } else if (searchTerm.trim()) {
+        // Create new ingredient if no dropdown item is selected
+        handleCreateNewIngredient();
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedDropdownIndex(prev => 
+        prev < filteredIngredients.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedDropdownIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false);
+      setSelectedDropdownIndex(-1);
+    }
+  };
+
   const handleIngredientSelect = (ingredient) => {
     if (!selectedIngredients.find(item => item.id === ingredient.id)) {
       setSelectedIngredients([...selectedIngredients, ingredient]);
     }
     setSearchTerm('');
     setFilteredIngredients([]);
+    setShowDropdown(false);
+    setSelectedDropdownIndex(-1);
   };
 
-  const handleCustomIngredientSubmit = async (e) => {
-    e.preventDefault();
+  const handleCreateNewIngredient = async () => {
     if (!customIngredientName.trim() || !selectedCategory) return;
 
     try {
@@ -179,6 +247,8 @@ const Ingredients = () => {
         setCustomIngredientName('');
         setSelectedCategory('');
         setSelectedIngredients([]);
+        setSearchTerm('');
+        setShowDropdown(false);
       } else {
         alert('Failed to add ingredient to category');
       }
@@ -188,6 +258,11 @@ const Ingredients = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCustomIngredientSubmit = async (e) => {
+    e.preventDefault();
+    await handleCreateNewIngredient();
   };
 
   const handleExistingIngredientSubmit = async (e) => {
@@ -264,13 +339,9 @@ const Ingredients = () => {
   };
 
   // Filter ingredients based on category filter
-  const displayIngredients = ingredients.filter(item => {
-    if (categoryFilter && categoryFilter !== 'All categories') {
-      // This would need to be implemented based on your data structure
-      return true; // For now, show all
-    }
-    return true;
-  });
+  const displayIngredients = categoryFilter && categoryFilter !== 'All categories' 
+    ? filteredIngredientsByCategory 
+    : ingredients;
 
   return (
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
@@ -401,36 +472,51 @@ const Ingredients = () => {
                   </select>
                 </div>
 
-                {/* Search Existing Ingredients */}
+                {/* Single Row Input for Ingredient */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Search Existing Ingredients
+                    Search or Create Ingredient*
                   </label>
                   <div className="relative">
                     <input
+                      ref={searchInputRef}
                       type="text"
                       value={searchTerm}
                       onChange={handleSearchChange}
-                      placeholder="Type ingredient name to search..."
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Type ingredient name and press Enter to search or create..."
                       className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                      required
                     />
                     <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   </div>
                   
-                  {/* Search Results */}
-                  {filteredIngredients.length > 0 && (
-                    <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md">
-                      {filteredIngredients.map(ingredient => (
+                  {/* Dropdown Results */}
+                  {showDropdown && filteredIngredients.length > 0 && (
+                    <div 
+                      ref={dropdownRef}
+                      className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg"
+                    >
+                      {filteredIngredients.map((ingredient, index) => (
                         <div
                           key={ingredient.id}
                           onClick={() => handleIngredientSelect(ingredient)}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                            index === selectedDropdownIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
+                          }`}
                         >
                           <span className="text-sm text-gray-800">{ingredient.name}</span>
                         </div>
                       ))}
                     </div>
                   )}
+                  
+                  {/* Instructions */}
+                  <div className="mt-2 text-xs text-gray-500">
+                    <p>• Use ↑↓ arrow keys to navigate dropdown</p>
+                    <p>• Press Enter to select highlighted item or create new ingredient</p>
+                    <p>• Press Escape to close dropdown</p>
+                  </div>
                 </div>
 
                 {/* Selected Ingredients */}
@@ -469,40 +555,6 @@ const Ingredients = () => {
                     {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s) to Category`}
                   </button>
                 )}
-
-                {/* Divider */}
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">OR</span>
-                  </div>
-                </div>
-
-                {/* Create New Ingredient */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Create New Ingredient
-                  </label>
-                  <form onSubmit={handleCustomIngredientSubmit} className="space-y-3">
-                    <input
-                      type="text"
-                      value={customIngredientName}
-                      onChange={(e) => setCustomIngredientName(e.target.value)}
-                      placeholder="Enter new ingredient name..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading || !selectedCategory || !customIngredientName.trim()}
-                      className="w-full px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {loading ? 'Creating...' : 'Create New Ingredient'}
-                    </button>
-                  </form>
-                </div>
               </div>
             </div>
           </div>
