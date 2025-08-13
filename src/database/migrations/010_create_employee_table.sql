@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS employee (
     address TEXT,
     pin TEXT,
     code TEXT,
+    salary NUMERIC DEFAULT 0,
     isActive BOOLEAN DEFAULT 1,
     isDeleted BOOLEAN DEFAULT 0,
     isSyncronized BOOLEAN DEFAULT 0

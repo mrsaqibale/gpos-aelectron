@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     item_note TEXT,
     variation TEXT,
     add_ons TEXT,
+    ingredients TEXT,
     discount_on_food REAL DEFAULT 0,
     discount_type TEXT,
     quantity INTEGER NOT NULL DEFAULT 1,

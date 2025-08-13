@@ -59,12 +59,26 @@ const {
   deleteFoodImage
 } = getModelPath('foods/food.js');
 
-const {
+const { 
   createVariation,
   updateVariation,
   createVariationOption,
   updateVariationOption
 } = getModelPath('foods/variations.js');
+
+const { 
+  createIngredient,
+  getAllIngredients,
+  getIngredientById,
+  getIngredientsByCategory,
+  updateIngredient,
+  deleteIngredient,
+  searchIngredientsByName,
+  getActiveCategories,
+  createCategoryIngredient,
+  checkCategoryIngredientExists,
+  getIngredientsByCategoryPaginated
+} = getModelPath('foods/ingredients.js');
 
 // Category IPC
 ipcMain.handle('category:create', (event, data) => createCategory(data));
@@ -122,6 +136,19 @@ ipcMain.handle('variation:create', (event, variationData) => createVariation(var
 ipcMain.handle('variation:update', (event, id, updates) => updateVariation(id, updates));
 ipcMain.handle('variationOption:create', (event, optionData) => createVariationOption(optionData));
 ipcMain.handle('variationOption:update', (event, id, updates) => updateVariationOption(id, updates));
+
+// Ingredient IPC
+ipcMain.handle('ingredient:create', (event, data) => createIngredient(data));
+ipcMain.handle('ingredient:getAll', (event) => getAllIngredients());
+ipcMain.handle('ingredient:getById', (event, id) => getIngredientById(id));
+ipcMain.handle('ingredient:getByCategory', (event, categoryId) => getIngredientsByCategory(categoryId));
+ipcMain.handle('ingredient:update', (event, id, updates) => updateIngredient(id, updates));
+ipcMain.handle('ingredient:delete', (event, id) => deleteIngredient(id));
+ipcMain.handle('ingredient:searchByName', (event, name) => searchIngredientsByName(name));
+ipcMain.handle('ingredient:getActiveCategories', (event, hotelId) => getActiveCategories(hotelId));
+ipcMain.handle('ingredient:createCategoryIngredient', (event, categoryId, ingredientId) => createCategoryIngredient(categoryId, ingredientId));
+ipcMain.handle('ingredient:checkCategoryIngredientExists', (event, categoryId, ingredientId) => checkCategoryIngredientExists(categoryId, ingredientId));
+ipcMain.handle('ingredient:getByCategoryPaginated', (event, categoryId, limit, offset) => getIngredientsByCategoryPaginated(categoryId, limit, offset));
 
 // Get food image data
 ipcMain.handle('food:getImage', async (event, imagePath) => {

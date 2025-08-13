@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS customer (
     hotel_id INTEGER NOT NULL,
     addedBy INTEGER,
     isloyal BOOLEAN DEFAULT 0,
+    isFavourite BOOLEAN DEFAULT 0,
     isDelete BOOLEAN DEFAULT 0,
     isSyncronized BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
