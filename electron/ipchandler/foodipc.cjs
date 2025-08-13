@@ -59,12 +59,22 @@ const {
   deleteFoodImage
 } = getModelPath('foods/food.js');
 
-const {
+const { 
   createVariation,
   updateVariation,
   createVariationOption,
   updateVariationOption
 } = getModelPath('foods/variations.js');
+
+const { 
+  createIngredient,
+  getAllIngredients,
+  getIngredientById,
+  getIngredientsByCategory,
+  updateIngredient,
+  deleteIngredient,
+  searchIngredientsByName
+} = getModelPath('foods/ingredients.js');
 
 // Category IPC
 ipcMain.handle('category:create', (event, data) => createCategory(data));
