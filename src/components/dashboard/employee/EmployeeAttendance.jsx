@@ -300,42 +300,30 @@ const EmployeeAttendance = () => {
 
       {/* Filters Card */}
       <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-3 gap-6">
           
-          {/* Attendance Date Filter */}
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Attendance Date
-            </label>
-            <div className="grid grid-cols-2 gap-4 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
-              <div>
-                <label className="block text-xs font-medium text-gray-600">Start Date</label>
-                <input
-                  type="date"
-                  value={attendanceStartDate}
-                  onChange={(e) => setAttendanceStartDate(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600">End Date</label>
-                <input
-                  type="date"
-                  value={attendanceEndDate}
-                  onChange={(e) => setAttendanceEndDate(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Employee Joining Date Filter */}
+          {/* Start Date Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Employee Joining Date
+              Start Date
             </label>
             <input
               type="date"
-              value={employeeJoiningDate}
-              onChange={(e) => setEmployeeJoiningDate(e.target.value)}
+              value={attendanceStartDate}
+              onChange={(e) => setAttendanceStartDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+            />
+          </div>
+
+          {/* End Date Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              End Date
+            </label>
+            <input
+              type="date"
+              value={attendanceEndDate}
+              onChange={(e) => setAttendanceEndDate(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
             />
           </div>
@@ -362,23 +350,6 @@ const EmployeeAttendance = () => {
             </div>
           </div>
 
-          {/* Choose First Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose First
-            </label>
-            <input
-              type="text"
-              name="chooseFirst"
-              placeholder="Ex : 100"
-              value={chooseFirst}
-              onChange={handleNumberChange}
-              onFocus={() => handleAnyInputFocus(null, 'chooseFirst')}
-              onBlur={handleInputBlur}
-              onClick={() => handleAnyInputClick(null, 'chooseFirst')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-            />
-          </div>
         </div>
       </div>
 
