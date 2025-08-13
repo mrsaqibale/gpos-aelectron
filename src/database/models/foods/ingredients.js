@@ -239,4 +239,53 @@ export function getIngredientsByCategoryPaginated(categoryId, limit = 50, offset
     console.error('Error getting ingredients by category:', error);
     return { success: false, message: error.message };
   }
+}
+
+// Remove category-ingredient relationship (soft delete)
+export function removeCategoryIngredient(categoryId, ingredientId) {
+  try {
+    const stmt = db.prepare(`
+      UPDATE category_ingredients 
+      SET isdeleted = 1, updated_at = ? 
+      WHERE category_id = ? AND ingredient_id = ? AND isdeleted = 0
+    `);
+    
+    const result = stmt.run(new Date().toISOString(), categoryId, ingredientId);
+    
+    if (result.changes > 0) {
+      return { success: true, message: 'Category-ingredient relationship removed successfully' };
+    } else {
+      return { success: false, message: 'Category-ingredient relationship not found' };
+    }
+  } catch (error) {
+    console.error('Error removing category-ingredient relationship:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Get all ingredients with their category information
+export function getAllIngredientsWithCategories() {
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        i.id, 
+        i.name, 
+        i.status, 
+        i.created_at, 
+        i.updated_at,
+        c.id as category_id,
+        c.name as category_name
+      FROM ingredients i
+      LEFT JOIN category_ingredients ci ON i.id = ci.ingredient_id AND ci.isdeleted = 0
+      LEFT JOIN categories c ON ci.category_id = c.id AND c.isDelete = 0
+      WHERE i.isdeleted = 0
+      ORDER BY i.name ASC
+    `);
+    
+    const ingredients = stmt.all();
+    return { success: true, data: ingredients };
+  } catch (error) {
+    console.error('Error getting all ingredients with categories:', error);
+    return { success: false, message: error.message };
+  }
 } 
