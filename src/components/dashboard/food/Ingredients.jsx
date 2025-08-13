@@ -10,7 +10,6 @@ const Ingredients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredIngredients, setFilteredIngredients] = useState([]);
   const [selectedIngredients, setSelectedIngredients] = useState([]);
-  const [customIngredientName, setCustomIngredientName] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [ingredientToDelete, setIngredientToDelete] = useState(null);
@@ -164,7 +163,6 @@ const Ingredients = () => {
     setSearchTerm('');
     setFilteredIngredients([]);
     setSelectedIngredients([]);
-    setCustomIngredientName('');
     setShowDropdown(false);
     setSelectedDropdownIndex(-1);
     setShowForm(true);
@@ -176,7 +174,6 @@ const Ingredients = () => {
     setSearchTerm('');
     setFilteredIngredients([]);
     setSelectedIngredients([]);
-    setCustomIngredientName('');
     setShowDropdown(false);
     setSelectedDropdownIndex(-1);
     setShowForm(true);
@@ -226,13 +223,13 @@ const Ingredients = () => {
   };
 
   const handleCreateNewIngredient = async () => {
-    if (!customIngredientName.trim() || !selectedCategory) return;
+    if (!searchTerm.trim() || !selectedCategory) return;
 
     try {
       setLoading(true);
       
       // Create new ingredient
-      const ingredientId = await createNewIngredient(customIngredientName.trim());
+      const ingredientId = await createNewIngredient(searchTerm.trim());
       if (!ingredientId) {
         alert('Failed to create ingredient');
         return;
@@ -244,11 +241,11 @@ const Ingredients = () => {
         // Refresh ingredients list
         await fetchIngredients();
         setShowForm(false);
-        setCustomIngredientName('');
+        setSearchTerm('');
         setSelectedCategory('');
         setSelectedIngredients([]);
-        setSearchTerm('');
         setShowDropdown(false);
+        setSelectedDropdownIndex(-1);
       } else {
         alert('Failed to add ingredient to category');
       }
@@ -258,11 +255,6 @@ const Ingredients = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCustomIngredientSubmit = async (e) => {
-    e.preventDefault();
-    await handleCreateNewIngredient();
   };
 
   const handleExistingIngredientSubmit = async (e) => {
