@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Edit, Plus, X, Trash2, Search } from 'lucide-react';
 
 const Ingredients = () => {
@@ -10,26 +10,50 @@ const Ingredients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredIngredients, setFilteredIngredients] = useState([]);
   const [selectedIngredients, setSelectedIngredients] = useState([]);
-  const [customIngredientName, setCustomIngredientName] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [ingredientToDelete, setIngredientToDelete] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState('All categories');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedDropdownIndex, setSelectedDropdownIndex] = useState(-1);
+  const [filteredIngredientsByCategory, setFilteredIngredientsByCategory] = useState([]);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [updateIngredientName, setUpdateIngredientName] = useState('');
+  const [updateIngredientStatus, setUpdateIngredientStatus] = useState(1);
+  const [updateIngredientCategory, setUpdateIngredientCategory] = useState('');
+  const [ingredientCategories, setIngredientCategories] = useState({});
+  const [newlyAddedIngredients, setNewlyAddedIngredients] = useState([]);
+  
+  const searchInputRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Fetch all ingredients
   const fetchIngredients = async () => {
     try {
       setLoading(true);
-      const result = await window.myAPI?.getAllIngredients();
+      const result = await window.myAPI?.getAllIngredientsWithCategories();
       if (result.success) {
         setIngredients(result.data);
+        // Build categories map from the result
+        const categoriesMap = {};
+        result.data.forEach(ingredient => {
+          if (ingredient.category_id && ingredient.category_name) {
+            categoriesMap[ingredient.id] = {
+              category_id: ingredient.category_id,
+              name: ingredient.category_name
+            };
+          }
+        });
+        setIngredientCategories(categoriesMap);
       } else {
         console.error('Error fetching ingredients:', result.message);
         setIngredients([]);
+        setIngredientCategories({});
       }
     } catch (error) {
       console.error('Error fetching ingredients:', error);
       setIngredients([]);
+      setIngredientCategories({});
     } finally {
       setLoading(false);
     }
@@ -38,7 +62,7 @@ const Ingredients = () => {
   // Fetch active categories
   const fetchCategories = async () => {
     try {
-      const result = await window.myAPI?.getActiveCategories(null); // Pass null to get all active categories
+      const result = await window.myAPI?.getActiveCategories(null);
       if (result.success) {
         setCategories(result.data);
       } else {
@@ -51,10 +75,26 @@ const Ingredients = () => {
     }
   };
 
+  // Fetch ingredients by category
+  const fetchIngredientsByCategory = async (categoryId) => {
+    try {
+      const result = await window.myAPI?.getIngredientsByCategoryPaginated(categoryId);
+      if (result.success) {
+        setFilteredIngredientsByCategory(result.data);
+      } else {
+        setFilteredIngredientsByCategory([]);
+      }
+    } catch (error) {
+      console.error('Error fetching ingredients by category:', error);
+      setFilteredIngredientsByCategory([]);
+    }
+  };
+
   // Search ingredients by name
   const searchIngredients = async (searchTerm) => {
     if (!searchTerm.trim()) {
       setFilteredIngredients([]);
+      setShowDropdown(false);
       return;
     }
 
@@ -62,12 +102,16 @@ const Ingredients = () => {
       const result = await window.myAPI?.searchIngredientsByName(searchTerm);
       if (result.success) {
         setFilteredIngredients(result.data);
+        setShowDropdown(result.data.length > 0);
+        setSelectedDropdownIndex(-1);
       } else {
         setFilteredIngredients([]);
+        setShowDropdown(false);
       }
     } catch (error) {
       console.error('Error searching ingredients:', error);
       setFilteredIngredients([]);
+      setShowDropdown(false);
     }
   };
 
@@ -120,24 +164,37 @@ const Ingredients = () => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
+  // Handle category filter change
+  useEffect(() => {
+    if (categoryFilter && categoryFilter !== 'All categories') {
+      const selectedCat = categories.find(cat => cat.name === categoryFilter);
+      if (selectedCat) {
+        fetchIngredientsByCategory(selectedCat.id);
+      }
+    } else {
+      setFilteredIngredientsByCategory([]);
+    }
+  }, [categoryFilter, categories]);
+
   const handleAddIngredient = () => {
     setEditingIngredient(null);
     setSelectedCategory('');
     setSearchTerm('');
     setFilteredIngredients([]);
     setSelectedIngredients([]);
-    setCustomIngredientName('');
+    setShowDropdown(false);
+    setSelectedDropdownIndex(-1);
     setShowForm(true);
   };
 
   const handleEditIngredient = (ingredient) => {
     setEditingIngredient(ingredient);
-    setSelectedCategory('');
-    setSearchTerm('');
-    setFilteredIngredients([]);
-    setSelectedIngredients([]);
-    setCustomIngredientName('');
-    setShowForm(true);
+    setUpdateIngredientName(ingredient.name);
+    setUpdateIngredientStatus(ingredient.status);
+    // Set the current category if available
+    const currentCategory = ingredientCategories[ingredient.id];
+    setUpdateIngredientCategory(currentCategory ? currentCategory.category_id : '');
+    setShowUpdateForm(true);
   };
 
   const handleCategoryChange = (e) => {
@@ -148,23 +205,72 @@ const Ingredients = () => {
     setSearchTerm(e.target.value);
   };
 
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (selectedDropdownIndex >= 0 && filteredIngredients[selectedDropdownIndex]) {
+        // Select the highlighted ingredient
+        handleIngredientSelect(filteredIngredients[selectedDropdownIndex]);
+      } else if (searchTerm.trim()) {
+        // Create new ingredient if no dropdown item is selected
+        handleCreateNewIngredient();
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedDropdownIndex(prev => 
+        prev < filteredIngredients.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedDropdownIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false);
+      setSelectedDropdownIndex(-1);
+    }
+  };
+
   const handleIngredientSelect = (ingredient) => {
+    // Check if ingredient already exists in the selected category
+    const existingIngredient = ingredients.find(ing => 
+      ing.id === ingredient.id && 
+      ingredientCategories[ing.id]?.category_id === parseInt(selectedCategory)
+    );
+    
+    if (existingIngredient) {
+      alert('This ingredient already exists in the selected category!');
+      return;
+    }
+    
+    // Check if ingredient is already in selected ingredients list
     if (!selectedIngredients.find(item => item.id === ingredient.id)) {
       setSelectedIngredients([...selectedIngredients, ingredient]);
     }
     setSearchTerm('');
     setFilteredIngredients([]);
+    setShowDropdown(false);
+    setSelectedDropdownIndex(-1);
   };
 
-  const handleCustomIngredientSubmit = async (e) => {
-    e.preventDefault();
-    if (!customIngredientName.trim() || !selectedCategory) return;
+  const handleCreateNewIngredient = async () => {
+    if (!searchTerm.trim() || !selectedCategory) return;
 
     try {
       setLoading(true);
       
+      // Check if ingredient already exists in the selected category
+      const existingIngredient = ingredients.find(ing => 
+        ing.name.toLowerCase() === searchTerm.trim().toLowerCase() && 
+        ingredientCategories[ing.id]?.category_id === parseInt(selectedCategory)
+      );
+      
+      if (existingIngredient) {
+        alert('This ingredient already exists in the selected category!');
+        return;
+      }
+      
       // Create new ingredient
-      const ingredientId = await createNewIngredient(customIngredientName.trim());
+      const ingredientId = await createNewIngredient(searchTerm.trim());
       if (!ingredientId) {
         alert('Failed to create ingredient');
         return;
@@ -173,18 +279,75 @@ const Ingredients = () => {
       // Add to category
       const added = await addIngredientToCategory(selectedCategory, ingredientId);
       if (added) {
-        // Refresh ingredients list
-        await fetchIngredients();
-        setShowForm(false);
-        setCustomIngredientName('');
-        setSelectedCategory('');
-        setSelectedIngredients([]);
+        // Add to selected ingredients list
+        const newIngredient = {
+          id: ingredientId,
+          name: searchTerm.trim(),
+          status: 1
+        };
+        setSelectedIngredients([...selectedIngredients, newIngredient]);
+        
+        // Clear search term but keep modal open
+        setSearchTerm('');
+        setShowDropdown(false);
+        setSelectedDropdownIndex(-1);
+        // Show success message
+        alert(`Ingredient "${searchTerm.trim()}" added successfully!`);
       } else {
         alert('Failed to add ingredient to category');
       }
     } catch (error) {
       console.error('Error creating ingredient:', error);
       alert('Error creating ingredient');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateIngredient = async (e) => {
+    e.preventDefault();
+    if (!updateIngredientName.trim() || !editingIngredient) return;
+
+    try {
+      setLoading(true);
+      
+      // Update ingredient basic info
+      const result = await window.myAPI?.updateIngredient(editingIngredient.id, {
+        name: updateIngredientName.trim(),
+        status: updateIngredientStatus
+      });
+      
+      if (result.success) {
+        // If category changed, update the category-ingredient relationship
+        if (updateIngredientCategory) {
+          const currentCategory = ingredientCategories[editingIngredient.id];
+          const currentCategoryId = currentCategory ? currentCategory.category_id : null;
+          
+          if (currentCategoryId !== updateIngredientCategory) {
+            // Remove from old category if exists
+            if (currentCategoryId) {
+              await window.myAPI?.removeCategoryIngredient(currentCategoryId, editingIngredient.id);
+            }
+            
+            // Add to new category
+            await addIngredientToCategory(updateIngredientCategory, editingIngredient.id);
+          }
+        }
+        
+        // Refresh ingredients list
+        await fetchIngredients();
+        setShowUpdateForm(false);
+        setEditingIngredient(null);
+        setUpdateIngredientName('');
+        setUpdateIngredientStatus(1);
+        setUpdateIngredientCategory('');
+        alert('Ingredient updated successfully!');
+      } else {
+        alert('Failed to update ingredient');
+      }
+    } catch (error) {
+      console.error('Error updating ingredient:', error);
+      alert('Error updating ingredient');
     } finally {
       setLoading(false);
     }
@@ -197,6 +360,7 @@ const Ingredients = () => {
     try {
       setLoading(true);
       let successCount = 0;
+      let alreadyExistsIngredients = [];
 
       for (const ingredient of selectedIngredients) {
         // Check if already exists
@@ -204,18 +368,22 @@ const Ingredients = () => {
         if (!exists) {
           const added = await addIngredientToCategory(selectedCategory, ingredient.id);
           if (added) successCount++;
+        } else {
+          alreadyExistsIngredients.push(ingredient.name);
         }
       }
 
       if (successCount > 0) {
         await fetchIngredients();
-        setShowForm(false);
+        // Clear selected ingredients but keep modal open
         setSelectedIngredients([]);
-        setSelectedCategory('');
+        // Show success message
+        alert(`${successCount} ingredient(s) added successfully!`);
       }
 
-      if (successCount < selectedIngredients.length) {
-        alert(`${selectedIngredients.length - successCount} ingredients were already in this category`);
+      if (alreadyExistsIngredients.length > 0) {
+        const ingredientNames = alreadyExistsIngredients.join(', ');
+        alert(`${alreadyExistsIngredients.length} ingredient(s) were already in this category: ${ingredientNames}`);
       }
     } catch (error) {
       console.error('Error adding ingredients to category:', error);
@@ -252,25 +420,25 @@ const Ingredients = () => {
 
   const deleteIngredient = async (id) => {
     try {
-      const result = await window.myAPI?.deleteIngredient(id);
+      const result = await window.myAPI?.updateIngredient(id, { isdeleted: 1 });
       if (result.success) {
         await fetchIngredients();
         setShowDeleteConfirm(false);
         setIngredientToDelete(null);
+        alert('Ingredient deleted successfully!');
+      } else {
+        alert('Failed to delete ingredient');
       }
     } catch (error) {
       console.error('Error deleting ingredient:', error);
+      alert('Error deleting ingredient');
     }
   };
 
   // Filter ingredients based on category filter
-  const displayIngredients = ingredients.filter(item => {
-    if (categoryFilter && categoryFilter !== 'All categories') {
-      // This would need to be implemented based on your data structure
-      return true; // For now, show all
-    }
-    return true;
-  });
+  const displayIngredients = categoryFilter && categoryFilter !== 'All categories' 
+    ? filteredIngredientsByCategory 
+    : ingredients;
 
   return (
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
@@ -310,6 +478,9 @@ const Ingredients = () => {
               Name
             </th>
             <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Category
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
               Status
             </th>
             <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -325,6 +496,11 @@ const Ingredients = () => {
               </td>
               <td className="py-3 px-4">
                 <span className="text-sm font-medium text-gray-800">{ingredient.name}</span>
+              </td>
+              <td className="py-3 px-4">
+                <span className="text-sm font-medium text-gray-600">
+                  {ingredientCategories[ingredient.id] ? ingredientCategories[ingredient.id].name : 'No Category'}
+                </span>
               </td>
               <td className="py-3 px-4">
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -401,36 +577,53 @@ const Ingredients = () => {
                   </select>
                 </div>
 
-                {/* Search Existing Ingredients */}
+                {/* Single Row Input for Ingredient */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Search Existing Ingredients
+                    Search or Create Ingredient*
                   </label>
                   <div className="relative">
                     <input
+                      ref={searchInputRef}
                       type="text"
                       value={searchTerm}
                       onChange={handleSearchChange}
-                      placeholder="Type ingredient name to search..."
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Type ingredient name and press Enter to add (can add multiple)..."
                       className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                      required
                     />
                     <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   </div>
                   
-                  {/* Search Results */}
-                  {filteredIngredients.length > 0 && (
-                    <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md">
-                      {filteredIngredients.map(ingredient => (
+                  {/* Dropdown Results */}
+                  {showDropdown && filteredIngredients.length > 0 && (
+                    <div 
+                      ref={dropdownRef}
+                      className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg"
+                    >
+                      {filteredIngredients.map((ingredient, index) => (
                         <div
                           key={ingredient.id}
                           onClick={() => handleIngredientSelect(ingredient)}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                            index === selectedDropdownIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
+                          }`}
                         >
                           <span className="text-sm text-gray-800">{ingredient.name}</span>
                         </div>
                       ))}
                     </div>
                   )}
+                  
+                  {/* Instructions */}
+                  <div className="mt-2 text-xs text-gray-500">
+                    <p>• Use ↑↓ arrow keys to navigate dropdown</p>
+                    <p>• Press Enter to select highlighted item or create new ingredient</p>
+                    <p>• Press Enter multiple times to add multiple ingredients</p>
+                    <p>• Press Escape to close dropdown</p>
+                    <p>• Click Close when done adding ingredients</p>
+                  </div>
                 </div>
 
                 {/* Selected Ingredients */}
@@ -459,51 +652,128 @@ const Ingredients = () => {
                   </div>
                 )}
 
-                {/* Add Existing Ingredients Button */}
-                {selectedIngredients.length > 0 && (
+                {/* Close Button */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button
-                    onClick={handleExistingIngredientSubmit}
-                    disabled={loading || !selectedCategory}
-                    className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    onClick={() => setShowForm(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   >
-                    {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s) to Category`}
+                    Close
                   </button>
-                )}
-
-                {/* Divider */}
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300" />
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">OR</span>
-                  </div>
-                </div>
-
-                {/* Create New Ingredient */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Create New Ingredient
-                  </label>
-                  <form onSubmit={handleCustomIngredientSubmit} className="space-y-3">
-                    <input
-                      type="text"
-                      value={customIngredientName}
-                      onChange={(e) => setCustomIngredientName(e.target.value)}
-                      placeholder="Enter new ingredient name..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
-                      required
-                    />
+                  {selectedIngredients.length > 0 && (
                     <button
-                      type="submit"
-                      disabled={loading || !selectedCategory || !customIngredientName.trim()}
-                      className="w-full px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      onClick={handleExistingIngredientSubmit}
+                      disabled={loading || !selectedCategory}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
-                      {loading ? 'Creating...' : 'Create New Ingredient'}
+                      {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s)`}
                     </button>
-                  </form>
+                  )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Ingredient Modal */}
+      {showUpdateForm && editingIngredient && (
+        <div className="fixed inset-0 bg-[#0000008e] bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800">
+                  Update Ingredient
+                </h2>
+                <button 
+                  onClick={() => {
+                    setShowUpdateForm(false);
+                    setEditingIngredient(null);
+                    setUpdateIngredientName('');
+                    setUpdateIngredientStatus(1);
+                  }} 
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateIngredient} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ingredient Name*
+                  </label>
+                  <input
+                    type="text"
+                    value={updateIngredientName}
+                    onChange={(e) => setUpdateIngredientName(e.target.value)}
+                    placeholder="Enter ingredient name..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category*
+                  </label>
+                  <select
+                    value={updateIngredientCategory}
+                    onChange={(e) => setUpdateIngredientCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                    required
+                  >
+                    <option value="">Choose a category...</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!updateIngredientStatus}
+                      onChange={(e) => setUpdateIngredientStatus(e.target.checked ? 1 : 0)}
+                      className="sr-only"
+                    />
+                    <div className={`w-10 h-5 rounded-full transition-colors ${updateIngredientStatus ? 'bg-primary' : 'bg-gray-200'}`}>
+                      <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${updateIngredientStatus ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`}></div>
+                    </div>
+                    <span className="ml-3 text-sm text-gray-700">
+                      {updateIngredientStatus ? 'Active' : 'Inactive'}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUpdateForm(false);
+                      setEditingIngredient(null);
+                      setUpdateIngredientName('');
+                      setUpdateIngredientStatus(1);
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !updateIngredientName.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Updating...' : 'Update Ingredient'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
