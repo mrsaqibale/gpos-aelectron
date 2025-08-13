@@ -38,7 +38,7 @@ const Ingredients = () => {
   // Fetch active categories
   const fetchCategories = async () => {
     try {
-      const result = await window.myAPI?.getActiveCategories();
+      const result = await window.myAPI?.getActiveCategories(null); // Pass null to get all active categories
       if (result.success) {
         setCategories(result.data);
       } else {

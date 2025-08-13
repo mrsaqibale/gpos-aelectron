@@ -161,16 +161,25 @@ export function searchIngredientsByName(name) {
 }
 
 // Get active categories (status = 1)
-export function getActiveCategories() {
+export function getActiveCategories(hotelId = null) {
   try {
-    const stmt = db.prepare(`
+    let sql = `
       SELECT id, name, status 
       FROM categories 
       WHERE status = 1 AND isDelete = 0
-      ORDER BY name ASC
-    `);
+    `;
     
-    const categories = stmt.all();
+    let params = [];
+    
+    if (hotelId) {
+      sql += ` AND hotel_id = ?`;
+      params.push(hotelId);
+    }
+    
+    sql += ` ORDER BY name ASC`;
+    
+    const stmt = db.prepare(sql);
+    const categories = stmt.all(...params);
     return { success: true, data: categories };
   } catch (error) {
     console.error('Error getting active categories:', error);
