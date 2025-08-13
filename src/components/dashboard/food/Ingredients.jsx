@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Edit, Plus, X, Trash2, Search } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
+import CustomAlert from '../../CustomAlert';
 
 const Ingredients = () => {
   const { themeColors } = useTheme();
@@ -27,6 +28,11 @@ const Ingredients = () => {
   const [newlyAddedIngredients, setNewlyAddedIngredients] = useState([]);
   const [customIngredient, setCustomIngredient] = useState('');
   const [customIngredients, setCustomIngredients] = useState([]);
+  const [alertConfig, setAlertConfig] = useState({
+    isVisible: false,
+    message: '',
+    type: 'success'
+  });
   
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -222,12 +228,20 @@ const Ingredients = () => {
     }
   };
 
+  const showAlert = (message, type = 'success') => {
+    setAlertConfig({
+      isVisible: true,
+      message,
+      type
+    });
+  };
+
   const addCustomIngredient = () => {
     if (!customIngredient.trim()) return;
     
     // Check if custom ingredient already exists
     if (customIngredients.find(item => item.toLowerCase() === customIngredient.trim().toLowerCase())) {
-      alert('This custom ingredient already exists!');
+      showAlert('This custom ingredient already exists!', 'error');
       return;
     }
     
@@ -272,7 +286,7 @@ const Ingredients = () => {
     );
     
     if (existingIngredient) {
-      alert('This ingredient already exists in the selected category!');
+      showAlert('This ingredient already exists in the selected category!', 'error');
       return;
     }
     
@@ -299,14 +313,14 @@ const Ingredients = () => {
       );
       
       if (existingIngredient) {
-        alert('This ingredient already exists in the selected category!');
+        showAlert('This ingredient already exists in the selected category!', 'error');
         return;
       }
       
       // Create new ingredient
       const ingredientId = await createNewIngredient(searchTerm.trim());
       if (!ingredientId) {
-        alert('Failed to create ingredient');
+        showAlert('Failed to create ingredient', 'error');
         return;
       }
 
@@ -326,13 +340,13 @@ const Ingredients = () => {
         setShowDropdown(false);
         setSelectedDropdownIndex(-1);
         // Show success message
-        alert(`Ingredient "${searchTerm.trim()}" added successfully!`);
+        showAlert(`Ingredient "${searchTerm.trim()}" added successfully!`, 'success');
       } else {
-        alert('Failed to add ingredient to category');
+        showAlert('Failed to add ingredient to category', 'error');
       }
     } catch (error) {
       console.error('Error creating ingredient:', error);
-      alert('Error creating ingredient');
+      showAlert('Error creating ingredient', 'error');
     } finally {
       setLoading(false);
     }
@@ -375,13 +389,13 @@ const Ingredients = () => {
         setUpdateIngredientName('');
         setUpdateIngredientStatus(1);
         setUpdateIngredientCategory('');
-        alert('Ingredient updated successfully!');
+        showAlert('Ingredient updated successfully!', 'success');
       } else {
-        alert('Failed to update ingredient');
+        showAlert('Failed to update ingredient', 'error');
       }
     } catch (error) {
       console.error('Error updating ingredient:', error);
-      alert('Error updating ingredient');
+      showAlert('Error updating ingredient', 'error');
     } finally {
       setLoading(false);
     }
@@ -412,16 +426,16 @@ const Ingredients = () => {
         // Clear selected ingredients but keep modal open
         setSelectedIngredients([]);
         // Show success message
-        alert(`${successCount} ingredient(s) added successfully!`);
+        showAlert(`${successCount} ingredient(s) added successfully!`, 'success');
       }
 
       if (alreadyExistsIngredients.length > 0) {
         const ingredientNames = alreadyExistsIngredients.join(', ');
-        alert(`${alreadyExistsIngredients.length} ingredient(s) were already in this category: ${ingredientNames}`);
+        showAlert(`${alreadyExistsIngredients.length} ingredient(s) were already in this category: ${ingredientNames}`, 'warning');
       }
     } catch (error) {
       console.error('Error adding ingredients to category:', error);
-      alert('Error adding ingredients to category');
+      showAlert('Error adding ingredients to category', 'error');
     } finally {
       setLoading(false);
     }
@@ -457,16 +471,16 @@ const Ingredients = () => {
         // Clear custom ingredients but keep modal open
         setCustomIngredients([]);
         // Show success message
-        alert(`${successCount} custom ingredient(s) added successfully!`);
+        showAlert(`${successCount} custom ingredient(s) added successfully!`, 'success');
       }
 
       if (failedIngredients.length > 0) {
         const ingredientNames = failedIngredients.join(', ');
-        alert(`Failed to add ${failedIngredients.length} ingredient(s): ${ingredientNames}`);
+        showAlert(`Failed to add ${failedIngredients.length} ingredient(s): ${ingredientNames}`, 'error');
       }
     } catch (error) {
       console.error('Error adding custom ingredients to category:', error);
-      alert('Error adding custom ingredients to category');
+      showAlert('Error adding custom ingredients to category', 'error');
     } finally {
       setLoading(false);
     }
@@ -504,13 +518,13 @@ const Ingredients = () => {
         await fetchIngredients();
         setShowDeleteConfirm(false);
         setIngredientToDelete(null);
-        alert('Ingredient deleted successfully!');
+        showAlert('Ingredient deleted successfully!', 'success');
       } else {
-        alert('Failed to delete ingredient');
+        showAlert('Failed to delete ingredient', 'error');
       }
     } catch (error) {
       console.error('Error deleting ingredient:', error);
-      alert('Error deleting ingredient');
+      showAlert('Error deleting ingredient', 'error');
     }
   };
 
@@ -761,30 +775,28 @@ const Ingredients = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
-                                    {selectedIngredients.length > 0 && (
-                                         <button
-                       onClick={handleExistingIngredientSubmit}
-                       disabled={loading || !selectedCategory}
-                       className="flex-1 px-4 py-3 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-                       style={{ 
-                         backgroundColor: loading || !selectedCategory ? '#9CA3AF' : themeColors.primary
-                       }}
-                     >
+                  {selectedIngredients.length > 0 && (
+                    <button
+                      onClick={handleExistingIngredientSubmit}
+                      disabled={loading || !selectedCategory}
+                      className="flex-1 px-4 py-3 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      style={{ 
+                        backgroundColor: (loading || !selectedCategory) ? '#9CA3AF' : themeColors.primary
+                      }}
+                    >
                       {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s)`}
                     </button>
                   )}
-                                    {customIngredients.length > 0 && (
-                                         <button
-                       onClick={handleCustomIngredientSubmit}
-                       disabled={loading || !selectedCategory}
-                       className="flex-1 px-4 py-3 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-                       style={{ 
-                         backgroundColor: loading || !selectedCategory ? '#9CA3AF' : themeColors.primary
-                       }}
-                     >
-                      {loading ? 'Adding...' : `Add ${customIngredients.length} Custom Ingredient(s)`}
-                    </button>
-                  )}
+                  <button
+                    onClick={handleCustomIngredientSubmit}
+                    disabled={loading || !selectedCategory || customIngredients.length === 0}
+                    className="flex-1 px-4 py-3 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    style={{ 
+                      backgroundColor: (loading || !selectedCategory || customIngredients.length === 0) ? '#9CA3AF' : themeColors.primary
+                    }}
+                  >
+                    {loading ? 'Adding...' : `Add ${customIngredients.length} Custom Ingredient(s)`}
+                  </button>
                 </div>
               </div>
             </div>
@@ -945,6 +957,14 @@ const Ingredients = () => {
           </div>
         </div>
       )}
+
+      {/* Custom Alert */}
+      <CustomAlert
+        isVisible={alertConfig.isVisible}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onClose={() => setAlertConfig({ ...alertConfig, isVisible: false })}
+      />
     </div>
   );
 };

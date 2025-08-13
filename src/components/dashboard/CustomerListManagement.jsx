@@ -401,7 +401,7 @@ const CustomerListManagement = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">Favourite Customer</label>
+                <label className="block text-sm font-medium text-gray-700">Loyal Customer</label>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
