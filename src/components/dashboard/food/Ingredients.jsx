@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Edit, Plus, X, Trash2, Search } from 'lucide-react';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 const Ingredients = () => {
+  const { themeColors } = useTheme();
   const [ingredients, setIngredients] = useState([]);
   const [categories, setCategories] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -23,6 +25,8 @@ const Ingredients = () => {
   const [updateIngredientCategory, setUpdateIngredientCategory] = useState('');
   const [ingredientCategories, setIngredientCategories] = useState({});
   const [newlyAddedIngredients, setNewlyAddedIngredients] = useState([]);
+  const [customIngredient, setCustomIngredient] = useState('');
+  const [customIngredients, setCustomIngredients] = useState([]);
   
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -182,6 +186,8 @@ const Ingredients = () => {
     setSearchTerm('');
     setFilteredIngredients([]);
     setSelectedIngredients([]);
+    setCustomIngredient('');
+    setCustomIngredients([]);
     setShowDropdown(false);
     setSelectedDropdownIndex(-1);
     setShowForm(true);
@@ -203,6 +209,34 @@ const Ingredients = () => {
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
+  };
+
+  const handleCustomIngredientChange = (e) => {
+    setCustomIngredient(e.target.value);
+  };
+
+  const handleCustomIngredientKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCustomIngredient();
+    }
+  };
+
+  const addCustomIngredient = () => {
+    if (!customIngredient.trim()) return;
+    
+    // Check if custom ingredient already exists
+    if (customIngredients.find(item => item.toLowerCase() === customIngredient.trim().toLowerCase())) {
+      alert('This custom ingredient already exists!');
+      return;
+    }
+    
+    setCustomIngredients([...customIngredients, customIngredient.trim()]);
+    setCustomIngredient('');
+  };
+
+  const removeCustomIngredient = (index) => {
+    setCustomIngredients(customIngredients.filter((_, i) => i !== index));
   };
 
   const handleSearchKeyDown = (e) => {
@@ -393,6 +427,51 @@ const Ingredients = () => {
     }
   };
 
+  const handleCustomIngredientSubmit = async (e) => {
+    e.preventDefault();
+    if (customIngredients.length === 0 || !selectedCategory) return;
+
+    try {
+      setLoading(true);
+      let successCount = 0;
+      let failedIngredients = [];
+
+      for (const ingredientName of customIngredients) {
+        // Create new ingredient
+        const ingredientId = await createNewIngredient(ingredientName);
+        if (ingredientId) {
+          // Add to category
+          const added = await addIngredientToCategory(selectedCategory, ingredientId);
+          if (added) {
+            successCount++;
+          } else {
+            failedIngredients.push(ingredientName);
+          }
+        } else {
+          failedIngredients.push(ingredientName);
+        }
+      }
+
+      if (successCount > 0) {
+        await fetchIngredients();
+        // Clear custom ingredients but keep modal open
+        setCustomIngredients([]);
+        // Show success message
+        alert(`${successCount} custom ingredient(s) added successfully!`);
+      }
+
+      if (failedIngredients.length > 0) {
+        const ingredientNames = failedIngredients.join(', ');
+        alert(`Failed to add ${failedIngredients.length} ingredient(s): ${ingredientNames}`);
+      }
+    } catch (error) {
+      console.error('Error adding custom ingredients to category:', error);
+      alert('Error adding custom ingredients to category');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const removeSelectedIngredient = (ingredientId) => {
     setSelectedIngredients(selectedIngredients.filter(item => item.id !== ingredientId));
   };
@@ -449,7 +528,10 @@ const Ingredients = () => {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-48 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+              className="w-48 px-4 py-1.5 border text-sm rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{ 
+                borderColor: themeColors.primary
+              }}
             >
               <option>All categories</option>
               {categories.map(cat => (
@@ -460,7 +542,8 @@ const Ingredients = () => {
 
           <button
             onClick={handleAddIngredient}
-            className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+            className="px-4 py-1.5 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+            style={{ backgroundColor: themeColors.primary }}
           >
             <Plus size={16} />
             Add New Ingredient
@@ -545,15 +628,19 @@ const Ingredients = () => {
 
       {showForm && (
         <div className="fixed inset-0 bg-[#0000008e] bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-800">
                   {editingIngredient ? 'Edit Ingredient' : 'Add Ingredients to Category'}
                 </h2>
-                <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-gray-700">
-                  <X size={24} />
-                </button>
+                                 <button 
+                   onClick={() => setShowForm(false)} 
+                   className="hover:opacity-70"
+                   style={{ color: themeColors.primary }}
+                 >
+                    <X size={24} />
+                  </button>
               </div>
 
               <div className="space-y-6">
@@ -565,7 +652,15 @@ const Ingredients = () => {
                   <select
                     value={selectedCategory}
                     onChange={handleCategoryChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1"
+                    style={{
+                      borderColor: selectedCategory
+                        ? themeColors.primaryBg
+                        : '#d1d5db',
+                      boxShadow: selectedCategory
+                        ? `0 0 0 2px ${themeColors.primaryBg}`
+                        : undefined
+                    }}
                     required
                   >
                     <option value="">Choose a category...</option>
@@ -577,53 +672,59 @@ const Ingredients = () => {
                   </select>
                 </div>
 
-                {/* Single Row Input for Ingredient */}
+
+                {/* Custom Ingredient Input */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Search or Create Ingredient*
+                    Add Custom Ingredient
                   </label>
                   <div className="relative">
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      value={searchTerm}
-                      onChange={handleSearchChange}
-                      onKeyDown={handleSearchKeyDown}
-                      placeholder="Type ingredient name and press Enter to add (can add multiple)..."
-                      className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
-                      required
-                    />
-                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                         <input
+                       type="text"
+                       value={customIngredient}
+                       onChange={handleCustomIngredientChange}
+                       onKeyDown={handleCustomIngredientKeyDown}
+                       placeholder="Type custom ingredient name and press Enter to add..."
+                       className="w-full px-3 py-2 border rounded-md focus:outline-none"
+                       style={{
+                        borderColor: selectedCategory
+                          ? themeColors.primaryBg
+                          : '#d1d5db',
+                        boxShadow: selectedCategory
+                          ? `0 0 0 2px ${themeColors.primaryBg}`
+                          : undefined
+                      }}
+                     />
                   </div>
                   
-                  {/* Dropdown Results */}
-                  {showDropdown && filteredIngredients.length > 0 && (
-                    <div 
-                      ref={dropdownRef}
-                      className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg"
-                    >
-                      {filteredIngredients.map((ingredient, index) => (
-                        <div
-                          key={ingredient.id}
-                          onClick={() => handleIngredientSelect(ingredient)}
-                          className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                            index === selectedDropdownIndex ? 'bg-blue-100' : 'hover:bg-gray-100'
-                          }`}
-                        >
-                          <span className="text-sm text-gray-800">{ingredient.name}</span>
-                        </div>
-                      ))}
+                  {/* Custom Ingredients Tags */}
+                  {customIngredients.length > 0 && (
+                    <div className="mt-2">
+                      <div className="flex flex-wrap gap-2">
+                        {customIngredients.map((ingredient, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm border"
+                                                         style={{ 
+                               backgroundColor: themeColors.primaryExtraLight,
+                               color: themeColors.primary,
+                               borderColor: themeColors.primary
+                             }}
+                          >
+                            {ingredient}
+                                                         <button
+                               type="button"
+                               onClick={() => removeCustomIngredient(index)}
+                               className="ml-2 hover:opacity-70"
+                               style={{ color: themeColors.primary }}
+                             >
+                              <X size={14} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  
-                  {/* Instructions */}
-                  <div className="mt-2 text-xs text-gray-500">
-                    <p>• Use ↑↓ arrow keys to navigate dropdown</p>
-                    <p>• Press Enter to select highlighted item or create new ingredient</p>
-                    <p>• Press Enter multiple times to add multiple ingredients</p>
-                    <p>• Press Escape to close dropdown</p>
-                    <p>• Click Close when done adding ingredients</p>
-                  </div>
                 </div>
 
                 {/* Selected Ingredients */}
@@ -636,14 +737,20 @@ const Ingredients = () => {
                       {selectedIngredients.map((ingredient) => (
                         <span
                           key={ingredient.id}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white text-gray-800 border border-2 border-primaryLight"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm border-2"
+                                                     style={{ 
+                             backgroundColor: 'white',
+                             color: themeColors.primary,
+                             borderColor: themeColors.primary
+                           }}
                         >
                           {ingredient.name}
-                          <button
-                            type="button"
-                            onClick={() => removeSelectedIngredient(ingredient.id)}
-                            className="ml-2 text-red-500 hover:text-red-700"
-                          >
+                                                     <button
+                             type="button"
+                             onClick={() => removeSelectedIngredient(ingredient.id)}
+                             className="ml-2 hover:opacity-70"
+                             style={{ color: themeColors.primary }}
+                           >
                             <X size={14} />
                           </button>
                         </span>
@@ -652,21 +759,30 @@ const Ingredients = () => {
                   </div>
                 )}
 
-                {/* Close Button */}
+                {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => setShowForm(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    Close
-                  </button>
-                  {selectedIngredients.length > 0 && (
-                    <button
-                      onClick={handleExistingIngredientSubmit}
-                      disabled={loading || !selectedCategory}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
+                                    {selectedIngredients.length > 0 && (
+                                         <button
+                       onClick={handleExistingIngredientSubmit}
+                       disabled={loading || !selectedCategory}
+                       className="flex-1 px-4 py-3 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                       style={{ 
+                         backgroundColor: loading || !selectedCategory ? '#9CA3AF' : themeColors.primary
+                       }}
+                     >
                       {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s)`}
+                    </button>
+                  )}
+                                    {customIngredients.length > 0 && (
+                                         <button
+                       onClick={handleCustomIngredientSubmit}
+                       disabled={loading || !selectedCategory}
+                       className="flex-1 px-4 py-3 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                       style={{ 
+                         backgroundColor: loading || !selectedCategory ? '#9CA3AF' : themeColors.primary
+                       }}
+                     >
+                      {loading ? 'Adding...' : `Add ${customIngredients.length} Custom Ingredient(s)`}
                     </button>
                   )}
                 </div>
@@ -703,26 +819,32 @@ const Ingredients = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Ingredient Name*
                   </label>
-                  <input
-                    type="text"
-                    value={updateIngredientName}
-                    onChange={(e) => setUpdateIngredientName(e.target.value)}
-                    placeholder="Enter ingredient name..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
-                    required
-                  />
+                                     <input
+                     type="text"
+                     value={updateIngredientName}
+                     onChange={(e) => setUpdateIngredientName(e.target.value)}
+                     placeholder="Enter ingredient name..."
+                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                     style={{ 
+                       borderColor: themeColors.primary
+                     }}
+                     required
+                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Category*
                   </label>
-                  <select
-                    value={updateIngredientCategory}
-                    onChange={(e) => setUpdateIngredientCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
-                    required
-                  >
+                                     <select
+                     value={updateIngredientCategory}
+                     onChange={(e) => setUpdateIngredientCategory(e.target.value)}
+                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                     style={{ 
+                       borderColor: themeColors.primary
+                     }}
+                     required
+                   >
                     <option value="">Choose a category...</option>
                     {categories.map(category => (
                       <option key={category.id} value={category.id}>
@@ -765,11 +887,14 @@ const Ingredients = () => {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={loading || !updateIngredientName.trim()}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
+                                     <button
+                     type="submit"
+                     disabled={loading || !updateIngredientName.trim()}
+                     className="flex-1 px-4 py-2 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+                     style={{ 
+                       backgroundColor: loading || !updateIngredientName.trim() ? '#9CA3AF' : themeColors.primary
+                     }}
+                   >
                     {loading ? 'Updating...' : 'Update Ingredient'}
                   </button>
                 </div>
