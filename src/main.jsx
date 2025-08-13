@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
+import WelcomeScreen from './pages/loginPage/WelcomeScreen.jsx'
 import POSLogin from './pages/loginPage/PosLogin.jsx'
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx'
 import ManageOrders from './pages/dashboard/ManageOrders.jsx'
@@ -38,7 +39,7 @@ const router = createBrowserRouter([
     path: '/',
     element: <ErrorBoundary><ThemeProvider><App /></ThemeProvider></ErrorBoundary>,
     children: [
-      { index: true, element: <Navigate to="/login" replace /> },
+      { index: true, element: <ErrorBoundary><WelcomeScreen /></ErrorBoundary> },
       {
         path: 'login',
         element: <ErrorBoundary><POSLogin /></ErrorBoundary>,
