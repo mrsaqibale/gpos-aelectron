@@ -4,6 +4,7 @@ import { Search, Plus, Edit, Trash2, ChevronUp, ChevronDown, Utensils, List, Lay
 import CategoryManagement from '../../components/dashboard/food/CategoryManagement';
 import SubCategoryManagement from '../../components/dashboard/food/SubCategoryManagement';
 import AddonManagement from '../../components/dashboard/food/AddonManagement';
+import Ingredients from '../../components/dashboard/food/Ingredients';
 import FoodForm from '../../components/dashboard/food/FoodForm';
 
 const FoodList = () => {
@@ -198,7 +199,18 @@ const FoodList = () => {
             }`}
           >
             <Layers size={16} />
-          Add New Addon
+          Addons
+          </button>
+           <button
+            onClick={() => setActiveTab('ingredients')}
+            className={`px-3 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors flex items-center gap-2 ${
+              activeTab === 'ingredients' 
+                ? 'bg-primaryLight text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Layers size={16} />
+          Ingredients
           </button>
         </div>
       </div>
@@ -416,6 +428,7 @@ const FoodList = () => {
       {activeTab === 'categories' && <CategoryManagement />}
       {activeTab === 'subCategories' && <SubCategoryManagement />}
        {activeTab === 'addons' && <AddonManagement/>}
+      {activeTab === 'ingredients' && <Ingredients />}
 
       {showFoodForm && (
         <FoodForm 
