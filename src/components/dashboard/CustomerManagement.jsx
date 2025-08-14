@@ -12,6 +12,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
   const [addresses, setAddresses] = useState([
     { address: '', eircode: '' }
   ]);
+  const [selectedAddresses, setSelectedAddresses] = useState([]);
   const [errors, setErrors] = useState({});
 
   // Keyboard state
@@ -71,13 +72,17 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
         });
         // Set addresses for editing
         if (editingCustomer.addresses && editingCustomer.addresses.length > 0) {
-          setAddresses(editingCustomer.addresses.map(addr => ({
+          const addressList = editingCustomer.addresses.map(addr => ({
             id: addr.id, // Keep the ID for existing addresses
             address: addr.address || '',
             eircode: addr.code || ''
-          })));
+          }));
+          setAddresses(addressList);
+          // Select all existing addresses by default
+          setSelectedAddresses(addressList.map((_, index) => index));
         } else {
           setAddresses([{ address: '', eircode: '' }]);
+          setSelectedAddresses([0]);
         }
       } else {
         // Reset form for new customer
@@ -88,6 +93,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           isloyal: false
         });
         setAddresses([{ address: '', eircode: '' }]);
+        setSelectedAddresses([0]);
       }
       setErrors({});
       setShowKeyboard(false);
@@ -106,6 +112,11 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       }
     };
   }, [eircodeSearchTimeout]);
+
+  // Debug selectedAddresses state
+  useEffect(() => {
+    console.log('Selected addresses state updated:', selectedAddresses);
+  }, [selectedAddresses]);
 
   // Eircode autocomplete functions
   const searchEircode = async (eircode, addressIndex) => {
@@ -492,12 +503,40 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
 
   const addAddress = () => {
     setAddresses(prev => [...prev, { address: '', eircode: '' }]);
+    // Select the newly added address
+    setSelectedAddresses(prev => {
+      const newSelected = [...prev];
+      newSelected.push(addresses.length);
+      return newSelected;
+    });
   };
 
   const removeAddress = (index) => {
     if (addresses.length > 1) {
       setAddresses(prev => prev.filter((_, i) => i !== index));
+      // Update selected addresses after removal
+      setSelectedAddresses(prev => {
+        const newSelected = prev.filter(selectedIndex => selectedIndex !== index);
+        return newSelected;
+      });
     }
+  };
+
+  const handleAddressSelection = (index) => {
+    console.log('Address selection changed for index:', index);
+    setSelectedAddresses(prev => {
+      if (prev.includes(index)) {
+        const newSelected = prev.filter(selectedIndex => selectedIndex !== index);
+        console.log('Removed index', index, 'from selection');
+        console.log('New selection:', newSelected);
+        return newSelected;
+      } else {
+        const newSelected = [...prev, index];
+        console.log('Added index', index, 'to selection');
+        console.log('New selection:', newSelected);
+        return newSelected;
+      }
+    });
   };
 
   const deleteAddress = async (addressId) => {
@@ -508,6 +547,11 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       if (result && result.success) {
         // Remove from local state
         setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+        // Update selected addresses after deletion
+        setSelectedAddresses(prev => {
+          const newSelected = prev.filter(selectedIndex => selectedIndex !== addresses.findIndex(addr => addr.id === addressId));
+          return newSelected;
+        });
       } else {
         alert('Error deleting address');
       }
@@ -543,6 +587,10 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       return;
     }
 
+    console.log('Form submission - addresses:', addresses);
+    console.log('Form submission - selectedAddresses:', selectedAddresses);
+    console.log('Form submission - editingCustomer:', editingCustomer);
+
     try {
       if (editingCustomer) {
         // Update existing customer
@@ -557,21 +605,44 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
         
         const result = await window.myAPI?.updateCustomer(editingCustomer.id, customerData);
         if (result.success) {
-          // Add new addresses if any
+          // Update existing addresses that are selected
+          const addressesToUpdate = addresses
+            .filter((addr, index) => addr.id && selectedAddresses.includes(index))
+            .map(addr => ({
+              id: addr.id,
+              address: addr.address.trim(),
+              code: addr.eircode.trim() || null
+            }));
+
+          console.log('Addresses to update:', addressesToUpdate);
+
+          // Update existing addresses
+          for (const address of addressesToUpdate) {
+            const updateResult = await window.myAPI?.updateAddress(address.id, {
+              address: address.address,
+              code: address.code
+            });
+            console.log('Update result for address', address.id, ':', updateResult);
+          }
+
+          // Add new addresses if any (only selected ones)
           const newAddresses = addresses
-            .filter(addr => addr.address.trim() && !addr.id) // Only new addresses (no id)
+            .filter((addr, index) => addr.address.trim() && !addr.id && selectedAddresses.includes(index)) // Only selected new addresses
             .map(addr => ({
               address: addr.address.trim(),
               code: addr.eircode.trim() || null,
               addedby: 1
             }));
 
+          console.log('New addresses to create:', newAddresses);
+
           // Create new addresses
           for (const address of newAddresses) {
-            await window.myAPI?.createAddress({
+            const createResult = await window.myAPI?.createAddress({
               customer_id: editingCustomer.id,
               ...address
             });
+            console.log('Create result for new address:', createResult);
           }
 
           if (onCustomerSelect) {
@@ -586,9 +657,9 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           alert('Error updating customer: ' + result.message);
         }
       } else {
-        // Filter out empty addresses
+        // Filter out empty addresses (only selected ones)
         const validAddresses = addresses
-          .filter(addr => addr.address.trim())
+          .filter((addr, index) => addr.address.trim() && selectedAddresses.includes(index))
           .map(addr => ({
             address: addr.address.trim(),
             code: addr.eircode.trim() || null,
@@ -750,12 +821,44 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                   </button>
                 </div>
                 
+                {/* Help text for address selection */}
+                {editingCustomer && addresses.length >= 2 && (
+                  <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-700">
+                      💡 Select the addresses you want to include. Unselected addresses will remain but won't be updated.
+                    </p>
+                  </div>
+                )}
+                
                 {addresses.map((address, index) => (
-                  <div key={index} className="mb-4 p-3 border border-gray-200 rounded-lg">
+                  <div key={index} className={`mb-4 p-3 border rounded-lg transition-colors ${
+                    editingCustomer && addresses.length >= 2 
+                      ? selectedAddresses.includes(index)
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 bg-gray-50 opacity-60'
+                      : 'border-gray-200'
+                  }`}>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Address {index + 1} {address.id && '(Existing)'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {/* Show checkbox only when editing and there are 2+ addresses */}
+                        {editingCustomer && addresses.length >= 2 && (
+                          <input
+                            type="checkbox"
+                            checked={selectedAddresses.includes(index)}
+                            onChange={() => handleAddressSelection(index)}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                        )}
+                        <span className="text-sm font-medium text-gray-700">
+                          Address {index + 1} {address.id && '(Existing)'}
+                          {/* Debug info */}
+                          {process.env.NODE_ENV === 'development' && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              (Selected: {selectedAddresses.includes(index) ? 'Yes' : 'No'})
+                            </span>
+                          )}
+                        </span>
+                      </div>
                       <div className="flex gap-2">
                         {address.id && (
                           <button
