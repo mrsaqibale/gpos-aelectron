@@ -19,6 +19,46 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
   const [activeInput, setActiveInput] = useState('');
   const [keyboardInput, setKeyboardInput] = useState('');
 
+  // Eircode autocomplete state
+  const [eircodeSuggestions, setEircodeSuggestions] = useState([]);
+  const [showEircodeSuggestions, setShowEircodeSuggestions] = useState(false);
+  const [activeEircodeIndex, setActiveEircodeIndex] = useState(-1);
+  const [eircodeLoading, setEircodeLoading] = useState(false);
+  const [currentEircodeInput, setCurrentEircodeInput] = useState({ addressIndex: -1, value: '' });
+  const [eircodeSearchTimeout, setEircodeSearchTimeout] = useState(null);
+
+  // Postcoder API configuration
+  const POSTCODER_API_KEY = "PCWK5-XD39R-HSZW6-SK54F";
+  const POSTCODER_BASE_URL = "https://ws.postcoder.com/pcw";
+
+  // Local Eircode database for common Irish addresses
+  const LOCAL_EIRCODE_DB = {
+    'H91TK33': {
+      summaryline: 'National University of Ireland Galway',
+      locationsummary: 'Galway',
+      addressline1: 'National University of Ireland Galway',
+      addressline2: 'University Road',
+      addressline3: 'Galway',
+      addressline4: 'H91 TK33'
+    },
+    'D01F5P2': {
+      summaryline: 'O\'Connell Bridge',
+      locationsummary: 'Dublin',
+      addressline1: 'O\'Connell Bridge',
+      addressline2: 'Dublin 1',
+      addressline3: 'Dublin',
+      addressline4: 'D01 F5P2'
+    },
+    'D02PK15': {
+      summaryline: 'Trinity College Dublin',
+      locationsummary: 'Dublin',
+      addressline1: 'Trinity College Dublin',
+      addressline2: 'College Green',
+      addressline3: 'Dublin 2',
+      addressline4: 'D02 PK15'
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       if (editingCustomer) {
@@ -52,8 +92,296 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       setErrors({});
       setShowKeyboard(false);
       setActiveInput('');
+      setEircodeSuggestions([]);
+      setShowEircodeSuggestions(false);
+      setActiveEircodeIndex(-1);
     }
   }, [isOpen, editingCustomer]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (eircodeSearchTimeout) {
+        clearTimeout(eircodeSearchTimeout);
+      }
+    };
+  }, [eircodeSearchTimeout]);
+
+  // Eircode autocomplete functions
+  const searchEircode = async (eircode, addressIndex) => {
+    console.log('Searching eircode:', eircode, 'for address index:', addressIndex);
+    
+    if (!eircode || eircode.length < 3) {
+      console.log('Eircode too short, clearing suggestions');
+      setEircodeSuggestions([]);
+      setShowEircodeSuggestions(false);
+      setActiveEircodeIndex(-1);
+      return;
+    }
+
+    setEircodeLoading(true);
+    setCurrentEircodeInput({ addressIndex, value: eircode });
+    
+    // Clear previous suggestions
+    setEircodeSuggestions([]);
+    setShowEircodeSuggestions(false);
+    setActiveEircodeIndex(-1);
+
+    // Check local database first
+    const normalizedEircode = eircode.toUpperCase().replace(/\s/g, '');
+    if (LOCAL_EIRCODE_DB[normalizedEircode]) {
+      console.log('Found in local database:', normalizedEircode);
+      const localAddress = LOCAL_EIRCODE_DB[normalizedEircode];
+      const suggestion = {
+        id: '0',
+        summaryline: localAddress.summaryline,
+        locationsummary: localAddress.locationsummary,
+        addressline1: localAddress.addressline1,
+        addressline2: localAddress.addressline2,
+        addressline3: localAddress.addressline3,
+        addressline4: localAddress.addressline4
+      };
+      setEircodeSuggestions([suggestion]);
+      setShowEircodeSuggestions(true);
+      setActiveEircodeIndex(-1);
+      setEircodeLoading(false);
+      return;
+    }
+
+    try {
+      // Use the correct Postcoder API endpoint structure for Irish Eircodes
+      // Try the autocomplete endpoint first, then fallback to direct lookup
+      const url = `${POSTCODER_BASE_URL}/autocomplete/find?apikey=${POSTCODER_API_KEY}&country=IE&query=${encodeURIComponent(eircode)}&maximumresults=10`;
+      console.log('Making API request to:', url);
+      
+      const response = await fetch(url);
+      console.log('API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API response data:', data);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('Setting suggestions:', data.length, 'items');
+        // Transform the data to match our suggestion format
+        const suggestions = data.map((address, index) => ({
+          id: index.toString(),
+          summaryline: address.summaryline || `${address.addressline1 || ''} ${address.addressline2 || ''}`.trim(),
+          locationsummary: address.posttown || '',
+          addressline1: address.addressline1 || '',
+          addressline2: address.addressline2 || '',
+          addressline3: address.addressline3 || '',
+          addressline4: address.addressline4 || ''
+        }));
+        setEircodeSuggestions(suggestions);
+        setShowEircodeSuggestions(true);
+        setActiveEircodeIndex(-1);
+      } else {
+        console.log('No suggestions found');
+        setEircodeSuggestions([]);
+        setShowEircodeSuggestions(false);
+      }
+    } catch (error) {
+      console.error('Error fetching eircode suggestions:', error);
+      
+      // Fallback: Show a message that the API is unavailable and suggest manual entry
+      console.log('API failed, suggesting manual entry');
+      const fallbackMessage = [
+        {
+          id: '0',
+          summaryline: `Eircode ${eircode} - API temporarily unavailable`,
+          locationsummary: 'Please enter address manually',
+          addressline1: '',
+          addressline2: '',
+          addressline3: '',
+          addressline4: '',
+          isFallback: true
+        }
+      ];
+      setEircodeSuggestions(fallbackMessage);
+      setShowEircodeSuggestions(true);
+      setActiveEircodeIndex(-1);
+    } finally {
+      setEircodeLoading(false);
+    }
+  };
+
+  const retrieveAddress = async (suggestionId, addressIndex) => {
+    console.log('Retrieving address for suggestion:', suggestionId, 'address index:', addressIndex);
+    
+    if (!currentEircodeInput.value || !eircodeSuggestions[suggestionId]) {
+      console.log('No current input or suggestion not found');
+      return;
+    }
+
+    try {
+      const selectedSuggestion = eircodeSuggestions[suggestionId];
+      console.log('Selected suggestion:', selectedSuggestion);
+      
+      // If this is a fallback message, don't populate address
+      if (selectedSuggestion.isFallback) {
+        console.log('Fallback message clicked - not populating address');
+        setShowEircodeSuggestions(false);
+        setEircodeSuggestions([]);
+        setActiveEircodeIndex(-1);
+        return;
+      }
+      
+      // If we have the full address data, use it directly
+      if (selectedSuggestion.addressline1) {
+        const addressParts = [];
+        if (selectedSuggestion.addressline1) addressParts.push(selectedSuggestion.addressline1);
+        if (selectedSuggestion.addressline2) addressParts.push(selectedSuggestion.addressline2);
+        if (selectedSuggestion.addressline3) addressParts.push(selectedSuggestion.addressline3);
+        if (selectedSuggestion.addressline4) addressParts.push(selectedSuggestion.addressline4);
+        
+        const fullAddress = addressParts.join(', ');
+        console.log('Full address from suggestion:', fullAddress);
+        
+        // Update the address fields
+        setAddresses(prev => {
+          const newAddresses = prev.map((addr, i) => 
+            i === addressIndex 
+              ? { 
+                  ...addr, 
+                  address: fullAddress,
+                  eircode: currentEircodeInput.value.toUpperCase()
+                } 
+              : addr
+          );
+          console.log('Updated addresses:', newAddresses);
+          return newAddresses;
+        });
+      } else {
+        // Try to get full address details using the retrieve endpoint
+        const retrieveUrl = `${POSTCODER_BASE_URL}/autocomplete/retrieve?apikey=${POSTCODER_API_KEY}&country=IE&query=${encodeURIComponent(currentEircodeInput.value)}&id=${selectedSuggestion.id}&lines=4&exclude=organisation,posttown,county,postcode,country`;
+        
+        const response = await fetch(retrieveUrl);
+        if (response.ok) {
+          const addressData = await response.json();
+          if (Array.isArray(addressData) && addressData.length > 0) {
+            const address = addressData[0];
+            const addressParts = [];
+            if (address.addressline1) addressParts.push(address.addressline1);
+            if (address.addressline2) addressParts.push(address.addressline2);
+            if (address.addressline3) addressParts.push(address.addressline3);
+            if (address.addressline4) addressParts.push(address.addressline4);
+            
+            const fullAddress = addressParts.join(', ');
+            console.log('Full address from retrieve:', fullAddress);
+            
+            setAddresses(prev => {
+              const newAddresses = prev.map((addr, i) => 
+                i === addressIndex 
+                  ? { 
+                      ...addr, 
+                      address: fullAddress,
+                      eircode: currentEircodeInput.value.toUpperCase()
+                    } 
+                  : addr
+              );
+              return newAddresses;
+            });
+          }
+        }
+      }
+      
+      console.log('Address updated successfully');
+    } catch (error) {
+      console.error('Error retrieving address:', error);
+    } finally {
+      setShowEircodeSuggestions(false);
+      setEircodeSuggestions([]);
+      setActiveEircodeIndex(-1);
+    }
+  };
+
+  const handleEircodeInputChange = (index, value) => {
+    console.log('Eircode input changed:', value, 'for index:', index);
+    handleAddressChange(index, 'eircode', value);
+    
+    // Clear previous timeout
+    if (eircodeSearchTimeout) {
+      clearTimeout(eircodeSearchTimeout);
+    }
+    
+    // Reset suggestions if input is too short
+    if (!value || value.length < 3) {
+      setEircodeSuggestions([]);
+      setShowEircodeSuggestions(false);
+      setActiveEircodeIndex(-1);
+      return;
+    }
+    
+    // Set new timeout for debounced search
+    const timeoutId = setTimeout(() => {
+      console.log('Executing debounced search for:', value);
+      searchEircode(value, index);
+    }, 300);
+    
+    setEircodeSearchTimeout(timeoutId);
+  };
+
+  const handleEircodeKeyDown = (e, addressIndex) => {
+    if (!showEircodeSuggestions) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveEircodeIndex(prev => 
+          prev < eircodeSuggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveEircodeIndex(prev => 
+          prev > 0 ? prev - 1 : eircodeSuggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (activeEircodeIndex >= 0 && eircodeSuggestions[activeEircodeIndex]) {
+          retrieveAddress(activeEircodeIndex, addressIndex);
+        }
+        break;
+      case 'Escape':
+        setShowEircodeSuggestions(false);
+        setEircodeSuggestions([]);
+        setActiveEircodeIndex(-1);
+        break;
+    }
+  };
+
+  const handleEircodeSuggestionClick = (suggestion, addressIndex) => {
+    console.log('Suggestion clicked:', suggestion, 'for address index:', addressIndex);
+    const suggestionIndex = eircodeSuggestions.findIndex(s => s.id === suggestion.id);
+    console.log('Found suggestion index:', suggestionIndex);
+    if (suggestionIndex >= 0) {
+      retrieveAddress(suggestionIndex, addressIndex);
+    } else {
+      console.log('Suggestion not found in list');
+    }
+  };
+
+  // Close suggestions when clicking outside
+  const handleClickOutside = (e) => {
+    if (!e.target.closest('.eircode-input-container')) {
+      setShowEircodeSuggestions(false);
+      setEircodeSuggestions([]);
+      setActiveEircodeIndex(-1);
+    }
+  };
+
+  // Add click outside listener
+  useEffect(() => {
+    if (showEircodeSuggestions) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showEircodeSuggestions]);
 
   // Keyboard event handlers
   const handleInputFocus = (inputName) => {
@@ -127,7 +455,6 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       }
     }
   };
-
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -451,20 +778,58 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="relative eircode-input-container">
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                           Eircode
                         </label>
                         <input
                           type="text"
                           value={address.eircode}
-                          onChange={(e) => handleAddressChange(index, 'eircode', e.target.value)}
+                          onChange={(e) => handleEircodeInputChange(index, e.target.value)}
+                          onKeyDown={(e) => handleEircodeKeyDown(e, index)}
                           onFocus={(e) => handleAnyInputFocus(e, `address_${index}_eircode`)}
                           onClick={(e) => handleAnyInputClick(e, `address_${index}_eircode`)}
                           onBlur={handleInputBlur}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                          placeholder="Eircode"
+                          placeholder="Enter Eircode (e.g., D01F5P2)"
                         />
+                        
+                        {/* Eircode Suggestions Dropdown */}
+                        {showEircodeSuggestions && currentEircodeInput.addressIndex === index && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {eircodeLoading ? (
+                              <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                            ) : eircodeSuggestions.length > 0 ? (
+                              eircodeSuggestions.map((suggestion, suggestionIndex) => (
+                                <div
+                                  key={suggestion.id}
+                                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${
+                                    suggestionIndex === activeEircodeIndex ? 'bg-primary text-white' : ''
+                                  }`}
+                                  onClick={() => handleEircodeSuggestionClick(suggestion, index)}
+                                >
+                                  <div className="font-medium">{suggestion.summaryline}</div>
+                                  {suggestion.locationsummary && (
+                                    <div className="text-xs text-gray-500">{suggestion.locationsummary}</div>
+                                  )}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="px-3 py-2 text-sm text-gray-500">No addresses found</div>
+                            )}
+                          </div>
+                        )}
+                        {/* Debug info */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            Debug: {showEircodeSuggestions ? 'Showing' : 'Hidden'} | 
+                            Index: {currentEircodeInput.addressIndex} | 
+                            Current: {index} | 
+                            Loading: {eircodeLoading ? 'Yes' : 'No'} | 
+                            Suggestions: {eircodeSuggestions.length} |
+                            Input: {currentEircodeInput.value}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
