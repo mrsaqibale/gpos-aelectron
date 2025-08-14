@@ -650,7 +650,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
     return (
     <>
       <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl">
           {/* Header */}
           <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
             <h2 className="text-xl font-bold">{editingCustomer ? 'Edit Customer' : 'Add New Customer'}</h2>
@@ -663,10 +663,10 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           </div>
 
           {/* Customer Form */}
-          <div className="p-6">
+          <div className="p-6 overflow-y-auto max-h-[80vh]">
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Full Name and Phone in one row */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Full Name <span className="text-red-500">*</span>
@@ -709,8 +709,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                     <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
                   )}
                 </div>
-              </div>
-
+                
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -733,6 +732,8 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                   <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                 )}
               </div>
+              </div>
+
 
               {/* Addresses Section */}
               <div>
@@ -902,7 +903,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       </div>
 
               {/* Virtual Keyboard - Always visible when needed */}
-        {showKeyboard && (
+        {/* {showKeyboard && (
           <VirtualKeyboard
             isVisible={showKeyboard}
             onClose={() => setShowKeyboard(false)}
@@ -912,7 +913,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
             inputValue={keyboardInput}
             onKeyPress={onKeyboardKeyPress}
           />
-        )}
+        )} */}
     </>
   );
 };
