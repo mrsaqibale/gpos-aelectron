@@ -241,14 +241,17 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
         return;
       }
       
-      // If we have the full address data, use it directly
-      if (selectedSuggestion.addressline1) {
-        const addressParts = [];
-        if (selectedSuggestion.addressline1) addressParts.push(selectedSuggestion.addressline1);
-        if (selectedSuggestion.addressline2) addressParts.push(selectedSuggestion.addressline2);
-        if (selectedSuggestion.addressline3) addressParts.push(selectedSuggestion.addressline3);
-        if (selectedSuggestion.addressline4) addressParts.push(selectedSuggestion.addressline4);
-        
+      // Build address from available fields
+      const addressParts = [];
+      
+      // Check for address fields in the suggestion
+      if (selectedSuggestion.addressline1) addressParts.push(selectedSuggestion.addressline1);
+      if (selectedSuggestion.addressline2) addressParts.push(selectedSuggestion.addressline2);
+      if (selectedSuggestion.addressline3) addressParts.push(selectedSuggestion.addressline3);
+      if (selectedSuggestion.addressline4) addressParts.push(selectedSuggestion.addressline4);
+      
+      // If we have address parts, use them directly
+      if (addressParts.length > 0) {
         const fullAddress = addressParts.join(', ');
         console.log('Full address from suggestion:', fullAddress);
         
@@ -267,36 +270,25 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           return newAddresses;
         });
       } else {
-        // Try to get full address details using the retrieve endpoint
-        const retrieveUrl = `${POSTCODER_BASE_URL}/autocomplete/retrieve?apikey=${POSTCODER_API_KEY}&country=IE&query=${encodeURIComponent(currentEircodeInput.value)}&id=${selectedSuggestion.id}&lines=4&exclude=organisation,posttown,county,postcode,country`;
-        
-        const response = await fetch(retrieveUrl);
-        if (response.ok) {
-          const addressData = await response.json();
-          if (Array.isArray(addressData) && addressData.length > 0) {
-            const address = addressData[0];
-            const addressParts = [];
-            if (address.addressline1) addressParts.push(address.addressline1);
-            if (address.addressline2) addressParts.push(address.addressline2);
-            if (address.addressline3) addressParts.push(address.addressline3);
-            if (address.addressline4) addressParts.push(address.addressline4);
-            
-            const fullAddress = addressParts.join(', ');
-            console.log('Full address from retrieve:', fullAddress);
-            
-            setAddresses(prev => {
-              const newAddresses = prev.map((addr, i) => 
-                i === addressIndex 
-                  ? { 
-                      ...addr, 
-                      address: fullAddress,
-                      eircode: currentEircodeInput.value.toUpperCase()
-                    } 
-                  : addr
-              );
-              return newAddresses;
-            });
-          }
+        // If no address parts, try to use the summaryline as the address
+        if (selectedSuggestion.summaryline) {
+          console.log('Using summaryline as address:', selectedSuggestion.summaryline);
+          
+          setAddresses(prev => {
+            const newAddresses = prev.map((addr, i) => 
+              i === addressIndex 
+                ? { 
+                    ...addr, 
+                    address: selectedSuggestion.summaryline,
+                    eircode: currentEircodeInput.value.toUpperCase()
+                  } 
+                : addr
+            );
+            console.log('Updated addresses with summaryline:', newAddresses);
+            return newAddresses;
+          });
+        } else {
+          console.log('No address data available in suggestion');
         }
       }
       
@@ -368,12 +360,28 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
 
   const handleEircodeSuggestionClick = (suggestion, addressIndex) => {
     console.log('Suggestion clicked:', suggestion, 'for address index:', addressIndex);
-    const suggestionIndex = eircodeSuggestions.findIndex(s => s.id === suggestion.id);
+    console.log('Available suggestions:', eircodeSuggestions);
+    
+    // Find the suggestion index directly from the array
+    const suggestionIndex = eircodeSuggestions.findIndex(s => 
+      s.summaryline === suggestion.summaryline && 
+      s.locationsummary === suggestion.locationsummary
+    );
     console.log('Found suggestion index:', suggestionIndex);
+    
     if (suggestionIndex >= 0) {
+      console.log('Calling retrieveAddress with index:', suggestionIndex);
       retrieveAddress(suggestionIndex, addressIndex);
     } else {
       console.log('Suggestion not found in list');
+      // Fallback: try to find by ID
+      const fallbackIndex = eircodeSuggestions.findIndex(s => s.id === suggestion.id);
+      if (fallbackIndex >= 0) {
+        console.log('Found by ID fallback, index:', fallbackIndex);
+        retrieveAddress(fallbackIndex, addressIndex);
+      } else {
+        console.log('Suggestion not found by any method');
+      }
     }
   };
 
