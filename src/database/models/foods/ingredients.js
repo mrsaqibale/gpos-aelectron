@@ -11,6 +11,21 @@ const db = new Database(dbPath);
 export function createIngredient(data) {
   try {
     const { name, status = 1 } = data;
+    
+    // First check if ingredient with same name already exists
+    const checkStmt = db.prepare(`
+      SELECT id FROM ingredients 
+      WHERE name = ? AND isdeleted = 0
+    `);
+    
+    const existingIngredient = checkStmt.get(name);
+    
+    if (existingIngredient) {
+      // Return existing ingredient ID if found
+      return { success: true, id: existingIngredient.id, message: 'Ingredient already exists' };
+    }
+    
+    // If not exists, create new ingredient
     const now = new Date().toISOString();
     
     const stmt = db.prepare(`
@@ -148,7 +163,7 @@ export function searchIngredientsByName(name) {
     const stmt = db.prepare(`
       SELECT id, name, status, created_at, updated_at 
       FROM ingredients 
-      WHERE name LIKE ? AND isdeleted = 0
+      WHERE name LIKE ? AND isdeleted = 0 AND status = 1
       ORDER BY name ASC
     `);
     
@@ -190,6 +205,20 @@ export function getActiveCategories(hotelId = null) {
 // Create category-ingredient relationship
 export function createCategoryIngredient(categoryId, ingredientId) {
   try {
+    // First check if relationship already exists
+    const checkStmt = db.prepare(`
+      SELECT id FROM category_ingredients 
+      WHERE category_id = ? AND ingredient_id = ? AND isdeleted = 0
+    `);
+    
+    const existingRelationship = checkStmt.get(categoryId, ingredientId);
+    
+    if (existingRelationship) {
+      // Return existing relationship ID if found
+      return { success: true, id: existingRelationship.id, message: 'Category-ingredient relationship already exists' };
+    }
+    
+    // If not exists, create new relationship
     const now = new Date().toISOString();
     
     const stmt = db.prepare(`
