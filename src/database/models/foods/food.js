@@ -91,12 +91,12 @@ export function createFood(foodData) {
       INSERT INTO food (
         name, description, image, category_id, subcategory_id, price, 
         tax, tax_type, discount, discount_type, available_time_starts, 
-        available_time_ends, veg, status, restaurant_id, position, created_at, 
+        available_time_ends, veg, isPizza, status, restaurant_id, position, created_at, 
         updated_at, order_count, avg_rating, rating_count, rating, recommended, 
         slug, maximum_cart_quantity, is_halal, item_stock, sell_count, stock_type, 
         issynctonized, isdeleted, sku, barcode, track_inventory, inventory_enable, 
         quantity, low_inventory_threshold, product_note_enabled, product_note
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     // Initially save without image path
@@ -114,6 +114,7 @@ export function createFood(foodData) {
       foodData.available_time_starts || null,
       foodData.available_time_ends || null,
       foodData.veg || 0,
+      foodData.isPizza || 0,
       foodData.status || 'active',
       foodData.restaurant_id || 1,
       foodData.position || 0,
@@ -225,6 +226,15 @@ export function getFoodById(id) {
     `);
     const adons = adonsStmt.all(id);
 
+    // Get ingredients for this food
+    const ingredientsStmt = db.prepare(`
+      SELECT i.* 
+      FROM ingredients i
+      INNER JOIN food_ingredients fi ON i.id = fi.ingredient_id
+      WHERE fi.food_id = ? AND i.isdeleted = 0 AND fi.isdeleted = 0
+    `);
+    const ingredients = ingredientsStmt.all(id);
+
     return {
       success: true,
       data: {
@@ -233,7 +243,8 @@ export function getFoodById(id) {
         subcategory,
         variations,
         allergins,
-        adons
+        adons,
+        ingredients
       }
     };
   } catch (err) {
@@ -552,6 +563,55 @@ export function searchFoodsByName(name, restaurant_id = 1) {
     `);
     const foods = stmt.all(`%${name}%`, restaurant_id);
     return { success: true, data: foods };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get food ingredients
+export function getFoodIngredients(foodId) {
+  try {
+    const stmt = db.prepare(`
+      SELECT i.* 
+      FROM ingredients i
+      INNER JOIN food_ingredients fi ON i.id = fi.ingredient_id
+      WHERE fi.food_id = ? AND i.isdeleted = 0 AND fi.isdeleted = 0
+    `);
+    const ingredients = stmt.all(foodId);
+    return { success: true, data: ingredients };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Update food ingredients
+export function updateFoodIngredients(foodId, ingredientIds) {
+  try {
+    const transaction = db.transaction(() => {
+      // First, soft delete existing food-ingredient relationships
+      const deleteStmt = db.prepare(`
+        UPDATE food_ingredients 
+        SET isdeleted = 1, updated_at = ? 
+        WHERE food_id = ?
+      `);
+      deleteStmt.run(new Date().toISOString(), foodId);
+      
+      // Then, create new relationships
+      if (ingredientIds && ingredientIds.length > 0) {
+        const insertStmt = db.prepare(`
+          INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+          VALUES (?, ?, 1, 0, 0, ?, ?)
+        `);
+        
+        for (const ingredientId of ingredientIds) {
+          insertStmt.run(foodId, ingredientId, new Date().toISOString(), new Date().toISOString());
+        }
+      }
+      
+      return { success: true };
+    });
+    
+    return transaction();
   } catch (err) {
     return errorResponse(err.message);
   }

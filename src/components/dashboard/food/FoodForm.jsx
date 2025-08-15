@@ -200,7 +200,7 @@ const FoodForm = ({ food, onSubmit }) => {
         category_id: food.category_id || '',
         subcategory_id: food.subcategory_id || '',
         type: food.type || '',
-        isPizza: food.isPizza || false,
+        isPizza: food.isPizza === 1 || food.isPizza === true || false,
         allergenIngredients: food.allergenIngredients || '',
         addons: food.addons || [],
         availableFrom: food.availableFrom || '',
