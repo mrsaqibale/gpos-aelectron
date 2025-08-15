@@ -12,6 +12,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
   const [addresses, setAddresses] = useState([
     { address: '', eircode: '' }
   ]);
+  const [selectedAddresses, setSelectedAddresses] = useState([]);
   const [errors, setErrors] = useState({});
 
   // Keyboard state
@@ -26,6 +27,14 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
   const [eircodeLoading, setEircodeLoading] = useState(false);
   const [currentEircodeInput, setCurrentEircodeInput] = useState({ addressIndex: -1, value: '' });
   const [eircodeSearchTimeout, setEircodeSearchTimeout] = useState(null);
+
+  // Address autocomplete state
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  const [activeAddressIndex, setActiveAddressIndex] = useState(-1);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [currentAddressInput, setCurrentAddressInput] = useState({ addressIndex: -1, value: '' });
+  const [addressSearchTimeout, setAddressSearchTimeout] = useState(null);
 
   // Postcoder API configuration
   const POSTCODER_API_KEY = "PCWK5-XD39R-HSZW6-SK54F";
@@ -71,13 +80,17 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
         });
         // Set addresses for editing
         if (editingCustomer.addresses && editingCustomer.addresses.length > 0) {
-          setAddresses(editingCustomer.addresses.map(addr => ({
+          const addressList = editingCustomer.addresses.map(addr => ({
             id: addr.id, // Keep the ID for existing addresses
             address: addr.address || '',
             eircode: addr.code || ''
-          })));
+          }));
+          setAddresses(addressList);
+          // Select all existing addresses by default
+          setSelectedAddresses(addressList.map((_, index) => index));
         } else {
           setAddresses([{ address: '', eircode: '' }]);
+          setSelectedAddresses([0]);
         }
       } else {
         // Reset form for new customer
@@ -88,6 +101,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           isloyal: false
         });
         setAddresses([{ address: '', eircode: '' }]);
+        setSelectedAddresses([0]);
       }
       setErrors({});
       setShowKeyboard(false);
@@ -95,6 +109,9 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       setEircodeSuggestions([]);
       setShowEircodeSuggestions(false);
       setActiveEircodeIndex(-1);
+      setAddressSuggestions([]);
+      setShowAddressSuggestions(false);
+      setActiveAddressIndex(-1);
     }
   }, [isOpen, editingCustomer]);
 
@@ -104,8 +121,259 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       if (eircodeSearchTimeout) {
         clearTimeout(eircodeSearchTimeout);
       }
+      if (addressSearchTimeout) {
+        clearTimeout(addressSearchTimeout);
+      }
     };
-  }, [eircodeSearchTimeout]);
+  }, [eircodeSearchTimeout, addressSearchTimeout]);
+
+  // Debug selectedAddresses state
+  useEffect(() => {
+    console.log('Selected addresses state updated:', selectedAddresses);
+  }, [selectedAddresses]);
+
+  // Address autocomplete functions
+  const searchAddress = async (address, addressIndex) => {
+    console.log('Searching address:', address, 'for address index:', addressIndex);
+    
+    if (!address || address.length < 3) {
+      console.log('Address too short, clearing suggestions');
+      setAddressSuggestions([]);
+      setShowAddressSuggestions(false);
+      setActiveAddressIndex(-1);
+      return;
+    }
+
+    setAddressLoading(true);
+    setCurrentAddressInput({ addressIndex, value: address });
+    
+    // Clear previous suggestions
+    setAddressSuggestions([]);
+    setShowAddressSuggestions(false);
+    setActiveAddressIndex(-1);
+
+    try {
+      // Use the Postcoder API for address search
+      const url = `${POSTCODER_BASE_URL}/autocomplete/find?apikey=${POSTCODER_API_KEY}&country=IE&query=${encodeURIComponent(address)}&maximumresults=10`;
+      console.log('Making address API request to:', url);
+      
+      const response = await fetch(url);
+      console.log('Address API response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Address API response data:', data);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('Setting address suggestions:', data.length, 'items');
+        // Transform the data to match our suggestion format
+        const suggestions = data.map((addressData, index) => ({
+          id: index.toString(),
+          summaryline: addressData.summaryline || `${addressData.addressline1 || ''} ${addressData.addressline2 || ''}`.trim(),
+          locationsummary: addressData.posttown || '',
+          addressline1: addressData.addressline1 || '',
+          addressline2: addressData.addressline2 || '',
+          addressline3: addressData.addressline3 || '',
+          addressline4: addressData.addressline4 || ''
+        }));
+        setAddressSuggestions(suggestions);
+        setShowAddressSuggestions(true);
+        setActiveAddressIndex(-1);
+      } else {
+        console.log('No address suggestions found');
+        setAddressSuggestions([]);
+        setShowAddressSuggestions(false);
+      }
+    } catch (error) {
+      console.error('Error fetching address suggestions:', error);
+      
+      // Fallback: Show a message that the API is unavailable
+      console.log('Address API failed, suggesting manual entry');
+      const fallbackMessage = [
+        {
+          id: '0',
+          summaryline: `Address search for "${address}" - API temporarily unavailable`,
+          locationsummary: 'Please enter address manually',
+          addressline1: '',
+          addressline2: '',
+          addressline3: '',
+          addressline4: '',
+          isFallback: true
+        }
+      ];
+      setAddressSuggestions(fallbackMessage);
+      setShowAddressSuggestions(true);
+      setActiveAddressIndex(-1);
+    } finally {
+      setAddressLoading(false);
+    }
+  };
+
+  const retrieveAddressFromSuggestion = async (suggestionId, addressIndex) => {
+    console.log('Retrieving address from suggestion:', suggestionId, 'address index:', addressIndex);
+    
+    if (!currentAddressInput.value || !addressSuggestions[suggestionId]) {
+      console.log('No current input or suggestion not found');
+      return;
+    }
+
+    try {
+      const selectedSuggestion = addressSuggestions[suggestionId];
+      console.log('Selected address suggestion:', selectedSuggestion);
+      
+      // If this is a fallback message, don't populate address
+      if (selectedSuggestion.isFallback) {
+        console.log('Fallback message clicked - not populating address');
+        setShowAddressSuggestions(false);
+        setAddressSuggestions([]);
+        setActiveAddressIndex(-1);
+        return;
+      }
+      
+      // Build address from available fields
+      const addressParts = [];
+      
+      // Check for address fields in the suggestion
+      if (selectedSuggestion.addressline1) addressParts.push(selectedSuggestion.addressline1);
+      if (selectedSuggestion.addressline2) addressParts.push(selectedSuggestion.addressline2);
+      if (selectedSuggestion.addressline3) addressParts.push(selectedSuggestion.addressline3);
+      if (selectedSuggestion.addressline4) addressParts.push(selectedSuggestion.addressline4);
+      
+      // If we have address parts, use them directly
+      if (addressParts.length > 0) {
+        const fullAddress = addressParts.join(', ');
+        console.log('Full address from suggestion:', fullAddress);
+        
+        // Update the address fields
+        setAddresses(prev => {
+          const newAddresses = prev.map((addr, i) => 
+            i === addressIndex 
+              ? { 
+                  ...addr, 
+                  address: fullAddress
+                } 
+              : addr
+          );
+          console.log('Updated addresses:', newAddresses);
+          return newAddresses;
+        });
+      } else {
+        // If no address parts, try to use the summaryline as the address
+        if (selectedSuggestion.summaryline) {
+          console.log('Using summaryline as address:', selectedSuggestion.summaryline);
+          
+          setAddresses(prev => {
+            const newAddresses = prev.map((addr, i) => 
+              i === addressIndex 
+                ? { 
+                    ...addr, 
+                    address: selectedSuggestion.summaryline
+                  } 
+                : addr
+            );
+            console.log('Updated addresses with summaryline:', newAddresses);
+            return newAddresses;
+          });
+        } else {
+          console.log('No address data available in suggestion');
+        }
+      }
+      
+      console.log('Address updated successfully');
+    } catch (error) {
+      console.error('Error retrieving address:', error);
+    } finally {
+      setShowAddressSuggestions(false);
+      setAddressSuggestions([]);
+      setActiveAddressIndex(-1);
+    }
+  };
+
+  const handleAddressInputChange = (index, value) => {
+    console.log('Address input changed:', value, 'for index:', index);
+    handleAddressChange(index, 'address', value);
+    
+    // Clear previous timeout
+    if (addressSearchTimeout) {
+      clearTimeout(addressSearchTimeout);
+    }
+    
+    // Reset suggestions if input is too short
+    if (!value || value.length < 3) {
+      setAddressSuggestions([]);
+      setShowAddressSuggestions(false);
+      setActiveAddressIndex(-1);
+      return;
+    }
+    
+    // Set new timeout for debounced search
+    const timeoutId = setTimeout(() => {
+      console.log('Executing debounced address search for:', value);
+      searchAddress(value, index);
+    }, 300);
+    
+    setAddressSearchTimeout(timeoutId);
+  };
+
+  const handleAddressKeyDown = (e, addressIndex) => {
+    if (!showAddressSuggestions) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveAddressIndex(prev => 
+          prev < addressSuggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveAddressIndex(prev => 
+          prev > 0 ? prev - 1 : addressSuggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (activeAddressIndex >= 0 && addressSuggestions[activeAddressIndex]) {
+          retrieveAddressFromSuggestion(activeAddressIndex, addressIndex);
+        }
+        break;
+      case 'Escape':
+        setShowAddressSuggestions(false);
+        setAddressSuggestions([]);
+        setActiveAddressIndex(-1);
+        break;
+    }
+  };
+
+  const handleAddressSuggestionClick = (suggestion, addressIndex) => {
+    console.log('Address suggestion clicked:', suggestion, 'for address index:', addressIndex);
+    console.log('Available address suggestions:', addressSuggestions);
+    
+    // Find the suggestion index directly from the array
+    const suggestionIndex = addressSuggestions.findIndex(s => 
+      s.summaryline === suggestion.summaryline && 
+      s.locationsummary === suggestion.locationsummary
+    );
+    console.log('Found address suggestion index:', suggestionIndex);
+    
+    if (suggestionIndex >= 0) {
+      console.log('Calling retrieveAddressFromSuggestion with index:', suggestionIndex);
+      retrieveAddressFromSuggestion(suggestionIndex, addressIndex);
+    } else {
+      console.log('Address suggestion not found in list');
+      // Fallback: try to find by ID
+      const fallbackIndex = addressSuggestions.findIndex(s => s.id === suggestion.id);
+      if (fallbackIndex >= 0) {
+        console.log('Found by ID fallback, index:', fallbackIndex);
+        retrieveAddressFromSuggestion(fallbackIndex, addressIndex);
+      } else {
+        console.log('Address suggestion not found by any method');
+      }
+    }
+  };
 
   // Eircode autocomplete functions
   const searchEircode = async (eircode, addressIndex) => {
@@ -230,14 +498,17 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
         return;
       }
       
-      // If we have the full address data, use it directly
-      if (selectedSuggestion.addressline1) {
-        const addressParts = [];
-        if (selectedSuggestion.addressline1) addressParts.push(selectedSuggestion.addressline1);
-        if (selectedSuggestion.addressline2) addressParts.push(selectedSuggestion.addressline2);
-        if (selectedSuggestion.addressline3) addressParts.push(selectedSuggestion.addressline3);
-        if (selectedSuggestion.addressline4) addressParts.push(selectedSuggestion.addressline4);
-        
+      // Build address from available fields
+      const addressParts = [];
+      
+      // Check for address fields in the suggestion
+      if (selectedSuggestion.addressline1) addressParts.push(selectedSuggestion.addressline1);
+      if (selectedSuggestion.addressline2) addressParts.push(selectedSuggestion.addressline2);
+      if (selectedSuggestion.addressline3) addressParts.push(selectedSuggestion.addressline3);
+      if (selectedSuggestion.addressline4) addressParts.push(selectedSuggestion.addressline4);
+      
+      // If we have address parts, use them directly
+      if (addressParts.length > 0) {
         const fullAddress = addressParts.join(', ');
         console.log('Full address from suggestion:', fullAddress);
         
@@ -256,36 +527,25 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           return newAddresses;
         });
       } else {
-        // Try to get full address details using the retrieve endpoint
-        const retrieveUrl = `${POSTCODER_BASE_URL}/autocomplete/retrieve?apikey=${POSTCODER_API_KEY}&country=IE&query=${encodeURIComponent(currentEircodeInput.value)}&id=${selectedSuggestion.id}&lines=4&exclude=organisation,posttown,county,postcode,country`;
-        
-        const response = await fetch(retrieveUrl);
-        if (response.ok) {
-          const addressData = await response.json();
-          if (Array.isArray(addressData) && addressData.length > 0) {
-            const address = addressData[0];
-            const addressParts = [];
-            if (address.addressline1) addressParts.push(address.addressline1);
-            if (address.addressline2) addressParts.push(address.addressline2);
-            if (address.addressline3) addressParts.push(address.addressline3);
-            if (address.addressline4) addressParts.push(address.addressline4);
-            
-            const fullAddress = addressParts.join(', ');
-            console.log('Full address from retrieve:', fullAddress);
-            
-            setAddresses(prev => {
-              const newAddresses = prev.map((addr, i) => 
-                i === addressIndex 
-                  ? { 
-                      ...addr, 
-                      address: fullAddress,
-                      eircode: currentEircodeInput.value.toUpperCase()
-                    } 
-                  : addr
-              );
-              return newAddresses;
-            });
-          }
+        // If no address parts, try to use the summaryline as the address
+        if (selectedSuggestion.summaryline) {
+          console.log('Using summaryline as address:', selectedSuggestion.summaryline);
+          
+          setAddresses(prev => {
+            const newAddresses = prev.map((addr, i) => 
+              i === addressIndex 
+                ? { 
+                    ...addr, 
+                    address: selectedSuggestion.summaryline,
+                    eircode: currentEircodeInput.value.toUpperCase()
+                  } 
+                : addr
+            );
+            console.log('Updated addresses with summaryline:', newAddresses);
+            return newAddresses;
+          });
+        } else {
+          console.log('No address data available in suggestion');
         }
       }
       
@@ -357,12 +617,28 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
 
   const handleEircodeSuggestionClick = (suggestion, addressIndex) => {
     console.log('Suggestion clicked:', suggestion, 'for address index:', addressIndex);
-    const suggestionIndex = eircodeSuggestions.findIndex(s => s.id === suggestion.id);
+    console.log('Available suggestions:', eircodeSuggestions);
+    
+    // Find the suggestion index directly from the array
+    const suggestionIndex = eircodeSuggestions.findIndex(s => 
+      s.summaryline === suggestion.summaryline && 
+      s.locationsummary === suggestion.locationsummary
+    );
     console.log('Found suggestion index:', suggestionIndex);
+    
     if (suggestionIndex >= 0) {
+      console.log('Calling retrieveAddress with index:', suggestionIndex);
       retrieveAddress(suggestionIndex, addressIndex);
     } else {
       console.log('Suggestion not found in list');
+      // Fallback: try to find by ID
+      const fallbackIndex = eircodeSuggestions.findIndex(s => s.id === suggestion.id);
+      if (fallbackIndex >= 0) {
+        console.log('Found by ID fallback, index:', fallbackIndex);
+        retrieveAddress(fallbackIndex, addressIndex);
+      } else {
+        console.log('Suggestion not found by any method');
+      }
     }
   };
 
@@ -373,15 +649,20 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       setEircodeSuggestions([]);
       setActiveEircodeIndex(-1);
     }
+    if (!e.target.closest('.address-input-container')) {
+      setShowAddressSuggestions(false);
+      setAddressSuggestions([]);
+      setActiveAddressIndex(-1);
+    }
   };
 
   // Add click outside listener
   useEffect(() => {
-    if (showEircodeSuggestions) {
+    if (showEircodeSuggestions || showAddressSuggestions) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [showEircodeSuggestions]);
+  }, [showEircodeSuggestions, showAddressSuggestions]);
 
   // Keyboard event handlers
   const handleInputFocus = (inputName) => {
@@ -492,12 +773,40 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
 
   const addAddress = () => {
     setAddresses(prev => [...prev, { address: '', eircode: '' }]);
+    // Select the newly added address
+    setSelectedAddresses(prev => {
+      const newSelected = [...prev];
+      newSelected.push(addresses.length);
+      return newSelected;
+    });
   };
 
   const removeAddress = (index) => {
     if (addresses.length > 1) {
       setAddresses(prev => prev.filter((_, i) => i !== index));
+      // Update selected addresses after removal
+      setSelectedAddresses(prev => {
+        const newSelected = prev.filter(selectedIndex => selectedIndex !== index);
+        return newSelected;
+      });
     }
+  };
+
+  const handleAddressSelection = (index) => {
+    console.log('Address selection changed for index:', index);
+    setSelectedAddresses(prev => {
+      if (prev.includes(index)) {
+        const newSelected = prev.filter(selectedIndex => selectedIndex !== index);
+        console.log('Removed index', index, 'from selection');
+        console.log('New selection:', newSelected);
+        return newSelected;
+      } else {
+        const newSelected = [...prev, index];
+        console.log('Added index', index, 'to selection');
+        console.log('New selection:', newSelected);
+        return newSelected;
+      }
+    });
   };
 
   const deleteAddress = async (addressId) => {
@@ -508,6 +817,11 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       if (result && result.success) {
         // Remove from local state
         setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+        // Update selected addresses after deletion
+        setSelectedAddresses(prev => {
+          const newSelected = prev.filter(selectedIndex => selectedIndex !== addresses.findIndex(addr => addr.id === addressId));
+          return newSelected;
+        });
       } else {
         alert('Error deleting address');
       }
@@ -543,6 +857,10 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       return;
     }
 
+    console.log('Form submission - addresses:', addresses);
+    console.log('Form submission - selectedAddresses:', selectedAddresses);
+    console.log('Form submission - editingCustomer:', editingCustomer);
+
     try {
       if (editingCustomer) {
         // Update existing customer
@@ -557,21 +875,44 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
         
         const result = await window.myAPI?.updateCustomer(editingCustomer.id, customerData);
         if (result.success) {
-          // Add new addresses if any
+          // Update existing addresses that are selected
+          const addressesToUpdate = addresses
+            .filter((addr, index) => addr.id && selectedAddresses.includes(index))
+            .map(addr => ({
+              id: addr.id,
+              address: addr.address.trim(),
+              code: addr.eircode.trim() || null
+            }));
+
+          console.log('Addresses to update:', addressesToUpdate);
+
+          // Update existing addresses
+          for (const address of addressesToUpdate) {
+            const updateResult = await window.myAPI?.updateAddress(address.id, {
+              address: address.address,
+              code: address.code
+            });
+            console.log('Update result for address', address.id, ':', updateResult);
+          }
+
+          // Add new addresses if any (only selected ones)
           const newAddresses = addresses
-            .filter(addr => addr.address.trim() && !addr.id) // Only new addresses (no id)
+            .filter((addr, index) => addr.address.trim() && !addr.id && selectedAddresses.includes(index)) // Only selected new addresses
             .map(addr => ({
               address: addr.address.trim(),
               code: addr.eircode.trim() || null,
               addedby: 1
             }));
 
+          console.log('New addresses to create:', newAddresses);
+
           // Create new addresses
           for (const address of newAddresses) {
-            await window.myAPI?.createAddress({
+            const createResult = await window.myAPI?.createAddress({
               customer_id: editingCustomer.id,
               ...address
             });
+            console.log('Create result for new address:', createResult);
           }
 
           if (onCustomerSelect) {
@@ -586,9 +927,9 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           alert('Error updating customer: ' + result.message);
         }
       } else {
-        // Filter out empty addresses
+        // Filter out empty addresses (only selected ones)
         const validAddresses = addresses
-          .filter(addr => addr.address.trim())
+          .filter((addr, index) => addr.address.trim() && selectedAddresses.includes(index))
           .map(addr => ({
             address: addr.address.trim(),
             code: addr.eircode.trim() || null,
@@ -650,7 +991,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
     return (
     <>
       <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl">
           {/* Header */}
           <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
             <h2 className="text-xl font-bold">{editingCustomer ? 'Edit Customer' : 'Add New Customer'}</h2>
@@ -663,10 +1004,10 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           </div>
 
           {/* Customer Form */}
-          <div className="p-6">
+          <div className="p-6 overflow-y-auto max-h-[80vh]">
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Full Name and Phone in one row */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Full Name <span className="text-red-500">*</span>
@@ -709,8 +1050,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                     <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
                   )}
                 </div>
-              </div>
-
+                
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -733,6 +1073,8 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                   <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                 )}
               </div>
+              </div>
+
 
               {/* Addresses Section */}
               <div>
@@ -749,12 +1091,44 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                   </button>
                 </div>
                 
+                {/* Help text for address selection */}
+                {editingCustomer && addresses.length >= 2 && (
+                  <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-700">
+                      💡 Select the addresses you want to include. Unselected addresses will remain but won't be updated.
+                    </p>
+                  </div>
+                )}
+                
                 {addresses.map((address, index) => (
-                  <div key={index} className="mb-4 p-3 border border-gray-200 rounded-lg">
+                  <div key={index} className={`mb-4 p-3 border rounded-lg transition-colors ${
+                    editingCustomer && addresses.length >= 2 
+                      ? selectedAddresses.includes(index)
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 bg-gray-50 opacity-60'
+                      : 'border-gray-200'
+                  }`}>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Address {index + 1} {address.id && '(Existing)'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {/* Show checkbox only when editing and there are 2+ addresses */}
+                        {editingCustomer && addresses.length >= 2 && (
+                          <input
+                            type="checkbox"
+                            checked={selectedAddresses.includes(index)}
+                            onChange={() => handleAddressSelection(index)}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                          />
+                        )}
+                        <span className="text-sm font-medium text-gray-700">
+                          Address {index + 1} {address.id && '(Existing)'}
+                          {/* Debug info */}
+                          {process.env.NODE_ENV === 'development' && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              (Selected: {selectedAddresses.includes(index) ? 'Yes' : 'No'})
+                            </span>
+                          )}
+                        </span>
+                      </div>
                       <div className="flex gap-2">
                         {address.id && (
                           <button
@@ -831,20 +1205,58 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                           </div>
                         )}
                       </div>
-                      <div>
+                      <div className="relative address-input-container">
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                           Address <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
                           value={address.address}
-                          onChange={(e) => handleAddressChange(index, 'address', e.target.value)}
+                          onChange={(e) => handleAddressInputChange(index, e.target.value)}
+                          onKeyDown={(e) => handleAddressKeyDown(e, index)}
                           onFocus={(e) => handleAnyInputFocus(e, `address_${index}_address`)}
                           onClick={(e) => handleAnyInputClick(e, `address_${index}_address`)}
                           onBlur={handleInputBlur}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                          placeholder="Street, Apartment, etc."
+                          placeholder="Start typing address..."
                         />
+                        
+                        {/* Address Suggestions Dropdown */}
+                        {showAddressSuggestions && currentAddressInput.addressIndex === index && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {addressLoading ? (
+                              <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                            ) : addressSuggestions.length > 0 ? (
+                              addressSuggestions.map((suggestion, suggestionIndex) => (
+                                <div
+                                  key={suggestion.id}
+                                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 ${
+                                    suggestionIndex === activeAddressIndex ? 'bg-primary text-white' : ''
+                                  }`}
+                                  onClick={() => handleAddressSuggestionClick(suggestion, index)}
+                                >
+                                  <div className="font-medium">{suggestion.summaryline}</div>
+                                  {suggestion.locationsummary && (
+                                    <div className="text-xs text-gray-500">{suggestion.locationsummary}</div>
+                                  )}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="px-3 py-2 text-sm text-gray-500">No addresses found</div>
+                            )}
+                          </div>
+                        )}
+                        {/* Debug info */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            Debug: {showAddressSuggestions ? 'Showing' : 'Hidden'} | 
+                            Index: {currentAddressInput.addressIndex} | 
+                            Current: {index} | 
+                            Loading: {addressLoading ? 'Yes' : 'No'} | 
+                            Suggestions: {addressSuggestions.length} |
+                            Input: {currentAddressInput.value}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -902,7 +1314,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       </div>
 
               {/* Virtual Keyboard - Always visible when needed */}
-        {showKeyboard && (
+        {/* {showKeyboard && (
           <VirtualKeyboard
             isVisible={showKeyboard}
             onClose={() => setShowKeyboard(false)}
@@ -912,7 +1324,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
             inputValue={keyboardInput}
             onKeyPress={onKeyboardKeyPress}
           />
-        )}
+        )} */}
     </>
   );
 };
