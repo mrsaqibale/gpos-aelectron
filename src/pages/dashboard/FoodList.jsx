@@ -76,7 +76,7 @@ const FoodList = () => {
         const transformedData = result.data.map(food => ({
           id: food.id,
           name: food.name,
-          image: food.image || "https://via.placeholder.com/200",
+          image: food.image || null, // Use null instead of placeholder URL
           category: food.category_name || 'Uncategorized',
           price: food.price || 0,
           type: food.veg === 1 ? 'Veg' : 'Non-Veg',
