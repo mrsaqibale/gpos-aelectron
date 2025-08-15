@@ -191,6 +191,17 @@ const FoodForm = ({ food, onSubmit }) => {
     loadSubcategories();
   }, [formData.category_id]);
 
+  // Clear ingredients when category changes (for new food items)
+  useEffect(() => {
+    if (!food) { // Only for new food items, not when editing
+      setSelectedIngredients([]);
+      setIngredientInput('');
+      setIngredientSuggestions([]);
+      setShowIngredientSuggestions(false);
+      setSelectedIngredientSuggestionIndex(-1);
+    }
+  }, [formData.category_id, food]);
+
   useEffect(() => {
     if (food) {
       setFormData({
@@ -625,6 +636,8 @@ const FoodForm = ({ food, onSubmit }) => {
   };
 
   const handleIngredientKeyDown = async (e) => {
+    if (!formData.category_id) return; // Don't process if category not selected
+    
     if (e.key === 'Enter') {
       e.preventDefault();
       
@@ -779,18 +792,23 @@ const FoodForm = ({ food, onSubmit }) => {
         }
 
         // Save food-ingredient relationships if ingredients are selected
-        if (selectedIngredients.length > 0) {
+        if (selectedIngredients.length > 0 && formData.category_id) {
           try {
-            const ingredientIds = selectedIngredients.map(ingredient => ingredient.id);
-            const ingredientResult = await window.myAPI?.updateFoodIngredients(result.food_id, ingredientIds);
+            // Use the complex processing function that handles all the logic
+            const ingredientNames = selectedIngredients.map(ingredient => ingredient.name);
+            const ingredientResult = await window.myAPI?.processFoodIngredients(
+              result.food_id, 
+              parseInt(formData.category_id), 
+              ingredientNames
+            );
             
             if (ingredientResult && ingredientResult.success) {
-              console.log('Food-ingredient relationships saved successfully');
+              console.log('Food-ingredient relationships processed successfully:', ingredientResult.data);
             } else {
-              console.error('Failed to save food-ingredient relationships:', ingredientResult?.message);
+              console.error('Failed to process food-ingredient relationships:', ingredientResult?.message);
             }
           } catch (error) {
-            console.error('Error saving food-ingredient relationships:', error);
+            console.error('Error processing food-ingredient relationships:', error);
           }
         }
 
