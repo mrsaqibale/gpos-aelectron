@@ -8,7 +8,8 @@ const CategoryManagement = () => {
   const [newCategory, setNewCategory] = useState({
     name: '',
     position: '',
-    image: null
+    image: null,
+    originalFilename: null
   });
   const [nameError, setNameError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -38,7 +39,8 @@ const CategoryManagement = () => {
     setNewCategory({
       name: category.name,
       position: category.position,
-      image: category.image || null
+      image: category.image || null,
+      originalFilename: null
     });
     setNameError(''); // Clear any previous error messages
     setShowForm(true);
