@@ -115,7 +115,7 @@ export function createFood(foodData) {
       foodData.available_time_ends || null,
       foodData.veg || 0,
       foodData.isPizza || 0,
-      foodData.status || 'active',
+      foodData.status || 1,
       foodData.restaurant_id || 1,
       foodData.position || 0,
       now,
