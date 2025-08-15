@@ -1,6 +1,50 @@
 import React, { useEffect, useState } from 'react';
 import { Edit, Plus, X, Trash2 } from 'lucide-react';
 
+// CategoryImage component to handle image loading
+const CategoryImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded" }) => {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        if (imagePath && imagePath.startsWith('uploads/')) {
+          const result = await window.myAPI?.getCategoryImage(imagePath);
+          if (result && result.success) {
+            setImageSrc(result.data);
+          } else {
+            setError(true);
+          }
+        } else {
+          setError(true);
+        }
+      } catch (error) {
+        console.error('Error loading category image:', error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadImage();
+  }, [imagePath]);
+
+  if (loading) {
+    return <div className={`${className} bg-gray-200 animate-pulse`}></div>;
+  }
+
+  if (error || !imageSrc) {
+    return <div className={`${className} bg-gray-200`}></div>;
+  }
+
+  return <img src={imageSrc} alt={alt} className={className} />;
+};
+
 const CategoryManagement = () => {
   const [categories, setCategories] = useState([ ]);
   const [showForm, setShowForm] = useState(false);
@@ -356,13 +400,22 @@ const CategoryManagement = () => {
                     </label>
                     {newCategory.image ? (
                       <img
-                        src={typeof newCategory.image === 'string'
-                          ? `data:image/png;base64,${newCategory.image}`
-                          : URL.createObjectURL(newCategory.image)}
+                        src={newCategory.image instanceof File
+                          ? URL.createObjectURL(newCategory.image)
+                          : newCategory.image.startsWith('uploads/')
+                          ? null // Will be handled by CategoryImage component
+                          : `data:image/png;base64,${newCategory.image}`}
                         alt="Selected"
                         className="w-16 h-16 object-cover rounded mt-2"
                       />
                     ) : null}
+                    {newCategory.image && newCategory.image.startsWith('uploads/') && (
+                      <CategoryImage 
+                        imagePath={newCategory.image} 
+                        alt="Selected" 
+                        className="w-16 h-16 object-cover rounded mt-2" 
+                      />
+                    )}
                   </div>
                   <p className="mt-1 text-xs text-gray-500">Recommended: 200x200px, PNG, JPG up to 2MB</p>
                 </div>
