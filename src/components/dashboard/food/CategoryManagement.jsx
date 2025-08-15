@@ -110,31 +110,53 @@ const CategoryManagement = () => {
     const hotelId = 1;
     try {
       let imageBase64 = null;
-      if (newCategory.image) {
+      if (newCategory.image && newCategory.image instanceof File) {
         // Read the image as base64
         imageBase64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
           reader.readAsDataURL(newCategory.image);
         });
       }
+      
       if (editingCategory) {
         // Update existing category in backend
-        await window.myAPI?.updateCategory(editingCategory.id, {
+        const updateData = {
           name: newCategory.name,
           position: parseInt(newCategory.position),
-          image: imageBase64,
-        });
+        };
+        
+        // Only include image if a new file is selected
+        if (newCategory.image instanceof File) {
+          updateData.image = imageBase64;
+        }
+        
+        const result = await window.myAPI?.updateCategory(
+          editingCategory.id, 
+          updateData, 
+          newCategory.originalFilename
+        );
+        
+        if (!result.success) {
+          console.error('Failed to update category:', result.message);
+          return;
+        }
       } else {
         // Add new category in backend
-        await window.myAPI?.createCategory({
+        const result = await window.myAPI?.createCategory({
           name: newCategory.name,
           position: parseInt(newCategory.position),
-          hotel_id: hotelId, // Corrected key
+          hotel_id: hotelId,
           image: imageBase64,
+          originalFilename: newCategory.originalFilename,
           status: 1, // Set status to 1 by default for new categories
         });
+        
+        if (!result.success) {
+          console.error('Failed to create category:', result.message);
+          return;
+        }
       }
       // Refetch categories from backend
       fetchCategories();
@@ -221,11 +243,7 @@ const CategoryManagement = () => {
               </td>
               <td className="py-3 px-4">
                 {category.image ? (
-                  <img
-                    src={`data:image/png;base64,${category.image}`}
-                    alt={category.name}
-                    className="w-10 h-10 object-cover rounded"
-                  />
+                  <CategoryImage imagePath={category.image} alt={category.name} />
                 ) : (
                   <div className="w-10 h-10 bg-gray-200 rounded"></div>
                 )}
