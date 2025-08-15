@@ -117,9 +117,10 @@ const FoodList = () => {
   const handleDeleteFood = async (id) => {
     try {
       // Call the backend API to delete the food
-      const result = await window.myAPI?.updateFood(id, { isDelete: 1 });
+      const result = await window.myAPI?.updateFood(id, { isdeleted: 1 });
       if (result && result.success) {
-        setFoodItems(foodItems.filter(item => item.id !== id));
+        // Refresh the food list from database
+        fetchFoodData();
         setShowDeleteConfirm(false);
         setFoodToDelete(null);
       } else {
@@ -132,16 +133,48 @@ const FoodList = () => {
     }
   };
 
-  const toggleRecommended = (id) => {
-    setFoodItems(foodItems.map(item => 
-      item.id === id ? { ...item, recommended: !item.recommended } : item
-    ));
+  const toggleRecommended = async (id) => {
+    try {
+      // Find the current food item to get its current recommended status
+      const currentFood = foodItems.find(food => food.id === id);
+      if (!currentFood) return;
+      
+      // Toggle the recommended status
+      const newRecommended = !currentFood.recommended;
+      
+      // Call the backend API to update the recommended status
+      const result = await window.myAPI?.updateFood(id, { recommended: newRecommended ? 1 : 0 });
+      if (result && result.success) {
+        // Refresh the food list from database
+        fetchFoodData();
+      } else {
+        console.error('Failed to update recommended status:', result?.message);
+      }
+    } catch (error) {
+      console.error('Error toggling recommended status:', error);
+    }
   };
 
-  const toggleStatus = (id) => {
-    setFoodItems(foodItems.map(item => 
-      item.id === id ? { ...item, status: !item.status } : item
-    ));
+  const toggleStatus = async (id) => {
+    try {
+      // Find the current food item to get its current status
+      const currentFood = foodItems.find(food => food.id === id);
+      if (!currentFood) return;
+      
+      // Toggle the status (if current is true, set to false; if current is false, set to true)
+      const newStatus = !currentFood.status;
+      
+      // Call the backend API to update the status
+      const result = await window.myAPI?.updateFood(id, { status: newStatus ? 1 : 0 });
+      if (result && result.success) {
+        // Refresh the food list from database
+        fetchFoodData();
+      } else {
+        console.error('Failed to update status:', result?.message);
+      }
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
   };
 
   const requestSort = (key) => {
