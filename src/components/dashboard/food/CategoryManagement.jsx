@@ -1,6 +1,50 @@
 import React, { useEffect, useState } from 'react';
 import { Edit, Plus, X, Trash2 } from 'lucide-react';
 
+// CategoryImage component to handle image loading
+const CategoryImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded" }) => {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        if (imagePath && imagePath.startsWith('uploads/')) {
+          const result = await window.myAPI?.getCategoryImage(imagePath);
+          if (result && result.success) {
+            setImageSrc(result.data);
+          } else {
+            setError(true);
+          }
+        } else {
+          setError(true);
+        }
+      } catch (error) {
+        console.error('Error loading category image:', error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadImage();
+  }, [imagePath]);
+
+  if (loading) {
+    return <div className={`${className} bg-gray-200 animate-pulse`}></div>;
+  }
+
+  if (error || !imageSrc) {
+    return <div className={`${className} bg-gray-200`}></div>;
+  }
+
+  return <img src={imageSrc} alt={alt} className={className} />;
+};
+
 const CategoryManagement = () => {
   const [categories, setCategories] = useState([ ]);
   const [showForm, setShowForm] = useState(false);
@@ -8,7 +52,8 @@ const CategoryManagement = () => {
   const [newCategory, setNewCategory] = useState({
     name: '',
     position: '',
-    image: null
+    image: null,
+    originalFilename: null
   });
   const [nameError, setNameError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -38,7 +83,8 @@ const CategoryManagement = () => {
     setNewCategory({
       name: category.name,
       position: category.position,
-      image: category.image || null
+      image: category.image || null,
+      originalFilename: null
     });
     setNameError(''); // Clear any previous error messages
     setShowForm(true);
@@ -49,7 +95,8 @@ const CategoryManagement = () => {
     setNewCategory({
       name: '',
       position: '',
-      image: null
+      image: null,
+      originalFilename: null
     });
     setNameError(''); // Clear any previous error messages
     setShowForm(true);
@@ -79,10 +126,14 @@ const CategoryManagement = () => {
   };
 
   const handleFileChange = (e) => {
-    setNewCategory(prev => ({
-      ...prev,
-      image: e.target.files[0]
-    }));
+    const file = e.target.files[0];
+    if (file) {
+      setNewCategory(prev => ({
+        ...prev,
+        image: file,
+        originalFilename: file.name
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -103,31 +154,53 @@ const CategoryManagement = () => {
     const hotelId = 1;
     try {
       let imageBase64 = null;
-      if (newCategory.image) {
+      if (newCategory.image && newCategory.image instanceof File) {
         // Read the image as base64
         imageBase64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onload = () => resolve(reader.result);
           reader.onerror = reject;
           reader.readAsDataURL(newCategory.image);
         });
       }
+      
       if (editingCategory) {
         // Update existing category in backend
-        await window.myAPI?.updateCategory(editingCategory.id, {
+        const updateData = {
           name: newCategory.name,
           position: parseInt(newCategory.position),
-          image: imageBase64,
-        });
+        };
+        
+        // Only include image if a new file is selected
+        if (newCategory.image instanceof File) {
+          updateData.image = imageBase64;
+        }
+        
+        const result = await window.myAPI?.updateCategory(
+          editingCategory.id, 
+          updateData, 
+          newCategory.originalFilename
+        );
+        
+        if (!result.success) {
+          console.error('Failed to update category:', result.message);
+          return;
+        }
       } else {
         // Add new category in backend
-        await window.myAPI?.createCategory({
+        const result = await window.myAPI?.createCategory({
           name: newCategory.name,
           position: parseInt(newCategory.position),
-          hotel_id: hotelId, // Corrected key
+          hotel_id: hotelId,
           image: imageBase64,
+          originalFilename: newCategory.originalFilename,
           status: 1, // Set status to 1 by default for new categories
         });
+        
+        if (!result.success) {
+          console.error('Failed to create category:', result.message);
+          return;
+        }
       }
       // Refetch categories from backend
       fetchCategories();
@@ -214,11 +287,7 @@ const CategoryManagement = () => {
               </td>
               <td className="py-3 px-4">
                 {category.image ? (
-                  <img
-                    src={`data:image/png;base64,${category.image}`}
-                    alt={category.name}
-                    className="w-10 h-10 object-cover rounded"
-                  />
+                  <CategoryImage imagePath={category.image} alt={category.name} />
                 ) : (
                   <div className="w-10 h-10 bg-gray-200 rounded"></div>
                 )}
@@ -330,13 +399,25 @@ const CategoryManagement = () => {
                       />
                     </label>
                     {newCategory.image ? (
-                      <img
-                        src={typeof newCategory.image === 'string'
-                          ? `data:image/png;base64,${newCategory.image}`
-                          : URL.createObjectURL(newCategory.image)}
-                        alt="Selected"
-                        className="w-16 h-16 object-cover rounded mt-2"
-                      />
+                      newCategory.image instanceof File ? (
+                        <img
+                          src={URL.createObjectURL(newCategory.image)}
+                          alt="Selected"
+                          className="w-16 h-16 object-cover rounded mt-2"
+                        />
+                      ) : typeof newCategory.image === 'string' && newCategory.image.startsWith('uploads/') ? (
+                        <CategoryImage 
+                          imagePath={newCategory.image} 
+                          alt="Selected" 
+                          className="w-16 h-16 object-cover rounded mt-2" 
+                        />
+                      ) : typeof newCategory.image === 'string' ? (
+                        <img
+                          src={`data:image/png;base64,${newCategory.image}`}
+                          alt="Selected"
+                          className="w-16 h-16 object-cover rounded mt-2"
+                        />
+                      ) : null
                     ) : null}
                   </div>
                   <p className="mt-1 text-xs text-gray-500">Recommended: 200x200px, PNG, JPG up to 2MB</p>

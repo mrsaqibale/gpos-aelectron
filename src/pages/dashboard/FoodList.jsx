@@ -7,6 +7,57 @@ import AddonManagement from '../../components/dashboard/food/AddonManagement';
 import Ingredients from '../../components/dashboard/food/Ingredients';
 import FoodForm from '../../components/dashboard/food/FoodForm';
 
+// FoodImage component to handle image loading
+const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded" }) => {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        // Check if imagePath exists and is a valid string
+        if (imagePath && typeof imagePath === 'string' && imagePath.startsWith('uploads/')) {
+          const result = await window.myAPI?.getFoodImage(imagePath);
+          if (result && result.success) {
+            setImageSrc(result.data);
+          } else {
+            setError(true);
+          }
+        } else {
+          setError(true);
+        }
+      } catch (error) {
+        console.error('Error loading food image:', error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only load image if imagePath is provided
+    if (imagePath) {
+      loadImage();
+    } else {
+      setLoading(false);
+      setError(true);
+    }
+  }, [imagePath]);
+
+  if (loading) {
+    return <div className={`${className} bg-gray-200 animate-pulse`}></div>;
+  }
+
+  if (error || !imageSrc) {
+    return <div className={`${className} bg-gray-200`}></div>;
+  }
+
+  return <img src={imageSrc} alt={alt} className={className} />;
+};
+
 const FoodList = () => {
   const [activeTab, setActiveTab] = useState('foodList');
   const [showFoodForm, setShowFoodForm] = useState(false);
@@ -32,7 +83,7 @@ const FoodList = () => {
         const transformedData = result.data.map(food => ({
           id: food.id,
           name: food.name,
-          image: food.image || "https://via.placeholder.com/200",
+          image: food.image && typeof food.image === 'string' && food.image.trim() !== '' ? food.image : null,
           category: food.category_name || 'Uncategorized',
           price: food.price || 0,
           type: food.veg === 1 ? 'Veg' : 'Non-Veg',
@@ -72,10 +123,18 @@ const FoodList = () => {
 
   const handleDeleteFood = async (id) => {
     try {
+      console.log('Attempting to delete food with ID:', id);
+      console.log('window.myAPI available:', !!window.myAPI);
+      console.log('deleteFood available:', !!window.myAPI?.deleteFood);
+      
       // Call the backend API to delete the food
-      const result = await window.myAPI?.updateFood(id, { isDelete: 1 });
+      const result = await window.myAPI?.deleteFood(id);
+      console.log('Delete result:', result);
+      
       if (result && result.success) {
-        setFoodItems(foodItems.filter(item => item.id !== id));
+        console.log('Food deleted successfully');
+        // Refresh the food list from database
+        fetchFoodData();
         setShowDeleteConfirm(false);
         setFoodToDelete(null);
       } else {
@@ -84,20 +143,52 @@ const FoodList = () => {
       }
     } catch (error) {
       console.error('Error deleting food:', error);
-      alert('Error deleting food');
+      alert('Error deleting food: ' + error.message);
     }
   };
 
-  const toggleRecommended = (id) => {
-    setFoodItems(foodItems.map(item => 
-      item.id === id ? { ...item, recommended: !item.recommended } : item
-    ));
+  const toggleRecommended = async (id) => {
+    try {
+      // Find the current food item to get its current recommended status
+      const currentFood = foodItems.find(food => food.id === id);
+      if (!currentFood) return;
+      
+      // Toggle the recommended status
+      const newRecommended = !currentFood.recommended;
+      
+      // Call the backend API to update the recommended status
+      const result = await window.myAPI?.updateFood(id, { foodData: { recommended: newRecommended ? 1 : 0 } });
+      if (result && result.success) {
+        // Refresh the food list from database
+        fetchFoodData();
+      } else {
+        console.error('Failed to update recommended status:', result?.message);
+      }
+    } catch (error) {
+      console.error('Error toggling recommended status:', error);
+    }
   };
 
-  const toggleStatus = (id) => {
-    setFoodItems(foodItems.map(item => 
-      item.id === id ? { ...item, status: !item.status } : item
-    ));
+  const toggleStatus = async (id) => {
+    try {
+      // Find the current food item to get its current status
+      const currentFood = foodItems.find(food => food.id === id);
+      if (!currentFood) return;
+      
+      // Toggle the status (if current is true, set to false; if current is false, set to true)
+      const newStatus = !currentFood.status;
+      
+      // Call the backend API to update the status
+      const result = await window.myAPI?.updateFood(id, { foodData: { status: newStatus ? 1 : 0 } });
+      if (result && result.success) {
+        // Refresh the food list from database
+        fetchFoodData();
+      } else {
+        console.error('Failed to update status:', result?.message);
+      }
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
   };
 
   const requestSort = (key) => {
@@ -338,15 +429,13 @@ const FoodList = () => {
                     <span className="text-sm font-medium text-gray-700">{index + 1}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-10 h-10 rounded object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = "https://via.placeholder.com/40x40?text=🍽️";
-                      }}
-                    />
+                    {item.image && typeof item.image === 'string' && item.image.trim() !== '' ? (
+                      <FoodImage imagePath={item.image} alt={item.name} />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">🍽️</span>
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm font-medium text-gray-800">{item.name}</span>

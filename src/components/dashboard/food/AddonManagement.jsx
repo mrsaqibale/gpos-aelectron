@@ -111,11 +111,18 @@ if (result && result.success) {
 
   const toggleStatus = async(id) => {
     try{
-      await window.myAPI?.updateAdon?.(id,{status:0})
+      // Find the current addon to get its current status
+      const currentAddon = addons.find(addon => addon.id === id);
+      if (!currentAddon) return;
+      
+      // Toggle the status (if current is 1, set to 0; if current is 0, set to 1)
+      const newStatus = currentAddon.status === 1 ? 0 : 1;
+      
+      await window.myAPI?.updateAdon?.(id, { status: newStatus });
       fetchAddons();
-        }catch(error){
+    } catch(error){
       console.error('Error toggling status:', error);
-        }
+    }
   };
 
   const handleDeleteClick = (addon) => {

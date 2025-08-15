@@ -91,12 +91,12 @@ export function createFood(foodData) {
       INSERT INTO food (
         name, description, image, category_id, subcategory_id, price, 
         tax, tax_type, discount, discount_type, available_time_starts, 
-        available_time_ends, veg, status, restaurant_id, position, created_at, 
+        available_time_ends, veg, isPizza, status, restaurant_id, position, created_at, 
         updated_at, order_count, avg_rating, rating_count, rating, recommended, 
         slug, maximum_cart_quantity, is_halal, item_stock, sell_count, stock_type, 
         issynctonized, isdeleted, sku, barcode, track_inventory, inventory_enable, 
         quantity, low_inventory_threshold, product_note_enabled, product_note
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     // Initially save without image path
@@ -114,6 +114,7 @@ export function createFood(foodData) {
       foodData.available_time_starts || null,
       foodData.available_time_ends || null,
       foodData.veg || 0,
+      foodData.isPizza || 0,
       foodData.status || 'active',
       foodData.restaurant_id || 1,
       foodData.position || 0,
@@ -225,6 +226,15 @@ export function getFoodById(id) {
     `);
     const adons = adonsStmt.all(id);
 
+    // Get ingredients for this food
+    const ingredientsStmt = db.prepare(`
+      SELECT i.* 
+      FROM ingredients i
+      INNER JOIN food_ingredients fi ON i.id = fi.ingredient_id
+      WHERE fi.food_id = ? AND i.isdeleted = 0 AND fi.isdeleted = 0
+    `);
+    const ingredients = ingredientsStmt.all(id);
+
     return {
       success: true,
       data: {
@@ -233,7 +243,8 @@ export function getFoodById(id) {
         subcategory,
         variations,
         allergins,
-        adons
+        adons,
+        ingredients
       }
     };
   } catch (err) {
@@ -554,6 +565,198 @@ export function searchFoodsByName(name, restaurant_id = 1) {
     return { success: true, data: foods };
   } catch (err) {
     return errorResponse(err.message);
+  }
+}
+
+// Get food ingredients
+export function getFoodIngredients(foodId) {
+  try {
+    const stmt = db.prepare(`
+      SELECT i.* 
+      FROM ingredients i
+      INNER JOIN food_ingredients fi ON i.id = fi.ingredient_id
+      WHERE fi.food_id = ? AND i.isdeleted = 0 AND fi.isdeleted = 0
+    `);
+    const ingredients = stmt.all(foodId);
+    return { success: true, data: ingredients };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Update food ingredients with complex logic
+export function updateFoodIngredients(foodId, ingredientIds, categoryId = null) {
+  try {
+    const transaction = db.transaction(() => {
+      // First, soft delete existing food-ingredient relationships
+      const deleteStmt = db.prepare(`
+        UPDATE food_ingredients 
+        SET isdeleted = 1, updated_at = ? 
+        WHERE food_id = ?
+      `);
+      deleteStmt.run(new Date().toISOString(), foodId);
+      
+      // Then, create new relationships
+      if (ingredientIds && ingredientIds.length > 0) {
+        const insertStmt = db.prepare(`
+          INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+          VALUES (?, ?, 1, 0, 0, ?, ?)
+        `);
+        
+        for (const ingredientId of ingredientIds) {
+          insertStmt.run(foodId, ingredientId, new Date().toISOString(), new Date().toISOString());
+        }
+      }
+      
+      return { success: true };
+    });
+    
+    return transaction();
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Create food ingredient relationship
+export function createFoodIngredient(foodId, ingredientId) {
+  try {
+    // First check if relationship already exists
+    const checkStmt = db.prepare(`
+      SELECT id FROM food_ingredients 
+      WHERE food_id = ? AND ingredient_id = ? AND isdeleted = 0
+    `);
+    
+    const existingRelationship = checkStmt.get(foodId, ingredientId);
+    
+    if (existingRelationship) {
+      // Return existing relationship ID if found
+      return { success: true, id: existingRelationship.id, message: 'Food-ingredient relationship already exists' };
+    }
+    
+    // If not exists, create new relationship
+    const now = new Date().toISOString();
+    
+    const stmt = db.prepare(`
+      INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+      VALUES (?, ?, 1, 0, 0, ?, ?)
+    `);
+    
+    const result = stmt.run(foodId, ingredientId, now, now);
+    return { success: true, id: result.lastInsertRowid };
+  } catch (error) {
+    console.error('Error creating food-ingredient relationship:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Complex function to handle ingredient workflow
+export function processFoodIngredients(foodId, ingredients, categoryId) {
+  try {
+    const transaction = db.transaction(() => {
+      const results = {
+        created: [],
+        existing: [],
+        errors: []
+      };
+      
+      for (const ingredient of ingredients) {
+        try {
+          let ingredientId = ingredient.id;
+          
+          // If ingredient has no ID, it's a new ingredient that needs to be created
+          if (!ingredientId) {
+            // Step 1: Create ingredient in ingredients table (027)
+            const ingredientStmt = db.prepare(`
+              INSERT INTO ingredients (name, status, isdeleted, issyncronized, created_at, updated_at)
+              VALUES (?, 1, 0, 0, ?, ?)
+            `);
+            
+            const now = new Date().toISOString();
+            const ingredientResult = ingredientStmt.run(ingredient.name, now, now);
+            ingredientId = ingredientResult.lastInsertRowid;
+            
+            console.log(`Created new ingredient: ${ingredient.name} with ID: ${ingredientId}`);
+            
+            // Step 2: Create category-ingredient relationship (028) if categoryId is provided
+            if (categoryId) {
+              const categoryIngredientStmt = db.prepare(`
+                INSERT INTO category_ingredients (category_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+                VALUES (?, ?, 1, 0, 0, ?, ?)
+              `);
+              
+              categoryIngredientStmt.run(categoryId, ingredientId, now, now);
+              console.log(`Created category-ingredient relationship: category ${categoryId} - ingredient ${ingredientId}`);
+            }
+            
+            results.created.push({ name: ingredient.name, id: ingredientId });
+          } else {
+            results.existing.push({ name: ingredient.name, id: ingredientId });
+          }
+          
+          // Step 3: Create food-ingredient relationship (029)
+          const foodIngredientStmt = db.prepare(`
+            INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+            VALUES (?, ?, 1, 0, 0, ?, ?)
+          `);
+          
+          const now = new Date().toISOString();
+          foodIngredientStmt.run(foodId, ingredientId, now, now);
+          console.log(`Created food-ingredient relationship: food ${foodId} - ingredient ${ingredientId}`);
+          
+        } catch (error) {
+          console.error(`Error processing ingredient ${ingredient.name}:`, error);
+          results.errors.push({ name: ingredient.name, error: error.message });
+        }
+      }
+      
+      return { success: true, results };
+    });
+    
+    return transaction();
+  } catch (error) {
+    console.error('Error in processFoodIngredients:', error);
+    return { success: false, message: error.message };
+  }
+} 
+
+// Simple update function for basic food properties (status, isdeleted, recommended, etc.)
+export function updateFoodBasic(id, updates) {
+  try {
+    console.log('Updating food basic properties:', { id, updates });
+    
+    // Build the update query dynamically
+    const fields = [];
+    const values = [];
+    
+    for (const [key, value] of Object.entries(updates)) {
+      fields.push(`${key} = ?`);
+      values.push(value);
+    }
+    
+    // Add updated_at timestamp
+    fields.push('updated_at = ?');
+    values.push(new Date().toISOString());
+    
+    // Add the ID for WHERE clause
+    values.push(id);
+    
+    const sql = `UPDATE food SET ${fields.join(', ')} WHERE id = ?`;
+    console.log('Update SQL:', sql);
+    console.log('Update values:', values);
+    
+    const stmt = db.prepare(sql);
+    const result = stmt.run(...values);
+    
+    console.log('Update result:', result);
+    
+    if (result.changes === 0) {
+      return { success: false, message: 'No food found with the specified ID or no changes made' };
+    }
+    
+    return { success: true, message: 'Food updated successfully', changes: result.changes };
+  } catch (error) {
+    console.error('Error updating food basic properties:', error);
+    return { success: false, message: error.message };
   }
 } 
 

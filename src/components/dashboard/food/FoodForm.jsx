@@ -191,6 +191,17 @@ const FoodForm = ({ food, onSubmit }) => {
     loadSubcategories();
   }, [formData.category_id]);
 
+  // Clear ingredients when category changes (for new food items)
+  useEffect(() => {
+    if (!food) { // Only for new food items, not when editing
+      setSelectedIngredients([]);
+      setIngredientInput('');
+      setIngredientSuggestions([]);
+      setShowIngredientSuggestions(false);
+      setSelectedIngredientSuggestionIndex(-1);
+    }
+  }, [formData.category_id, food]);
+
   useEffect(() => {
     if (food) {
       setFormData({
@@ -200,7 +211,7 @@ const FoodForm = ({ food, onSubmit }) => {
         category_id: food.category_id || '',
         subcategory_id: food.subcategory_id || '',
         type: food.type || '',
-        isPizza: food.isPizza || false,
+        isPizza: food.isPizza === 1 || food.isPizza === true || false,
         allergenIngredients: food.allergenIngredients || '',
         addons: food.addons || [],
         availableFrom: food.availableFrom || '',
@@ -575,6 +586,8 @@ const FoodForm = ({ food, onSubmit }) => {
 
   // Ingredient handling functions (similar to allergens)
   const handleIngredientInputChange = (e) => {
+    if (!formData.category_id) return; // Don't process if category not selected
+    
     const value = e.target.value;
     setIngredientInput(value);
     setSelectedIngredientSuggestionIndex(-1); // Reset selection when typing
@@ -598,6 +611,8 @@ const FoodForm = ({ food, onSubmit }) => {
   };
 
   const handleIngredientFocus = () => {
+    if (!formData.category_id) return; // Don't process if category not selected
+    
     // Show all available ingredients when field is focused
     const availableIngredients = ingredients.filter(ingredient => 
       !selectedIngredients.some(selected => selected.id === ingredient.id)
@@ -607,8 +622,15 @@ const FoodForm = ({ food, onSubmit }) => {
   };
 
   const handleIngredientSelect = (ingredient) => {
+    console.log('Selecting ingredient:', ingredient);
     if (!selectedIngredients.some(selected => selected.id === ingredient.id)) {
-      setSelectedIngredients(prev => [...prev, ingredient]);
+      setSelectedIngredients(prev => {
+        const newIngredients = [...prev, ingredient];
+        console.log('Updated selectedIngredients:', newIngredients);
+        return newIngredients;
+      });
+    } else {
+      console.log('Ingredient already selected:', ingredient.name);
     }
     setIngredientInput('');
     setIngredientSuggestions([]);
@@ -621,6 +643,8 @@ const FoodForm = ({ food, onSubmit }) => {
   };
 
   const handleIngredientKeyDown = async (e) => {
+    if (!formData.category_id) return; // Don't process if category not selected
+    
     if (e.key === 'Enter') {
       e.preventDefault();
       
@@ -637,12 +661,19 @@ const FoodForm = ({ food, onSubmit }) => {
           handleIngredientSelect(existingIngredient);
         } else {
           // Create new ingredient
+          console.log('Creating new ingredient:', ingredientInput.trim());
           try {
             const result = await window.myAPI?.createIngredient({ name: ingredientInput.trim() });
+            console.log('createIngredient result:', result);
             if (result && result.success) {
               const newIngredient = { id: result.id, name: ingredientInput.trim() };
+              console.log('Created new ingredient:', newIngredient);
               setIngredients(prev => [...prev, newIngredient]);
-              setSelectedIngredients(prev => [...prev, newIngredient]);
+              setSelectedIngredients(prev => {
+                const newIngredients = [...prev, newIngredient];
+                console.log('Added new ingredient to selectedIngredients:', newIngredients);
+                return newIngredients;
+              });
               setIngredientInput('');
               setIngredientSuggestions([]);
               setShowIngredientSuggestions(false);
@@ -775,19 +806,36 @@ const FoodForm = ({ food, onSubmit }) => {
         }
 
         // Save food-ingredient relationships if ingredients are selected
-        if (selectedIngredients.length > 0) {
+        if (selectedIngredients.length > 0 && formData.category_id) {
           try {
-            const ingredientIds = selectedIngredients.map(ingredient => ingredient.id);
-            const ingredientResult = await window.myAPI?.updateFoodIngredients(result.food_id, ingredientIds);
+            console.log('Processing ingredients for food:', result.food_id);
+            console.log('Selected ingredients:', selectedIngredients);
+            console.log('Category ID:', formData.category_id);
+            
+            // Use the complex processing function that handles all the logic
+            const ingredientNames = selectedIngredients.map(ingredient => ingredient.name);
+            console.log('Ingredient names to process:', ingredientNames);
+            
+            const ingredientResult = await window.myAPI?.processFoodIngredients(
+              result.food_id, 
+              parseInt(formData.category_id), 
+              ingredientNames
+            );
+            
+            console.log('processFoodIngredients result:', ingredientResult);
             
             if (ingredientResult && ingredientResult.success) {
-              console.log('Food-ingredient relationships saved successfully');
+              console.log('Food-ingredient relationships processed successfully:', ingredientResult.data);
             } else {
-              console.error('Failed to save food-ingredient relationships:', ingredientResult?.message);
+              console.error('Failed to process food-ingredient relationships:', ingredientResult?.message);
             }
           } catch (error) {
-            console.error('Error saving food-ingredient relationships:', error);
+            console.error('Error processing food-ingredient relationships:', error);
           }
+        } else {
+          console.log('No ingredients to save or no category selected');
+          console.log('selectedIngredients.length:', selectedIngredients.length);
+          console.log('formData.category_id:', formData.category_id);
         }
 
         // Save variations and variation options if they exist
@@ -1070,7 +1118,9 @@ const FoodForm = ({ food, onSubmit }) => {
 
           {/* Ingredients Selection */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ingredients</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ingredients {!formData.category_id && <span className="text-gray-400">(Select category first)</span>}
+            </label>
             
             {/* Search Input */}
             <div className="relative">
@@ -1081,8 +1131,9 @@ const FoodForm = ({ food, onSubmit }) => {
                 onKeyDown={handleIngredientKeyDown}
                 onFocus={handleIngredientFocus}
                 onBlur={() => setTimeout(() => setShowIngredientSuggestions(false), 200)}
-                className={getInputClasses('ingredientInput')}
-                placeholder="Click to see all ingredients, type to search"
+                className={`${getInputClasses('ingredientInput')} ${!formData.category_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder={formData.category_id ? "Click to see all ingredients, type to search" : "Select category first to enable ingredients"}
+                disabled={!formData.category_id}
               />
               
               {/* Suggestions dropdown */}

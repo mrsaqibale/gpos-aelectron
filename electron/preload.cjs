@@ -15,9 +15,10 @@ contextBridge.exposeInMainWorld('myAPI', {
 
   // Category
  createCategory : (data) => ipcRenderer.invoke('category:create', data),
-  updateCategory: (id, updates) => ipcRenderer.invoke('category:update', id, updates),
+  updateCategory: (id, updates, originalFilename) => ipcRenderer.invoke('category:update', id, updates, originalFilename),
   getCategoriesByHotel: (hotelId) => ipcRenderer.invoke('category:getByHotel', hotelId),
   getCategoryById: (id) => ipcRenderer.invoke('category:getById', id),
+  getCategoryImage: (imagePath) => ipcRenderer.invoke('category:getImage', imagePath),
 
   // Subcategory
   createSubcategory: (data) => ipcRenderer.invoke('subcategory:create', data),
@@ -55,6 +56,7 @@ contextBridge.exposeInMainWorld('myAPI', {
   // Food
   createFood: (foodData) => ipcRenderer.invoke('food:create', foodData),
   updateFood: (id, data) => ipcRenderer.invoke('food:update', id, data),
+  updateFoodBasic: (id, updates) => ipcRenderer.invoke('food:updateBasic', id, updates),
   getFoodByCategory: (categoryId) => ipcRenderer.invoke('food:getByCategory', categoryId),
   getFoodById: (id) => ipcRenderer.invoke('food:getById', id),
   getFoodBySubcategory: (subcategoryId) => ipcRenderer.invoke('food:getBySubcategory', subcategoryId),
@@ -64,6 +66,9 @@ contextBridge.exposeInMainWorld('myAPI', {
   searchFoodsByName: (name, restaurantId) => ipcRenderer.invoke('food:searchByName', name, restaurantId),
   deleteFoodImage: (foodId) => ipcRenderer.invoke('food:deleteImage', foodId),
   getFoodImage: (imagePath) => ipcRenderer.invoke('food:getImage', imagePath),
+  getFoodIngredients: (foodId) => ipcRenderer.invoke('food:getIngredients', foodId),
+  updateFoodIngredients: (foodId, ingredientIds) => ipcRenderer.invoke('food:updateIngredients', foodId, ingredientIds),
+  processFoodIngredients: (foodId, categoryId, ingredientNames) => ipcRenderer.invoke('food:processIngredients', foodId, categoryId, ingredientNames),
 
   // Variations
   createVariation: (variationData) => ipcRenderer.invoke('variation:create', variationData),

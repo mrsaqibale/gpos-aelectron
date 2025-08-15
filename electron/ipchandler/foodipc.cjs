@@ -23,7 +23,7 @@ const getModelPath = (modelPath) => {
   }
 };
 
-const { createCategory, updateCategory, getCategoryByRestaurantId, getCategoryById } = getModelPath('foods/categories.js');
+const { createCategory, updateCategory, getCategoryByRestaurantId, getCategoryById, getCategoryImage } = getModelPath('foods/categories.js');
 const { createSubcategory, updateSubcategory, getSubcategoriesByCategory, getSubcategoriesByHotelId } = getModelPath('foods/subcategories.js');
 const { createAdon, updateAdon, getAdonsByHotelId } = getModelPath('foods/adons.js');
 const { 
@@ -49,6 +49,7 @@ const {
 const { 
   createFood, 
   updateFood, 
+  updateFoodBasic,
   getFoodByCategory, 
   getFoodById, 
   getFoodBySubcategory, 
@@ -79,14 +80,19 @@ const {
   checkCategoryIngredientExists,
   getIngredientsByCategoryPaginated,
   removeCategoryIngredient,
-  getAllIngredientsWithCategories
+  getAllIngredientsWithCategories,
+  createFoodIngredient,
+  getFoodIngredients,
+  updateFoodIngredients,
+  processFoodIngredients
 } = getModelPath('foods/ingredients.js');
 
 // Category IPC
 ipcMain.handle('category:create', (event, data) => createCategory(data));
-ipcMain.handle('category:update', (event, id, updates) => updateCategory(id, updates));
+ipcMain.handle('category:update', (event, id, updates, originalFilename) => updateCategory(id, updates, originalFilename));
 ipcMain.handle('category:getByHotel', (event, hotelId) => getCategoryByRestaurantId(hotelId));
 ipcMain.handle('category:getById', (event, id) => getCategoryById(id));
+ipcMain.handle('category:getImage', (event, imagePath) => getCategoryImage(imagePath));
 
 // Subcategory IPC
 ipcMain.handle('subcategory:create', (event, data) => createSubcategory(data));
@@ -124,6 +130,7 @@ ipcMain.handle('foodAllergin:getAll', (event) => getAllFoodAllergins());
 // Food IPC
 ipcMain.handle('food:create', (event, foodData) => createFood(foodData));
 ipcMain.handle('food:update', (event, id, data) => updateFood(id, data));
+ipcMain.handle('food:updateBasic', (event, id, updates) => updateFoodBasic(id, updates));
 ipcMain.handle('food:getByCategory', (event, categoryId) => getFoodByCategory(categoryId));
 ipcMain.handle('food:getById', (event, id) => getFoodById(id));
 ipcMain.handle('food:getBySubcategory', (event, subcategoryId) => getFoodBySubcategory(subcategoryId)); 
@@ -132,6 +139,11 @@ ipcMain.handle('food:delete', (event, id) => deleteFood(id));
 ipcMain.handle('food:updatePosition', (event, id, position) => updateFoodPosition(id, position));
 ipcMain.handle('food:searchByName', (event, name, restaurantId) => searchFoodsByName(name, restaurantId));
 ipcMain.handle('food:deleteImage', (event, foodId) => deleteFoodImage(foodId));
+
+// Food-Ingredient relationship IPC
+ipcMain.handle('food:getIngredients', (event, foodId) => getFoodIngredients(foodId));
+ipcMain.handle('food:updateIngredients', (event, foodId, ingredientIds) => updateFoodIngredients(foodId, ingredientIds));
+ipcMain.handle('food:processIngredients', (event, foodId, categoryId, ingredientNames) => processFoodIngredients(foodId, categoryId, ingredientNames));
 
 // Variation IPC
 ipcMain.handle('variation:create', (event, variationData) => createVariation(variationData));
