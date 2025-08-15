@@ -446,39 +446,6 @@ export function deleteFoodImage(foodId) {
   }
 }
 
-// Get food image
-export function getFoodImage(imagePath) {
-  try {
-    if (!imagePath || !imagePath.startsWith('uploads/')) {
-      return { success: false, message: 'Invalid image path' };
-    }
-    
-    const fullPath = getDynamicPath(imagePath);
-    
-    // Security check
-    const uploadsDir = getDynamicPath('uploads');
-    if (!fullPath.startsWith(uploadsDir)) {
-      return { success: false, message: 'Access denied' };
-    }
-    
-    if (fs.existsSync(fullPath)) {
-      const imageBuffer = fs.readFileSync(fullPath);
-      const base64Data = imageBuffer.toString('base64');
-      const ext = path.extname(fullPath).toLowerCase();
-      const mimeType = ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
-      return { 
-        success: true, 
-        data: `data:${mimeType};base64,${base64Data}` 
-      };
-    } else {
-      return { success: false, message: 'Image not found' };
-    }
-  } catch (error) {
-    console.error('Error getting food image:', error);
-    return { success: false, message: error.message };
-  }
-}
-
 // Get food by category id
 export function getFoodByCategory(category_id) {
   try {

@@ -7,6 +7,50 @@ import AddonManagement from '../../components/dashboard/food/AddonManagement';
 import Ingredients from '../../components/dashboard/food/Ingredients';
 import FoodForm from '../../components/dashboard/food/FoodForm';
 
+// FoodImage component to handle image loading
+const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded" }) => {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        if (imagePath && imagePath.startsWith('uploads/')) {
+          const result = await window.myAPI?.getFoodImage(imagePath);
+          if (result && result.success) {
+            setImageSrc(result.data);
+          } else {
+            setError(true);
+          }
+        } else {
+          setError(true);
+        }
+      } catch (error) {
+        console.error('Error loading food image:', error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadImage();
+  }, [imagePath]);
+
+  if (loading) {
+    return <div className={`${className} bg-gray-200 animate-pulse`}></div>;
+  }
+
+  if (error || !imageSrc) {
+    return <div className={`${className} bg-gray-200`}></div>;
+  }
+
+  return <img src={imageSrc} alt={alt} className={className} />;
+};
+
 const FoodList = () => {
   const [activeTab, setActiveTab] = useState('foodList');
   const [showFoodForm, setShowFoodForm] = useState(false);
@@ -338,15 +382,13 @@ const FoodList = () => {
                     <span className="text-sm font-medium text-gray-700">{index + 1}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-10 h-10 rounded object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = "https://via.placeholder.com/40x40?text=🍽️";
-                      }}
-                    />
+                    {item.image ? (
+                      <FoodImage imagePath={item.image} alt={item.name} />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">🍽️</span>
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm font-medium text-gray-800">{item.name}</span>

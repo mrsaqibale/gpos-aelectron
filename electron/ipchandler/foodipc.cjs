@@ -56,8 +56,7 @@ const {
   deleteFood,
   updateFoodPosition,
   searchFoodsByName,
-  deleteFoodImage,
-  getFoodImage
+  deleteFoodImage
 } = getModelPath('foods/food.js');
 
 const { 
@@ -138,7 +137,6 @@ ipcMain.handle('food:delete', (event, id) => deleteFood(id));
 ipcMain.handle('food:updatePosition', (event, id, position) => updateFoodPosition(id, position));
 ipcMain.handle('food:searchByName', (event, name, restaurantId) => searchFoodsByName(name, restaurantId));
 ipcMain.handle('food:deleteImage', (event, foodId) => deleteFoodImage(foodId));
-ipcMain.handle('food:getImage', (event, imagePath) => getFoodImage(imagePath));
 
 // Food-Ingredient relationship IPC
 ipcMain.handle('food:getIngredients', (event, foodId) => getFoodIngredients(foodId));
