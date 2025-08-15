@@ -88,9 +88,10 @@ const {
 
 // Category IPC
 ipcMain.handle('category:create', (event, data) => createCategory(data));
-ipcMain.handle('category:update', (event, id, updates) => updateCategory(id, updates));
+ipcMain.handle('category:update', (event, id, updates, originalFilename) => updateCategory(id, updates, originalFilename));
 ipcMain.handle('category:getByHotel', (event, hotelId) => getCategoryByRestaurantId(hotelId));
 ipcMain.handle('category:getById', (event, id) => getCategoryById(id));
+ipcMain.handle('category:getImage', (event, imagePath) => getCategoryImage(imagePath));
 
 // Subcategory IPC
 ipcMain.handle('subcategory:create', (event, data) => createSubcategory(data));
