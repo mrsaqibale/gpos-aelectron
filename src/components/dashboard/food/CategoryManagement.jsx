@@ -399,23 +399,26 @@ const CategoryManagement = () => {
                       />
                     </label>
                     {newCategory.image ? (
-                      <img
-                        src={newCategory.image instanceof File
-                          ? URL.createObjectURL(newCategory.image)
-                          : newCategory.image.startsWith('uploads/')
-                          ? null // Will be handled by CategoryImage component
-                          : `data:image/png;base64,${newCategory.image}`}
-                        alt="Selected"
-                        className="w-16 h-16 object-cover rounded mt-2"
-                      />
+                      newCategory.image instanceof File ? (
+                        <img
+                          src={URL.createObjectURL(newCategory.image)}
+                          alt="Selected"
+                          className="w-16 h-16 object-cover rounded mt-2"
+                        />
+                      ) : typeof newCategory.image === 'string' && newCategory.image.startsWith('uploads/') ? (
+                        <CategoryImage 
+                          imagePath={newCategory.image} 
+                          alt="Selected" 
+                          className="w-16 h-16 object-cover rounded mt-2" 
+                        />
+                      ) : typeof newCategory.image === 'string' ? (
+                        <img
+                          src={`data:image/png;base64,${newCategory.image}`}
+                          alt="Selected"
+                          className="w-16 h-16 object-cover rounded mt-2"
+                        />
+                      ) : null
                     ) : null}
-                    {newCategory.image && newCategory.image.startsWith('uploads/') && (
-                      <CategoryImage 
-                        imagePath={newCategory.image} 
-                        alt="Selected" 
-                        className="w-16 h-16 object-cover rounded mt-2" 
-                      />
-                    )}
                   </div>
                   <p className="mt-1 text-xs text-gray-500">Recommended: 200x200px, PNG, JPG up to 2MB</p>
                 </div>
