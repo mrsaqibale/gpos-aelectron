@@ -292,6 +292,162 @@ export function removeCategoryIngredient(categoryId, ingredientId) {
   }
 }
 
+// Create food-ingredient relationship
+export function createFoodIngredient(foodId, ingredientId) {
+  try {
+    // First check if relationship already exists
+    const checkStmt = db.prepare(`
+      SELECT id FROM food_ingredients 
+      WHERE food_id = ? AND ingredient_id = ? AND isdeleted = 0
+    `);
+    
+    const existingRelationship = checkStmt.get(foodId, ingredientId);
+    
+    if (existingRelationship) {
+      // Return existing relationship ID if found
+      return { success: true, id: existingRelationship.id, message: 'Food-ingredient relationship already exists' };
+    }
+    
+    // If not exists, create new relationship
+    const now = new Date().toISOString();
+    
+    const stmt = db.prepare(`
+      INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+      VALUES (?, ?, 1, 0, 0, ?, ?)
+    `);
+    
+    const result = stmt.run(foodId, ingredientId, now, now);
+    return { success: true, id: result.lastInsertRowid };
+  } catch (error) {
+    console.error('Error creating food-ingredient relationship:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Get food ingredients
+export function getFoodIngredients(foodId) {
+  try {
+    const stmt = db.prepare(`
+      SELECT i.* 
+      FROM ingredients i
+      INNER JOIN food_ingredients fi ON i.id = fi.ingredient_id
+      WHERE fi.food_id = ? AND i.isdeleted = 0 AND fi.isdeleted = 0
+    `);
+    const ingredients = stmt.all(foodId);
+    return { success: true, data: ingredients };
+  } catch (error) {
+    console.error('Error getting food ingredients:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Update food ingredients (replace all existing relationships)
+export function updateFoodIngredients(foodId, ingredientIds) {
+  try {
+    const transaction = db.transaction(() => {
+      // First, soft delete existing food-ingredient relationships
+      const deleteStmt = db.prepare(`
+        UPDATE food_ingredients 
+        SET isdeleted = 1, updated_at = ? 
+        WHERE food_id = ?
+      `);
+      deleteStmt.run(new Date().toISOString(), foodId);
+      
+      // Then, create new relationships
+      if (ingredientIds && ingredientIds.length > 0) {
+        const insertStmt = db.prepare(`
+          INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+          VALUES (?, ?, 1, 0, 0, ?, ?)
+        `);
+        
+        for (const ingredientId of ingredientIds) {
+          insertStmt.run(foodId, ingredientId, new Date().toISOString(), new Date().toISOString());
+        }
+      }
+      
+      return { success: true };
+    });
+    
+    return transaction();
+  } catch (error) {
+    console.error('Error updating food ingredients:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Complex function to handle ingredient processing for food
+export function processFoodIngredients(foodId, categoryId, ingredientNames) {
+  try {
+    const transaction = db.transaction(() => {
+      const processedIngredients = [];
+      
+      for (const ingredientName of ingredientNames) {
+        let ingredientId = null;
+        
+        // 1. Check if ingredient already exists in ingredients table
+        const checkIngredientStmt = db.prepare(`
+          SELECT id FROM ingredients 
+          WHERE name = ? AND isdeleted = 0
+        `);
+        const existingIngredient = checkIngredientStmt.get(ingredientName);
+        
+        if (existingIngredient) {
+          // Use existing ingredient
+          ingredientId = existingIngredient.id;
+        } else {
+          // 2. Create new ingredient in ingredients table
+          const now = new Date().toISOString();
+          const createIngredientStmt = db.prepare(`
+            INSERT INTO ingredients (name, status, isdeleted, issyncronized, created_at, updated_at)
+            VALUES (?, 1, 0, 0, ?, ?)
+          `);
+          const ingredientResult = createIngredientStmt.run(ingredientName, now, now);
+          ingredientId = ingredientResult.lastInsertRowid;
+        }
+        
+        // 3. Create category-ingredient relationship (if not exists)
+        const checkCategoryIngredientStmt = db.prepare(`
+          SELECT id FROM category_ingredients 
+          WHERE category_id = ? AND ingredient_id = ? AND isdeleted = 0
+        `);
+        const existingCategoryIngredient = checkCategoryIngredientStmt.get(categoryId, ingredientId);
+        
+        if (!existingCategoryIngredient) {
+          const createCategoryIngredientStmt = db.prepare(`
+            INSERT INTO category_ingredients (category_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+            VALUES (?, ?, 1, 0, 0, ?, ?)
+          `);
+          createCategoryIngredientStmt.run(categoryId, ingredientId, now, now);
+        }
+        
+        // 4. Create food-ingredient relationship (if not exists)
+        const checkFoodIngredientStmt = db.prepare(`
+          SELECT id FROM food_ingredients 
+          WHERE food_id = ? AND ingredient_id = ? AND isdeleted = 0
+        `);
+        const existingFoodIngredient = checkFoodIngredientStmt.get(foodId, ingredientId);
+        
+        if (!existingFoodIngredient) {
+          const createFoodIngredientStmt = db.prepare(`
+            INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+            VALUES (?, ?, 1, 0, 0, ?, ?)
+          `);
+          createFoodIngredientStmt.run(foodId, ingredientId, now, now);
+        }
+        
+        processedIngredients.push({ id: ingredientId, name: ingredientName });
+      }
+      
+      return { success: true, data: processedIngredients };
+    });
+    
+    return transaction();
+  } catch (error) {
+    console.error('Error processing food ingredients:', error);
+    return { success: false, message: error.message };
+  }
+}
+
 // Get all ingredients with their category information
 export function getAllIngredientsWithCategories() {
   try {

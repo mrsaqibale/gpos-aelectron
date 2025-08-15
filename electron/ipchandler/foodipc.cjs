@@ -82,7 +82,11 @@ const {
   checkCategoryIngredientExists,
   getIngredientsByCategoryPaginated,
   removeCategoryIngredient,
-  getAllIngredientsWithCategories
+  getAllIngredientsWithCategories,
+  createFoodIngredient,
+  getFoodIngredients,
+  updateFoodIngredients,
+  processFoodIngredients
 } = getModelPath('foods/ingredients.js');
 
 // Category IPC
@@ -139,7 +143,7 @@ ipcMain.handle('food:deleteImage', (event, foodId) => deleteFoodImage(foodId));
 // Food-Ingredient relationship IPC
 ipcMain.handle('food:getIngredients', (event, foodId) => getFoodIngredients(foodId));
 ipcMain.handle('food:updateIngredients', (event, foodId, ingredientIds) => updateFoodIngredients(foodId, ingredientIds));
-ipcMain.handle('food:processIngredients', (event, foodId, ingredients, categoryId) => processFoodIngredients(foodId, ingredients, categoryId));
+ipcMain.handle('food:processIngredients', (event, foodId, categoryId, ingredientNames) => processFoodIngredients(foodId, categoryId, ingredientNames));
 
 // Variation IPC
 ipcMain.handle('variation:create', (event, variationData) => createVariation(variationData));

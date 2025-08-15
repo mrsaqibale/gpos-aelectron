@@ -575,6 +575,8 @@ const FoodForm = ({ food, onSubmit }) => {
 
   // Ingredient handling functions (similar to allergens)
   const handleIngredientInputChange = (e) => {
+    if (!formData.category_id) return; // Don't process if category not selected
+    
     const value = e.target.value;
     setIngredientInput(value);
     setSelectedIngredientSuggestionIndex(-1); // Reset selection when typing
@@ -598,6 +600,8 @@ const FoodForm = ({ food, onSubmit }) => {
   };
 
   const handleIngredientFocus = () => {
+    if (!formData.category_id) return; // Don't process if category not selected
+    
     // Show all available ingredients when field is focused
     const availableIngredients = ingredients.filter(ingredient => 
       !selectedIngredients.some(selected => selected.id === ingredient.id)
@@ -1070,7 +1074,9 @@ const FoodForm = ({ food, onSubmit }) => {
 
           {/* Ingredients Selection */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ingredients</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ingredients {!formData.category_id && <span className="text-gray-400">(Select category first)</span>}
+            </label>
             
             {/* Search Input */}
             <div className="relative">
@@ -1081,8 +1087,9 @@ const FoodForm = ({ food, onSubmit }) => {
                 onKeyDown={handleIngredientKeyDown}
                 onFocus={handleIngredientFocus}
                 onBlur={() => setTimeout(() => setShowIngredientSuggestions(false), 200)}
-                className={getInputClasses('ingredientInput')}
-                placeholder="Click to see all ingredients, type to search"
+                className={`${getInputClasses('ingredientInput')} ${!formData.category_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder={formData.category_id ? "Click to see all ingredients, type to search" : "Select category first to enable ingredients"}
+                disabled={!formData.category_id}
               />
               
               {/* Suggestions dropdown */}

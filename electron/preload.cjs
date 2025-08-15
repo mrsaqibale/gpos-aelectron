@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('myAPI', {
   getFoodImage: (imagePath) => ipcRenderer.invoke('food:getImage', imagePath),
   getFoodIngredients: (foodId) => ipcRenderer.invoke('food:getIngredients', foodId),
   updateFoodIngredients: (foodId, ingredientIds) => ipcRenderer.invoke('food:updateIngredients', foodId, ingredientIds),
+  processFoodIngredients: (foodId, categoryId, ingredientNames) => ipcRenderer.invoke('food:processIngredients', foodId, categoryId, ingredientNames),
 
   // Variations
   createVariation: (variationData) => ipcRenderer.invoke('variation:create', variationData),
