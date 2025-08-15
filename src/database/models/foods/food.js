@@ -719,6 +719,47 @@ export function processFoodIngredients(foodId, ingredients, categoryId) {
   }
 } 
 
+// Simple update function for basic food properties (status, isdeleted, recommended, etc.)
+export function updateFoodBasic(id, updates) {
+  try {
+    console.log('Updating food basic properties:', { id, updates });
+    
+    // Build the update query dynamically
+    const fields = [];
+    const values = [];
+    
+    for (const [key, value] of Object.entries(updates)) {
+      fields.push(`${key} = ?`);
+      values.push(value);
+    }
+    
+    // Add updated_at timestamp
+    fields.push('updated_at = ?');
+    values.push(new Date().toISOString());
+    
+    // Add the ID for WHERE clause
+    values.push(id);
+    
+    const sql = `UPDATE food SET ${fields.join(', ')} WHERE id = ?`;
+    console.log('Update SQL:', sql);
+    console.log('Update values:', values);
+    
+    const stmt = db.prepare(sql);
+    const result = stmt.run(...values);
+    
+    console.log('Update result:', result);
+    
+    if (result.changes === 0) {
+      return { success: false, message: 'No food found with the specified ID or no changes made' };
+    }
+    
+    return { success: true, message: 'Food updated successfully', changes: result.changes };
+  } catch (error) {
+    console.error('Error updating food basic properties:', error);
+    return { success: false, message: error.message };
+  }
+} 
+
 
 
 

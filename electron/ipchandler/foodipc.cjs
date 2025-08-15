@@ -49,6 +49,7 @@ const {
 const { 
   createFood, 
   updateFood, 
+  updateFoodBasic,
   getFoodByCategory, 
   getFoodById, 
   getFoodBySubcategory, 
@@ -129,6 +130,7 @@ ipcMain.handle('foodAllergin:getAll', (event) => getAllFoodAllergins());
 // Food IPC
 ipcMain.handle('food:create', (event, foodData) => createFood(foodData));
 ipcMain.handle('food:update', (event, id, data) => updateFood(id, data));
+ipcMain.handle('food:updateBasic', (event, id, updates) => updateFoodBasic(id, updates));
 ipcMain.handle('food:getByCategory', (event, categoryId) => getFoodByCategory(categoryId));
 ipcMain.handle('food:getById', (event, id) => getFoodById(id));
 ipcMain.handle('food:getBySubcategory', (event, subcategoryId) => getFoodBySubcategory(subcategoryId)); 

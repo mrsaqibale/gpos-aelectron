@@ -19,7 +19,8 @@ const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded
         setLoading(true);
         setError(false);
         
-        if (imagePath && imagePath.startsWith('uploads/')) {
+        // Check if imagePath exists and is a valid string
+        if (imagePath && typeof imagePath === 'string' && imagePath.startsWith('uploads/')) {
           const result = await window.myAPI?.getFoodImage(imagePath);
           if (result && result.success) {
             setImageSrc(result.data);
@@ -37,7 +38,13 @@ const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded
       }
     };
 
-    loadImage();
+    // Only load image if imagePath is provided
+    if (imagePath) {
+      loadImage();
+    } else {
+      setLoading(false);
+      setError(true);
+    }
   }, [imagePath]);
 
   if (loading) {
@@ -76,7 +83,7 @@ const FoodList = () => {
         const transformedData = result.data.map(food => ({
           id: food.id,
           name: food.name,
-          image: food.image || null, // Use null instead of placeholder URL
+          image: food.image && typeof food.image === 'string' && food.image.trim() !== '' ? food.image : null,
           category: food.category_name || 'Uncategorized',
           price: food.price || 0,
           type: food.veg === 1 ? 'Veg' : 'Non-Veg',
@@ -116,9 +123,16 @@ const FoodList = () => {
 
   const handleDeleteFood = async (id) => {
     try {
+      console.log('Attempting to delete food with ID:', id);
+      console.log('window.myAPI available:', !!window.myAPI);
+      console.log('deleteFood available:', !!window.myAPI?.deleteFood);
+      
       // Call the backend API to delete the food
-      const result = await window.myAPI?.updateFood(id, { isdeleted: 1 });
+      const result = await window.myAPI?.deleteFood(id);
+      console.log('Delete result:', result);
+      
       if (result && result.success) {
+        console.log('Food deleted successfully');
         // Refresh the food list from database
         fetchFoodData();
         setShowDeleteConfirm(false);
@@ -129,7 +143,7 @@ const FoodList = () => {
       }
     } catch (error) {
       console.error('Error deleting food:', error);
-      alert('Error deleting food');
+      alert('Error deleting food: ' + error.message);
     }
   };
 
@@ -143,7 +157,7 @@ const FoodList = () => {
       const newRecommended = !currentFood.recommended;
       
       // Call the backend API to update the recommended status
-      const result = await window.myAPI?.updateFood(id, { recommended: newRecommended ? 1 : 0 });
+      const result = await window.myAPI?.updateFood(id, { foodData: { recommended: newRecommended ? 1 : 0 } });
       if (result && result.success) {
         // Refresh the food list from database
         fetchFoodData();
@@ -165,7 +179,7 @@ const FoodList = () => {
       const newStatus = !currentFood.status;
       
       // Call the backend API to update the status
-      const result = await window.myAPI?.updateFood(id, { status: newStatus ? 1 : 0 });
+      const result = await window.myAPI?.updateFood(id, { foodData: { status: newStatus ? 1 : 0 } });
       if (result && result.success) {
         // Refresh the food list from database
         fetchFoodData();
@@ -415,7 +429,7 @@ const FoodList = () => {
                     <span className="text-sm font-medium text-gray-700">{index + 1}</span>
                   </td>
                   <td className="py-3 px-4">
-                    {item.image ? (
+                    {item.image && typeof item.image === 'string' && item.image.trim() !== '' ? (
                       <FoodImage imagePath={item.image} alt={item.name} />
                     ) : (
                       <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">

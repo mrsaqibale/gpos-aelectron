@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld('myAPI', {
   // Food
   createFood: (foodData) => ipcRenderer.invoke('food:create', foodData),
   updateFood: (id, data) => ipcRenderer.invoke('food:update', id, data),
+  updateFoodBasic: (id, updates) => ipcRenderer.invoke('food:updateBasic', id, updates),
   getFoodByCategory: (categoryId) => ipcRenderer.invoke('food:getByCategory', categoryId),
   getFoodById: (id) => ipcRenderer.invoke('food:getById', id),
   getFoodBySubcategory: (subcategoryId) => ipcRenderer.invoke('food:getBySubcategory', subcategoryId),
