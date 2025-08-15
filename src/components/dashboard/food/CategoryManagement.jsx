@@ -51,7 +51,8 @@ const CategoryManagement = () => {
     setNewCategory({
       name: '',
       position: '',
-      image: null
+      image: null,
+      originalFilename: null
     });
     setNameError(''); // Clear any previous error messages
     setShowForm(true);
@@ -81,10 +82,14 @@ const CategoryManagement = () => {
   };
 
   const handleFileChange = (e) => {
-    setNewCategory(prev => ({
-      ...prev,
-      image: e.target.files[0]
-    }));
+    const file = e.target.files[0];
+    if (file) {
+      setNewCategory(prev => ({
+        ...prev,
+        image: file,
+        originalFilename: file.name
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
