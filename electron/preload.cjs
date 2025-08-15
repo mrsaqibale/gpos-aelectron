@@ -15,9 +15,10 @@ contextBridge.exposeInMainWorld('myAPI', {
 
   // Category
  createCategory : (data) => ipcRenderer.invoke('category:create', data),
-  updateCategory: (id, updates) => ipcRenderer.invoke('category:update', id, updates),
+  updateCategory: (id, updates, originalFilename) => ipcRenderer.invoke('category:update', id, updates, originalFilename),
   getCategoriesByHotel: (hotelId) => ipcRenderer.invoke('category:getByHotel', hotelId),
   getCategoryById: (id) => ipcRenderer.invoke('category:getById', id),
+  getCategoryImage: (imagePath) => ipcRenderer.invoke('category:getImage', imagePath),
 
   // Subcategory
   createSubcategory: (data) => ipcRenderer.invoke('subcategory:create', data),
