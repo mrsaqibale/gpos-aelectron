@@ -88,19 +88,43 @@ export function createCategory({ name, image, parent_id, position, status, prior
 }
 
 // Update a category
-export function updateCategory(id, updates) {
-  const fields = [];
-  const values = [];
-  for (const key in updates) {
-    fields.push(`${key} = ?`);
-    values.push(updates[key]);
+export function updateCategory(id, updates, originalFilename = null) {
+  try {
+    // Get current category to check if image needs to be updated
+    const currentCategory = getCategoryById(id);
+    if (!currentCategory) {
+      return { success: false, message: 'Category not found' };
+    }
+    
+    // Handle image update
+    if (updates.image && originalFilename) {
+      // Delete old image file if it exists
+      if (currentCategory.image) {
+        deleteImageFile(currentCategory.image);
+      }
+      
+      // Save new image file
+      updates.image = saveImageFile(updates.image, originalFilename);
+    }
+    
+    const fields = [];
+    const values = [];
+    for (const key in updates) {
+      fields.push(`${key} = ?`);
+      values.push(updates[key]);
+    }
+    fields.push('updated_at = ?');
+    values.push(new Date().toISOString());
+    const sql = `UPDATE categories SET ${fields.join(', ')} WHERE id = ?`;
+    values.push(id);
+    const stmt = db.prepare(sql);
+    const result = stmt.run(...values);
+    
+    return { success: true, changes: result.changes };
+  } catch (error) {
+    console.error('Error updating category:', error);
+    return { success: false, message: error.message };
   }
-  fields.push('updated_at = ?');
-  values.push(new Date().toISOString());
-  const sql = `UPDATE categories SET ${fields.join(', ')} WHERE id = ?`;
-  values.push(id);
-  const stmt = db.prepare(sql);
-  return stmt.run(...values);
 }
 
 // Get category by id
