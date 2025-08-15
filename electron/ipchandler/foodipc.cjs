@@ -56,10 +56,7 @@ const {
   deleteFood,
   updateFoodPosition,
   searchFoodsByName,
-  deleteFoodImage,
-  getFoodIngredients,
-  updateFoodIngredients,
-  processFoodIngredients
+  deleteFoodImage
 } = getModelPath('foods/food.js');
 
 const { 
