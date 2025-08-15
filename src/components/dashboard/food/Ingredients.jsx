@@ -140,7 +140,12 @@ const Ingredients = () => {
   const addIngredientToCategory = async (categoryId, ingredientId) => {
     try {
       const result = await window.myAPI?.createCategoryIngredient(categoryId, ingredientId);
-      return result.success;
+      if (result.success) {
+        return true;
+      } else {
+        console.error('Failed to add ingredient to category:', result.message);
+        return false;
+      }
     } catch (error) {
       console.error('Error adding ingredient to category:', error);
       return false;
@@ -152,6 +157,7 @@ const Ingredients = () => {
     try {
       const result = await window.myAPI?.createIngredient({ name, status: 1 });
       if (result.success) {
+        // Return the ID whether it's a new or existing ingredient
         return result.id;
       }
       return null;
@@ -218,13 +224,33 @@ const Ingredients = () => {
   };
 
   const handleCustomIngredientChange = (e) => {
-    setCustomIngredient(e.target.value);
+    const value = e.target.value;
+    setCustomIngredient(value);
+    setSearchTerm(value); // Also update searchTerm to trigger search
   };
 
   const handleCustomIngredientKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      addCustomIngredient();
+      
+      if (selectedDropdownIndex >= 0 && filteredIngredients[selectedDropdownIndex]) {
+        // Select the highlighted ingredient from dropdown
+        handleIngredientSelect(filteredIngredients[selectedDropdownIndex]);
+      } else if (customIngredient.trim()) {
+        // Create new custom ingredient
+        addCustomIngredient();
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedDropdownIndex(prev => 
+        prev < filteredIngredients.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedDropdownIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false);
+      setSelectedDropdownIndex(-1);
     }
   };
 
@@ -295,6 +321,7 @@ const Ingredients = () => {
       setSelectedIngredients([...selectedIngredients, ingredient]);
     }
     setSearchTerm('');
+    setCustomIngredient(''); // Also clear the custom ingredient field
     setFilteredIngredients([]);
     setShowDropdown(false);
     setSelectedDropdownIndex(-1);
@@ -320,7 +347,7 @@ const Ingredients = () => {
       // Create new ingredient
       const ingredientId = await createNewIngredient(searchTerm.trim());
       if (!ingredientId) {
-        showAlert('Failed to create ingredient', 'error');
+        showAlert('Unable to process ingredient creation', 'error');
         return;
       }
 
@@ -342,11 +369,11 @@ const Ingredients = () => {
         // Show success message
         showAlert(`Ingredient "${searchTerm.trim()}" added successfully!`, 'success');
       } else {
-        showAlert('Failed to add ingredient to category', 'error');
+        showAlert('Unable to add ingredient to category', 'error');
       }
     } catch (error) {
       console.error('Error creating ingredient:', error);
-      showAlert('Error creating ingredient', 'error');
+      showAlert('An error occurred while processing the ingredient', 'error');
     } finally {
       setLoading(false);
     }
@@ -391,11 +418,11 @@ const Ingredients = () => {
         setUpdateIngredientCategory('');
         showAlert('Ingredient updated successfully!', 'success');
       } else {
-        showAlert('Failed to update ingredient', 'error');
+        showAlert('Unable to update ingredient', 'error');
       }
     } catch (error) {
       console.error('Error updating ingredient:', error);
-      showAlert('Error updating ingredient', 'error');
+      showAlert('An error occurred while updating the ingredient', 'error');
     } finally {
       setLoading(false);
     }
@@ -441,15 +468,29 @@ const Ingredients = () => {
     }
   };
 
-  const handleCustomIngredientSubmit = async (e) => {
+  const handleUnifiedIngredientSubmit = async (e) => {
     e.preventDefault();
-    if (customIngredients.length === 0 || !selectedCategory) return;
+    if ((selectedIngredients.length === 0 && customIngredients.length === 0) || !selectedCategory) return;
 
     try {
       setLoading(true);
       let successCount = 0;
+      let alreadyExistsIngredients = [];
       let failedIngredients = [];
 
+      // Process selected ingredients (existing ingredients)
+      for (const ingredient of selectedIngredients) {
+        // Check if already exists
+        const exists = await checkIngredientExists(selectedCategory, ingredient.id);
+        if (!exists) {
+          const added = await addIngredientToCategory(selectedCategory, ingredient.id);
+          if (added) successCount++;
+        } else {
+          alreadyExistsIngredients.push(ingredient.name);
+        }
+      }
+
+      // Process custom ingredients (new ingredients)
       for (const ingredientName of customIngredients) {
         // Create new ingredient
         const ingredientId = await createNewIngredient(ingredientName);
@@ -468,10 +509,16 @@ const Ingredients = () => {
 
       if (successCount > 0) {
         await fetchIngredients();
-        // Clear custom ingredients but keep modal open
+        // Clear all ingredients but keep modal open
+        setSelectedIngredients([]);
         setCustomIngredients([]);
         // Show success message
-        showAlert(`${successCount} custom ingredient(s) added successfully!`, 'success');
+        showAlert(`${successCount} ingredient(s) added successfully!`, 'success');
+      }
+
+      if (alreadyExistsIngredients.length > 0) {
+        const ingredientNames = alreadyExistsIngredients.join(', ');
+        showAlert(`${alreadyExistsIngredients.length} ingredient(s) were already in this category: ${ingredientNames}`, 'warning');
       }
 
       if (failedIngredients.length > 0) {
@@ -479,8 +526,8 @@ const Ingredients = () => {
         showAlert(`Failed to add ${failedIngredients.length} ingredient(s): ${ingredientNames}`, 'error');
       }
     } catch (error) {
-      console.error('Error adding custom ingredients to category:', error);
-      showAlert('Error adding custom ingredients to category', 'error');
+      console.error('Error adding ingredients to category:', error);
+      showAlert('Error adding ingredients to category', 'error');
     } finally {
       setLoading(false);
     }
@@ -693,14 +740,14 @@ const Ingredients = () => {
                     Add Custom Ingredient
                   </label>
                   <div className="relative">
-                                         <input
-                       type="text"
-                       value={customIngredient}
-                       onChange={handleCustomIngredientChange}
-                       onKeyDown={handleCustomIngredientKeyDown}
-                       placeholder="Type custom ingredient name and press Enter to add..."
-                       className="w-full px-3 py-2 border rounded-md focus:outline-none"
-                       style={{
+                    <input
+                      type="text"
+                      value={customIngredient}
+                      onChange={handleCustomIngredientChange}
+                      onKeyDown={handleCustomIngredientKeyDown}
+                      placeholder="Type ingredient name to search or add custom ingredient..."
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none"
+                      style={{
                         borderColor: selectedCategory
                           ? themeColors.primaryBg
                           : '#d1d5db',
@@ -708,30 +755,75 @@ const Ingredients = () => {
                           ? `0 0 0 2px ${themeColors.primaryBg}`
                           : undefined
                       }}
-                     />
+                    />
+                    
+                    {/* Dropdown Suggestions */}
+                    {showDropdown && filteredIngredients.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {filteredIngredients.map((ingredient, index) => (
+                          <div
+                            key={ingredient.id}
+                            className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${
+                              index === selectedDropdownIndex ? 'bg-gray-100' : ''
+                            }`}
+                            onClick={() => handleIngredientSelect(ingredient)}
+                          >
+                            <span className="text-sm text-gray-800">{ingredient.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  
-                  {/* Custom Ingredients Tags */}
-                  {customIngredients.length > 0 && (
-                    <div className="mt-2">
+                </div>
+                
+                {/* All Ingredients List */}
+                  {(selectedIngredients.length > 0 || customIngredients.length > 0) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Ingredients to Add ({(selectedIngredients.length + customIngredients.length)})
+                      </label>
                       <div className="flex flex-wrap gap-2">
+                        {/* Selected Ingredients */}
+                        {selectedIngredients.map((ingredient) => (
+                          <span
+                            key={ingredient.id}
+                            className="inline-flex items-center px-3 py-1 rounded-full text-sm border-2"
+                            style={{ 
+                              backgroundColor: 'white',
+                              color: themeColors.primary,
+                              borderColor: themeColors.primary
+                            }}
+                          >
+                            {ingredient.name}
+                            <button
+                              type="button"
+                              onClick={() => removeSelectedIngredient(ingredient.id)}
+                              className="ml-2 hover:opacity-70"
+                              style={{ color: themeColors.primary }}
+                            >
+                              <X size={14} />
+                            </button>
+                          </span>
+                        ))}
+                        
+                        {/* Custom Ingredients */}
                         {customIngredients.map((ingredient, index) => (
                           <span
-                            key={index}
+                            key={`custom-${index}`}
                             className="inline-flex items-center px-3 py-1 rounded-full text-sm border"
-                                                         style={{ 
-                               backgroundColor: themeColors.primaryExtraLight,
-                               color: themeColors.primary,
-                               borderColor: themeColors.primary
-                             }}
+                            style={{ 
+                              backgroundColor: themeColors.primaryExtraLight,
+                              color: themeColors.primary,
+                              borderColor: themeColors.primary
+                            }}
                           >
                             {ingredient}
-                                                         <button
-                               type="button"
-                               onClick={() => removeCustomIngredient(index)}
-                               className="ml-2 hover:opacity-70"
-                               style={{ color: themeColors.primary }}
-                             >
+                            <button
+                              type="button"
+                              onClick={() => removeCustomIngredient(index)}
+                              className="ml-2 hover:opacity-70"
+                              style={{ color: themeColors.primary }}
+                            >
                               <X size={14} />
                             </button>
                           </span>
@@ -739,63 +831,18 @@ const Ingredients = () => {
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Selected Ingredients */}
-                {selectedIngredients.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Selected Ingredients ({selectedIngredients.length})
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedIngredients.map((ingredient) => (
-                        <span
-                          key={ingredient.id}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-sm border-2"
-                                                     style={{ 
-                             backgroundColor: 'white',
-                             color: themeColors.primary,
-                             borderColor: themeColors.primary
-                           }}
-                        >
-                          {ingredient.name}
-                                                     <button
-                             type="button"
-                             onClick={() => removeSelectedIngredient(ingredient.id)}
-                             className="ml-2 hover:opacity-70"
-                             style={{ color: themeColors.primary }}
-                           >
-                            <X size={14} />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
+                {/* Action Button */}
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
-                  {selectedIngredients.length > 0 && (
-                    <button
-                      onClick={handleExistingIngredientSubmit}
-                      disabled={loading || !selectedCategory}
-                      className="flex-1 px-4 py-3 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
-                      style={{ 
-                        backgroundColor: (loading || !selectedCategory) ? '#9CA3AF' : themeColors.primary
-                      }}
-                    >
-                      {loading ? 'Adding...' : `Add ${selectedIngredients.length} Ingredient(s)`}
-                    </button>
-                  )}
                   <button
-                    onClick={handleCustomIngredientSubmit}
-                    disabled={loading || !selectedCategory || customIngredients.length === 0}
+                    onClick={handleUnifiedIngredientSubmit}
+                    disabled={loading || !selectedCategory || (selectedIngredients.length === 0 && customIngredients.length === 0)}
                     className="flex-1 px-4 py-3 text-white text-sm font-medium rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
                     style={{ 
-                      backgroundColor: (loading || !selectedCategory || customIngredients.length === 0) ? '#9CA3AF' : themeColors.primary
+                      backgroundColor: (loading || !selectedCategory || (selectedIngredients.length === 0 && customIngredients.length === 0)) ? '#9CA3AF' : themeColors.primary
                     }}
                   >
-                    {loading ? 'Adding...' : `Add ${customIngredients.length} Custom Ingredient(s)`}
+                    {loading ? 'Adding...' : `Add ${selectedIngredients.length + customIngredients.length} Ingredient(s)`}
                   </button>
                 </div>
               </div>
