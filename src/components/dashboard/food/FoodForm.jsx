@@ -11,6 +11,7 @@ const FoodForm = ({ food, onSubmit }) => {
     category_id: '',
     subcategory_id: '',
     veg: 0, // 0 for Non-Veg, 1 for Veg
+    isPizza: false, // New field for pizza toggle
     status: 'active',
     restaurant_id: 1,
     position: 0,
@@ -55,6 +56,15 @@ const FoodForm = ({ food, onSubmit }) => {
   const [adonSuggestions, setAdonSuggestions] = useState([]);
   const [showAdonSuggestions, setShowAdonSuggestions] = useState(false);
   const [selectedAdonSuggestionIndex, setSelectedAdonSuggestionIndex] = useState(-1);
+  
+  // Ingredients state variables (similar to allergens)
+  const [ingredients, setIngredients] = useState([]);
+  const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [ingredientInput, setIngredientInput] = useState('');
+  const [ingredientSuggestions, setIngredientSuggestions] = useState([]);
+  const [showIngredientSuggestions, setShowIngredientSuggestions] = useState(false);
+  const [selectedIngredientSuggestionIndex, setSelectedIngredientSuggestionIndex] = useState(-1);
+  
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -128,6 +138,29 @@ const FoodForm = ({ food, onSubmit }) => {
     loadAdons();
   }, []);
 
+  // Load ingredients
+  useEffect(() => {
+    const loadIngredients = async () => {
+      try {
+        console.log('Loading ingredients...');
+        const result = await window.myAPI?.getAllIngredients();
+        console.log('Ingredients API result:', result);
+        if (result && result.success) {
+          // Filter ingredients to only show active ones (status = 1)
+          const activeIngredients = (result.data || []).filter(ingredient => ingredient.status === 1);
+          setIngredients(activeIngredients);
+          console.log('Active ingredients loaded:', activeIngredients);
+        } else {
+          console.error('Failed to load ingredients:', result?.message);
+        }
+      } catch (error) {
+        console.error('Error loading ingredients:', error);
+      }
+    };
+
+    loadIngredients();
+  }, []);
+
   // Load subcategories when category changes
   useEffect(() => {
     const loadSubcategories = async () => {
@@ -167,6 +200,7 @@ const FoodForm = ({ food, onSubmit }) => {
         category_id: food.category_id || '',
         subcategory_id: food.subcategory_id || '',
         type: food.type || '',
+        isPizza: food.isPizza || false,
         allergenIngredients: food.allergenIngredients || '',
         addons: food.addons || [],
         availableFrom: food.availableFrom || '',
@@ -236,6 +270,25 @@ const FoodForm = ({ food, onSubmit }) => {
           }
         };
         loadFoodAdons();
+      }
+
+      // Load existing ingredients if editing
+      if (food.ingredients && food.ingredients.length > 0) {
+        // If ingredients are already loaded in the food object
+        setSelectedIngredients(food.ingredients);
+      } else if (food.id) {
+        // If not loaded, fetch them separately
+        const loadFoodIngredients = async () => {
+          try {
+            const ingredientResult = await window.myAPI?.getFoodIngredients(food.id);
+            if (ingredientResult && ingredientResult.success) {
+              setSelectedIngredients(ingredientResult.data || []);
+            }
+          } catch (error) {
+            console.error('Error loading food ingredients:', error);
+          }
+        };
+        loadFoodIngredients();
       }
     }
   }, [food]);
@@ -520,6 +573,102 @@ const FoodForm = ({ food, onSubmit }) => {
     }
   };
 
+  // Ingredient handling functions (similar to allergens)
+  const handleIngredientInputChange = (e) => {
+    const value = e.target.value;
+    setIngredientInput(value);
+    setSelectedIngredientSuggestionIndex(-1); // Reset selection when typing
+    
+    if (value.trim()) {
+      // Filter suggestions based on input
+      const filtered = ingredients.filter(ingredient => 
+        ingredient.name.toLowerCase().includes(value.toLowerCase()) &&
+        !selectedIngredients.some(selected => selected.id === ingredient.id)
+      );
+      setIngredientSuggestions(filtered);
+      setShowIngredientSuggestions(true);
+    } else {
+      // Show all available ingredients when input is empty
+      const availableIngredients = ingredients.filter(ingredient => 
+        !selectedIngredients.some(selected => selected.id === ingredient.id)
+      );
+      setIngredientSuggestions(availableIngredients);
+      setShowIngredientSuggestions(true);
+    }
+  };
+
+  const handleIngredientFocus = () => {
+    // Show all available ingredients when field is focused
+    const availableIngredients = ingredients.filter(ingredient => 
+      !selectedIngredients.some(selected => selected.id === ingredient.id)
+    );
+    setIngredientSuggestions(availableIngredients);
+    setShowIngredientSuggestions(true);
+  };
+
+  const handleIngredientSelect = (ingredient) => {
+    if (!selectedIngredients.some(selected => selected.id === ingredient.id)) {
+      setSelectedIngredients(prev => [...prev, ingredient]);
+    }
+    setIngredientInput('');
+    setIngredientSuggestions([]);
+    setShowIngredientSuggestions(false);
+    setSelectedIngredientSuggestionIndex(-1);
+  };
+
+  const handleIngredientRemove = (ingredientId) => {
+    setSelectedIngredients(prev => prev.filter(ingredient => ingredient.id !== ingredientId));
+  };
+
+  const handleIngredientKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (selectedIngredientSuggestionIndex >= 0 && ingredientSuggestions[selectedIngredientSuggestionIndex]) {
+        // Select the highlighted suggestion
+        handleIngredientSelect(ingredientSuggestions[selectedIngredientSuggestionIndex]);
+      } else if (ingredientInput.trim()) {
+        // Create new ingredient or select existing
+        const existingIngredient = ingredients.find(ingredient => 
+          ingredient.name.toLowerCase() === ingredientInput.trim().toLowerCase()
+        );
+        
+        if (existingIngredient) {
+          handleIngredientSelect(existingIngredient);
+        } else {
+          // Create new ingredient
+          try {
+            const result = await window.myAPI?.createIngredient({ name: ingredientInput.trim() });
+            if (result && result.success) {
+              const newIngredient = { id: result.id, name: ingredientInput.trim() };
+              setIngredients(prev => [...prev, newIngredient]);
+              setSelectedIngredients(prev => [...prev, newIngredient]);
+              setIngredientInput('');
+              setIngredientSuggestions([]);
+              setShowIngredientSuggestions(false);
+              setSelectedIngredientSuggestionIndex(-1);
+            } else {
+              console.error('Failed to create ingredient:', result?.message);
+            }
+          } catch (error) {
+            console.error('Error creating ingredient:', error);
+          }
+        }
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIngredientSuggestionIndex(prev => 
+        prev < ingredientSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIngredientSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Escape') {
+      setShowIngredientSuggestions(false);
+      setSelectedIngredientSuggestionIndex(-1);
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
@@ -572,6 +721,7 @@ const FoodForm = ({ food, onSubmit }) => {
         available_time_starts: formData.available_time_starts,
         available_time_ends: formData.available_time_ends,
         veg: formData.veg,
+        isPizza: formData.isPizza ? 1 : 0,
         status: formData.status,
         restaurant_id: formData.restaurant_id,
         position: parseInt(formData.position),
@@ -621,6 +771,22 @@ const FoodForm = ({ food, onSubmit }) => {
             }
           } catch (error) {
             console.error('Error saving food-addon relationships:', error);
+          }
+        }
+
+        // Save food-ingredient relationships if ingredients are selected
+        if (selectedIngredients.length > 0) {
+          try {
+            const ingredientIds = selectedIngredients.map(ingredient => ingredient.id);
+            const ingredientResult = await window.myAPI?.updateFoodIngredients(result.food_id, ingredientIds);
+            
+            if (ingredientResult && ingredientResult.success) {
+              console.log('Food-ingredient relationships saved successfully');
+            } else {
+              console.error('Failed to save food-ingredient relationships:', ingredientResult?.message);
+            }
+          } catch (error) {
+            console.error('Error saving food-ingredient relationships:', error);
           }
         }
 
@@ -877,6 +1043,91 @@ const FoodForm = ({ food, onSubmit }) => {
                 placeholder="1, 2, 3..."
               />
             </div>
+          </div>
+
+          {/* Pizza Toggle */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Is Pizza</label>
+                <p className="text-xs text-gray-500">Enable if this is a pizza item</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  name="isPizza"
+                  checked={formData.isPizza}
+                  onChange={handleChange}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  {formData.isPizza ? 'Yes' : 'No'}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Ingredients Selection */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ingredients</label>
+            
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                value={ingredientInput}
+                onChange={handleIngredientInputChange}
+                onKeyDown={handleIngredientKeyDown}
+                onFocus={handleIngredientFocus}
+                onBlur={() => setTimeout(() => setShowIngredientSuggestions(false), 200)}
+                className={getInputClasses('ingredientInput')}
+                placeholder="Click to see all ingredients, type to search"
+              />
+              
+              {/* Suggestions dropdown */}
+              {showIngredientSuggestions && ingredientSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {ingredientSuggestions.map((ingredient, index) => (
+                    <div
+                      key={ingredient.id}
+                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                        index === selectedIngredientSuggestionIndex 
+                          ? 'bg-primary text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                      onClick={() => handleIngredientSelect(ingredient)}
+                    >
+                      {ingredient.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Selected ingredients tags */}
+            {selectedIngredients.length > 0 && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Selected Ingredients:</label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedIngredients.map((ingredient) => (
+                    <div
+                      key={ingredient.id}
+                      className="flex items-center bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      <span>{ingredient.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleIngredientRemove(ingredient.id)}
+                        className="ml-2 text-orange-600 hover:text-orange-800"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mb-4">
