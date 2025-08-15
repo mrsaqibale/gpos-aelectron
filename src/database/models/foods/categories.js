@@ -132,3 +132,36 @@ export function getCategoryById(id) {
   const stmt = db.prepare('SELECT * FROM categories WHERE id = ? AND isDelete = 0');
   return stmt.get(id);
 }
+
+// Get category image
+export function getCategoryImage(imagePath) {
+  try {
+    if (!imagePath || !imagePath.startsWith('uploads/')) {
+      return { success: false, message: 'Invalid image path' };
+    }
+    
+    const fullPath = path.join(__dirname, '../../', imagePath);
+    
+    // Security check
+    const uploadsDir = path.join(__dirname, '../../uploads');
+    if (!fullPath.startsWith(uploadsDir)) {
+      return { success: false, message: 'Access denied' };
+    }
+    
+    if (fs.existsSync(fullPath)) {
+      const imageBuffer = fs.readFileSync(fullPath);
+      const base64Data = imageBuffer.toString('base64');
+      const ext = path.extname(fullPath).toLowerCase();
+      const mimeType = ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
+      return { 
+        success: true, 
+        data: `data:${mimeType};base64,${base64Data}` 
+      };
+    } else {
+      return { success: false, message: 'Image not found' };
+    }
+  } catch (error) {
+    console.error('Error getting category image:', error);
+    return { success: false, message: error.message };
+  }
+}

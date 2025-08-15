@@ -23,7 +23,7 @@ const getModelPath = (modelPath) => {
   }
 };
 
-const { createCategory, updateCategory, getCategoryByRestaurantId, getCategoryById } = getModelPath('foods/categories.js');
+const { createCategory, updateCategory, getCategoryByRestaurantId, getCategoryById, getCategoryImage } = getModelPath('foods/categories.js');
 const { createSubcategory, updateSubcategory, getSubcategoriesByCategory, getSubcategoriesByHotelId } = getModelPath('foods/subcategories.js');
 const { createAdon, updateAdon, getAdonsByHotelId } = getModelPath('foods/adons.js');
 const { 
