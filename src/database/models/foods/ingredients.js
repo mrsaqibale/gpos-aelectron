@@ -378,11 +378,15 @@ export function updateFoodIngredients(foodId, ingredientIds) {
 // Complex function to handle ingredient processing for food
 export function processFoodIngredients(foodId, categoryId, ingredientNames) {
   try {
+    console.log('processFoodIngredients called with:', { foodId, categoryId, ingredientNames });
+    
     const transaction = db.transaction(() => {
       const processedIngredients = [];
       
       for (const ingredientName of ingredientNames) {
+        console.log('Processing ingredient:', ingredientName);
         let ingredientId = null;
+        const now = new Date().toISOString(); // Move now variable to function scope
         
         // 1. Check if ingredient already exists in ingredients table
         const checkIngredientStmt = db.prepare(`
@@ -394,15 +398,17 @@ export function processFoodIngredients(foodId, categoryId, ingredientNames) {
         if (existingIngredient) {
           // Use existing ingredient
           ingredientId = existingIngredient.id;
+          console.log('Using existing ingredient:', ingredientName, 'with ID:', ingredientId);
         } else {
           // 2. Create new ingredient in ingredients table
-          const now = new Date().toISOString();
+          console.log('Creating new ingredient:', ingredientName);
           const createIngredientStmt = db.prepare(`
             INSERT INTO ingredients (name, status, isdeleted, issyncronized, created_at, updated_at)
             VALUES (?, 1, 0, 0, ?, ?)
           `);
           const ingredientResult = createIngredientStmt.run(ingredientName, now, now);
           ingredientId = ingredientResult.lastInsertRowid;
+          console.log('Created ingredient with ID:', ingredientId);
         }
         
         // 3. Create category-ingredient relationship (if not exists)
@@ -413,11 +419,14 @@ export function processFoodIngredients(foodId, categoryId, ingredientNames) {
         const existingCategoryIngredient = checkCategoryIngredientStmt.get(categoryId, ingredientId);
         
         if (!existingCategoryIngredient) {
+          console.log('Creating category-ingredient relationship for category:', categoryId, 'ingredient:', ingredientId);
           const createCategoryIngredientStmt = db.prepare(`
             INSERT INTO category_ingredients (category_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
             VALUES (?, ?, 1, 0, 0, ?, ?)
           `);
           createCategoryIngredientStmt.run(categoryId, ingredientId, now, now);
+        } else {
+          console.log('Category-ingredient relationship already exists');
         }
         
         // 4. Create food-ingredient relationship (if not exists)
@@ -428,20 +437,26 @@ export function processFoodIngredients(foodId, categoryId, ingredientNames) {
         const existingFoodIngredient = checkFoodIngredientStmt.get(foodId, ingredientId);
         
         if (!existingFoodIngredient) {
+          console.log('Creating food-ingredient relationship for food:', foodId, 'ingredient:', ingredientId);
           const createFoodIngredientStmt = db.prepare(`
             INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
             VALUES (?, ?, 1, 0, 0, ?, ?)
           `);
           createFoodIngredientStmt.run(foodId, ingredientId, now, now);
+        } else {
+          console.log('Food-ingredient relationship already exists');
         }
         
         processedIngredients.push({ id: ingredientId, name: ingredientName });
       }
       
+      console.log('Processed ingredients:', processedIngredients);
       return { success: true, data: processedIngredients };
     });
     
-    return transaction();
+    const result = transaction();
+    console.log('processFoodIngredients result:', result);
+    return result;
   } catch (error) {
     console.error('Error processing food ingredients:', error);
     return { success: false, message: error.message };

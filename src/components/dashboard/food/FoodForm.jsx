@@ -622,8 +622,15 @@ const FoodForm = ({ food, onSubmit }) => {
   };
 
   const handleIngredientSelect = (ingredient) => {
+    console.log('Selecting ingredient:', ingredient);
     if (!selectedIngredients.some(selected => selected.id === ingredient.id)) {
-      setSelectedIngredients(prev => [...prev, ingredient]);
+      setSelectedIngredients(prev => {
+        const newIngredients = [...prev, ingredient];
+        console.log('Updated selectedIngredients:', newIngredients);
+        return newIngredients;
+      });
+    } else {
+      console.log('Ingredient already selected:', ingredient.name);
     }
     setIngredientInput('');
     setIngredientSuggestions([]);
@@ -654,12 +661,19 @@ const FoodForm = ({ food, onSubmit }) => {
           handleIngredientSelect(existingIngredient);
         } else {
           // Create new ingredient
+          console.log('Creating new ingredient:', ingredientInput.trim());
           try {
             const result = await window.myAPI?.createIngredient({ name: ingredientInput.trim() });
+            console.log('createIngredient result:', result);
             if (result && result.success) {
               const newIngredient = { id: result.id, name: ingredientInput.trim() };
+              console.log('Created new ingredient:', newIngredient);
               setIngredients(prev => [...prev, newIngredient]);
-              setSelectedIngredients(prev => [...prev, newIngredient]);
+              setSelectedIngredients(prev => {
+                const newIngredients = [...prev, newIngredient];
+                console.log('Added new ingredient to selectedIngredients:', newIngredients);
+                return newIngredients;
+              });
               setIngredientInput('');
               setIngredientSuggestions([]);
               setShowIngredientSuggestions(false);
@@ -794,13 +808,21 @@ const FoodForm = ({ food, onSubmit }) => {
         // Save food-ingredient relationships if ingredients are selected
         if (selectedIngredients.length > 0 && formData.category_id) {
           try {
+            console.log('Processing ingredients for food:', result.food_id);
+            console.log('Selected ingredients:', selectedIngredients);
+            console.log('Category ID:', formData.category_id);
+            
             // Use the complex processing function that handles all the logic
             const ingredientNames = selectedIngredients.map(ingredient => ingredient.name);
+            console.log('Ingredient names to process:', ingredientNames);
+            
             const ingredientResult = await window.myAPI?.processFoodIngredients(
               result.food_id, 
               parseInt(formData.category_id), 
               ingredientNames
             );
+            
+            console.log('processFoodIngredients result:', ingredientResult);
             
             if (ingredientResult && ingredientResult.success) {
               console.log('Food-ingredient relationships processed successfully:', ingredientResult.data);
@@ -810,6 +832,10 @@ const FoodForm = ({ food, onSubmit }) => {
           } catch (error) {
             console.error('Error processing food-ingredient relationships:', error);
           }
+        } else {
+          console.log('No ingredients to save or no category selected');
+          console.log('selectedIngredients.length:', selectedIngredients.length);
+          console.log('formData.category_id:', formData.category_id);
         }
 
         // Save variations and variation options if they exist
