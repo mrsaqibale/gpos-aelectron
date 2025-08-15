@@ -584,8 +584,8 @@ export function getFoodIngredients(foodId) {
   }
 }
 
-// Update food ingredients
-export function updateFoodIngredients(foodId, ingredientIds) {
+// Update food ingredients with complex logic
+export function updateFoodIngredients(foodId, ingredientIds, categoryId = null) {
   try {
     const transaction = db.transaction(() => {
       // First, soft delete existing food-ingredient relationships
@@ -614,6 +614,108 @@ export function updateFoodIngredients(foodId, ingredientIds) {
     return transaction();
   } catch (err) {
     return errorResponse(err.message);
+  }
+}
+
+// Create food ingredient relationship
+export function createFoodIngredient(foodId, ingredientId) {
+  try {
+    // First check if relationship already exists
+    const checkStmt = db.prepare(`
+      SELECT id FROM food_ingredients 
+      WHERE food_id = ? AND ingredient_id = ? AND isdeleted = 0
+    `);
+    
+    const existingRelationship = checkStmt.get(foodId, ingredientId);
+    
+    if (existingRelationship) {
+      // Return existing relationship ID if found
+      return { success: true, id: existingRelationship.id, message: 'Food-ingredient relationship already exists' };
+    }
+    
+    // If not exists, create new relationship
+    const now = new Date().toISOString();
+    
+    const stmt = db.prepare(`
+      INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+      VALUES (?, ?, 1, 0, 0, ?, ?)
+    `);
+    
+    const result = stmt.run(foodId, ingredientId, now, now);
+    return { success: true, id: result.lastInsertRowid };
+  } catch (error) {
+    console.error('Error creating food-ingredient relationship:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Complex function to handle ingredient workflow
+export function processFoodIngredients(foodId, ingredients, categoryId) {
+  try {
+    const transaction = db.transaction(() => {
+      const results = {
+        created: [],
+        existing: [],
+        errors: []
+      };
+      
+      for (const ingredient of ingredients) {
+        try {
+          let ingredientId = ingredient.id;
+          
+          // If ingredient has no ID, it's a new ingredient that needs to be created
+          if (!ingredientId) {
+            // Step 1: Create ingredient in ingredients table (027)
+            const ingredientStmt = db.prepare(`
+              INSERT INTO ingredients (name, status, isdeleted, issyncronized, created_at, updated_at)
+              VALUES (?, 1, 0, 0, ?, ?)
+            `);
+            
+            const now = new Date().toISOString();
+            const ingredientResult = ingredientStmt.run(ingredient.name, now, now);
+            ingredientId = ingredientResult.lastInsertRowid;
+            
+            console.log(`Created new ingredient: ${ingredient.name} with ID: ${ingredientId}`);
+            
+            // Step 2: Create category-ingredient relationship (028) if categoryId is provided
+            if (categoryId) {
+              const categoryIngredientStmt = db.prepare(`
+                INSERT INTO category_ingredients (category_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+                VALUES (?, ?, 1, 0, 0, ?, ?)
+              `);
+              
+              categoryIngredientStmt.run(categoryId, ingredientId, now, now);
+              console.log(`Created category-ingredient relationship: category ${categoryId} - ingredient ${ingredientId}`);
+            }
+            
+            results.created.push({ name: ingredient.name, id: ingredientId });
+          } else {
+            results.existing.push({ name: ingredient.name, id: ingredientId });
+          }
+          
+          // Step 3: Create food-ingredient relationship (029)
+          const foodIngredientStmt = db.prepare(`
+            INSERT INTO food_ingredients (food_id, ingredient_id, status, isdeleted, issyncronized, created_at, updated_at)
+            VALUES (?, ?, 1, 0, 0, ?, ?)
+          `);
+          
+          const now = new Date().toISOString();
+          foodIngredientStmt.run(foodId, ingredientId, now, now);
+          console.log(`Created food-ingredient relationship: food ${foodId} - ingredient ${ingredientId}`);
+          
+        } catch (error) {
+          console.error(`Error processing ingredient ${ingredient.name}:`, error);
+          results.errors.push({ name: ingredient.name, error: error.message });
+        }
+      }
+      
+      return { success: true, results };
+    });
+    
+    return transaction();
+  } catch (error) {
+    console.error('Error in processFoodIngredients:', error);
+    return { success: false, message: error.message };
   }
 } 
 
