@@ -2298,7 +2298,7 @@ const RunningOrders = () => {
                       <label className={`block text-sm font-medium mb-2 ${selectedSlices.length > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
                         {selectedSlices.length > 0 ? 'Remove ingredients you don\'t want' : 'Select at least 1 slice to configure ingredients'}
                       </label>
-                      <div className={`flex flex-wrap gap-2 min-h-[120px] p-3 border rounded-lg transition-colors ${
+                      <div className={`flex flex-wrap gap-1.5 p-2 border rounded-lg transition-colors ${
                         selectedSlices.length > 0 
                           ? 'border-gray-300 bg-gray-50' 
                           : 'border-gray-200 bg-gray-100'
@@ -2309,7 +2309,7 @@ const RunningOrders = () => {
                           selectedIngredients.map((ingredient) => (
                             <span
                               key={ingredient}
-                              className={`inline-flex items-center gap-1 px-3 py-2 text-sm rounded-full shadow-sm transition-all ${
+                              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md shadow-sm transition-all ${
                                 selectedSlices.length > 0
                                   ? 'bg-primary text-white hover:shadow-md'
                                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
