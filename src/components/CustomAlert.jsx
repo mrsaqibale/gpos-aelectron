@@ -27,7 +27,7 @@ const CustomAlert = ({
   if (!isVisible) return null;
 
   const getAlertStyles = () => {
-    const baseStyles = "w-[400px] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-2xl transition-all duration-300";
+    const baseStyles = "w-[350px] fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl transition-all duration-300";
   
     // // Position styles
     // const positionStyles = {
@@ -73,31 +73,31 @@ const CustomAlert = ({
     switch (type) {
       case 'success':
         return (
-          <div className={`w-16 h-16 rounded-full ${iconStyles[type]} flex items-center justify-center mb-4`}>
-            <Check size={32} className={iconColor[type]} />
+          <div className={`w-5 h-5 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
+            <Check size={16} className={iconColor[type]} />
           </div>
         );
       case 'error':
         return (
-          <div className={`w-16 h-16 rounded-full ${iconStyles[type]} flex items-center justify-center mb-4`}>
-            <X size={32} className={iconColor[type]} />
+          <div className={`w-5 h-5 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
+            <X size={16} className={iconColor[type]} />
           </div>
         );
       case 'warning':
         return (
-          <div className={`w-16 h-16 rounded-full ${iconStyles[type]} flex items-center justify-center mb-4`}>
+          <div className={`w-5 h-5 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
             <span className={`text-2xl ${iconColor[type]}`}>⚠</span>
           </div>
         );
       case 'info':
         return (
-          <div className={`w-16 h-16 rounded-full ${iconStyles[type]} flex items-center justify-center mb-4`}>
+          <div className={`w-5 h-5 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
             <span className={`text-2xl ${iconColor[type]}`}>ℹ</span>
           </div>
         );
       default:
         return (
-          <div className={`w-16 h-16 rounded-full ${iconStyles.success} flex items-center justify-center mb-4`}>
+          <div className={`w-5 h-5 rounded-full ${iconStyles.success} flex items-center justify-center`}>
             <Check size={32} className="text-white" />
           </div>
         );
@@ -151,15 +151,17 @@ const CustomAlert = ({
 
   return (
     <div className={getAlertStyles()}>
-      <div className="p-8 text-center flex flex-col items-center justify-center">
+      <div className="p-4 text-center flex flex-col items-center justify-center">
+        <div className='flex items-center justify-center gap-2'>
         {getIcon()}
         <h3 className={`text-xl font-semibold mb-2 ${getTypeColor()}`}>
           {getTypeTitle()}
         </h3>
-        <p className="text-gray-600 mb-6 text-sm">
+        </div>
+        <p className="text-gray-600 mb-4 text-sm">
           {message}
         </p>
-        <button
+        {/* <button
           onClick={() => {
             setIsShowing(false);
             setTimeout(() => {
@@ -169,7 +171,7 @@ const CustomAlert = ({
           className={`${getButtonColor()} text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200 uppercase text-sm`}
         >
           Okay
-        </button>
+        </button> */}
       </div>
     </div>
   );
