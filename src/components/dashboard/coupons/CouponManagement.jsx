@@ -475,6 +475,7 @@ const CouponManagement = () => {
                   <option value="All Customers">All Customers</option>
                   <option value="New Customers">New Customers</option>
                   <option value="Loyal Customers">Loyal Customers</option>
+                  <option value="VIP Customer">VIP Customer</option>
                   <option value="Delivery Only">Delivery Only</option>
                   <option value="Collection Only">Collection Only</option>
                 </select>
