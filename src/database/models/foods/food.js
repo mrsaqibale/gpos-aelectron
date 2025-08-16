@@ -566,7 +566,7 @@ export function searchFoodsByName(name, restaurant_id = 1) {
   } catch (err) {
     return errorResponse(err.message);
   }
-}
+} 
 
 // Get food ingredients
 export function getFoodIngredients(foodId) {
