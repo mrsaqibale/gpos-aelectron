@@ -27,7 +27,7 @@ const CustomAlert = ({
   if (!isVisible) return null;
 
   const getAlertStyles = () => {
-    const baseStyles = "w-[350px] fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl transition-all duration-300";
+    const baseStyles = "w-[350px] fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl transition-all duration-1000 ease-out";
   
     // // Position styles
     // const positionStyles = {
@@ -49,8 +49,8 @@ const CustomAlert = ({
     };
 
     const visibilityStyles = isShowing 
-      ? 'opacity-100 scale-100' 
-      : 'opacity-0 scale-95';
+      ? 'opacity-100 translate-y-0' 
+      : 'opacity-0 translate-y-8';
 
     return `${baseStyles} ${typeStyles[type]} ${visibilityStyles}`;
   };
@@ -73,32 +73,32 @@ const CustomAlert = ({
     switch (type) {
       case 'success':
         return (
-          <div className={`w-5 h-5 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
+          <div className={`w-6 h-6 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
             <Check size={16} className={iconColor[type]} />
           </div>
         );
       case 'error':
         return (
-          <div className={`w-5 h-5 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
+          <div className={`w-6 h-6 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
             <X size={16} className={iconColor[type]} />
           </div>
         );
       case 'warning':
         return (
-          <div className={`w-5 h-5 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
+          <div className={`w-6 h-6 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
             <span className={`text-2xl ${iconColor[type]}`}>⚠</span>
           </div>
         );
       case 'info':
         return (
-          <div className={`w-5 h-5 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
+          <div className={`w-6 h-6 rounded-full ${iconStyles[type]} flex items-center justify-center`}>
             <span className={`text-2xl ${iconColor[type]}`}>ℹ</span>
           </div>
         );
       default:
         return (
-          <div className={`w-5 h-5 rounded-full ${iconStyles.success} flex items-center justify-center`}>
-            <Check size={32} className="text-white" />
+          <div className={`w-6 h-6 rounded-full ${iconStyles.success} flex items-center justify-center`}>
+            <Check size={16} className="text-white" />
           </div>
         );
     }
