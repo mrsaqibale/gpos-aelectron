@@ -1423,7 +1423,7 @@ const RunningOrders = () => {
 
   const handleCloseSplitPizzaModal = () => {
     setShowSplitPizzaModal(false);
-    setPizzaSlices(8);
+    setPizzaSlices(2);
     setSelectedSlices([]);
     setCompletedSlices([]);
     setSliceIngredients({});
