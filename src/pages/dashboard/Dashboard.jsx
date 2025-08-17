@@ -3,7 +3,9 @@ import {
   ShoppingCart, 
   DollarSign, 
   Star,
-  Utensils
+  Utensils,
+  Wallet,
+  Clock
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -12,12 +14,13 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
   Filler,
 } from 'chart.js';
-import { Line, Bar } from 'react-chartjs-2';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
 
 // Register ChartJS components
 ChartJS.register(
@@ -26,6 +29,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -116,6 +120,41 @@ const Dashboard = () => {
           '#059669', // Green - Pasta
           '#ea580c', // Orange - Salad
           '#dc2626', // Red - Dessert
+        ],
+        borderRadius: 8,
+        borderSkipped: false,
+      },
+    ],
+  };
+
+  // Payment Methods donut chart data
+  const paymentChartData = {
+    labels: ['Credit Card', 'Cash', 'Mobile Pay'],
+    datasets: [
+      {
+        data: [65, 25, 10], // Percentages
+        backgroundColor: [
+          '#0f766e', // Dark teal - Credit Card
+          '#0891b2', // Bright cyan/blue - Cash
+          '#059669', // Green/teal - Mobile Pay
+        ],
+        borderWidth: 0,
+        cutout: '60%', // Creates donut shape
+      },
+    ],
+  };
+
+  // Peak Hours Analysis chart data
+  const peakHoursChartData = {
+    labels: ['Lunch (12-2PM)', 'Dinner (6-8PM)', 'Late Night (9-11PM)'],
+    datasets: [
+      {
+        label: 'Sales',
+        data: [2700, 4100, 1300],
+        backgroundColor: [
+          '#0f766e', // Dark teal/blue - Lunch
+          '#0891b2', // Bright cyan/blue - Dinner
+          '#059669', // Green/teal - Late Night
         ],
         borderRadius: 8,
         borderSkipped: false,
@@ -256,6 +295,128 @@ const Dashboard = () => {
     },
   };
 
+  // Payment Methods donut chart options
+  const paymentChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          color: '#374151',
+          font: {
+            size: 12,
+          },
+        },
+      },
+      title: {
+        display: true,
+        color: '#0f766e',
+        font: {
+          size: 16,
+          weight: 'bold',
+        },
+        align: 'start',
+        padding: {
+          bottom: 20,
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#374151',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: false,
+        callbacks: {
+          label: function(context) {
+            return `${context.label}: ${context.parsed}%`;
+          },
+        },
+      },
+    },
+  };
+
+  // Peak Hours Analysis chart options
+  const peakHoursChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          color: '#374151',
+          font: {
+            size: 12,
+          },
+        },
+      },
+      title: {
+        display: true,
+        color: '#0f766e',
+        font: {
+          size: 16,
+          weight: 'bold',
+        },
+        align: 'start',
+        padding: {
+          bottom: 20,
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#374151',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: false,
+        callbacks: {
+          label: function(context) {
+            return `Sales: $${context.parsed.y.toLocaleString()}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        max: 4500,
+        grid: {
+          color: 'rgba(229, 231, 235, 0.3)',
+          drawBorder: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          },
+          callback: function(value) {
+            return '$' + value.toLocaleString();
+          },
+        },
+      },
+    },
+  };
+
   // Timeframe button component
   const TimeframeButton = ({ active, children, onClick }) => (
     <button
@@ -345,7 +506,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Charts Section */}
+      {/* First Row of Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Sales Trend Chart */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -404,6 +565,45 @@ const Dashboard = () => {
           </div>
           <div className="h-80">
             <Bar data={foodChartData} options={foodChartOptions} />
+          </div>
+        </div>
+      </div>
+
+      {/* Second Row of Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Payment Methods Chart */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-yellow-600" />
+              <h3 className="text-lg font-semibold text-gray-800">Payment Methods</h3>
+            </div>
+            <div className="flex space-x-4 text-sm text-gray-600">
+              <span>Credit Card</span>
+              <span>Cash</span>
+              <span>Mobile Pay</span>
+            </div>
+          </div>
+          <div className="h-80">
+            <Doughnut data={paymentChartData} options={paymentChartOptions} />
+          </div>
+        </div>
+
+        {/* Peak Hours Analysis Chart */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-red-600" />
+              <h3 className="text-lg font-semibold text-gray-800">Peak Hours Analysis</h3>
+            </div>
+            <div className="flex space-x-4 text-sm text-gray-600">
+              <span>Lunch</span>
+              <span>Dinner</span>
+              <span>Late Night</span>
+            </div>
+          </div>
+          <div className="h-80">
+            <Bar data={peakHoursChartData} options={peakHoursChartOptions} />
           </div>
         </div>
       </div>
