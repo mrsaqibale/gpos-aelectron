@@ -5,7 +5,11 @@ import {
   Star,
   Utensils,
   Wallet,
-  Clock
+  Clock,
+  CreditCard,
+  Banknote,
+  Smartphone,
+  Eye
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -39,6 +43,108 @@ ChartJS.register(
 const Dashboard = () => {
   const [salesTimeframe, setSalesTimeframe] = useState('30D');
   const [foodTimeframe, setFoodTimeframe] = useState('7D');
+
+  // Dummy data for recent sales transactions
+  const recentTransactions = [
+    {
+      id: '#ORD-001',
+      customer: 'John Smith',
+      items: 'Pizza Margherita, Coke',
+      paymentMethod: 'Credit Card',
+      total: 24.50,
+      status: 'COMPLETED',
+      time: '2 min ago'
+    },
+    {
+      id: '#ORD-002',
+      customer: 'Sarah Johnson',
+      items: 'Burger Deluxe, Fries',
+      paymentMethod: 'Cash',
+      total: 18.75,
+      status: 'COMPLETED',
+      time: '5 min ago'
+    },
+    {
+      id: '#ORD-003',
+      customer: 'Mike Wilson',
+      items: 'Pasta Carbonara',
+      paymentMethod: 'Mobile Pay',
+      total: 16.90,
+      status: 'PROCESSING',
+      time: '8 min ago'
+    },
+    {
+      id: '#ORD-004',
+      customer: 'Lisa Brown',
+      items: 'Chicken Wings, Beer',
+      paymentMethod: 'Credit Card',
+      total: 22.30,
+      status: 'COMPLETED',
+      time: '12 min ago'
+    },
+    {
+      id: '#ORD-005',
+      customer: 'David Lee',
+      items: 'Caesar Salad, Water',
+      paymentMethod: 'Cash',
+      total: 14.25,
+      status: 'COMPLETED',
+      time: '15 min ago'
+    },
+    {
+      id: '#ORD-006',
+      customer: 'Emma Davis',
+      items: 'Steak, Wine',
+      paymentMethod: 'Credit Card',
+      total: 45.80,
+      status: 'PREPARING',
+      time: '18 min ago'
+    }
+  ];
+
+  // Helper function to get payment method icon
+  const getPaymentIcon = (method) => {
+    switch (method) {
+      case 'Credit Card':
+        return <CreditCard className="w-4 h-4 text-yellow-600" />;
+      case 'Cash':
+        return <Banknote className="w-4 h-4 text-green-600" />;
+      case 'Mobile Pay':
+        return <Smartphone className="w-4 h-4 text-blue-600" />;
+      default:
+        return <CreditCard className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  // Helper function to get status badge styling
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'COMPLETED':
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+            {status}
+          </span>
+        );
+      case 'PROCESSING':
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+            {status}
+          </span>
+        );
+      case 'PREPARING':
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+            {status}
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+            {status}
+          </span>
+        );
+    }
+  };
 
   // Sales chart data for different timeframes
   const getSalesData = (timeframe) => {
@@ -347,16 +453,7 @@ const Dashboard = () => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: true,
-        position: 'top',
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-          color: '#374151',
-          font: {
-            size: 12,
-          },
-        },
+        display: false,
       },
       title: {
         display: true,
@@ -423,7 +520,7 @@ const Dashboard = () => {
       onClick={onClick}
       className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
         active
-          ? 'bg-teal-700 text-white'
+          ? 'bg-primary text-white'
           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
       }`}
     >
@@ -605,6 +702,59 @@ const Dashboard = () => {
           <div className="h-80">
             <Bar data={peakHoursChartData} options={peakHoursChartOptions} />
           </div>
+        </div>
+      </div>
+
+      {/* Third Row - Recent Sales Transactions */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-yellow-600" />
+            <h3 className="text-lg font-semibold text-gray-800">Recent Sales Transactions</h3>
+          </div>
+          <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2">
+            <Eye className="w-4 h-4" />
+            View All Sales
+          </button>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 font-medium text-gray-600">Order ID</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600">Customer</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600">Items</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600">Payment Method</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600">Total</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-600">Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentTransactions.map((transaction, index) => (
+                <tr 
+                  key={transaction.id} 
+                  className={`border-b border-gray-100 ${
+                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                  }`}
+                >
+                  <td className="py-3 px-4 font-medium text-gray-900">{transaction.id}</td>
+                  <td className="py-3 px-4 text-gray-700">{transaction.customer}</td>
+                  <td className="py-3 px-4 text-gray-700">{transaction.items}</td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      {getPaymentIcon(transaction.paymentMethod)}
+                      <span className="text-gray-700">{transaction.paymentMethod}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 font-medium text-gray-900">${transaction.total.toFixed(2)}</td>
+                  <td className="py-3 px-4">{getStatusBadge(transaction.status)}</td>
+                  <td className="py-3 px-4 text-gray-600">{transaction.time}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
