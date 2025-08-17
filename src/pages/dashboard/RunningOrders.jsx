@@ -150,6 +150,8 @@ const RunningOrders = () => {
   const [splitDiscount, setSplitDiscount] = useState(0);
   const [splitCharge, setSplitCharge] = useState(0);
   const [splitTips, setSplitTips] = useState(0);
+  const [splitBills, setSplitBills] = useState([]);
+  const [selectedSplitBill, setSelectedSplitBill] = useState(null);
 
   // Order Management State
   const [placedOrders, setPlacedOrders] = useState([]);
@@ -1840,6 +1842,8 @@ const RunningOrders = () => {
     setShowSplitBillModal(true);
     setShowInvoiceOptions(false); // Close invoice options when opening split bill modal
     setTotalSplit('');
+    setSplitBills([]);
+    setSelectedSplitBill(null);
     // Initialize split items from selected order items
     const orderItems = selectedPlacedOrder ? selectedPlacedOrder.items : [];
     setSplitItems(orderItems.map(item => ({
@@ -1856,6 +1860,8 @@ const RunningOrders = () => {
     setShowSplitBillModal(false);
     setTotalSplit('');
     setSplitItems([]);
+    setSplitBills([]);
+    setSelectedSplitBill(null);
     setSplitDiscount(0);
     setSplitCharge(0);
     setSplitTips(0);
@@ -1891,17 +1897,100 @@ const RunningOrders = () => {
       return;
     }
 
-    // Calculate split amounts
-    const selectedItems = splitItems.filter(item => item.isSelected);
-    const totalAmount = selectedPlacedOrder ? selectedPlacedOrder.total : 0;
-    const amountPerSplit = totalAmount / numSplits;
+    // Create split bills
+    const dummyCustomers = [
+      'Walk-in Customer',
+      'Dona M. Leighty 408-230-51',
+      'Donld PB 432226663',
+      'Gustavo J. Weitz 256-537-96',
+      'Mr Joe 231654849',
+      'Mr. Heri 523154215',
+      'John Smith 555-1234',
+      'Jane Doe 555-5678',
+      'Mike Johnson 555-9012',
+      'Sarah Wilson 555-3456'
+    ];
 
-    console.log(`Splitting bill into ${numSplits} parts. Amount per split: €${amountPerSplit.toFixed(2)}`);
-    
-    // Here you would implement the actual split logic
-    // For now, just show a success message
-    showSuccess(`Bill split into ${numSplits} parts successfully!`, 'success');
-    handleCloseSplitBillModal();
+    const newSplitBills = Array.from({ length: numSplits }, (_, index) => ({
+      id: index + 1,
+      customer: dummyCustomers[index] || `Customer ${index + 1}`,
+      items: [],
+      subtotal: 0,
+      discount: 0,
+      tax: 0,
+      charge: 0,
+      tips: 0,
+      total: 0
+    }));
+
+    setSplitBills(newSplitBills);
+    setSelectedSplitBill(newSplitBills[0]); // Select first split by default
+    showSuccess(`Created ${numSplits} split bills successfully!`, 'success');
+  };
+
+  const handleAddItemToSplit = (itemId, splitBillId) => {
+    const item = splitItems.find(item => item.id === itemId);
+    if (!item) return;
+
+    // Add item to the selected split bill
+    setSplitBills(prev => prev.map(split => {
+      if (split.id === splitBillId) {
+        const existingItem = split.items.find(i => i.food.id === item.food.id);
+        if (existingItem) {
+          // Increase quantity if item already exists
+          return {
+            ...split,
+            items: split.items.map(i => 
+              i.food.id === item.food.id 
+                ? { ...i, quantity: i.quantity + 1, totalPrice: (i.totalPrice / i.quantity) * (i.quantity + 1) }
+                : i
+            )
+          };
+        } else {
+          // Add new item
+          const newItem = { ...item, quantity: 1 };
+          return {
+            ...split,
+            items: [...split.items, newItem]
+          };
+        }
+      }
+      return split;
+    }));
+
+    // Update split bill totals
+    updateSplitBillTotals(splitBillId);
+  };
+
+  const updateSplitBillTotals = (splitBillId) => {
+    setSplitBills(prev => prev.map(split => {
+      if (split.id === splitBillId) {
+        const subtotal = split.items.reduce((sum, item) => sum + item.totalPrice, 0);
+        const tax = subtotal * 0.13; // 13% tax
+        const total = subtotal + tax + split.charge + split.tips - split.discount;
+        
+        return {
+          ...split,
+          subtotal,
+          tax,
+          total
+        };
+      }
+      return split;
+    }));
+  };
+
+  const handleSplitBillCustomerChange = (splitBillId, customer) => {
+    setSplitBills(prev => prev.map(split => 
+      split.id === splitBillId ? { ...split, customer } : split
+    ));
+  };
+
+  const handleRemoveSplitBill = (splitBillId) => {
+    setSplitBills(prev => prev.filter(split => split.id !== splitBillId));
+    if (selectedSplitBill?.id === splitBillId) {
+      setSelectedSplitBill(splitBills[0] || null);
+    }
   };
 
   return (
@@ -2354,15 +2443,15 @@ const RunningOrders = () => {
         {/* Split Bill Modal */}
         {showSplitBillModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-7xl max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">Split Bill</h2>
                 <button
                   onClick={handleCloseSplitBillModal}
-                  className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                  className="text-red-500 hover:text-red-300 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
                 >
-                  <X size={20} />
+                  X Cancel
                 </button>
               </div>
 
@@ -2379,7 +2468,8 @@ const RunningOrders = () => {
                         <thead className="bg-gray-50">
                           <tr className="text-sm font-medium text-gray-700">
                             <th className="px-3 py-2 text-left">Item Name</th>
-                            <th className="px-3 py-2 text-center">Price Qty</th>
+                            <th className="px-3 py-2 text-center">Price</th>
+                            <th className="px-3 py-2 text-center">Qty</th>
                             <th className="px-3 py-2 text-center">Dis.</th>
                             <th className="px-3 py-2 text-center">Total</th>
                             <th className="px-3 py-2 text-center">Actions</th>
@@ -2387,20 +2477,15 @@ const RunningOrders = () => {
                         </thead>
                         <tbody className="bg-white">
                           {splitItems.map((item) => (
-                            <tr key={item.id} className={`border-t border-gray-100 ${item.isSelected ? 'bg-blue-50' : ''}`}>
+                            <tr key={item.id} className="border-t border-gray-100">
                               <td className="px-3 py-2 text-sm text-gray-800">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={item.isSelected}
-                                    onChange={() => handleSplitItemToggle(item.id)}
-                                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                                  />
-                                  <span className="truncate">{item.food.name}</span>
-                                </div>
+                                <span className="truncate">{item.food.name}</span>
                               </td>
                               <td className="px-3 py-2 text-sm text-center text-gray-600">
-                                €{(item.totalPrice / item.quantity).toFixed(2)} {item.quantity}
+                                €{(item.totalPrice / item.quantity).toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-center text-gray-600">
+                                {item.quantity}
                               </td>
                               <td className="px-3 py-2 text-sm text-center text-gray-600">
                                 €0.00
@@ -2411,27 +2496,14 @@ const RunningOrders = () => {
                               <td className="px-3 py-2 text-center">
                                 <div className="flex items-center justify-center gap-1">
                                   <button
-                                    onClick={() => handleSplitItemQuantityChange(item.id, Math.max(0, item.splitQuantity - 1))}
-                                    disabled={!item.isSelected}
+                                    onClick={() => handleAddItemToSplit(item.id, selectedSplitBill?.id)}
+                                    disabled={!selectedSplitBill}
                                     className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${
-                                      item.isSelected 
-                                        ? 'bg-red-500 text-white hover:bg-red-600' 
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    }`}
-                                  >
-                                    -
-                                  </button>
-                                  <span className="w-8 text-center text-sm text-gray-800">
-                                    {item.splitQuantity}
-                                  </span>
-                                  <button
-                                    onClick={() => handleSplitItemQuantityChange(item.id, item.splitQuantity + 1)}
-                                    disabled={!item.isSelected}
-                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${
-                                      item.isSelected 
+                                      selectedSplitBill
                                         ? 'bg-green-500 text-white hover:bg-green-600' 
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                     }`}
+                                    title="Add to selected split"
                                   >
                                     +
                                   </button>
@@ -2446,7 +2518,7 @@ const RunningOrders = () => {
                     {/* Summary Section */}
                     <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Discount (Subtotal Discount):</span>
+                        <span className="text-sm text-gray-600">Discount(Subtotal Discount):</span>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">€{splitDiscount.toFixed(2)}</span>
                           <button
@@ -2484,11 +2556,11 @@ const RunningOrders = () => {
                       <div className="border-t border-gray-200 pt-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-800">Sub Total:</span>
-                          <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? selectedPlacedOrder.total / 1.13 : 0}</span>
+                          <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / 1.13).toFixed(2) : '0.00'}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-800">Tax:</span>
-                          <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / 1.13) * 0.13 : 0}</span>
+                          <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? ((selectedPlacedOrder.total / 1.13) * 0.13).toFixed(2) : '0.00'}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-bold text-gray-800">Total Payable:</span>
@@ -2498,55 +2570,163 @@ const RunningOrders = () => {
                     </div>
                   </div>
 
-                  {/* Right Section - Split Functionality */}
+                  {/* Right Section - Split Bills */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Split Functionality</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Split Bills</h3>
                     
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="text-sm text-blue-800 font-medium mb-2">
-                        Maximum Split(s): 10
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Total Split
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={totalSplit}
-                            onChange={(e) => setTotalSplit(e.target.value)}
-                            placeholder="Enter number of splits"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                          />
-                          <button
-                            onClick={handleSplitGo}
-                            disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > 10}
-                            className={`px-6 py-2 font-medium rounded-lg transition-colors ${
-                              totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= 10
-                                ? 'bg-primary text-white hover:bg-primary/90'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                          >
-                            Go
-                          </button>
+                    {/* Split Creation */}
+                    {splitBills.length === 0 && (
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="text-sm text-blue-800 font-medium mb-2">
+                          Maximum Split(s): 10
                         </div>
-                      </div>
-
-                      {totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= 10 && (
-                        <div className="bg-green-50 p-4 rounded-lg">
-                          <div className="text-sm text-green-800">
-                            <div className="font-medium mb-2">Split Preview:</div>
-                            <div>Number of splits: {totalSplit}</div>
-                            <div>Amount per split: €{(calculateCartTotal() / parseInt(totalSplit)).toFixed(2)}</div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Total Split
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={totalSplit}
+                                onChange={(e) => setTotalSplit(e.target.value)}
+                                placeholder="Enter number of splits"
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                              />
+                              <button
+                                onClick={handleSplitGo}
+                                disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > 10}
+                                className={`px-6 py-2 font-medium rounded-lg transition-colors ${
+                                  totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= 10
+                                    ? 'bg-primary text-white hover:bg-primary/90'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                }`}
+                              >
+                                Go
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+
+                    {/* Split Bills Display */}
+                    {splitBills.length > 0 && (
+                      <div className="grid grid-cols-2 gap-4">
+                        {splitBills.map((splitBill) => (
+                          <div 
+                            key={splitBill.id} 
+                            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                              selectedSplitBill?.id === splitBill.id 
+                                ? 'border-primary bg-primary/5' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            onClick={() => setSelectedSplitBill(splitBill)}
+                          >
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-800">
+                                  Split Bill {splitBill.id}
+                                </span>
+                                {selectedSplitBill?.id === splitBill.id && (
+                                  <CheckCircle size={16} className="text-green-600" />
+                                )}
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveSplitBill(splitBill.id);
+                                }}
+                                className="text-red-500 hover:text-red-700 p-1"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+
+                            {/* Customer Selection */}
+                            <div className="mb-3">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Customer:</label>
+                              <select
+                                value={splitBill.customer}
+                                onChange={(e) => handleSplitBillCustomerChange(splitBill.id, e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                              >
+                                <option value="Walk-in Customer">Walk-in Customer</option>
+                                <option value="Dona M. Leighty 408-230-51">Dona M. Leighty 408-230-51</option>
+                                <option value="Donld PB 432226663">Donld PB 432226663</option>
+                                <option value="Gustavo J. Weitz 256-537-96">Gustavo J. Weitz 256-537-96</option>
+                                <option value="Mr Joe 231654849">Mr Joe 231654849</option>
+                                <option value="Mr. Heri 523154215">Mr. Heri 523154215</option>
+                                <option value="John Smith 555-1234">John Smith 555-1234</option>
+                                <option value="Jane Doe 555-5678">Jane Doe 555-5678</option>
+                                <option value="Mike Johnson 555-9012">Mike Johnson 555-9012</option>
+                                <option value="Sarah Wilson 555-3456">Sarah Wilson 555-3456</option>
+                              </select>
+                            </div>
+
+                            {/* Items */}
+                            <div className="mb-3">
+                              <div className="text-xs font-medium text-gray-700 mb-2">Items:</div>
+                              {splitBill.items.length > 0 ? (
+                                <div className="space-y-1">
+                                  {splitBill.items.map((item, index) => (
+                                    <div key={index} className="text-xs text-gray-600 flex justify-between">
+                                      <span className="truncate">{item.food.name}</span>
+                                      <span>Qty: {item.quantity}, €{item.totalPrice.toFixed(2)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-400 italic">No items added</div>
+                              )}
+                            </div>
+
+                            {/* Summary */}
+                            <div className="text-xs space-y-1">
+                              <div className="flex justify-between">
+                                <span>Sub Total:</span>
+                                <span>€{splitBill.subtotal.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Disc Amt(%):</span>
+                                <span>€{splitBill.discount.toFixed(2)}X</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Tax:</span>
+                                <span>€{splitBill.tax.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Charge:</span>
+                                <span>€{splitBill.charge.toFixed(2)}X</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Tips:</span>
+                                <span>€{splitBill.tips.toFixed(2)}X</span>
+                              </div>
+                              <div className="flex justify-between font-bold border-t border-gray-200 pt-1">
+                                <span>Total Payable:</span>
+                                <span>€{splitBill.total.toFixed(2)}</span>
+                              </div>
+                            </div>
+
+                            {/* Checkout Button */}
+                            <button
+                              className="w-full mt-3 bg-green-500 text-white text-xs font-medium py-2 px-3 rounded hover:bg-green-600 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                showSuccess(`Processing checkout for Split Bill ${splitBill.id}`, 'success');
+                              }}
+                            >
+                              Checkout
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
