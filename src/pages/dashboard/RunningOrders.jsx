@@ -2060,6 +2060,81 @@ const RunningOrders = () => {
     }
   };
 
+  const handleAddDiscountToSplit = () => {
+    if (!selectedSplitBill) {
+      showSuccess('Please select a split bill first', 'error');
+      return;
+    }
+
+    setSplitBills(prev => prev.map(split => {
+      if (split.id === selectedSplitBill.id) {
+        return {
+          ...split,
+          discount: split.discount + 1
+        };
+      }
+      return split;
+    }));
+
+    // Update split bill totals
+    updateSplitBillTotals(selectedSplitBill.id);
+    showSuccess('Discount added to selected split bill', 'success');
+  };
+
+  const handleAddChargeToSplit = () => {
+    if (!selectedSplitBill) {
+      showSuccess('Please select a split bill first', 'error');
+      return;
+    }
+
+    setSplitBills(prev => prev.map(split => {
+      if (split.id === selectedSplitBill.id) {
+        return {
+          ...split,
+          charge: split.charge + 1
+        };
+      }
+      return split;
+    }));
+
+    // Update split bill totals
+    updateSplitBillTotals(selectedSplitBill.id);
+    showSuccess('Charge added to selected split bill', 'success');
+  };
+
+  const handleAddTipsToSplit = () => {
+    if (!selectedSplitBill) {
+      showSuccess('Please select a split bill first', 'error');
+      return;
+    }
+
+    setSplitBills(prev => prev.map(split => {
+      if (split.id === selectedSplitBill.id) {
+        return {
+          ...split,
+          tips: split.tips + 1
+        };
+      }
+      return split;
+    }));
+
+    // Update split bill totals
+    updateSplitBillTotals(selectedSplitBill.id);
+    showSuccess('Tips added to selected split bill', 'success');
+  };
+
+  const getTotalDiscount = () => {
+    return splitBills.reduce((total, split) => total + split.discount, 0);
+  };
+
+  const getTotalCharge = () => {
+    return splitBills.reduce((total, split) => total + split.charge, 0);
+  };
+
+  const getTotalTips = () => {
+    return splitBills.reduce((total, split) => total + split.tips, 0);
+  };
+
   return (
     <>
 
@@ -2599,10 +2674,16 @@ const RunningOrders = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Discount(Subtotal Discount):</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">€{splitDiscount.toFixed(2)}</span>
+                          <span className="text-sm font-medium">€{getTotalDiscount().toFixed(2)}</span>
                           <button
-                            onClick={() => setSplitDiscount(prev => prev + 1)}
-                            className="w-6 h-6 bg-green-500 text-white rounded text-sm font-bold hover:bg-green-600 transition-colors"
+                            onClick={handleAddDiscountToSplit}
+                            disabled={!selectedSplitBill}
+                            className={`w-6 h-6 text-white rounded text-sm font-bold transition-colors ${
+                              selectedSplitBill
+                                ? 'bg-green-500 hover:bg-green-600' 
+                                : 'bg-gray-300 cursor-not-allowed'
+                            }`}
+                            title="Add discount to selected split bill"
                           >
                             +
                           </button>
@@ -2611,10 +2692,16 @@ const RunningOrders = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Charge:</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">€{splitCharge.toFixed(2)}</span>
+                          <span className="text-sm font-medium">€{getTotalCharge().toFixed(2)}</span>
                           <button
-                            onClick={() => setSplitCharge(prev => prev + 1)}
-                            className="w-6 h-6 bg-green-500 text-white rounded text-sm font-bold hover:bg-green-600 transition-colors"
+                            onClick={handleAddChargeToSplit}
+                            disabled={!selectedSplitBill}
+                            className={`w-6 h-6 text-white rounded text-sm font-bold transition-colors ${
+                              selectedSplitBill
+                                ? 'bg-green-500 hover:bg-green-600' 
+                                : 'bg-gray-300 cursor-not-allowed'
+                            }`}
+                            title="Add charge to selected split bill"
                           >
                             +
                           </button>
@@ -2623,10 +2710,16 @@ const RunningOrders = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Tips:</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">€{splitTips.toFixed(2)}</span>
+                          <span className="text-sm font-medium">€{getTotalTips().toFixed(2)}</span>
                           <button
-                            onClick={() => setSplitTips(prev => prev + 1)}
-                            className="w-6 h-6 bg-green-500 text-white rounded text-sm font-bold hover:bg-green-600 transition-colors"
+                            onClick={handleAddTipsToSplit}
+                            disabled={!selectedSplitBill}
+                            className={`w-6 h-6 text-white rounded text-sm font-bold transition-colors ${
+                              selectedSplitBill
+                                ? 'bg-green-500 hover:bg-green-600' 
+                                : 'bg-gray-300 cursor-not-allowed'
+                            }`}
+                            title="Add tips to selected split bill"
                           >
                             +
                           </button>
