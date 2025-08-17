@@ -151,6 +151,11 @@ const RunningOrders = () => {
   const [splitCharge, setSplitCharge] = useState(0);
   const [splitTips, setSplitTips] = useState(0);
 
+  // Order Management State
+  const [placedOrders, setPlacedOrders] = useState([]);
+  const [selectedPlacedOrder, setSelectedPlacedOrder] = useState(null);
+  const [showInvoiceOptions, setShowInvoiceOptions] = useState(false);
+
   // Use the custom hook for keyboard functionality
   const {
     showKeyboard,
@@ -196,6 +201,26 @@ const RunningOrders = () => {
       document.head.removeChild(style);
     };
   }, []);
+
+  // Close invoice options when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showInvoiceOptions) {
+        const invoiceButton = document.querySelector('[data-invoice-button]');
+        const invoiceOptions = document.querySelector('[data-invoice-options]');
+        
+        if (invoiceButton && !invoiceButton.contains(event.target) && 
+            invoiceOptions && !invoiceOptions.contains(event.target)) {
+          setShowInvoiceOptions(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showInvoiceOptions]);
 
   // Auto-cleanup duplicates when cart changes - REMOVED to prevent infinite loops
 
@@ -1555,14 +1580,24 @@ const RunningOrders = () => {
       return;
     }
 
-    // TODO: Implement order placement logic
-    console.log('Placing order:', {
-      items: cartItems,
-      customer: selectedCustomer,
+    // Create a new order
+    const newOrder = {
+      id: Date.now(),
+      orderNumber: `aVR${Date.now().toString().slice(-8)}-${String(placedOrders.length + 1).padStart(3, '0')}`,
+      items: [...cartItems],
+      customer: selectedCustomer || { name: 'Walk-in Customer' },
       total: calculateCartTotal(),
-      coupon: appliedCoupon
-    });
+      coupon: appliedCoupon,
+      orderType: selectedTable ? 'Dine In' : 'Take Away',
+      table: selectedTable ? `Table ${selectedTable}` : 'None',
+      waiter: 'Ds Waiter',
+      status: 'Pending',
+      placedAt: new Date().toISOString()
+    };
 
+    // Add to placed orders
+    setPlacedOrders(prev => [newOrder, ...prev]);
+    
     showSuccess('Order placed successfully!', 'success');
     clearCart();
   };
@@ -1803,9 +1838,11 @@ const RunningOrders = () => {
   // Split Bill Modal Functions
   const handleOpenSplitBillModal = () => {
     setShowSplitBillModal(true);
+    setShowInvoiceOptions(false); // Close invoice options when opening split bill modal
     setTotalSplit('');
-    // Initialize split items from cart items
-    setSplitItems(cartItems.map(item => ({
+    // Initialize split items from selected order items
+    const orderItems = selectedPlacedOrder ? selectedPlacedOrder.items : [];
+    setSplitItems(orderItems.map(item => ({
       ...item,
       splitQuantity: 0,
       isSelected: false
@@ -1856,7 +1893,7 @@ const RunningOrders = () => {
 
     // Calculate split amounts
     const selectedItems = splitItems.filter(item => item.isSelected);
-    const totalAmount = calculateCartTotal();
+    const totalAmount = selectedPlacedOrder ? selectedPlacedOrder.total : 0;
     const amountPerSplit = totalAmount / numSplits;
 
     console.log(`Splitting bill into ${numSplits} parts. Amount per split: €${amountPerSplit.toFixed(2)}`);
@@ -1872,7 +1909,7 @@ const RunningOrders = () => {
 
 
       <div className="flex justify-between gap-2 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
-        <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
+                      <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
           {/* Running Orders */}
           <div className=" h-[85%] flex flex-col overflow-y-auto">
@@ -1901,37 +1938,30 @@ const RunningOrders = () => {
               </div>
             </div>
 
-            {/* <div className="py-4 mt-2 my-auto px-2 space-y-2 h-auto overflow-y-auto">
-              {cartItems.length > 0 ? (
-                cartItems.map((item) => (
+            {/* Placed Orders List */}
+            <div className="py-4 mt-2 my-auto px-2 space-y-2 h-auto overflow-y-auto">
+              {placedOrders.length > 0 ? (
+                placedOrders.map((order) => (
                   <div
-                    key={item.id}
-                    className={`p-4 border-b cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${selectedOrder?.id === item.id ? 'bg-blue-50' : ''
+                    key={order.id}
+                    className={`p-4 border-b cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${selectedPlacedOrder?.id === order.id ? 'bg-blue-50' : ''
                       }`}
-                    onClick={() => setSelectedOrder(item)}
+                    onClick={() => setSelectedPlacedOrder(order)}
                   >
-                    <div className="font-semibold text-sm text-gray-800">{item.food.name}</div>
-                    <div className="text-xs mt-1 text-gray-700">Qty: {item.quantity}</div>
-                    <div className="text-xs text-gray-700">€{item.totalPrice.toFixed(2)}</div>
-                    {Object.keys(item.variations).length > 0 && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {Object.entries(item.variations).map(([type, selections]) => {
-                          if (Array.isArray(selections) && selections.length > 0) {
-                            return `${type}: ${selections.join(', ')}`;
-                          }
-                          return null;
-                        }).filter(Boolean).join(' | ')}
-                      </div>
-                    )}
+                    <div className="font-semibold text-sm text-gray-800">{order.customer.name}</div>
+                    <div className="text-xs mt-1 text-gray-700">Order: {order.orderNumber}</div>
+                    <div className="text-xs text-gray-700">Type: {order.orderType}</div>
+                    <div className="text-xs text-gray-700">Table: {order.table}</div>
+                    <div className="text-xs text-gray-700">Waiter: {order.waiter}</div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-8">
-                  <div className="text-gray-500 text-sm">No items in cart</div>
-                  <div className="text-gray-400 text-xs mt-2">Add items from the menu</div>
+                  <div className="text-gray-500 text-sm">No orders placed</div>
+                  <div className="text-gray-400 text-xs mt-2">Place orders to see them here</div>
                 </div>
               )}
-            </div> */}
+            </div>
           </div>
           {/* Order Action Buttons - Below Running Orders Box */}
           <div className="flex justify-center absolute bottom-0 left-0 w-[100%]">
@@ -1939,8 +1969,12 @@ const RunningOrders = () => {
               <button className="flex-1 bg-[#010101] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                 BILL
               </button>
-              <button className="flex-1 bg-[#4d36eb] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                ORDER DETAILS
+              <button 
+                data-invoice-button
+                onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
+                disabled={!selectedPlacedOrder}
+                className={`flex-1 font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                INVOICE
               </button>
               <button className="flex-1 bg-[#f3be25] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                 MODIFY ORDER
@@ -1950,6 +1984,27 @@ const RunningOrders = () => {
               </button>
             </div>
           </div>
+
+          {/* Invoice Options Dropdown */}
+          {showInvoiceOptions && selectedPlacedOrder && (
+            <div data-invoice-options className="absolute bottom-16 left-2 right-2 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
+              <div className="flex flex-col gap-1">
+                <button 
+                  onClick={handleOpenSplitBillModal}
+                  className="w-full bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors">
+                  Split Bill
+                </button>
+                <button 
+                  onClick={() => {
+                    showSuccess('Single payment processed!', 'success');
+                    setShowInvoiceOptions(false);
+                  }}
+                  className="w-full bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors">
+                  Single Pay
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Menu Items */}
@@ -2220,7 +2275,6 @@ const RunningOrders = () => {
               <div className='flex justify-center items-center'>
                 <div 
                   className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer w-[70%] rounded flex items-center justify-center mb-4 hover:bg-gray-300 transition-colors"
-                  onClick={handleOpenSplitBillModal}
                 >
                   <div className="flex items-center gap-2">
                     <Eye size={14} />
@@ -2420,15 +2474,15 @@ const RunningOrders = () => {
                       <div className="border-t border-gray-200 pt-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-800">Sub Total:</span>
-                          <span className="text-sm font-bold text-gray-800">€{calculateCartSubtotal().toFixed(2)}</span>
+                          <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? selectedPlacedOrder.total / 1.13 : 0}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-800">Tax:</span>
-                          <span className="text-sm font-bold text-gray-800">€{calculateCartTax().toFixed(2)}</span>
+                          <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / 1.13) * 0.13 : 0}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-bold text-gray-800">Total Payable:</span>
-                          <span className="text-lg font-bold text-primary">€{calculateCartTotal().toFixed(2)}</span>
+                          <span className="text-lg font-bold text-primary">€{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}</span>
                         </div>
                       </div>
                     </div>
