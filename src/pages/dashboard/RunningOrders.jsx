@@ -4149,7 +4149,14 @@ const RunningOrders = () => {
                     {['Cash', 'Credit Card', 'Check', 'Bank Transfer', 'Loyalty Point', 'Change Currency'].map((method) => (
                       <button
                         key={method}
-                        onClick={() => setSelectedPaymentMethod(method)}
+                        onClick={() => {
+                          setSelectedPaymentMethod(method);
+                          // Clear amount fields when switching payment methods
+                          setPaymentAmount('');
+                          setGivenAmount('');
+                          setChangeAmount('');
+                          setCurrencyAmount('');
+                        }}
                         className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
                           selectedPaymentMethod === method
                             ? 'bg-gray-200 text-gray-800 font-medium'
