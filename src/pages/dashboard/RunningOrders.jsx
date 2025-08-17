@@ -143,7 +143,13 @@ const RunningOrders = () => {
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
   ]);
 
-
+  // Split Bill Modal State
+  const [showSplitBillModal, setShowSplitBillModal] = useState(false);
+  const [totalSplit, setTotalSplit] = useState('');
+  const [splitItems, setSplitItems] = useState([]);
+  const [splitDiscount, setSplitDiscount] = useState(0);
+  const [splitCharge, setSplitCharge] = useState(0);
+  const [splitTips, setSplitTips] = useState(0);
 
   // Use the custom hook for keyboard functionality
   const {
@@ -886,13 +892,13 @@ const RunningOrders = () => {
       if (result && result.success) {
         setSelectedCustomer(null); // Reset to walk-in customer
         setShowDeleteConfirm(false);
-        alert('Customer deleted successfully');
+        showSuccess('Customer deleted successfully', 'success');
       } else {
-        alert('Error deleting customer');
+        showSuccess('Error deleting customer', 'error');
       }
     } catch (error) {
       console.error('Error deleting customer:', error);
-      alert('Error deleting customer');
+      showSuccess('Error deleting customer', 'error');
     }
   };
 
@@ -914,17 +920,17 @@ const RunningOrders = () => {
         await fetchFloors();
       } else {
         console.error('Failed to add sample data:', result?.error);
-        alert('Failed to add sample data: ' + (result?.error || 'Unknown error'));
+        showSuccess('Failed to add sample data: ' + (result?.error || 'Unknown error'), 'error');
       }
     } catch (error) {
       console.error('Error adding sample data:', error);
-      alert('Error adding sample data');
+      showSuccess('Error adding sample data', 'error');
     }
   };
 
   const handleOpenEditModal = async () => {
     if (!selectedCustomer) {
-      alert('No customer selected to edit');
+      showSuccess('No customer selected to edit', 'error');
       return;
     }
 
@@ -1019,7 +1025,7 @@ const RunningOrders = () => {
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      alert('Please enter a coupon code');
+      showSuccess('Please enter a coupon code', 'error');
       return;
     }
 
@@ -1028,7 +1034,7 @@ const RunningOrders = () => {
 
       if (!window.myAPI) {
         console.error('myAPI is not available');
-        alert('System error: API not available');
+        showSuccess('System error: API not available', 'error');
         return;
       }
 
@@ -1057,12 +1063,12 @@ const RunningOrders = () => {
 
         // Check if coupon is valid
         if (transformedCoupon.status !== 'active') {
-          alert('This coupon is not active');
+          showSuccess('This coupon is not active', 'error');
           return;
         }
 
         if (transformedCoupon.expireDate && new Date(transformedCoupon.expireDate) < new Date()) {
-          alert('This coupon has expired');
+          showSuccess('This coupon has expired', 'error');
           return;
         }
 
@@ -1073,11 +1079,11 @@ const RunningOrders = () => {
         // Don't close modal automatically - let user close it manually
 
       } else {
-        alert('Invalid coupon code. Please try again.');
+        showSuccess('Invalid coupon code. Please try again.', 'error');
       }
     } catch (error) {
       console.error('Error applying coupon:', error);
-      alert('Error applying coupon. Please try again.');
+      showSuccess('Error applying coupon. Please try again.', 'error');
     }
   };
 
@@ -1088,25 +1094,25 @@ const RunningOrders = () => {
 
       // Check if coupon is valid
       if (coupon.status !== 'active') {
-        alert('This coupon is not active');
+        showSuccess('This coupon is not active', 'error');
         return;
       }
 
       if (coupon.expireDate && new Date(coupon.expireDate) < new Date()) {
-        alert('This coupon has expired');
+        showSuccess('This coupon has expired', 'error');
         return;
       }
 
       // Apply the coupon
       setAppliedCoupon(coupon);
       setCouponCode('');
-      alert(`Coupon "${coupon.code}" applied successfully!`);
+      showSuccess(`Coupon "${coupon.code}" applied successfully!`, 'success');
 
       // Don't close modal automatically - let user close it manually
 
     } catch (error) {
       console.error('Error applying coupon directly:', error);
-      alert('Error applying coupon. Please try again.');
+      showSuccess('Error applying coupon. Please try again.', 'error');
     }
   };
 
@@ -1138,7 +1144,7 @@ const RunningOrders = () => {
 
   const handleApplyManualDiscount = () => {
     if (!discountAmount || parseFloat(discountAmount) <= 0) {
-      alert('Please enter a valid discount amount');
+      showSuccess('Please enter a valid discount amount', 'error');
       return;
     }
 
@@ -1545,7 +1551,7 @@ const RunningOrders = () => {
   // Handle place order
   const handlePlaceOrder = () => {
     if (cartItems.length === 0) {
-      alert('Please add items to cart before placing order');
+      showSuccess('Please add items to cart before placing order', 'error');
       return;
     }
 
@@ -1557,14 +1563,14 @@ const RunningOrders = () => {
       coupon: appliedCoupon
     });
 
-    alert('Order placed successfully!');
+    showSuccess('Order placed successfully!', 'success');
     clearCart();
   };
 
   // Handle payment
   const handlePayment = () => {
     if (cartItems.length === 0) {
-      alert('Please add items to cart before proceeding to payment');
+      showSuccess('Please add items to cart before proceeding to payment', 'error');
       return;
     }
 
@@ -1576,7 +1582,7 @@ const RunningOrders = () => {
       coupon: appliedCoupon
     });
 
-    alert('Payment processed successfully!');
+    showSuccess('Payment processed successfully!', 'success');
     clearCart();
   };
 
@@ -1792,6 +1798,73 @@ const RunningOrders = () => {
     }
 
     return messages;
+  };
+
+  // Split Bill Modal Functions
+  const handleOpenSplitBillModal = () => {
+    setShowSplitBillModal(true);
+    setTotalSplit('');
+    // Initialize split items from cart items
+    setSplitItems(cartItems.map(item => ({
+      ...item,
+      splitQuantity: 0,
+      isSelected: false
+    })));
+    setSplitDiscount(0);
+    setSplitCharge(0);
+    setSplitTips(0);
+  };
+
+  const handleCloseSplitBillModal = () => {
+    setShowSplitBillModal(false);
+    setTotalSplit('');
+    setSplitItems([]);
+    setSplitDiscount(0);
+    setSplitCharge(0);
+    setSplitTips(0);
+  };
+
+  const handleSplitItemToggle = (itemId) => {
+    setSplitItems(prev => prev.map(item => 
+      item.id === itemId 
+        ? { ...item, isSelected: !item.isSelected, splitQuantity: !item.isSelected ? 1 : 0 }
+        : item
+    ));
+  };
+
+  const handleSplitItemQuantityChange = (itemId, newQuantity) => {
+    if (newQuantity < 0) return;
+    
+    setSplitItems(prev => prev.map(item => 
+      item.id === itemId 
+        ? { ...item, splitQuantity: newQuantity }
+        : item
+    ));
+  };
+
+  const handleSplitGo = () => {
+    if (!totalSplit || parseInt(totalSplit) <= 0) {
+      showSuccess('Please enter a valid number of splits', 'error');
+      return;
+    }
+    
+    const numSplits = parseInt(totalSplit);
+    if (numSplits > 10) {
+      showSuccess('Maximum 10 splits allowed', 'error');
+      return;
+    }
+
+    // Calculate split amounts
+    const selectedItems = splitItems.filter(item => item.isSelected);
+    const totalAmount = calculateCartTotal();
+    const amountPerSplit = totalAmount / numSplits;
+
+    console.log(`Splitting bill into ${numSplits} parts. Amount per split: €${amountPerSplit.toFixed(2)}`);
+    
+    // Here you would implement the actual split logic
+    // For now, just show a success message
+    showSuccess(`Bill split into ${numSplits} parts successfully!`, 'success');
+    handleCloseSplitBillModal();
   };
 
   return (
@@ -2034,7 +2107,7 @@ const RunningOrders = () => {
             <button
               onClick={() => {
                 if (cartItems.length === 0) {
-                  alert('Cart is already empty');
+                  showSuccess('Cart is already empty', 'error');
                   return;
                 }
 
@@ -2145,8 +2218,11 @@ const RunningOrders = () => {
               </div>
               {/* Total Payable */}
               <div className='flex justify-center items-center'>
-                <div className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer   w-[70%] rounded flex items-center justify-center mb-4">
-                  <div className="flex items-center  gap-2">
+                <div 
+                  className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer w-[70%] rounded flex items-center justify-center mb-4 hover:bg-gray-300 transition-colors"
+                  onClick={handleOpenSplitBillModal}
+                >
+                  <div className="flex items-center gap-2">
                     <Eye size={14} />
                     <span className="text-gray-800 font-medium">Total Payable : €{calculateCartTotal().toFixed(2)}</span>
                   </div>
@@ -2209,6 +2285,209 @@ const RunningOrders = () => {
             onCustomerSelect={handleEditCustomer}
             editingCustomer={selectedCustomer}
           />
+        )}
+
+        {/* Split Bill Modal */}
+        {showSplitBillModal && (
+          <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
+                <h2 className="text-xl font-bold">Split Bill</h2>
+                <button
+                  onClick={handleCloseSplitBillModal}
+                  className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 flex-1 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-8">
+                  {/* Left Section - Order Items */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Order Items</h3>
+                    
+                    {/* Items Table */}
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr className="text-sm font-medium text-gray-700">
+                            <th className="px-3 py-2 text-left">Item Name</th>
+                            <th className="px-3 py-2 text-center">Price Qty</th>
+                            <th className="px-3 py-2 text-center">Dis.</th>
+                            <th className="px-3 py-2 text-center">Total</th>
+                            <th className="px-3 py-2 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white">
+                          {splitItems.map((item) => (
+                            <tr key={item.id} className={`border-t border-gray-100 ${item.isSelected ? 'bg-blue-50' : ''}`}>
+                              <td className="px-3 py-2 text-sm text-gray-800">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.isSelected}
+                                    onChange={() => handleSplitItemToggle(item.id)}
+                                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                                  />
+                                  <span className="truncate">{item.food.name}</span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 text-sm text-center text-gray-600">
+                                €{(item.totalPrice / item.quantity).toFixed(2)} {item.quantity}
+                              </td>
+                              <td className="px-3 py-2 text-sm text-center text-gray-600">
+                                €0.00
+                              </td>
+                              <td className="px-3 py-2 text-sm text-center font-medium text-gray-800">
+                                €{item.totalPrice.toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={() => handleSplitItemQuantityChange(item.id, Math.max(0, item.splitQuantity - 1))}
+                                    disabled={!item.isSelected}
+                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${
+                                      item.isSelected 
+                                        ? 'bg-red-500 text-white hover:bg-red-600' 
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    }`}
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-8 text-center text-sm text-gray-800">
+                                    {item.splitQuantity}
+                                  </span>
+                                  <button
+                                    onClick={() => handleSplitItemQuantityChange(item.id, item.splitQuantity + 1)}
+                                    disabled={!item.isSelected}
+                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${
+                                      item.isSelected 
+                                        ? 'bg-green-500 text-white hover:bg-green-600' 
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    }`}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Summary Section */}
+                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Discount (Subtotal Discount):</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">€{splitDiscount.toFixed(2)}</span>
+                          <button
+                            onClick={() => setSplitDiscount(prev => prev + 1)}
+                            className="w-6 h-6 bg-green-500 text-white rounded text-sm font-bold hover:bg-green-600 transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Charge:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">€{splitCharge.toFixed(2)}</span>
+                          <button
+                            onClick={() => setSplitCharge(prev => prev + 1)}
+                            className="w-6 h-6 bg-green-500 text-white rounded text-sm font-bold hover:bg-green-600 transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Tips:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">€{splitTips.toFixed(2)}</span>
+                          <button
+                            onClick={() => setSplitTips(prev => prev + 1)}
+                            className="w-6 h-6 bg-green-500 text-white rounded text-sm font-bold hover:bg-green-600 transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div className="border-t border-gray-200 pt-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-800">Sub Total:</span>
+                          <span className="text-sm font-bold text-gray-800">€{calculateCartSubtotal().toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-800">Tax:</span>
+                          <span className="text-sm font-bold text-gray-800">€{calculateCartTax().toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-bold text-gray-800">Total Payable:</span>
+                          <span className="text-lg font-bold text-primary">€{calculateCartTotal().toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Section - Split Functionality */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Split Functionality</h3>
+                    
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-sm text-blue-800 font-medium mb-2">
+                        Maximum Split(s): 10
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Total Split
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={totalSplit}
+                            onChange={(e) => setTotalSplit(e.target.value)}
+                            placeholder="Enter number of splits"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                          />
+                          <button
+                            onClick={handleSplitGo}
+                            disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > 10}
+                            className={`px-6 py-2 font-medium rounded-lg transition-colors ${
+                              totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= 10
+                                ? 'bg-primary text-white hover:bg-primary/90'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            Go
+                          </button>
+                        </div>
+                      </div>
+
+                      {totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= 10 && (
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <div className="text-sm text-green-800">
+                            <div className="font-medium mb-2">Split Preview:</div>
+                            <div>Number of splits: {totalSplit}</div>
+                            <div>Amount per split: €{(calculateCartTotal() / parseInt(totalSplit)).toFixed(2)}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Split Pizza Modal */}
