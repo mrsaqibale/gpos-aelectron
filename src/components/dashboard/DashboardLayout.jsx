@@ -8,7 +8,7 @@ import {
   LayoutDashboard,
   Search,
   Users2, Utensils, Table,
-  Tag, X, LogOut, User
+  Tag, X, LogOut, User, Home
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -104,6 +104,12 @@ const DashboardLayout = () => {
   // Navigation items with role-based filtering
   const navigationItems = React.useMemo(() => {
     const allItems = [
+      {
+        name: "Dashboard",
+        icon: <Home size={18} />,
+        path: "/dashboard",
+        allowedRoles: ["admin", "cashier", "manager", "chef", "waiter"]
+      },
       {
         name: "Manage-Orders",
         icon: <LayoutDashboard size={18} />,

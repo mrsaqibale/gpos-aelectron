@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import WelcomeScreen from './pages/loginPage/WelcomeScreen.jsx'
 import POSLogin from './pages/loginPage/PosLogin.jsx'
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx'
+import Dashboard from './pages/dashboard/Dashboard.jsx'
 import ManageOrders from './pages/dashboard/ManageOrders.jsx'
 import KitchenDisplaySystem from './pages/dashboard/KitchenDisplaySystem.jsx'
 import FoodList from './pages/dashboard/FoodList.jsx'
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
         path: 'dashboard',
         element: <ErrorBoundary><DashboardLayout /></ErrorBoundary>,
         children: [
+          {
+            index: true,
+            element: <ErrorBoundary><Dashboard /></ErrorBoundary>
+          },
           {
             path: 'manage-orders',
             element: <ErrorBoundary><ManageOrders /></ErrorBoundary>
