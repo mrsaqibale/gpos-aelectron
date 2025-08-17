@@ -5,9 +5,123 @@ import {
   Star,
   Utensils
 } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const Dashboard = () => {
-  
+  // Chart data
+  const chartData = {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [
+      {
+        label: 'Daily Sales',
+        data: [1200, 1900, 1600, 2100, 1800, 2200, 1950],
+        borderColor: '#0f766e', // Dark teal color
+        backgroundColor: 'rgba(15, 118, 110, 0.1)', // Light teal with transparency
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4, // Smooth curve
+        pointBackgroundColor: '#0f766e',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false, // Hide legend since we only have one dataset
+      },
+      title: {
+        display: true,
+        text: 'Daily Sales Trend',
+        color: '#0f766e', // Dark teal color
+        font: {
+          size: 16,
+          weight: 'bold',
+        },
+        align: 'start',
+        padding: {
+          bottom: 20,
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#374151',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: false,
+        callbacks: {
+          label: function(context) {
+            return `Sales: $${context.parsed.y.toLocaleString()}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false, // Hide vertical grid lines
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        max: 2500,
+        grid: {
+          color: 'rgba(229, 231, 235, 0.3)', // Very light gray grid
+          drawBorder: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          },
+          callback: function(value) {
+            return '$' + value.toLocaleString();
+          },
+        },
+      },
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index',
+    },
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -84,7 +198,12 @@ const Dashboard = () => {
         </div>
       </div>
 
-      
+      {/* Daily Sales Trend Chart */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="h-80">
+          <Line data={chartData} options={chartOptions} />
+        </div>
+      </div>
 
       
     </div>
