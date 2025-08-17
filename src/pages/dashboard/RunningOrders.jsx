@@ -170,6 +170,9 @@ const RunningOrders = () => {
   const [sendSMS, setSendSMS] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('EUR');
   const [currencyAmount, setCurrencyAmount] = useState('');
+  
+  // Cart Details Modal State
+  const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
 
   // Use the custom hook for keyboard functionality
   const {
@@ -4317,7 +4320,10 @@ const RunningOrders = () => {
                       />
                       <span className="text-sm text-gray-700">Send SMS</span>
                     </label>
-                    <button className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm">
+                    <button 
+                      onClick={() => setShowCartDetailsModal(true)}
+                      className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
+                    >
                       Cart Details
                     </button>
                   </div>
@@ -4488,6 +4494,68 @@ const RunningOrders = () => {
         duration={alertState.duration}
         onClose={hideAlert}
       />
+
+      {/* Cart Details Modal */}
+      {showCartDetailsModal && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            {/* Header */}
+            <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+              <h2 className="text-xl font-bold">Cart Details</h2>
+              <button
+                onClick={() => setShowCartDetailsModal(false)}
+                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Item:</span>
+                  <span className="font-semibold">6</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Sub Total:</span>
+                  <span className="font-semibold">{getCurrencySymbol()}754.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Discount:</span>
+                  <span className="font-semibold">{getCurrencySymbol()}0.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Discount:</span>
+                  <span className="font-semibold">{getCurrencySymbol()}0.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tax:</span>
+                  <span className="font-semibold">{getCurrencySymbol()}217.14</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Charge:</span>
+                  <span className="font-semibold">{getCurrencySymbol()}0.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tips:</span>
+                  <span className="font-semibold">{getCurrencySymbol()}0.00</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            {/* <div className="p-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowCartDetailsModal(false)}
+                className="w-full px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+            </div> */}
+          </div>
+        </div>
+      )}
 
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard
