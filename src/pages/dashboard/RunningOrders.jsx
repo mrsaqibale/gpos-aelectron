@@ -29,6 +29,7 @@ import {
   ClipboardList,
   Menu,
   ChevronLeft,
+  ChevronDown,
   LogOut,
   LayoutDashboard,
   Utensils,
@@ -158,6 +159,18 @@ const RunningOrders = () => {
   const [selectedPlacedOrder, setSelectedPlacedOrder] = useState(null);
   const [showInvoiceOptions, setShowInvoiceOptions] = useState(false);
 
+  // Finalize Sale Modal State
+  const [showFinalizeSaleModal, setShowFinalizeSaleModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Cash');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [givenAmount, setGivenAmount] = useState('');
+  const [changeAmount, setChangeAmount] = useState('');
+  const [addedPayments, setAddedPayments] = useState([]);
+  const [finalizeDiscountAmount, setFinalizeDiscountAmount] = useState('');
+  const [sendSMS, setSendSMS] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState('EUR');
+  const [currencyAmount, setCurrencyAmount] = useState('');
+
   // Use the custom hook for keyboard functionality
   const {
     showKeyboard,
@@ -223,6 +236,8 @@ const RunningOrders = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showInvoiceOptions]);
+
+
 
   // Auto-cleanup duplicates when cart changes - REMOVED to prevent infinite loops
 
@@ -2135,6 +2150,92 @@ const RunningOrders = () => {
     return splitBills.reduce((total, split) => total + split.tips, 0);
   };
 
+  // Finalize Sale Helper Functions
+  const handleAddPayment = () => {
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
+      showSuccess('Please enter a valid payment amount', 'error');
+      return;
+    }
+
+    const newPayment = {
+      method: selectedPaymentMethod,
+      amount: parseFloat(paymentAmount),
+      timestamp: new Date().toISOString()
+    };
+
+    setAddedPayments(prev => [...prev, newPayment]);
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+  };
+
+  const handleCashAmountChange = (value) => {
+    setPaymentAmount(value);
+    setGivenAmount(value);
+    // Calculate change based on the order total
+    if (value && selectedPlacedOrder) {
+      const orderTotal = selectedPlacedOrder.total;
+      const change = parseFloat(value) - orderTotal;
+      setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+    } else {
+      setChangeAmount('0.00');
+    }
+  };
+
+  const handleQuickAmountClick = (amount) => {
+    if (selectedPaymentMethod === 'Cash') {
+      setPaymentAmount(amount);
+      setGivenAmount(amount);
+      // Calculate change based on the order total
+      if (selectedPlacedOrder) {
+        const orderTotal = selectedPlacedOrder.total;
+        const change = parseFloat(amount) - orderTotal;
+        setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+      } else {
+        setChangeAmount('0.00');
+      }
+    } else {
+      setPaymentAmount(amount);
+    }
+  };
+
+  const handleCashGivenAmountChange = (value) => {
+    setGivenAmount(value);
+    setPaymentAmount(value);
+    // Calculate change based on the order total
+    if (value && selectedPlacedOrder) {
+      const orderTotal = selectedPlacedOrder.total;
+      const change = parseFloat(value) - orderTotal;
+      setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+    } else {
+      setChangeAmount('0.00');
+    }
+  };
+
+  const resetFinalizeSaleModal = () => {
+    setSelectedPaymentMethod('Cash');
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+    setAddedPayments([]);
+    setFinalizeDiscountAmount('');
+    setSendSMS(false);
+    setSelectedCurrency('EUR');
+    setCurrencyAmount('');
+  };
+
+  // Currency options
+  const currencyOptions = [
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'USD', symbol: '$', name: 'US Dollar' }
+  ];
+
+  // Helper function to get current currency symbol
+  const getCurrencySymbol = () => {
+    const selectedCurrencyOption = currencyOptions.find(option => option.code === selectedCurrency);
+    return selectedCurrencyOption ? selectedCurrencyOption.symbol : '€';
+  };
+
   return (
     <>
 
@@ -2237,7 +2338,7 @@ const RunningOrders = () => {
                 </button>
                 <button 
                   onClick={() => {
-                    showSuccess('Single payment processed!', 'success');
+                    setShowFinalizeSaleModal(true);
                     setShowInvoiceOptions(false);
                   }}
                   className="w-32 bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors text-xs">
@@ -4023,6 +4124,264 @@ const RunningOrders = () => {
 
         {/* Full QWERTY Keyboard - Outside Modal (floating at bottom of screen) */}
         {/* Removed old keyboard implementation - now using VirtualKeyboard component */}
+
+        {/* Finalize Sale Modal */}
+        {showFinalizeSaleModal && (
+          <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
+                <h2 className="text-xl font-bold">Finalize Sale</h2>
+                <button
+                  onClick={() => setShowFinalizeSaleModal(false)}
+                  className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 flex gap-6 flex-1 overflow-hidden">
+                {/* Left Panel - Payment Methods */}
+                <div className="w-64 flex-shrink-0">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Payment Method</h3>
+                  <div className="space-y-2">
+                    {['Cash', 'Credit Card', 'Check', 'Bank Transfer', 'Loyalty Point', 'Change Currency'].map((method) => (
+                      <button
+                        key={method}
+                        onClick={() => setSelectedPaymentMethod(method)}
+                        className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                          selectedPaymentMethod === method
+                            ? 'bg-gray-200 text-gray-800 font-medium'
+                            : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                        }`}
+                      >
+                        {method}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Center Panel - Payment Details */}
+                <div className="flex-1 flex flex-col overflow-y-auto max-h-[70vh]">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{selectedPaymentMethod}</h3>
+                  
+                                    {/* Payment Input Section */}
+                  <div className="flex gap-4 mb-6">
+                    {selectedPaymentMethod === 'Cash' ? (
+                      <>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Given Amount</label>
+                          <input
+                            type="number"
+                            value={givenAmount}
+                            onChange={(e) => handleCashGivenAmountChange(e.target.value)}
+                            placeholder="Given Amount"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Change Amount</label>
+                          <input
+                            type="number"
+                            value={changeAmount}
+                            onChange={(e) => setChangeAmount(e.target.value)}
+                            placeholder="Change Amount"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                          <input
+                            type="number"
+                            value={paymentAmount}
+                            onChange={(e) => handleCashAmountChange(e.target.value)}
+                            placeholder="Amount"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </>
+                    ) : selectedPaymentMethod === 'Change Currency' ? (
+                      <>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                          <select
+                            value={selectedCurrency}
+                            onChange={(e) => setSelectedCurrency(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            {currencyOptions.map((currency) => (
+                              <option key={currency.code} value={currency.code}>
+                                {currency.symbol} {currency.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                          <input
+                            type="number"
+                            value={currencyAmount}
+                            onChange={(e) => setCurrencyAmount(e.target.value)}
+                            placeholder="Amount"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            setCurrencyAmount('');
+                          }}
+                          className="px-2 py-2 text-red-500 hover:text-red-700 self-end"
+                        >
+                          <X size={16} />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                        <input
+                          type="number"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          placeholder="Amount"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
+                    {selectedPaymentMethod !== 'Change Currency' && (
+                      <button 
+                        onClick={handleAddPayment}
+                        className="px-6 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors self-end"
+                      >
+                        Add
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Added Payments Display */}
+                  <div className="flex-1 bg-gray-50 rounded-lg p-4 mb-6">
+                    {addedPayments.length > 0 ? (
+                      <div className="space-y-2">
+                        {addedPayments.map((payment, index) => (
+                          <div key={index} className="flex justify-between items-center p-2 bg-white rounded border">
+                            <span className="text-sm text-gray-700">{payment.method}: €{payment.amount}</span>
+                            <button
+                              onClick={() => setAddedPayments(prev => prev.filter((_, i) => i !== index))}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400 text-center py-8">
+                        Your added payments will be shown here
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Summary */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold text-gray-800">Payable:</span>
+                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold text-gray-800">Paid:</span>
+                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold text-gray-800">Due:</span>
+                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{Math.max(0, (selectedPlacedOrder ? selectedPlacedOrder.total : 0) - addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0)).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Options */}
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={sendSMS}
+                        onChange={(e) => setSendSMS(e.target.checked)}
+                        className="rounded"
+                      />
+                      <span className="text-sm text-gray-700">Send SMS</span>
+                    </label>
+                    <button className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm">
+                      Cart Details
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Panel - Discount and Quick Amounts */}
+                <div className="w-64 flex-shrink-0">
+                  <div className="space-y-4">
+                    {/* Discount Section */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Discount</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={finalizeDiscountAmount}
+                          onChange={(e) => setFinalizeDiscountAmount(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="px-3 py-2 text-sm text-gray-600">
+                          {getCurrencySymbol()}{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quick Amount Buttons */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {['10', '20', '30', '40', '50', '100'].map((amount) => (
+                                                 <button
+                           key={amount}
+                           onClick={() => handleQuickAmountClick(amount)}
+                           className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
+                         >
+                           {amount}
+                         </button>
+                      ))}
+                    </div>
+
+                                         <button
+                       onClick={resetFinalizeSaleModal}
+                       className="w-full px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors"
+                     >
+                       Clear
+                     </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer - Action Buttons */}
+              <div className="p-6 border-t border-gray-200 flex gap-4">
+                <button
+                  onClick={() => setShowFinalizeSaleModal(false)}
+                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <X size={20} />
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Handle payment submission
+                    showSuccess('Payment processed successfully!', 'success');
+                    setShowFinalizeSaleModal(false);
+                  }}
+                  className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <FileText size={20} />
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Delete Cart Confirmation Modal */}
