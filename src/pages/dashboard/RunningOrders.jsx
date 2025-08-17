@@ -1932,6 +1932,13 @@ const RunningOrders = () => {
     const item = splitItems.find(item => item.id === itemId);
     if (!item) return;
 
+    // Check if there's remaining quantity available
+    const remainingQuantity = getRemainingQuantity(itemId);
+    if (remainingQuantity <= 0) {
+      showSuccess('No more quantity available for this item', 'error');
+      return;
+    }
+
     // Add item to the selected split bill
     setSplitBills(prev => prev.map(split => {
       if (split.id === splitBillId) {
@@ -1960,6 +1967,66 @@ const RunningOrders = () => {
 
     // Update split bill totals
     updateSplitBillTotals(splitBillId);
+  };
+
+  const handleRemoveItemFromSplit = (itemId, splitBillId) => {
+    const item = splitItems.find(item => item.id === itemId);
+    if (!item) return;
+
+    // Remove item from the selected split bill
+    setSplitBills(prev => prev.map(split => {
+      if (split.id === splitBillId) {
+        const existingItem = split.items.find(i => i.food.id === item.food.id);
+        if (existingItem) {
+          if (existingItem.quantity > 1) {
+            // Decrease quantity if more than 1
+            return {
+              ...split,
+              items: split.items.map(i => 
+                i.food.id === item.food.id 
+                  ? { ...i, quantity: i.quantity - 1, totalPrice: (i.totalPrice / i.quantity) * (i.quantity - 1) }
+                  : i
+              )
+            };
+          } else {
+            // Remove item completely if quantity is 1
+            return {
+              ...split,
+              items: split.items.filter(i => i.food.id !== item.food.id)
+            };
+          }
+        }
+      }
+      return split;
+    }));
+
+    // Update split bill totals
+    updateSplitBillTotals(splitBillId);
+  };
+
+  const getItemQuantityInSplit = (itemId, splitBillId) => {
+    const item = splitItems.find(item => item.id === itemId);
+    if (!item) return 0;
+
+    const splitBill = splitBills.find(split => split.id === splitBillId);
+    if (!splitBill) return 0;
+
+    const existingItem = splitBill.items.find(i => i.food.id === item.food.id);
+    return existingItem ? existingItem.quantity : 0;
+  };
+
+  const getRemainingQuantity = (itemId) => {
+    const item = splitItems.find(item => item.id === itemId);
+    if (!item) return 0;
+
+    // Calculate total quantity used across all splits
+    const totalUsed = splitBills.reduce((total, split) => {
+      const existingItem = split.items.find(i => i.food.id === item.food.id);
+      return total + (existingItem ? existingItem.quantity : 0);
+    }, 0);
+
+    // Return remaining quantity
+    return Math.max(0, item.quantity - totalUsed);
   };
 
   const updateSplitBillTotals = (splitBillId) => {
@@ -2479,13 +2546,13 @@ const RunningOrders = () => {
                           {splitItems.map((item) => (
                             <tr key={item.id} className="border-t border-gray-100">
                               <td className="px-3 py-2 text-sm text-gray-800">
-                                <span className="truncate">{item.food.name}</span>
+                                  <span className="truncate">{item.food.name}</span>
                               </td>
                               <td className="px-3 py-2 text-sm text-center text-gray-600">
                                 €{(item.totalPrice / item.quantity).toFixed(2)}
                               </td>
                               <td className="px-3 py-2 text-sm text-center text-gray-600">
-                                {item.quantity}
+                                {getRemainingQuantity(item.id)}
                               </td>
                               <td className="px-3 py-2 text-sm text-center text-gray-600">
                                 €0.00
@@ -2496,10 +2563,22 @@ const RunningOrders = () => {
                               <td className="px-3 py-2 text-center">
                                 <div className="flex items-center justify-center gap-1">
                                   <button
-                                    onClick={() => handleAddItemToSplit(item.id, selectedSplitBill?.id)}
-                                    disabled={!selectedSplitBill}
+                                    onClick={() => handleRemoveItemFromSplit(item.id, selectedSplitBill?.id)}
+                                    disabled={!selectedSplitBill || getItemQuantityInSplit(item.id, selectedSplitBill?.id) === 0}
                                     className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${
-                                      selectedSplitBill
+                                      selectedSplitBill && getItemQuantityInSplit(item.id, selectedSplitBill?.id) > 0
+                                        ? 'bg-red-500 text-white hover:bg-red-600' 
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    }`}
+                                    title="Remove from selected split"
+                                  >
+                                    -
+                                  </button>
+                                  <button
+                                    onClick={() => handleAddItemToSplit(item.id, selectedSplitBill?.id)}
+                                    disabled={!selectedSplitBill || getRemainingQuantity(item.id) <= 0}
+                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${
+                                      selectedSplitBill && getRemainingQuantity(item.id) > 0
                                         ? 'bg-green-500 text-white hover:bg-green-600' 
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                     }`}
@@ -2576,38 +2655,38 @@ const RunningOrders = () => {
                     
                     {/* Split Creation */}
                     {splitBills.length === 0 && (
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="text-sm text-blue-800 font-medium mb-2">
-                          Maximum Split(s): 10
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-sm text-blue-800 font-medium mb-2">
+                        Maximum Split(s): 10
+                      </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Total Split
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={totalSplit}
+                            onChange={(e) => setTotalSplit(e.target.value)}
+                            placeholder="Enter number of splits"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                          />
+                          <button
+                            onClick={handleSplitGo}
+                            disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > 10}
+                            className={`px-6 py-2 font-medium rounded-lg transition-colors ${
+                              totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= 10
+                                ? 'bg-primary text-white hover:bg-primary/90'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            Go
+                          </button>
                         </div>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Total Split
-                            </label>
-                            <div className="flex gap-2">
-                              <input
-                                type="number"
-                                min="1"
-                                max="10"
-                                value={totalSplit}
-                                onChange={(e) => setTotalSplit(e.target.value)}
-                                placeholder="Enter number of splits"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                              />
-                              <button
-                                onClick={handleSplitGo}
-                                disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > 10}
-                                className={`px-6 py-2 font-medium rounded-lg transition-colors ${
-                                  totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= 10
-                                    ? 'bg-primary text-white hover:bg-primary/90'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }`}
-                              >
-                                Go
-                              </button>
-                            </div>
-                          </div>
+                      </div>
                         </div>
                       </div>
                     )}
@@ -2634,7 +2713,7 @@ const RunningOrders = () => {
                                 {selectedSplitBill?.id === splitBill.id && (
                                   <CheckCircle size={16} className="text-green-600" />
                                 )}
-                              </div>
+                          </div>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -2644,7 +2723,7 @@ const RunningOrders = () => {
                               >
                                 <X size={16} />
                               </button>
-                            </div>
+                        </div>
 
                             {/* Customer Selection */}
                             <div className="mb-3">
@@ -2682,23 +2761,23 @@ const RunningOrders = () => {
                                 </div>
                               ) : (
                                 <div className="text-xs text-gray-400 italic">No items added</div>
-                              )}
-                            </div>
+                      )}
+                    </div>
 
                             {/* Summary */}
                             <div className="text-xs space-y-1">
                               <div className="flex justify-between">
                                 <span>Sub Total:</span>
                                 <span>€{splitBill.subtotal.toFixed(2)}</span>
-                              </div>
+                  </div>
                               <div className="flex justify-between">
                                 <span>Disc Amt(%):</span>
                                 <span>€{splitBill.discount.toFixed(2)}X</span>
-                              </div>
+                </div>
                               <div className="flex justify-between">
                                 <span>Tax:</span>
                                 <span>€{splitBill.tax.toFixed(2)}</span>
-                              </div>
+              </div>
                               <div className="flex justify-between">
                                 <span>Charge:</span>
                                 <span>€{splitBill.charge.toFixed(2)}X</span>
