@@ -1965,33 +1965,43 @@ const RunningOrders = () => {
           </div>
           {/* Order Action Buttons - Below Running Orders Box */}
           <div className="flex justify-center absolute bottom-0 left-0 w-[100%]">
-            <div className="flex gap-2 p-2 text-[10px]">
-              <button className="flex-1 bg-[#010101] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                BILL
-              </button>
-              <button 
-                data-invoice-button
-                onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
-                disabled={!selectedPlacedOrder}
-                className={`flex-1 font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
-                INVOICE
-              </button>
-              <button className="flex-1 bg-[#f3be25] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                MODIFY ORDER
-              </button>
-              <button className="flex-1 bg-[#c81118] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                CANCEL
-              </button>
+            <div className="flex flex-col gap-2 p-2 text-[10px] w-full">
+              {/* First Row - Bill and Invoice */}
+              <div className="flex gap-2">
+                <button className="flex-1 bg-[#010101] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                  BILL
+                </button>
+                <button 
+                  data-invoice-button
+                  onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
+                  disabled={!selectedPlacedOrder}
+                  className={`flex-1 font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  INVOICE
+                </button>
+              </div>
+              
+              {/* Second Row - Order Details, Modify Order, Cancel */}
+              <div className="flex gap-2">
+                <button className="flex-1 bg-[#4d36eb] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                  ORDER DETAILS
+                </button>
+                <button className="flex-1 bg-[#f3be25] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                  MODIFY ORDER
+                </button>
+                <button className="flex-1 bg-[#c81118] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                  CANCEL
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Invoice Options Dropdown */}
           {showInvoiceOptions && selectedPlacedOrder && (
-            <div data-invoice-options className="absolute bottom-16 left-2 right-2 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
+            <div data-invoice-options className="absolute bottom-23 left-1/2 transform -translate-x-7 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
               <div className="flex flex-col gap-1">
                 <button 
                   onClick={handleOpenSplitBillModal}
-                  className="w-full bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors">
+                  className="w-32 bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors text-xs">
                   Split Bill
                 </button>
                 <button 
@@ -1999,7 +2009,7 @@ const RunningOrders = () => {
                     showSuccess('Single payment processed!', 'success');
                     setShowInvoiceOptions(false);
                   }}
-                  className="w-full bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors">
+                  className="w-32 bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors text-xs">
                   Single Pay
                 </button>
               </div>
