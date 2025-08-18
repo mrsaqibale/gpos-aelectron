@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Edit, Plus, X, Trash2, Search } from 'lucide-react';
+import VirtualKeyboard from '../../VirtualKeyboard';
+import useVirtualKeyboard from '../../../hooks/useVirtualKeyboard';
 import { useTheme } from '../../../contexts/ThemeContext';
 import CustomAlert from '../../CustomAlert';
 
@@ -36,6 +38,21 @@ const Ingredients = () => {
   
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  // Virtual keyboard integration
+  const {
+    showKeyboard,
+    activeInput,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    handleInputBlur,
+    hideKeyboard
+  } = useVirtualKeyboard(['custom_ingredient', 'update_ingredient_name']);
+
+  const getKeyboardValue = (name) => {
+    if (name === 'custom_ingredient') return customIngredient || '';
+    if (name === 'update_ingredient_name') return updateIngredientName || '';
+    return '';
+  };
 
   // Fetch all ingredients
   const fetchIngredients = async () => {
@@ -581,6 +598,7 @@ const Ingredients = () => {
     : ingredients;
 
   return (
+    <>
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800">Ingredients List</h2>
@@ -741,10 +759,14 @@ const Ingredients = () => {
                   </label>
                   <div className="relative">
                     <input
+                      name="custom_ingredient"
                       type="text"
                       value={customIngredient}
                       onChange={handleCustomIngredientChange}
                       onKeyDown={handleCustomIngredientKeyDown}
+                      onFocus={(e) => { handleAnyInputFocus(e, 'custom_ingredient', customIngredient || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(customIngredient || ''); } }}
+                      onClick={(e) => { handleAnyInputClick(e, 'custom_ingredient', customIngredient || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(customIngredient || ''); } }}
+                      onBlur={handleInputBlur}
                       placeholder="Type ingredient name to search or add custom ingredient..."
                       className="w-full px-3 py-2 border rounded-md focus:outline-none"
                       style={{
@@ -879,9 +901,13 @@ const Ingredients = () => {
                     Ingredient Name*
                   </label>
                                      <input
+                     name="update_ingredient_name"
                      type="text"
                      value={updateIngredientName}
                      onChange={(e) => setUpdateIngredientName(e.target.value)}
+                     onFocus={(e) => { handleAnyInputFocus(e, 'update_ingredient_name', updateIngredientName || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(updateIngredientName || ''); } }}
+                     onClick={(e) => { handleAnyInputClick(e, 'update_ingredient_name', updateIngredientName || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(updateIngredientName || ''); } }}
+                     onBlur={handleInputBlur}
                      placeholder="Enter ingredient name..."
                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
                      style={{ 
@@ -1013,6 +1039,22 @@ const Ingredients = () => {
         onClose={() => setAlertConfig({ ...alertConfig, isVisible: false })}
       />
     </div>
+    <VirtualKeyboard
+      isVisible={showKeyboard}
+      onClose={() => hideKeyboard()}
+      activeInput={activeInput}
+      onInputChange={(input, inputName) => {
+        if (inputName === 'custom_ingredient') {
+          setCustomIngredient(input);
+          setSearchTerm(input);
+        } else if (inputName === 'update_ingredient_name') {
+          setUpdateIngredientName(input);
+        }
+      }}
+      onInputBlur={handleInputBlur}
+      inputValue={getKeyboardValue(activeInput)}
+    />
+    </>
   );
 };
 
