@@ -28,7 +28,7 @@ const FoodForm = ({ food, onSubmit }) => {
     item_stock: '',
     sell_count: 0,
     // Keep form-specific fields that aren't in database
-    allergenIngredients: '',
+    // allergenIngredients: '',
     addons: [],
     allowNotes: false,
     productNote: '',
@@ -1118,6 +1118,7 @@ const FoodForm = ({ food, onSubmit }) => {
             </div>
           </div>
 
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Ingredients Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1182,21 +1183,6 @@ const FoodForm = ({ food, onSubmit }) => {
               </div>
             )}
           </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Allergen Ingredients</label>
-            <input
-              type="text"
-              name="allergenIngredients"
-              value={formData.allergenIngredients}
-              onChange={handleChange}
-              onFocus={() => setFocusedField('allergenIngredients')}
-              onBlur={() => setFocusedField('')}
-              className={getInputClasses('allergenIngredients')}
-              placeholder="e.g., Contains peanuts, gluten"
-            />
-          </div>
-
           {/* Allergin Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Allergins</label>
@@ -1258,6 +1244,23 @@ const FoodForm = ({ food, onSubmit }) => {
               </div>
             )}
           </div>
+          </div>
+
+          {/* <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Allergen Ingredients</label>
+            <input
+              type="text"
+              name="allergenIngredients"
+              value={formData.allergenIngredients}
+              onChange={handleChange}
+              onFocus={() => setFocusedField('allergenIngredients')}
+              onBlur={() => setFocusedField('')}
+              className={getInputClasses('allergenIngredients')}
+              placeholder="e.g., Contains peanuts, gluten"
+            />
+          </div> */}
+
+          
         </div>
 
         {/* Price & Availability Section */}
