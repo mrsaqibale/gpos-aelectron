@@ -6,6 +6,8 @@ import SubCategoryManagement from '../../components/dashboard/food/SubCategoryMa
 import AddonManagement from '../../components/dashboard/food/AddonManagement';
 import Ingredients from '../../components/dashboard/food/Ingredients';
 import FoodForm from '../../components/dashboard/food/FoodForm';
+import VirtualKeyboard from '../../components/VirtualKeyboard';
+import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
 
 // FoodImage component to handle image loading
 const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded" }) => {
@@ -71,6 +73,21 @@ const FoodList = () => {
   const [foodToDelete, setFoodToDelete] = useState(null);
 
   const categories = ['Traditional', 'Burgers', 'Pizza', 'Beverages'];
+
+  // Virtual Keyboard for search input
+  const {
+    showKeyboard,
+    activeInput,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    handleInputBlur,
+    hideKeyboard
+  } = useVirtualKeyboard(['foodSearch']);
+
+  const getKeyboardValue = (name) => {
+    if (name === 'foodSearch') return searchTerm || '';
+    return '';
+  };
 
   // Function to fetch food data from database
   const fetchFoodData = async () => {
@@ -329,8 +346,12 @@ const FoodList = () => {
                 <input
                   type="text"
                   placeholder="Search food items..."
+                  name="foodSearch"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={(e) => { handleAnyInputFocus(e, 'foodSearch', searchTerm || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(searchTerm || ''); } }}
+                  onClick={(e) => { handleAnyInputClick(e, 'foodSearch', searchTerm || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(searchTerm || ''); } }}
+                  onBlur={handleInputBlur}
                   className="w-64 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
                 />
               </div>
@@ -584,6 +605,20 @@ const FoodList = () => {
           </div>
         </div>
       )}
+
+      {/* Virtual Keyboard */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={() => hideKeyboard()}
+        activeInput={activeInput}
+        onInputChange={(input, inputName) => {
+          if (inputName === 'foodSearch') {
+            setSearchTerm(input);
+          }
+        }}
+        onInputBlur={handleInputBlur}
+        inputValue={getKeyboardValue(activeInput)}
+      />
     </div>
   );
 };
