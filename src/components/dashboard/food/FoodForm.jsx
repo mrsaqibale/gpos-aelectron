@@ -336,7 +336,7 @@ const FoodForm = ({ food, onSubmit }) => {
           min: 1,
           max: '',
           is_required: false,
-          options: [{ option_name: '', option_price: 0, total_stock: 0, stock_type: 'unlimited', sell_count: 0 }]
+          options: [{ option_name: '', option_price: 0, total_stock: '', stock_type: '', sell_count: 0 }]
         }
       ]
     }));
@@ -350,8 +350,8 @@ const FoodForm = ({ food, onSubmit }) => {
     updatedVariations[variationIndex].options.push({ 
       option_name: '', 
       option_price: 0, 
-      total_stock: 0, 
-      stock_type: 'unlimited', 
+      total_stock: '', 
+      stock_type: '', 
       sell_count: 0 
     });
     setFormData(prev => ({ ...prev, variations: updatedVariations }));
@@ -1653,7 +1653,7 @@ const FoodForm = ({ food, onSubmit }) => {
                        <label className="block text-sm font-medium text-gray-700 mb-1">Additional Price (€)</label>
                        <input
                          type="number"
-                         value={option.option_price || 0}
+                         value={option.option_price || ''}
                          onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_price', e.target.value)}
                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
                          step="0.01"
@@ -1663,25 +1663,28 @@ const FoodForm = ({ food, onSubmit }) => {
                      <div>
                        <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
                        <select
-                         value={option.stock_type || 'unlimited'}
+                         value={option.stock_type || ''}
                          onChange={(e) => handleOptionChange(vIndex, oIndex, 'stock_type', e.target.value)}
                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
                        >
+                         <option value="">Select Stock Type</option>
                          <option value="unlimited">Unlimited</option>
                          <option value="limited">Limited</option>
                        </select>
                      </div>
-                     <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-1">Total Stock</label>
-                                                <input
+                     {option.stock_type === 'limited' && (
+                       <div>
+                         <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                         <input
                            type="number"
-                           value={option.total_stock || 0}
+                           value={option.total_stock !== undefined && option.total_stock !== null ? option.total_stock : ''}
                            onChange={(e) => handleOptionChange(vIndex, oIndex, 'total_stock', e.target.value)}
                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
                            min="0"
-                           disabled={option.stock_type === 'unlimited'}
+                           placeholder="Enter stock amount"
                          />
-                     </div>
+                       </div>
+                     )}
                      <div>
                        <button
                          type="button"
