@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Edit, Plus, X, Trash2 } from 'lucide-react';
+import VirtualKeyboard from '../../VirtualKeyboard';
+import useVirtualKeyboard from '../../../hooks/useVirtualKeyboard';
 
 // CategoryImage component to handle image loading
 const CategoryImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded" }) => {
@@ -58,6 +60,22 @@ const CategoryManagement = () => {
   const [nameError, setNameError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
+
+  // Virtual Keyboard integration for modal inputs
+  const {
+    showKeyboard,
+    activeInput,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    handleInputBlur,
+    hideKeyboard
+  } = useVirtualKeyboard(['category_name', 'category_position']);
+
+  const getKeyboardValue = (name) => {
+    if (name === 'category_name') return newCategory.name || '';
+    if (name === 'category_position') return newCategory.position?.toString() || '';
+    return '';
+  };
 
   const fetchCategories = async()=>{
     try{
@@ -241,6 +259,7 @@ const CategoryManagement = () => {
   };
 
   return (
+    <>
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800">Category List</h2>
@@ -358,6 +377,9 @@ const CategoryManagement = () => {
                     name="name"
                     value={newCategory.name}
                     onChange={handleInputChange}
+                    onFocus={(e) => { handleAnyInputFocus(e, 'category_name', newCategory.name || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(newCategory.name || ''); } }}
+                    onClick={(e) => { handleAnyInputClick(e, 'category_name', newCategory.name || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(newCategory.name || ''); } }}
+                    onBlur={handleInputBlur}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight ${
                       nameError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primaryLight'
                     }`}
@@ -378,6 +400,9 @@ const CategoryManagement = () => {
                     name="position"
                     value={newCategory.position}
                     onChange={handleInputChange}
+                    onFocus={(e) => { handleAnyInputFocus(e, 'category_position', (newCategory.position || '').toString()); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput((newCategory.position || '').toString()); } }}
+                    onClick={(e) => { handleAnyInputClick(e, 'category_position', (newCategory.position || '').toString()); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput((newCategory.position || '').toString()); } }}
+                    onBlur={handleInputBlur}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                     placeholder="e.g., 1"
                     min="1"
@@ -486,6 +511,28 @@ const CategoryManagement = () => {
         </div>
       )}
     </div>
+    {/* Virtual Keyboard */}
+    <VirtualKeyboard
+      isVisible={showKeyboard}
+      onClose={() => hideKeyboard()}
+      activeInput={activeInput}
+      onInputChange={(input, inputName) => {
+        if (inputName === 'category_name') {
+          setNewCategory(prev => ({ ...prev, name: input }));
+          // Duplicate name check to mirror onChange behavior
+          const trimmedValue = (input || '').trim().toLowerCase();
+          const existingCategory = categories.find(cat =>
+            cat.name.toLowerCase() === trimmedValue && (!editingCategory || cat.id !== editingCategory.id)
+          );
+          setNameError(existingCategory ? '⚠ Category with this name already exists' : '');
+        } else if (inputName === 'category_position') {
+          setNewCategory(prev => ({ ...prev, position: input }));
+        }
+      }}
+      onInputBlur={handleInputBlur}
+      inputValue={getKeyboardValue(activeInput)}
+    />
+    </>
   );
 };
 
