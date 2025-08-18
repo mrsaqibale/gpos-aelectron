@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, ChevronDown, Info, Package, DollarSign, Settings, Tag, Pen, PenIcon, PenTool, X } from 'lucide-react';
+import VirtualKeyboard from '../../VirtualKeyboard';
+import useVirtualKeyboard from '../../../hooks/useVirtualKeyboard';
 
 const FoodForm = ({ food, onSubmit }) => {
   const navigate = useNavigate();
@@ -67,6 +69,65 @@ const FoodForm = ({ food, onSubmit }) => {
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Virtual Keyboard integration
+  const {
+    showKeyboard,
+    activeInput,
+    keyboardInput,
+    handleInputFocus,
+    handleInputBlur,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    onKeyboardChange,
+    onKeyboardKeyPress,
+    hideKeyboard
+  } = useVirtualKeyboard([
+    'name',
+    'description',
+    'position',
+    'price',
+    'tax',
+    'discount',
+    'available_time_starts',
+    'available_time_ends',
+    'maxPurchaseQty',
+    'stock_type',
+    'item_stock',
+    'sku',
+    'barcode',
+    'lowInventory',
+    'productNote',
+    'ingredientInput',
+    'allerginInput',
+    'adonInput'
+  ]);
+
+  const handleFormFocus = (e) => {
+    const el = e.target;
+    if (!el || !el.tagName) return;
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') {
+      const inputName = el.name || '';
+      handleAnyInputFocus(e, inputName, el.value || '');
+      if (window.keyboard && typeof window.keyboard.setInput === 'function') {
+        window.keyboard.setInput(el.value || '');
+      }
+    }
+  };
+
+  const handleFormClick = (e) => {
+    const el = e.target;
+    if (!el || !el.tagName) return;
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') {
+      const inputName = el.name || '';
+      handleAnyInputClick(e, inputName, el.value || '');
+      if (window.keyboard && typeof window.keyboard.setInput === 'function') {
+        window.keyboard.setInput(el.value || '');
+      }
+    }
+  };
 
   // Load categories and subcategories
   useEffect(() => {
@@ -930,7 +991,7 @@ const FoodForm = ({ food, onSubmit }) => {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <form onSubmit={handleSubmit} onFocus={handleFormFocus} onClick={handleFormClick} onBlur={handleInputBlur} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         {/* Basic Information Section */}
         <div className="mb-8">
           <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
@@ -1151,6 +1212,7 @@ const FoodForm = ({ food, onSubmit }) => {
               {/* Search Input */}
               <div className="relative">
                 <input
+                  name="ingredientInput"
                   type="text"
                   value={ingredientInput}
                   onChange={handleIngredientInputChange}
@@ -1212,6 +1274,7 @@ const FoodForm = ({ food, onSubmit }) => {
               {/* Search Input */}
               <div className="relative">
                 <input
+                  name="allerginInput"
                   type="text"
                   value={allerginInput}
                   onChange={handleAllerginInputChange}
@@ -1479,6 +1542,7 @@ const FoodForm = ({ food, onSubmit }) => {
             {/* Search Input */}
             <div className="relative">
               <input
+                name="adonInput"
                 type="text"
                 value={adonInput}
                 onChange={handleAdonInputChange}
@@ -1832,6 +1896,29 @@ const FoodForm = ({ food, onSubmit }) => {
           </button>
         </div>
       </form>
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={() => hideKeyboard()}
+        activeInput={activeInput}
+        onInputChange={(input, inputName) => {
+          if (inputName === 'ingredientInput') {
+            setIngredientInput(input);
+          } else if (inputName === 'allerginInput') {
+            setAllerginInput(input);
+          } else if (inputName === 'adonInput') {
+            setAdonInput(input);
+          } else if (inputName) {
+            setFormData(prev => ({ ...prev, [inputName]: input }));
+          }
+        }}
+        onInputBlur={handleInputBlur}
+        inputValue={
+          activeInput === 'ingredientInput' ? ingredientInput :
+          activeInput === 'allerginInput' ? allerginInput :
+          activeInput === 'adonInput' ? adonInput :
+          (activeInput && formData[activeInput] !== undefined && formData[activeInput] !== null ? String(formData[activeInput]) : '')
+        }
+      />
     </div>
   );
 };
