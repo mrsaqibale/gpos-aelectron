@@ -24,8 +24,8 @@ const FoodForm = ({ food, onSubmit }) => {
     available_time_ends: '',
     sku: '',
     barcode: '',
-    stock_type: 'unlimited',
-    item_stock: 0,
+    stock_type: '',
+    item_stock: '',
     sell_count: 0,
     // Keep form-specific fields that aren't in database
     allergenIngredients: '',
@@ -758,8 +758,10 @@ const FoodForm = ({ food, onSubmit }) => {
         position: formData.position ? parseInt(formData.position) : null,
         sku: formData.sku,
         barcode: formData.barcode,
-        stock_type: formData.stock_type,
-        item_stock: parseInt(formData.item_stock),
+        stock_type: formData.stock_type || 'unlimited',
+        item_stock: formData.stock_type === 'limited' && formData.item_stock !== ''
+          ? parseInt(formData.item_stock)
+          : null,
         sell_count: parseInt(formData.sell_count),
         maximum_cart_quantity: formData.maxPurchaseQty ? parseInt(formData.maxPurchaseQty) : null,
         track_inventory: formData.trackInventory ? 1 : 0,
@@ -1398,20 +1400,41 @@ const FoodForm = ({ food, onSubmit }) => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
-                <div className="relative">
-                  <select
-                    name="stock_type"
-                    value={formData.stock_type}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('stock_type')}
-                    onBlur={() => setFocusedField('')}
-                    className={`${getInputClasses('stock_type')} appearance-none pr-8`}
-                  >
-                    <option value="unlimited">Unlimited</option>
-                    <option value="limited">Limited</option>
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                    <div className="relative">
+                      <select
+                        name="stock_type"
+                        value={formData.stock_type}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('stock_type')}
+                        onBlur={() => setFocusedField('')}
+                        className={`${getInputClasses('stock_type')} appearance-none pr-8`}
+                      >
+                        <option value="">Select Stock Type</option>
+                        <option value="unlimited">Unlimited</option>
+                        <option value="limited">Limited</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  {formData.stock_type === 'limited' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                      <input
+                        type="number"
+                        name="item_stock"
+                        value={formData.item_stock}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('item_stock')}
+                        onBlur={() => setFocusedField('')}
+                        className={getInputClasses('item_stock')}
+                        min="0"
+                        placeholder="Enter stock amount"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
