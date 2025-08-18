@@ -107,7 +107,10 @@ const FoodForm = ({ food, onSubmit }) => {
     const el = e.target;
     if (!el || !el.tagName) return;
     const tag = el.tagName.toLowerCase();
-    if (tag === 'input' || tag === 'textarea') {
+    const type = (el.getAttribute('type') || '').toLowerCase();
+    // Only show keyboard for text-like inputs and textareas; skip toggles/selects/etc.
+    const allowInputTypes = ['text', 'number', 'time', 'date'];
+    if (tag === 'textarea' || (tag === 'input' && allowInputTypes.includes(type))) {
       const inputName = el.name || '';
       handleAnyInputFocus(e, inputName, el.value || '');
       if (window.keyboard && typeof window.keyboard.setInput === 'function') {
@@ -120,13 +123,76 @@ const FoodForm = ({ food, onSubmit }) => {
     const el = e.target;
     if (!el || !el.tagName) return;
     const tag = el.tagName.toLowerCase();
-    if (tag === 'input' || tag === 'textarea') {
+    const type = (el.getAttribute('type') || '').toLowerCase();
+    const allowInputTypes = ['text', 'number', 'time', 'date'];
+    if (tag === 'textarea' || (tag === 'input' && allowInputTypes.includes(type))) {
       const inputName = el.name || '';
       handleAnyInputClick(e, inputName, el.value || '');
       if (window.keyboard && typeof window.keyboard.setInput === 'function') {
         window.keyboard.setInput(el.value || '');
       }
     }
+  };
+
+  // Helpers for handling dynamic variation fields with the keyboard
+  const updateFieldFromKeyboard = (fieldName, value) => {
+    if (!fieldName) return;
+    // variation_<vIndex>_name|min|max
+    let match = fieldName.match(/^variation_(\d+)_(name|min|max)$/);
+    if (match) {
+      const vIndex = parseInt(match[1], 10);
+      const key = match[2];
+      setFormData(prev => {
+        const variations = [...(prev.variations || [])];
+        if (!variations[vIndex]) return prev;
+        variations[vIndex] = { ...variations[vIndex], [key]: value };
+        return { ...prev, variations };
+      });
+      return;
+    }
+    // variation_<vIndex>_option_<oIndex>_(option_name|option_price|total_stock)
+    match = fieldName.match(/^variation_(\d+)_option_(\d+)_(option_name|option_price|total_stock)$/);
+    if (match) {
+      const vIndex = parseInt(match[1], 10);
+      const oIndex = parseInt(match[2], 10);
+      const key = match[3];
+      setFormData(prev => {
+        const variations = [...(prev.variations || [])];
+        if (!variations[vIndex]) return prev;
+        const v = { ...variations[vIndex] };
+        const options = [...(v.options || [])];
+        if (!options[oIndex]) return prev;
+        options[oIndex] = { ...options[oIndex], [key]: value };
+        v.options = options;
+        variations[vIndex] = v;
+        return { ...prev, variations };
+      });
+      return;
+    }
+    // default: top-level formData
+    setFormData(prev => ({ ...prev, [fieldName]: value }));
+  };
+
+  const getValueForActiveInput = (fieldName) => {
+    if (!fieldName) return '';
+    let match = fieldName.match(/^variation_(\d+)_(name|min|max)$/);
+    if (match) {
+      const vIndex = parseInt(match[1], 10);
+      const key = match[2];
+      return (formData.variations?.[vIndex]?.[key] ?? '').toString();
+    }
+    match = fieldName.match(/^variation_(\d+)_option_(\d+)_(option_name|option_price|total_stock)$/);
+    if (match) {
+      const vIndex = parseInt(match[1], 10);
+      const oIndex = parseInt(match[2], 10);
+      const key = match[3];
+      return (formData.variations?.[vIndex]?.options?.[oIndex]?.[key] ?? '').toString();
+    }
+    if (fieldName === 'ingredientInput') return ingredientInput || '';
+    if (fieldName === 'allerginInput') return allerginInput || '';
+    if (fieldName === 'adonInput') return adonInput || '';
+    const val = formData[fieldName];
+    return (val !== undefined && val !== null ? String(val) : '');
   };
 
   // Load categories and subcategories
@@ -1514,7 +1580,8 @@ const FoodForm = ({ food, onSubmit }) => {
                         name="item_stock"
                         value={formData.item_stock}
                         onChange={handleChange}
-                        onFocus={() => setFocusedField('item_stock')}
+                        onFocus={(e) => { setFocusedField('item_stock'); handleAnyInputFocus(e, 'item_stock', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                        onClick={(e) => { handleAnyInputClick(e, 'item_stock', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
                         onBlur={() => setFocusedField('')}
                         className={getInputClasses('item_stock')}
                         min="0"
@@ -1640,6 +1707,7 @@ const FoodForm = ({ food, onSubmit }) => {
                       Variation Name <span className="text-red-500">*</span>
                     </label>
                     <input
+                      name={`variation_${vIndex}_name`}
                       type="text"
                       value={variation.name || ''}
                       onChange={(e) => handleVariationChange(vIndex, 'name', e.target.value)}
@@ -1679,6 +1747,7 @@ const FoodForm = ({ food, onSubmit }) => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Min Selections</label>
                     <input
+                      name={`variation_${vIndex}_min`}
                       type="number"
                       value={variation.min || 1}
                       onChange={(e) => handleVariationChange(vIndex, 'min', e.target.value)}
@@ -1689,6 +1758,7 @@ const FoodForm = ({ food, onSubmit }) => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Max Selections</label>
                     <input
+                      name={`variation_${vIndex}_max`}
                       type="number"
                       value={variation.max || ''}
                       onChange={(e) => handleVariationChange(vIndex, 'max', e.target.value)}
@@ -1729,6 +1799,7 @@ const FoodForm = ({ food, onSubmit }) => {
                           Option Name <span className="text-red-500">*</span>
                         </label>
                         <input
+                          name={`variation_${vIndex}_option_${oIndex}_option_name`}
                           type="text"
                           value={option.option_name || ''}
                           onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_name', e.target.value)}
@@ -1739,6 +1810,7 @@ const FoodForm = ({ food, onSubmit }) => {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Additional Price (€)</label>
                         <input
+                          name={`variation_${vIndex}_option_${oIndex}_option_price`}
                           type="number"
                           value={option.option_price || ''}
                           onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_price', e.target.value)}
@@ -1763,6 +1835,7 @@ const FoodForm = ({ food, onSubmit }) => {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
                           <input
+                            name={`variation_${vIndex}_option_${oIndex}_total_stock`}
                             type="number"
                             value={option.total_stock !== undefined && option.total_stock !== null ? option.total_stock : ''}
                             onChange={(e) => handleOptionChange(vIndex, oIndex, 'total_stock', e.target.value)}
@@ -1855,6 +1928,9 @@ const FoodForm = ({ food, onSubmit }) => {
                       name="item_stock"
                       value={formData.item_stock}
                       onChange={handleChange}
+                      onFocus={(e) => { setFocusedField('item_stock'); handleAnyInputFocus(e, 'item_stock', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                      onClick={(e) => { handleAnyInputClick(e, 'item_stock', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                      onBlur={() => setFocusedField('')}
                       className={getInputClasses('item_stock')}
                       min="0"
                     />
@@ -1866,6 +1942,9 @@ const FoodForm = ({ food, onSubmit }) => {
                       name="lowInventory"
                       value={formData.lowInventory}
                       onChange={handleChange}
+                      onFocus={(e) => { setFocusedField('lowInventory'); handleAnyInputFocus(e, 'lowInventory', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                      onClick={(e) => { handleAnyInputClick(e, 'lowInventory', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                      onBlur={() => setFocusedField('')}
                       className={getInputClasses('lowInventory')}
                       min="1"
                     />
@@ -1907,17 +1986,12 @@ const FoodForm = ({ food, onSubmit }) => {
             setAllerginInput(input);
           } else if (inputName === 'adonInput') {
             setAdonInput(input);
-          } else if (inputName) {
-            setFormData(prev => ({ ...prev, [inputName]: input }));
+          } else {
+            updateFieldFromKeyboard(inputName, input);
           }
         }}
         onInputBlur={handleInputBlur}
-        inputValue={
-          activeInput === 'ingredientInput' ? ingredientInput :
-          activeInput === 'allerginInput' ? allerginInput :
-          activeInput === 'adonInput' ? adonInput :
-          (activeInput && formData[activeInput] !== undefined && formData[activeInput] !== null ? String(formData[activeInput]) : '')
-        }
+        inputValue={getValueForActiveInput(activeInput)}
       />
     </div>
   );
