@@ -10,7 +10,7 @@ const FoodForm = ({ food, onSubmit }) => {
     image: null,
     category_id: '',
     subcategory_id: '',
-    veg: 0, // 0 for Non-Veg, 1 for Veg
+    veg: '', // 0 for Non-Veg, 1 for Veg
     isPizza: false, // New field for pizza toggle
     status: 'active',
     restaurant_id: 1,
@@ -1072,6 +1072,7 @@ const FoodForm = ({ food, onSubmit }) => {
                   onBlur={() => setFocusedField('')}
                   className={`${getInputClasses('veg')} appearance-none pr-8`}
                 >
+                  <option value="">Select Food Type</option>
                   <option value={0}>Non-Veg</option>
                   <option value={1}>Veg</option>
                 </select>
@@ -1817,7 +1818,7 @@ const FoodForm = ({ food, onSubmit }) => {
         <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
           <button
             type="button"
-            onClick={() => navigate('/foods')}
+            onClick={() => navigate('/dashboard/food-management')}
             className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight transition-colors"
           >
             Cancel
