@@ -5,7 +5,7 @@ const CustomAlert = ({
   message, 
   isVisible, 
   onClose, 
-  duration = 1000, 
+  duration = 3000, 
   type = 'success'
 }) => {
   const [isShowing, setIsShowing] = useState(false);
@@ -17,7 +17,7 @@ const CustomAlert = ({
         setIsShowing(false);
         setTimeout(() => {
           onClose && onClose();
-        }, 1000); // Wait for fade out animation
+        }, 3000);
       }, duration);
 
       return () => clearTimeout(timer);

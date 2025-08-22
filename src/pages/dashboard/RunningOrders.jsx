@@ -68,7 +68,7 @@ import useCustomAlert from '../../hooks/useCustomAlert';
 
 const RunningOrders = () => {
   // Custom Alert Hook
-  const { alertState, showSuccess, hideAlert } = useCustomAlert();
+  const { alertState, showSuccess, showError, showWarning, showInfo, hideAlert } = useCustomAlert();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -173,6 +173,9 @@ const RunningOrders = () => {
   
   // Cart Details Modal State
   const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
+
+  // Order Type State
+  const [selectedOrderType, setSelectedOrderType] = useState('');
 
   // Use the custom hook for keyboard functionality
   const {
@@ -567,9 +570,15 @@ const RunningOrders = () => {
 
   // Handle add to cart
   const handleAddToCart = () => {
+    // Check if order type is selected
+    if (!selectedOrderType) {
+      showError('Select the Order Type First');
+      return;
+    }
+
     // Validate variation selections using the new validation function
     if (!validateVariationSelections()) {
-      showSuccess('Please complete all required selections before adding to cart', 'error');
+      showError('Please complete all required selections before adding to cart');
       return;
     }
 
@@ -698,6 +707,12 @@ const RunningOrders = () => {
   // Handle food item click - either increase quantity or show modal
   const handleFoodItemClick = async (foodItem) => {
     console.log('Food item clicked:', foodItem);
+
+    // Check if order type is selected
+    if (!selectedOrderType) {
+      showError('Select the Order Type First');
+      return;
+    }
 
     // Check if any food item with the same ID exists in cart
     const existingCartItem = isAnyFoodInCart(foodItem);
@@ -939,11 +954,11 @@ const RunningOrders = () => {
         setShowDeleteConfirm(false);
         showSuccess('Customer deleted successfully', 'success');
       } else {
-        showSuccess('Error deleting customer', 'error');
+        showError('Error deleting customer');
       }
     } catch (error) {
       console.error('Error deleting customer:', error);
-      showSuccess('Error deleting customer', 'error');
+      showError('Error deleting customer');
     }
   };
 
@@ -965,17 +980,17 @@ const RunningOrders = () => {
         await fetchFloors();
       } else {
         console.error('Failed to add sample data:', result?.error);
-        showSuccess('Failed to add sample data: ' + (result?.error || 'Unknown error'), 'error');
+        showError('Failed to add sample data: ' + (result?.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error adding sample data:', error);
-      showSuccess('Error adding sample data', 'error');
+      showError('Error adding sample data');
     }
   };
 
   const handleOpenEditModal = async () => {
     if (!selectedCustomer) {
-      showSuccess('No customer selected to edit', 'error');
+      showError('No customer selected to edit');
       return;
     }
 
@@ -1070,7 +1085,7 @@ const RunningOrders = () => {
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      showSuccess('Please enter a coupon code', 'error');
+      showError('Please enter a coupon code');
       return;
     }
 
@@ -1079,7 +1094,7 @@ const RunningOrders = () => {
 
       if (!window.myAPI) {
         console.error('myAPI is not available');
-        showSuccess('System error: API not available', 'error');
+        showError('System error: API not available');
         return;
       }
 
@@ -1108,12 +1123,12 @@ const RunningOrders = () => {
 
         // Check if coupon is valid
         if (transformedCoupon.status !== 'active') {
-          showSuccess('This coupon is not active', 'error');
+          showError('This coupon is not active');
           return;
         }
 
         if (transformedCoupon.expireDate && new Date(transformedCoupon.expireDate) < new Date()) {
-          showSuccess('This coupon has expired', 'error');
+          showError('This coupon has expired');
           return;
         }
 
@@ -1124,11 +1139,11 @@ const RunningOrders = () => {
         // Don't close modal automatically - let user close it manually
 
       } else {
-        showSuccess('Invalid coupon code. Please try again.', 'error');
+        showError('Invalid coupon code. Please try again.');
       }
     } catch (error) {
       console.error('Error applying coupon:', error);
-      showSuccess('Error applying coupon. Please try again.', 'error');
+      showError('Error applying coupon. Please try again.');
     }
   };
 
@@ -1139,12 +1154,12 @@ const RunningOrders = () => {
 
       // Check if coupon is valid
       if (coupon.status !== 'active') {
-        showSuccess('This coupon is not active', 'error');
+        showError('This coupon is not active');
         return;
       }
 
       if (coupon.expireDate && new Date(coupon.expireDate) < new Date()) {
-        showSuccess('This coupon has expired', 'error');
+        showError('This coupon has expired');
         return;
       }
 
@@ -1157,7 +1172,7 @@ const RunningOrders = () => {
 
     } catch (error) {
       console.error('Error applying coupon directly:', error);
-      showSuccess('Error applying coupon. Please try again.', 'error');
+      showError('Error applying coupon. Please try again.');
     }
   };
 
@@ -1189,7 +1204,7 @@ const RunningOrders = () => {
 
   const handleApplyManualDiscount = () => {
     if (!discountAmount || parseFloat(discountAmount) <= 0) {
-      showSuccess('Please enter a valid discount amount', 'error');
+      showError('Please enter a valid discount amount');
       return;
     }
 
@@ -1454,6 +1469,7 @@ const RunningOrders = () => {
     setFoodQuantity(1);
     setSelectedVariations({});
     setSelectedAdons([]);
+    setSelectedOrderType('');
 
     // Show success alert if there were items in the cart
     if (itemCount > 0) {
@@ -1596,7 +1612,7 @@ const RunningOrders = () => {
   // Handle place order
   const handlePlaceOrder = () => {
     if (cartItems.length === 0) {
-      showSuccess('Please add items to cart before placing order', 'error');
+      showError('Please add items to cart before placing order');
       return;
     }
 
@@ -1625,7 +1641,7 @@ const RunningOrders = () => {
   // Handle payment
   const handlePayment = () => {
     if (cartItems.length === 0) {
-      showSuccess('Please add items to cart before proceeding to payment', 'error');
+      showError('Please add items to cart before proceeding to payment');
       return;
     }
 
@@ -1905,13 +1921,13 @@ const RunningOrders = () => {
 
   const handleSplitGo = () => {
     if (!totalSplit || parseInt(totalSplit) <= 0) {
-      showSuccess('Please enter a valid number of splits', 'error');
+      showError('Please enter a valid number of splits');
       return;
     }
     
     const numSplits = parseInt(totalSplit);
     if (numSplits > 10) {
-      showSuccess('Maximum 10 splits allowed', 'error');
+      showError('Maximum 10 splits allowed');
       return;
     }
 
@@ -1953,7 +1969,7 @@ const RunningOrders = () => {
     // Check if there's remaining quantity available
     const remainingQuantity = getRemainingQuantity(itemId);
     if (remainingQuantity <= 0) {
-      showSuccess('No more quantity available for this item', 'error');
+      showError('No more quantity available for this item');
       return;
     }
 
@@ -2080,7 +2096,7 @@ const RunningOrders = () => {
 
   const handleAddDiscountToSplit = () => {
     if (!selectedSplitBill) {
-      showSuccess('Please select a split bill first', 'error');
+      showError('Please select a split bill first');
       return;
     }
 
@@ -2101,7 +2117,7 @@ const RunningOrders = () => {
 
   const handleAddChargeToSplit = () => {
     if (!selectedSplitBill) {
-      showSuccess('Please select a split bill first', 'error');
+      showError('Please select a split bill first');
       return;
     }
 
@@ -2122,7 +2138,7 @@ const RunningOrders = () => {
 
   const handleAddTipsToSplit = () => {
     if (!selectedSplitBill) {
-      showSuccess('Please select a split bill first', 'error');
+      showError('Please select a split bill first');
       return;
     }
 
@@ -2156,7 +2172,7 @@ const RunningOrders = () => {
   // Finalize Sale Helper Functions
   const handleAddPayment = () => {
     if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      showSuccess('Please enter a valid payment amount', 'error');
+      showError('Please enter a valid payment amount');
       return;
     }
 
@@ -2431,31 +2447,40 @@ const RunningOrders = () => {
         <div className="w-[30%] h-[100%] border border-gray-300 rounded-lg ">
           <div className="flex flex-wrap gap-1.5 px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
             {/* Tabs row */}
-            <button className="px-3 py-1 bg-[#d3D3D3] text-black text-[11px] rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted ">
+            <button 
+              onClick={() => setSelectedOrderType('In Store')}
+              className={`px-3 py-1 text-black text-[11px] rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted transition-colors ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-[#d3D3D3] hover:bg-gray-200'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               </svg>
               In Store
             </button>
             <button
-              onClick={() => setShowTableModal(true)}
-              className="px-3 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted hover:bg-gray-200 transition-colors">
+              onClick={() => {
+                setSelectedOrderType('Table');
+                setShowTableModal(true);
+              }}
+              className={`px-3 py-1 text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted transition-colors ${selectedOrderType === 'Table' ? 'bg-primary text-white' : 'bg-[#d3D3D3] hover:bg-gray-200'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"></rect>
               </svg>
               Table
             </button>
-            <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted ">
+            <button 
+              onClick={() => setSelectedOrderType('Collection')}
+              className={`px-2.5 py-1 text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted transition-colors ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-[#d3D3D3] hover:bg-gray-200'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"></circle>
               </svg>
               Collection
             </button>
-            <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted ">
+            <button 
+              onClick={() => setSelectedOrderType('Delivery')}
+              className={`px-2.5 py-1 text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted transition-colors ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-[#d3D3D3] hover:bg-gray-200'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
@@ -2514,7 +2539,7 @@ const RunningOrders = () => {
             <button
               onClick={() => {
                 if (cartItems.length === 0) {
-                  showSuccess('Cart is already empty', 'error');
+                  showError('Cart is already empty');
                   return;
                 }
 
