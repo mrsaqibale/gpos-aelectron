@@ -64,7 +64,7 @@ const CustomerManagement = () => {
       totalOrders: 4,
       totalAmount: 100.70,
       joiningDate: '2025-06-21',
-      isActive: true,
+      isLoyal: true,
       address: 'Windmill, Cashel, Co. Tipperary, E25 YK57, Ireland'
     },
     {
@@ -75,7 +75,7 @@ const CustomerManagement = () => {
       totalOrders: 3,
       totalAmount: 2387.55,
       joiningDate: '2025-05-24',
-      isActive: true,
+      isLoyal: true,
       address: 'Main Street, Dublin, Co. Dublin, D01 AB12, Ireland'
     },
     {
@@ -86,7 +86,7 @@ const CustomerManagement = () => {
       totalOrders: 2,
       totalAmount: 85.50,
       joiningDate: '2025-06-28',
-      isActive: true,
+      isLoyal: true,
       address: 'Oak Avenue, Cork, Co. Cork, T12 CD34, Ireland'
     },
     {
@@ -97,7 +97,7 @@ const CustomerManagement = () => {
       totalOrders: 1,
       totalAmount: 35.49,
       joiningDate: '2025-06-11',
-      isActive: true,
+      isLoyal: true,
       address: 'River Road, Galway, Co. Galway, H91 EF56, Ireland'
     },
     {
@@ -108,7 +108,7 @@ const CustomerManagement = () => {
       totalOrders: 1,
       totalAmount: 25.94,
       joiningDate: '2025-06-13',
-      isActive: true,
+      isLoyal: true,
       address: 'Hill Street, Limerick, Co. Limerick, V94 GH78, Ireland'
     },
     {
@@ -119,7 +119,7 @@ const CustomerManagement = () => {
       totalOrders: 1,
       totalAmount: 44.57,
       joiningDate: '2025-06-13',
-      isActive: true,
+      isLoyal: true,
       address: 'Park Lane, Waterford, Co. Waterford, X91 IJ90, Ireland'
     },
     {
@@ -130,7 +130,7 @@ const CustomerManagement = () => {
       totalOrders: 5,
       totalAmount: 320.80,
       joiningDate: '2025-05-15',
-      isActive: true,
+      isLoyal: true,
       address: 'Church Street, Kilkenny, Co. Kilkenny, R95 KL12, Ireland'
     },
     {
@@ -141,7 +141,7 @@ const CustomerManagement = () => {
       totalOrders: 2,
       totalAmount: 156.25,
       joiningDate: '2025-06-05',
-      isActive: false,
+      isLoyal: false,
       address: 'Bridge Street, Wexford, Co. Wexford, Y35 MN34, Ireland'
     },
     {
@@ -152,7 +152,7 @@ const CustomerManagement = () => {
       totalOrders: 8,
       totalAmount: 892.30,
       joiningDate: '2025-04-20',
-      isActive: true,
+      isLoyal: true,
       address: 'High Street, Sligo, Co. Sligo, F91 PQ56, Ireland'
     },
     {
@@ -163,7 +163,7 @@ const CustomerManagement = () => {
       totalOrders: 3,
       totalAmount: 245.60,
       joiningDate: '2025-06-10',
-      isActive: true,
+      isLoyal: true,
       address: 'Queen Street, Derry, Co. Derry, BT48 RS78, Ireland'
     },
     {
@@ -174,7 +174,7 @@ const CustomerManagement = () => {
       totalOrders: 1,
       totalAmount: 67.89,
       joiningDate: '2025-06-25',
-      isActive: true,
+      isLoyal: true,
       address: 'King Street, Belfast, Co. Antrim, BT1 TU90, Ireland'
     },
     {
@@ -185,7 +185,7 @@ const CustomerManagement = () => {
       totalOrders: 6,
       totalAmount: 456.78,
       joiningDate: '2025-05-08',
-      isActive: true,
+      isLoyal: true,
       address: 'Castle Street, Armagh, Co. Armagh, BT61 VW12, Ireland'
     },
     {
@@ -196,7 +196,7 @@ const CustomerManagement = () => {
       totalOrders: 4,
       totalAmount: 234.56,
       joiningDate: '2025-06-18',
-      isActive: false,
+      isLoyal: false,
       address: 'Market Square, Tralee, Co. Kerry, V92 XY34, Ireland'
     },
     {
@@ -207,7 +207,7 @@ const CustomerManagement = () => {
       totalOrders: 2,
       totalAmount: 123.45,
       joiningDate: '2025-06-22',
-      isActive: true,
+      isLoyal: true,
       address: 'Harbour Road, Drogheda, Co. Louth, A92 ZA56, Ireland'
     }
   ];
@@ -255,7 +255,7 @@ const CustomerManagement = () => {
     setCustomers(prevCustomers =>
       prevCustomers.map(customer =>
         customer.id === customerId
-          ? { ...customer, isActive: !customer.isActive }
+          ? { ...customer, isLoyal: !customer.isLoyal }
           : customer
       )
     );
@@ -477,7 +477,7 @@ const CustomerManagement = () => {
                   Joining Date
                   <ChevronDown className="inline ml-1" size={12} />
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Active/Inactive</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Loyal</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Actions</th>
               </tr>
             </thead>
@@ -511,12 +511,12 @@ const CustomerManagement = () => {
                     <button
                       onClick={() => handleStatusToggle(customer.id)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        customer.isActive ? 'bg-primary' : 'bg-gray-300'
+                        customer.isLoyal ? 'bg-primary' : 'bg-gray-300'
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          customer.isActive ? 'translate-x-6' : 'translate-x-1'
+                          customer.isLoyal ? 'translate-x-6' : 'translate-x-1'
                         }`}
                       />
                     </button>
