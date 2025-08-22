@@ -2829,7 +2829,7 @@ const RunningOrders = () => {
         {/* Split Bill Modal */}
         {showSplitBillModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-8xl h-[95vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">Split Bill</h2>
@@ -4243,7 +4243,7 @@ const RunningOrders = () => {
         {/* Finalize Sale Modal */}
         {showFinalizeSaleModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-8xl h-[95vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
                 <h2 className="text-xl font-bold">
@@ -4612,56 +4612,55 @@ const RunningOrders = () => {
                 </div>
 
                 {/* Right Panel - Coupons and offers */}
-                <div className=" flex-shrink-0">
-                  <div className="space-y-4 h-full overflow-y-auto pr-2">
-                    {/* Numeric Keyboard Section */}
-                    <div className="mb-6">
-                      <h4 className="text-lg font-semibold text-gray-800 mb-3">Numeric Keyboard</h4>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <div
-                          className="keyboard-container w-full"
-                          onClick={(e) => e.stopPropagation()}
-                          onMouseDown={(e) => e.preventDefault()}
-                        >
-                          <Keyboard
-                            keyboardRef={(r) => (window.keyboard = r)}
-                            input={numericKeyboardInput}
-                            onChange={handleNumericKeyboardChange}
-                            onKeyPress={handleNumericKeyboardKeyPress}
-                            theme="hg-theme-default"
-                            layoutName="numeric"
-                            layout={{
-                              numeric: [
-                                "1 2 3",
-                                "4 5 6",
-                                "7 8 9",
-                                "0 {bksp}"
-                              ]
-                            }}
-                            display={{
-                              "1": "1",
-                              "2": "2",
-                              "3": "3",
-                              "4": "4",
-                              "5": "5",
-                              "6": "6",
-                              "7": "7",
-                              "8": "8",
-                              "9": "9",
-                              "0": "0",
-                              "{bksp}": "⌫"
-                            }}
-                            physicalKeyboardHighlight={true}
-                            physicalKeyboardHighlightTextColor={"#000000"}
-                            physicalKeyboardHighlightBgColor={"#fff475"}
-                          />
-                        </div>
+                <div className="flex-shrink-0 flex flex-col h-full">
+                  {/* Numeric Keyboard Section - Fixed */}
+                  <div className="mb-4 flex-shrink-0">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div
+                        className="keyboard-container w-full"
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        <Keyboard
+                          keyboardRef={(r) => (window.keyboard = r)}
+                          input={numericKeyboardInput}
+                          onChange={handleNumericKeyboardChange}
+                          onKeyPress={handleNumericKeyboardKeyPress}
+                          theme="hg-theme-default"
+                          layoutName="numeric"
+                          layout={{
+                            numeric: [
+                              "1 2 3",
+                              "4 5 6",
+                              "7 8 9",
+                              "0 {bksp}"
+                            ]
+                          }}
+                          display={{
+                            "1": "1",
+                            "2": "2",
+                            "3": "3",
+                            "4": "4",
+                            "5": "5",
+                            "6": "6",
+                            "7": "7",
+                            "8": "8",
+                            "9": "9",
+                            "0": "0",
+                            "{bksp}": "⌫"
+                          }}
+                          physicalKeyboardHighlight={true}
+                          physicalKeyboardHighlightTextColor={"#000000"}
+                          physicalKeyboardHighlightBgColor={"#fff475"}
+                        />
                       </div>
                     </div>
+                  </div>
 
-                    {/* Coupons & Discounts Section */}
-                  <div className="space-y-4 mb-6 h-full">
-                    <h4 className="text-lg font-semibold text-gray-800">Coupons & Discounts</h4>
+                  {/* Coupons & Discounts Section - Scrollable */}
+                  <div className="flex-1 overflow-y-auto pr-2">
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-semibold text-gray-800">Coupons & Discounts</h4>
                     
                     {/* Manual Discount Section */}
                     <div className="mb-6">
@@ -4851,8 +4850,8 @@ const RunningOrders = () => {
                       )}
                     </div>
                   </div>
-                  </div>
                 </div>
+              </div>
               </div>
 
               {/* Footer - Action Buttons */}
