@@ -1645,16 +1645,9 @@ const RunningOrders = () => {
       return;
     }
 
-    // TODO: Implement payment logic
-    console.log('Processing payment:', {
-      items: cartItems,
-      customer: selectedCustomer,
-      total: calculateCartTotal(),
-      coupon: appliedCoupon
-    });
-
-    showSuccess('Payment processed successfully!', 'success');
-    clearCart();
+    // Reset modal state and open the Finalize Sale Modal
+    resetFinalizeSaleModal();
+    setShowFinalizeSaleModal(true);
   };
 
   // Function to load food image
@@ -2191,10 +2184,10 @@ const RunningOrders = () => {
   const handleCashAmountChange = (value) => {
     setPaymentAmount(value);
     setGivenAmount(value);
-    // Calculate change based on the order total
-    if (value && selectedPlacedOrder) {
-      const orderTotal = selectedPlacedOrder.total;
-      const change = parseFloat(value) - orderTotal;
+    // Calculate change based on the cart total
+    if (value) {
+      const cartTotal = calculateCartTotal();
+      const change = parseFloat(value) - cartTotal;
       setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
     } else {
       setChangeAmount('0.00');
@@ -2205,14 +2198,10 @@ const RunningOrders = () => {
     if (selectedPaymentMethod === 'Cash') {
       setPaymentAmount(amount);
       setGivenAmount(amount);
-      // Calculate change based on the order total
-      if (selectedPlacedOrder) {
-        const orderTotal = selectedPlacedOrder.total;
-        const change = parseFloat(amount) - orderTotal;
-        setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
-      } else {
-        setChangeAmount('0.00');
-      }
+      // Calculate change based on the cart total
+      const cartTotal = calculateCartTotal();
+      const change = parseFloat(amount) - cartTotal;
+      setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
     } else {
       setPaymentAmount(amount);
     }
@@ -2221,10 +2210,10 @@ const RunningOrders = () => {
   const handleCashGivenAmountChange = (value) => {
     setGivenAmount(value);
     setPaymentAmount(value);
-    // Calculate change based on the order total
-    if (value && selectedPlacedOrder) {
-      const orderTotal = selectedPlacedOrder.total;
-      const change = parseFloat(value) - orderTotal;
+    // Calculate change based on the cart total
+    if (value) {
+      const cartTotal = calculateCartTotal();
+      const change = parseFloat(value) - cartTotal;
       setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
     } else {
       setChangeAmount('0.00');
@@ -4152,9 +4141,6 @@ const RunningOrders = () => {
           </div>
         )}
 
-        {/* Full QWERTY Keyboard - Outside Modal (floating at bottom of screen) */}
-        {/* Removed old keyboard implementation - now using VirtualKeyboard component */}
-
         {/* Finalize Sale Modal */}
         {showFinalizeSaleModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
@@ -4176,7 +4162,7 @@ const RunningOrders = () => {
                 <div className="w-64 flex-shrink-0">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Payment Method</h3>
                   <div className="space-y-2">
-                    {['Cash', 'Credit Card', 'Check', 'Bank Transfer', 'Loyalty Point', 'Change Currency'].map((method) => (
+                    {['Cash', 'Credit Card', 'Check', 'Bank Transfer'].map((method) => (
                       <button
                         key={method}
                         onClick={() => {
@@ -4323,7 +4309,7 @@ const RunningOrders = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Payable:</span>
-                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}</span>
+                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{calculateCartTotal().toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Paid:</span>
@@ -4331,7 +4317,7 @@ const RunningOrders = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Due:</span>
-                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{Math.max(0, (selectedPlacedOrder ? selectedPlacedOrder.total : 0) - addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0)).toFixed(2)}</span>
+                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{Math.max(0, calculateCartTotal() - addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0)).toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -4370,7 +4356,7 @@ const RunningOrders = () => {
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <span className="px-3 py-2 text-sm text-gray-600">
-                          {getCurrencySymbol()}{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}
+                          {getCurrencySymbol()}{calculateCartTotal().toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -4410,8 +4396,10 @@ const RunningOrders = () => {
                 <button
                   onClick={() => {
                     // Handle payment submission
-                    showSuccess('Payment processed successfully!', 'success');
+                    showSuccess('Payment processed successfully!');
                     setShowFinalizeSaleModal(false);
+                    clearCart();
+                    resetFinalizeSaleModal();
                   }}
                   className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                 >
