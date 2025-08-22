@@ -4625,7 +4625,7 @@ const RunningOrders = () => {
 
                 {/* Right Panel - Coupons and offers */}
                 <div className=" flex-shrink-0">
-                  <div className="space-y-4">
+                  <div className="space-y-4 h-full overflow-y-auto pr-2">
                     {/* Numeric Keyboard Section */}
                     <div className="mb-6">
                       <h4 className="text-lg font-semibold text-gray-800 mb-3">Numeric Keyboard</h4>
@@ -4672,7 +4672,7 @@ const RunningOrders = () => {
                     </div>
 
                     {/* Coupons & Discounts Section */}
-                  <div className="space-y-4 mb-6">
+                  <div className="space-y-4 mb-6 h-full">
                     <h4 className="text-lg font-semibold text-gray-800">Coupons & Discounts</h4>
                     
                     {/* Manual Discount Section */}
@@ -4827,8 +4827,8 @@ const RunningOrders = () => {
                           <div className="text-gray-500 text-sm">Loading coupons...</div>
                         </div>
                       ) : availableCoupons.length > 0 ? (
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                          {availableCoupons.slice(0, 3).map((coupon) => (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {availableCoupons.map((coupon) => (
                             <div
                               key={coupon.id}
                               className="border border-gray-200 rounded-lg p-3 hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer group"
