@@ -1263,6 +1263,10 @@ const RunningOrders = () => {
     setNumericActiveInput(inputName);
     // Set the keyboard input value to match the current form value
     setNumericKeyboardInput(currentValue || '');
+    // Clear the keyboard display to prevent appending to previous values
+    if (window.keyboard) {
+      window.keyboard.setInput(currentValue || '');
+    }
   };
 
   // Custom handler for numeric keyboard changes
@@ -1270,6 +1274,30 @@ const RunningOrders = () => {
     setNumericKeyboardInput(input);
     if (numericActiveInput === 'discountAmount') {
       setDiscountAmount(input);
+    } else if (numericActiveInput === 'paymentAmount') {
+      setPaymentAmount(input);
+      if (selectedPaymentMethod === 'Cash') {
+        setGivenAmount(input);
+        // Calculate change based on the split bill total
+        if (input) {
+          const splitBillTotal = calculateSplitBillTotal();
+          const change = parseFloat(input) - splitBillTotal;
+          setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+        } else {
+          setChangeAmount('0.00');
+        }
+      }
+    } else if (numericActiveInput === 'givenAmount') {
+      setGivenAmount(input);
+      setPaymentAmount(input);
+      // Calculate change based on the split bill total
+      if (input) {
+        const splitBillTotal = calculateSplitBillTotal();
+        const change = parseFloat(input) - splitBillTotal;
+        setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+      } else {
+        setChangeAmount('0.00');
+      }
     }
   };
 
@@ -1281,6 +1309,40 @@ const RunningOrders = () => {
         const newValue = currentValue.slice(0, -1);
         setNumericKeyboardInput(newValue);
         setDiscountAmount(newValue);
+        return { action: 'backspace', value: newValue, activeInput: numericActiveInput };
+      }
+    } else if (numericActiveInput === 'paymentAmount') {
+      if (button === '{bksp}') {
+        const currentValue = numericKeyboardInput || '';
+        const newValue = currentValue.slice(0, -1);
+        setNumericKeyboardInput(newValue);
+        setPaymentAmount(newValue);
+        if (selectedPaymentMethod === 'Cash') {
+          setGivenAmount(newValue);
+          if (newValue) {
+            const splitBillTotal = calculateSplitBillTotal();
+            const change = parseFloat(newValue) - splitBillTotal;
+            setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+          } else {
+            setChangeAmount('0.00');
+          }
+        }
+        return { action: 'backspace', value: newValue, activeInput: numericActiveInput };
+      }
+    } else if (numericActiveInput === 'givenAmount') {
+      if (button === '{bksp}') {
+        const currentValue = numericKeyboardInput || '';
+        const newValue = currentValue.slice(0, -1);
+        setNumericKeyboardInput(newValue);
+        setGivenAmount(newValue);
+        setPaymentAmount(newValue);
+        if (newValue) {
+          const splitBillTotal = calculateSplitBillTotal();
+          const change = parseFloat(newValue) - splitBillTotal;
+          setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+        } else {
+          setChangeAmount('0.00');
+        }
         return { action: 'backspace', value: newValue, activeInput: numericActiveInput };
       }
     }
@@ -2413,15 +2475,6 @@ const RunningOrders = () => {
                   onClick={handleOpenSplitBillModal}
                   className="w-32 bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors text-xs">
                   Split Bill
-                </button>
-                <button 
-                  onClick={() => {
-                    resetFinalizeSaleModal();
-                    setShowFinalizeSaleModal(true);
-                    setShowInvoiceOptions(false);
-                  }}
-                  className="w-32 bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors text-xs">
-                  Single Pay
                 </button>
               </div>
             </div>
@@ -4259,6 +4312,37 @@ const RunningOrders = () => {
                             type="number"
                             value={givenAmount}
                             onChange={(e) => handleCashGivenAmountChange(e.target.value)}
+                            onFocus={(e) => handleNumericInputFocus(e, 'givenAmount', givenAmount)}
+                            onClick={(e) => handleNumericInputFocus(e, 'givenAmount', givenAmount)}
+                            onBlur={(e) => {
+                              if (numericActiveInput === 'givenAmount' && numericKeyboardInput !== undefined) {
+                                setGivenAmount(numericKeyboardInput);
+                                setPaymentAmount(numericKeyboardInput);
+                                if (numericKeyboardInput) {
+                                  const splitBillTotal = calculateSplitBillTotal();
+                                  const change = parseFloat(numericKeyboardInput) - splitBillTotal;
+                                  setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+                                } else {
+                                  setChangeAmount('0.00');
+                                }
+                              }
+                              setNumericActiveInput('');
+                            }}
+                            onInput={(e) => {
+                              const value = e.target.value;
+                              setGivenAmount(value);
+                              setPaymentAmount(value);
+                              if (numericActiveInput === 'givenAmount') {
+                                setNumericKeyboardInput(value);
+                              }
+                              if (value) {
+                                const splitBillTotal = calculateSplitBillTotal();
+                                const change = parseFloat(value) - splitBillTotal;
+                                setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+                              } else {
+                                setChangeAmount('0.00');
+                              }
+                            }}
                             placeholder="Given Amount"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
@@ -4271,6 +4355,7 @@ const RunningOrders = () => {
                             onChange={(e) => setChangeAmount(e.target.value)}
                             placeholder="Change Amount"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            readOnly
                           />
                         </div>
                         <div className="flex-1">
@@ -4279,6 +4364,41 @@ const RunningOrders = () => {
                             type="number"
                             value={paymentAmount}
                             onChange={(e) => handleCashAmountChange(e.target.value)}
+                            onFocus={(e) => handleNumericInputFocus(e, 'paymentAmount', paymentAmount)}
+                            onClick={(e) => handleNumericInputFocus(e, 'paymentAmount', paymentAmount)}
+                            onBlur={(e) => {
+                              if (numericActiveInput === 'paymentAmount' && numericKeyboardInput !== undefined) {
+                                setPaymentAmount(numericKeyboardInput);
+                                if (selectedPaymentMethod === 'Cash') {
+                                  setGivenAmount(numericKeyboardInput);
+                                  if (numericKeyboardInput) {
+                                    const splitBillTotal = calculateSplitBillTotal();
+                                    const change = parseFloat(numericKeyboardInput) - splitBillTotal;
+                                    setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+                                  } else {
+                                    setChangeAmount('0.00');
+                                  }
+                                }
+                              }
+                              setNumericActiveInput('');
+                            }}
+                            onInput={(e) => {
+                              const value = e.target.value;
+                              setPaymentAmount(value);
+                              if (numericActiveInput === 'paymentAmount') {
+                                setNumericKeyboardInput(value);
+                              }
+                              if (selectedPaymentMethod === 'Cash') {
+                                setGivenAmount(value);
+                                if (value) {
+                                  const splitBillTotal = calculateSplitBillTotal();
+                                  const change = parseFloat(value) - splitBillTotal;
+                                  setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+                                } else {
+                                  setChangeAmount('0.00');
+                                }
+                              }
+                            }}
                             placeholder="Amount"
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
@@ -4326,6 +4446,21 @@ const RunningOrders = () => {
                           type="number"
                           value={paymentAmount}
                           onChange={(e) => setPaymentAmount(e.target.value)}
+                          onFocus={(e) => handleNumericInputFocus(e, 'paymentAmount', paymentAmount)}
+                          onClick={(e) => handleNumericInputFocus(e, 'paymentAmount', paymentAmount)}
+                          onBlur={(e) => {
+                            if (numericActiveInput === 'paymentAmount' && numericKeyboardInput !== undefined) {
+                              setPaymentAmount(numericKeyboardInput);
+                            }
+                            setNumericActiveInput('');
+                          }}
+                          onInput={(e) => {
+                            const value = e.target.value;
+                            setPaymentAmount(value);
+                            if (numericActiveInput === 'paymentAmount') {
+                              setNumericKeyboardInput(value);
+                            }
+                          }}
                           placeholder="Amount"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -4491,6 +4626,51 @@ const RunningOrders = () => {
                 {/* Right Panel - Coupons and offers */}
                 <div className=" flex-shrink-0">
                   <div className="space-y-4">
+                    {/* Numeric Keyboard Section */}
+                    <div className="mb-6">
+                      <h4 className="text-lg font-semibold text-gray-800 mb-3">Numeric Keyboard</h4>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div
+                          className="keyboard-container w-full"
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.preventDefault()}
+                        >
+                          <Keyboard
+                            keyboardRef={(r) => (window.keyboard = r)}
+                            input={numericKeyboardInput}
+                            onChange={handleNumericKeyboardChange}
+                            onKeyPress={handleNumericKeyboardKeyPress}
+                            theme="hg-theme-default"
+                            layoutName="numeric"
+                            layout={{
+                              numeric: [
+                                "1 2 3",
+                                "4 5 6",
+                                "7 8 9",
+                                "0 {bksp}"
+                              ]
+                            }}
+                            display={{
+                              "1": "1",
+                              "2": "2",
+                              "3": "3",
+                              "4": "4",
+                              "5": "5",
+                              "6": "6",
+                              "7": "7",
+                              "8": "8",
+                              "9": "9",
+                              "0": "0",
+                              "{bksp}": "⌫"
+                            }}
+                            physicalKeyboardHighlight={true}
+                            physicalKeyboardHighlightTextColor={"#000000"}
+                            physicalKeyboardHighlightBgColor={"#fff475"}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Coupons & Discounts Section */}
                   <div className="space-y-4 mb-6">
                     <h4 className="text-lg font-semibold text-gray-800">Coupons & Discounts</h4>
