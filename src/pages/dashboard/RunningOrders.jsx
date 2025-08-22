@@ -2847,6 +2847,14 @@ const RunningOrders = () => {
                             max={calculateMaxSplits()}
                             value={totalSplit}
                             onChange={(e) => setTotalSplit(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()) {
+                                  handleSplitGo();
+                                }
+                              }
+                            }}
                             placeholder="Enter number of splits"
                             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                           />
