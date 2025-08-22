@@ -2829,7 +2829,7 @@ const RunningOrders = () => {
         {/* Split Bill Modal */}
         {showSplitBillModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[70vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">Split Bill</h2>
@@ -3047,7 +3047,7 @@ const RunningOrders = () => {
                             </div>
 
                             {/* Items */}
-                            <div className="mb-3">
+                            {/* <div className="mb-3">
                               <div className="text-xs font-medium text-gray-700 mb-2">Items:</div>
                               {splitBill.items.length > 0 ? (
                                 <div className="space-y-1">
@@ -3061,7 +3061,7 @@ const RunningOrders = () => {
                               ) : (
                                 <div className="text-xs text-gray-400 italic">No items added</div>
                       )}
-                    </div>
+                    </div> */}
 
                             {/* Summary */}
                             <div className="text-xs space-y-1">
@@ -3073,18 +3073,6 @@ const RunningOrders = () => {
                                 <span>Disc Amt(%):</span>
                                 <span>€{(splitBill.discount || 0).toFixed(2)}X</span>
                 </div>
-                              <div className="flex justify-between">
-                                <span>Tax:</span>
-                                <span>€{(splitBill.tax || 0).toFixed(2)}</span>
-              </div>
-                              <div className="flex justify-between">
-                                <span>Charge:</span>
-                                <span>€{(splitBill.charge || 0).toFixed(2)}X</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Tips:</span>
-                                <span>€{(splitBill.tips || 0).toFixed(2)}X</span>
-                              </div>
                               <div className="flex justify-between font-bold border-t border-gray-200 pt-1">
                                 <span>Total Payable:</span>
                                 <span>€{(splitBill.total || 0).toFixed(2)}</span>
@@ -4255,7 +4243,7 @@ const RunningOrders = () => {
         {/* Finalize Sale Modal */}
         {showFinalizeSaleModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
                 <h2 className="text-xl font-bold">
