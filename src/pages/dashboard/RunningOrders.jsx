@@ -154,6 +154,14 @@ const RunningOrders = () => {
   const [splitBills, setSplitBills] = useState([]);
   const [selectedSplitBill, setSelectedSplitBill] = useState(null);
 
+  // Calculate maximum splits based on total quantity
+  const calculateMaxSplits = () => {
+    if (!splitItems || splitItems.length === 0) return 10;
+    
+    const totalQuantity = splitItems.reduce((sum, item) => sum + item.quantity, 0);
+    return Math.min(totalQuantity, 10);
+  };
+
   // Order Management State
   const [placedOrders, setPlacedOrders] = useState([]);
   const [selectedPlacedOrder, setSelectedPlacedOrder] = useState(null);
@@ -1919,8 +1927,9 @@ const RunningOrders = () => {
     }
     
     const numSplits = parseInt(totalSplit);
-    if (numSplits > 10) {
-      showError('Maximum 10 splits allowed');
+    const maxSplits = calculateMaxSplits();
+    if (numSplits > maxSplits) {
+      showError(`Maximum ${maxSplits} splits allowed based on total quantity`);
       return;
     }
 
@@ -1943,8 +1952,8 @@ const RunningOrders = () => {
       customer: dummyCustomers[index] || `Customer ${index + 1}`,
       items: [],
       subtotal: 0,
-      discount: 0,
       tax: 0,
+      discount: 0,
       charge: 0,
       tips: 0,
       total: 0
@@ -1969,14 +1978,14 @@ const RunningOrders = () => {
     // Add item to the selected split bill
     setSplitBills(prev => prev.map(split => {
       if (split.id === splitBillId) {
-        const existingItem = split.items.find(i => i.food.id === item.food.id);
+        const existingItem = split.items.find(i => i.food?.id === item.food?.id);
         if (existingItem) {
           // Increase quantity if item already exists
           return {
             ...split,
             items: split.items.map(i => 
               i.food.id === item.food.id 
-                ? { ...i, quantity: i.quantity + 1, totalPrice: (i.totalPrice / i.quantity) * (i.quantity + 1) }
+                ? { ...i, quantity: (i.quantity || 0) + 1, totalPrice: ((i.totalPrice || 0) / (i.quantity || 1)) * ((i.quantity || 0) + 1) }
                 : i
             )
           };
@@ -2003,23 +2012,23 @@ const RunningOrders = () => {
     // Remove item from the selected split bill
     setSplitBills(prev => prev.map(split => {
       if (split.id === splitBillId) {
-        const existingItem = split.items.find(i => i.food.id === item.food.id);
+        const existingItem = split.items.find(i => i.food?.id === item.food?.id);
         if (existingItem) {
           if (existingItem.quantity > 1) {
             // Decrease quantity if more than 1
             return {
               ...split,
-              items: split.items.map(i => 
-                i.food.id === item.food.id 
-                  ? { ...i, quantity: i.quantity - 1, totalPrice: (i.totalPrice / i.quantity) * (i.quantity - 1) }
-                  : i
-              )
+                          items: split.items.map(i => 
+              i.food.id === item.food.id 
+                ? { ...i, quantity: (i.quantity || 0) - 1, totalPrice: ((i.totalPrice || 0) / (i.quantity || 1)) * ((i.quantity || 0) - 1) }
+                : i
+            )
             };
           } else {
             // Remove item completely if quantity is 1
             return {
               ...split,
-              items: split.items.filter(i => i.food.id !== item.food.id)
+              items: split.items.filter(i => i.food?.id !== item.food?.id)
             };
           }
         }
@@ -2038,8 +2047,8 @@ const RunningOrders = () => {
     const splitBill = splitBills.find(split => split.id === splitBillId);
     if (!splitBill) return 0;
 
-    const existingItem = splitBill.items.find(i => i.food.id === item.food.id);
-    return existingItem ? existingItem.quantity : 0;
+    const existingItem = splitBill.items.find(i => i.food?.id === item.food?.id);
+    return existingItem ? (existingItem.quantity || 0) : 0;
   };
 
   const getRemainingQuantity = (itemId) => {
@@ -2048,20 +2057,20 @@ const RunningOrders = () => {
 
     // Calculate total quantity used across all splits
     const totalUsed = splitBills.reduce((total, split) => {
-      const existingItem = split.items.find(i => i.food.id === item.food.id);
-      return total + (existingItem ? existingItem.quantity : 0);
+      const existingItem = split.items.find(i => i.food?.id === item.food?.id);
+      return total + (existingItem ? (existingItem.quantity || 0) : 0);
     }, 0);
 
     // Return remaining quantity
-    return Math.max(0, item.quantity - totalUsed);
+    return Math.max(0, (item.quantity || 0) - totalUsed);
   };
 
   const updateSplitBillTotals = (splitBillId) => {
     setSplitBills(prev => prev.map(split => {
       if (split.id === splitBillId) {
-        const subtotal = split.items.reduce((sum, item) => sum + item.totalPrice, 0);
+        const subtotal = split.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
         const tax = subtotal * 0.13; // 13% tax
-        const total = subtotal + tax + split.charge + split.tips - split.discount;
+        const total = subtotal + tax + (split.charge || 0) + (split.tips || 0) - (split.discount || 0);
         
         return {
           ...split,
@@ -2705,7 +2714,7 @@ const RunningOrders = () => {
         {/* Split Bill Modal */}
         {showSplitBillModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-7xl max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[70vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">Split Bill</h2>
@@ -2790,62 +2799,12 @@ const RunningOrders = () => {
                     </div>
 
                     {/* Summary Section */}
-                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Discount(Subtotal Discount):</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">€{getTotalDiscount().toFixed(2)}</span>
-                          <button
-                            onClick={handleAddDiscountToSplit}
-                            disabled={!selectedSplitBill}
-                            className={`w-6 h-6 text-white rounded text-sm font-bold transition-colors ${
-                              selectedSplitBill
-                                ? 'bg-green-500 hover:bg-green-600' 
-                                : 'bg-gray-300 cursor-not-allowed'
-                            }`}
-                            title="Add discount to selected split bill"
-                          >
-                            +
-                          </button>
+                      
+                      <div className="border-gray-200 pt-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-800">Total Items:</span>
+                          <span className="text-sm font-bold text-gray-800">{splitItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
                         </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Charge:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">€{getTotalCharge().toFixed(2)}</span>
-                          <button
-                            onClick={handleAddChargeToSplit}
-                            disabled={!selectedSplitBill}
-                            className={`w-6 h-6 text-white rounded text-sm font-bold transition-colors ${
-                              selectedSplitBill
-                                ? 'bg-green-500 hover:bg-green-600' 
-                                : 'bg-gray-300 cursor-not-allowed'
-                            }`}
-                            title="Add charge to selected split bill"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Tips:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">€{getTotalTips().toFixed(2)}</span>
-                          <button
-                            onClick={handleAddTipsToSplit}
-                            disabled={!selectedSplitBill}
-                            className={`w-6 h-6 text-white rounded text-sm font-bold transition-colors ${
-                              selectedSplitBill
-                                ? 'bg-green-500 hover:bg-green-600' 
-                                : 'bg-gray-300 cursor-not-allowed'
-                            }`}
-                            title="Add tips to selected split bill"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                      <div className="border-t border-gray-200 pt-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-800">Sub Total:</span>
                           <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / 1.13).toFixed(2) : '0.00'}</span>
@@ -2859,7 +2818,6 @@ const RunningOrders = () => {
                           <span className="text-lg font-bold text-primary">€{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}</span>
                         </div>
                       </div>
-                    </div>
                   </div>
 
                   {/* Right Section - Split Bills */}
@@ -2870,7 +2828,12 @@ const RunningOrders = () => {
                     {splitBills.length === 0 && (
                     <div className="bg-blue-50 p-4 rounded-lg">
                       <div className="text-sm text-blue-800 font-medium mb-2">
-                        Maximum Split(s): 10
+                        Maximum Split(s): {calculateMaxSplits()}
+                        {calculateMaxSplits() < 10 && (
+                          <span className="text-xs text-blue-600 block mt-1">
+                            (Based on total quantity: {splitItems.reduce((sum, item) => sum + item.quantity, 0)} items)
+                          </span>
+                        )}
                       </div>
                     <div className="space-y-4">
                       <div>
@@ -2881,7 +2844,7 @@ const RunningOrders = () => {
                           <input
                             type="number"
                             min="1"
-                            max="10"
+                            max={calculateMaxSplits()}
                             value={totalSplit}
                             onChange={(e) => setTotalSplit(e.target.value)}
                             placeholder="Enter number of splits"
@@ -2889,9 +2852,9 @@ const RunningOrders = () => {
                           />
                           <button
                             onClick={handleSplitGo}
-                            disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > 10}
+                            disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > calculateMaxSplits()}
                             className={`px-6 py-2 font-medium rounded-lg transition-colors ${
-                              totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= 10
+                              totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()
                                 ? 'bg-primary text-white hover:bg-primary/90'
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             }`}
@@ -2967,8 +2930,8 @@ const RunningOrders = () => {
                                 <div className="space-y-1">
                                   {splitBill.items.map((item, index) => (
                                     <div key={index} className="text-xs text-gray-600 flex justify-between">
-                                      <span className="truncate">{item.food.name}</span>
-                                      <span>Qty: {item.quantity}, €{item.totalPrice.toFixed(2)}</span>
+                                      <span className="truncate">{item.food?.name || 'Unknown Item'}</span>
+                                      <span>Qty: {item.quantity || 0}, €{(item.totalPrice || 0).toFixed(2)}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -2981,27 +2944,27 @@ const RunningOrders = () => {
                             <div className="text-xs space-y-1">
                               <div className="flex justify-between">
                                 <span>Sub Total:</span>
-                                <span>€{splitBill.subtotal.toFixed(2)}</span>
+                                <span>€{(splitBill.subtotal || 0).toFixed(2)}</span>
                   </div>
                               <div className="flex justify-between">
                                 <span>Disc Amt(%):</span>
-                                <span>€{splitBill.discount.toFixed(2)}X</span>
+                                <span>€{(splitBill.discount || 0).toFixed(2)}X</span>
                 </div>
                               <div className="flex justify-between">
                                 <span>Tax:</span>
-                                <span>€{splitBill.tax.toFixed(2)}</span>
+                                <span>€{(splitBill.tax || 0).toFixed(2)}</span>
               </div>
                               <div className="flex justify-between">
                                 <span>Charge:</span>
-                                <span>€{splitBill.charge.toFixed(2)}X</span>
+                                <span>€{(splitBill.charge || 0).toFixed(2)}X</span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Tips:</span>
-                                <span>€{splitBill.tips.toFixed(2)}X</span>
+                                <span>€{(splitBill.tips || 0).toFixed(2)}X</span>
                               </div>
                               <div className="flex justify-between font-bold border-t border-gray-200 pt-1">
                                 <span>Total Payable:</span>
-                                <span>€{splitBill.total.toFixed(2)}</span>
+                                <span>€{(splitBill.total || 0).toFixed(2)}</span>
                               </div>
                             </div>
 
