@@ -1257,10 +1257,10 @@ const RunningOrders = () => {
 
   // Custom handler for numeric keyboard changes
   const handleNumericKeyboardChange = (input) => {
+    setNumericKeyboardInput(input);
     if (numericActiveInput === 'discountAmount') {
       setDiscountAmount(input);
     }
-    setNumericKeyboardInput(input);
   };
 
   // Custom handler for numeric keyboard key presses
@@ -3921,6 +3921,14 @@ const RunningOrders = () => {
                                 // Clear the active input
                                 setNumericActiveInput('');
                               }}
+                              onInput={(e) => {
+                                // Update both the field value and keyboard input immediately
+                                const value = e.target.value;
+                                setDiscountAmount(value);
+                                if (numericActiveInput === 'discountAmount') {
+                                  setNumericKeyboardInput(value);
+                                }
+                              }}
                               min="0"
                               step="0.01"
                               placeholder={discountType === 'percentage' ? '20' : '10'}
@@ -4307,6 +4315,28 @@ const RunningOrders = () => {
                   {/* Payment Summary */}
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
                     <div className="space-y-2">
+                      {/* Applied Discounts/Coupons */}
+                      {appliedCoupon && (
+                        <div className="border-b border-gray-200 pb-2 mb-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">Subtotal:</span>
+                            <span className="text-sm font-medium text-gray-700">{getCurrencySymbol()}{calculateCartSubtotal().toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">Tax:</span>
+                            <span className="text-sm font-medium text-gray-700">{getCurrencySymbol()}{calculateCartTax().toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-green-600">
+                              {appliedCoupon.title} ({appliedCoupon.code}):
+                            </span>
+                            <span className="text-sm font-medium text-green-600">
+                              -{getCurrencySymbol()}{calculateCartDiscount().toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Payable:</span>
                         <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{calculateCartTotal().toFixed(2)}</span>
@@ -4390,6 +4420,14 @@ const RunningOrders = () => {
                                     setDiscountAmount(numericKeyboardInput);
                                   }
                                   setNumericActiveInput('');
+                                }}
+                                onInput={(e) => {
+                                  // Update both the field value and keyboard input immediately
+                                  const value = e.target.value;
+                                  setDiscountAmount(value);
+                                  if (numericActiveInput === 'discountAmount') {
+                                    setNumericKeyboardInput(value);
+                                  }
                                 }}
                                 min="0"
                                 step="0.01"
