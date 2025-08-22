@@ -13,33 +13,16 @@ const CustomAlert = ({
   useEffect(() => {
     if (isVisible) {
       setIsShowing(true);
-      const timer = setTimeout(() => {
-        setIsShowing(false);
-        setTimeout(() => {
-          onClose && onClose();
-        }, 3000);
-      }, duration);
-
-      return () => clearTimeout(timer);
+    } else {
+      setIsShowing(false);
     }
-  }, [isVisible, duration, onClose]);
+  }, [isVisible]);
 
   if (!isVisible) return null;
 
   const getAlertStyles = () => {
-    const baseStyles = "w-[350px] fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl transition-all duration-1000 ease-out";
+    const baseStyles = "w-[350px] fixed bottom-10 left-1/2 transform -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl transition-all duration-300 ease-out";
   
-    // // Position styles
-    // const positionStyles = {
-    //   'top-right': 'fixed top-4 right-4',
-    //   'top-left': 'fixed top-4 left-4',
-    //   'top-center': 'fixed top-4 left-1/2 transform -translate-x-1/2',
-    //   'bottom-right': 'fixed bottom-4 right-4',
-    //   'bottom-left': 'fixed bottom-4 left-4',
-    //   'bottom-center': 'fixed bottom-4 left-1/2 transform -translate-x-1/2',
-    //   'center': 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
-    // };
-
     // Type styles
     const typeStyles = {
       success: 'border-2 border-primary',
@@ -134,21 +117,6 @@ const CustomAlert = ({
     }
   };
 
-  const getButtonColor = () => {
-    switch (type) {
-      case 'success':
-        return 'bg-primary hover:bg-primary/80';
-      case 'error':
-        return 'bg-red-500 hover:bg-red-600';
-      case 'warning':
-        return 'bg-yellow-500 hover:bg-yellow-600';
-      case 'info':
-        return 'bg-blue-500 hover:bg-blue-600';
-      default:
-        return 'bg-primary hover:bg-primary/80';
-    }
-  };
-
   return (
     <div className={getAlertStyles()}>
       <div className="p-4 text-center flex flex-col items-center justify-center">
@@ -161,17 +129,6 @@ const CustomAlert = ({
         <p className="text-gray-600 mb-4 text-sm">
           {message}
         </p>
-        {/* <button
-          onClick={() => {
-            setIsShowing(false);
-            setTimeout(() => {
-              onClose && onClose();
-            }, 300);
-          }}
-          className={`${getButtonColor()} text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200 uppercase text-sm`}
-        >
-          Okay
-        </button> */}
       </div>
     </div>
   );
