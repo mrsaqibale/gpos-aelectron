@@ -2065,6 +2065,13 @@ const RunningOrders = () => {
     return Math.max(0, (item.quantity || 0) - totalUsed);
   };
 
+  const areAllItemsDistributed = () => {
+    if (!splitItems || splitItems.length === 0) return false;
+    
+    // Check if all items have been fully distributed (remaining quantity = 0)
+    return splitItems.every(item => getRemainingQuantity(item.id) === 0);
+  };
+
   const updateSplitBillTotals = (splitBillId) => {
     setSplitBills(prev => prev.map(split => {
       if (split.id === splitBillId) {
@@ -2978,14 +2985,26 @@ const RunningOrders = () => {
 
                             {/* Checkout Button */}
                             <button
-                              className="w-full mt-3 bg-green-500 text-white text-xs font-medium py-2 px-3 rounded hover:bg-green-600 transition-colors"
+                              disabled={!areAllItemsDistributed()}
+                              className={`w-full mt-3 text-xs font-medium py-2 px-3 rounded transition-colors ${
+                                areAllItemsDistributed()
+                                  ? 'bg-green-500 text-white hover:bg-green-600'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                showSuccess(`Processing checkout for Split Bill ${splitBill.id}`, 'success');
+                                if (areAllItemsDistributed()) {
+                                  showSuccess(`Processing checkout for Split Bill ${splitBill.id}`, 'success');
+                                }
                               }}
-                            >
-                              Checkout
-                            </button>
+                                                          >
+                                Checkout
+                              </button>
+                              {!areAllItemsDistributed() && (
+                                <div className="text-xs text-gray-500 mt-1 text-center">
+                                  All items must be distributed before checkout
+                                </div>
+                              )}
                           </div>
                         ))}
                       </div>
