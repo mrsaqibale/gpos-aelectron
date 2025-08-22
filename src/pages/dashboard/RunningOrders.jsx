@@ -2382,6 +2382,7 @@ const RunningOrders = () => {
                   <X className="w-4 h-4" />
                 </button>
               )}
+              
             </div>
 
             {/* Search results info */}
@@ -2399,7 +2400,7 @@ const RunningOrders = () => {
                 categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`px-2 py-1 rounded-lg text-white text-[10.5px] font-medium bg-primary 
+                    className={`px-2 py-1.5 rounded-lg text-white text-[10.5px] font-medium bg-primary 
                 shadow-[0_4px_4px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1)] 
                 active:shadow-[0_1px_2px_rgba(0,0,0,0.15)] 
                 active:translate-y-[1px] 
@@ -2413,6 +2414,12 @@ const RunningOrders = () => {
               ) : (
                 <div className="text-gray-500 text-sm">No categories found</div>
               )}
+              <button
+                  onClick={handleOpenSplitPizzaModal}
+                  className="bg-[#4d35ee] text-white btn-lifted py-1.5 px-2 rounded-lg text-[11px] font-bold hover:bg-blue-700"
+                >
+                  SPLIT PIZZA
+                </button>
             </div>
           </div>
 
@@ -2635,12 +2642,7 @@ const RunningOrders = () => {
                 >
                   DISCOUNT
                 </button>
-                <button
-                  onClick={handleOpenSplitPizzaModal}
-                  className="bg-[#4d35ee] text-white  w-[100%] btn-lifted py-1.5 px-1   text-[11px] font-bold rounded   hover:bg-blue-700"
-                >
-                  SPLIT PIZZA
-                </button>
+                
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
                 </button>
