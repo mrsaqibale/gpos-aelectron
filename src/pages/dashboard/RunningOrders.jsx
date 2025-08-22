@@ -126,6 +126,8 @@ const RunningOrders = () => {
   const [cartItems, setCartItems] = useState([]);
   const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
+  const [cartCharge, setCartCharge] = useState(0); // Cart charge amount
+  const [cartTips, setCartTips] = useState(0); // Cart tips amount
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
@@ -2018,11 +2020,11 @@ const RunningOrders = () => {
             // Decrease quantity if more than 1
             return {
               ...split,
-                          items: split.items.map(i => 
-              i.food.id === item.food.id 
+              items: split.items.map(i => 
+                i.food.id === item.food.id 
                 ? { ...i, quantity: (i.quantity || 0) - 1, totalPrice: ((i.totalPrice || 0) / (i.quantity || 1)) * ((i.quantity || 0) - 1) }
-                : i
-            )
+                  : i
+              )
             };
           } else {
             // Remove item completely if quantity is 1
@@ -2200,10 +2202,10 @@ const RunningOrders = () => {
   const handleCashAmountChange = (value) => {
     setPaymentAmount(value);
     setGivenAmount(value);
-    // Calculate change based on the cart total
+    // Calculate change based on the split bill total
     if (value) {
-      const cartTotal = calculateCartTotal();
-      const change = parseFloat(value) - cartTotal;
+      const splitBillTotal = calculateSplitBillTotal();
+      const change = parseFloat(value) - splitBillTotal;
       setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
     } else {
       setChangeAmount('0.00');
@@ -2214,9 +2216,9 @@ const RunningOrders = () => {
     if (selectedPaymentMethod === 'Cash') {
       setPaymentAmount(amount);
       setGivenAmount(amount);
-      // Calculate change based on the cart total
-      const cartTotal = calculateCartTotal();
-      const change = parseFloat(amount) - cartTotal;
+      // Calculate change based on the split bill total
+      const splitBillTotal = calculateSplitBillTotal();
+      const change = parseFloat(amount) - splitBillTotal;
       setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
     } else {
       setPaymentAmount(amount);
@@ -2226,10 +2228,10 @@ const RunningOrders = () => {
   const handleCashGivenAmountChange = (value) => {
     setGivenAmount(value);
     setPaymentAmount(value);
-    // Calculate change based on the cart total
+    // Calculate change based on the split bill total
     if (value) {
-      const cartTotal = calculateCartTotal();
-      const change = parseFloat(value) - cartTotal;
+      const splitBillTotal = calculateSplitBillTotal();
+      const change = parseFloat(value) - splitBillTotal;
       setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
     } else {
       setChangeAmount('0.00');
@@ -2246,6 +2248,21 @@ const RunningOrders = () => {
     setSendSMS(false);
     setSelectedCurrency('EUR');
     setCurrencyAmount('');
+    // Clear selectedSplitBill when not coming from split bill flow
+    setSelectedSplitBill(null);
+  };
+
+  const resetFinalizeSaleModalForSplitBill = () => {
+    setSelectedPaymentMethod('Cash');
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+    setAddedPayments([]);
+    setFinalizeDiscountAmount('');
+    setSendSMS(false);
+    setSelectedCurrency('EUR');
+    setCurrencyAmount('');
+    // Don't clear selectedSplitBill - we want to keep it for split bill finalization
   };
 
   // Currency options
@@ -2258,6 +2275,43 @@ const RunningOrders = () => {
   const getCurrencySymbol = () => {
     const selectedCurrencyOption = currencyOptions.find(option => option.code === selectedCurrency);
     return selectedCurrencyOption ? selectedCurrencyOption.symbol : '€';
+  };
+
+  // Split Bill Finalize Sale Helper Functions
+  const calculateSplitBillSubtotal = () => {
+    console.log('calculateSplitBillSubtotal - selectedSplitBill:', selectedSplitBill);
+    if (!selectedSplitBill) return 0;
+    const subtotal = selectedSplitBill.subtotal || 0;
+    console.log('calculateSplitBillSubtotal - returning:', subtotal);
+    return subtotal;
+  };
+
+  const calculateSplitBillTax = () => {
+    if (!selectedSplitBill) return 0;
+    return selectedSplitBill.tax || 0;
+  };
+
+  const calculateSplitBillDiscount = () => {
+    if (!selectedSplitBill) return 0;
+    return selectedSplitBill.discount || 0;
+  };
+
+  const calculateSplitBillCharge = () => {
+    if (!selectedSplitBill) return 0;
+    return selectedSplitBill.charge || 0;
+  };
+
+  const calculateSplitBillTips = () => {
+    if (!selectedSplitBill) return 0;
+    return selectedSplitBill.tips || 0;
+  };
+
+  const calculateSplitBillTotal = () => {
+    console.log('calculateSplitBillTotal - selectedSplitBill:', selectedSplitBill);
+    if (!selectedSplitBill) return 0;
+    const total = selectedSplitBill.total || 0;
+    console.log('calculateSplitBillTotal - returning:', total);
+    return total;
   };
 
   return (
@@ -2362,6 +2416,7 @@ const RunningOrders = () => {
                 </button>
                 <button 
                   onClick={() => {
+                    resetFinalizeSaleModal();
                     setShowFinalizeSaleModal(true);
                     setShowInvoiceOptions(false);
                   }}
@@ -2994,12 +3049,17 @@ const RunningOrders = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (areAllItemsDistributed()) {
-                                  showSuccess(`Processing checkout for Split Bill ${splitBill.id}`, 'success');
+                                  // Set the current split bill for finalization
+                                  console.log('Setting selectedSplitBill:', splitBill);
+                                  setSelectedSplitBill(splitBill);
+                                  // Reset modal state and open the Finalize Sale Modal
+                                  resetFinalizeSaleModalForSplitBill();
+                                  setShowFinalizeSaleModal(true);
                                 }
                               }}
-                                                          >
-                                Checkout
-                              </button>
+                            >
+                              Checkout
+                            </button>
                               {!areAllItemsDistributed() && (
                                 <div className="text-xs text-gray-500 mt-1 text-center">
                                   All items must be distributed before checkout
@@ -4145,7 +4205,9 @@ const RunningOrders = () => {
             <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
-                <h2 className="text-xl font-bold">Finalize Sale</h2>
+                <h2 className="text-xl font-bold">
+                  {selectedSplitBill ? `Finalize Sale - Split Bill ${selectedSplitBill.id}` : 'Finalize Sale'}
+                </h2>
                 <button
                   onClick={() => setShowFinalizeSaleModal(false)}
                   className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
@@ -4305,23 +4367,65 @@ const RunningOrders = () => {
                   {/* Payment Summary */}
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
                     <div className="space-y-2">
-                      {/* Applied Discounts/Coupons */}
-                      {appliedCoupon && (
+                      {/* Split Bill Header */}
+                      {selectedSplitBill && (
                         <div className="border-b border-gray-200 pb-2 mb-2">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-700">Subtotal:</span>
-                            <span className="text-sm font-medium text-gray-700">{getCurrencySymbol()}{calculateCartSubtotal().toFixed(2)}</span>
+                            <span className="text-sm font-medium text-gray-700">Split Bill {selectedSplitBill.id}:</span>
+                            <span className="text-sm font-medium text-gray-700">{selectedSplitBill.customer}</span>
                           </div>
+                        </div>
+                      )}
+                      
+                      {/* Bill Breakdown */}
+                      <div className="border-b border-gray-200 pb-2 mb-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-700">Subtotal:</span>
+                          <span className="text-sm font-medium text-gray-700">
+                            {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-700">Tax:</span>
+                          <span className="text-sm font-medium text-gray-700">
+                            {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)}
+                          </span>
+                        </div>
+                        {(selectedSplitBill ? calculateSplitBillDiscount() : calculateCartDiscount()) > 0 && (
                           <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-700">Tax:</span>
-                            <span className="text-sm font-medium text-gray-700">{getCurrencySymbol()}{calculateCartTax().toFixed(2)}</span>
+                            <span className="text-sm font-medium text-green-600">Discount:</span>
+                            <span className="text-sm font-medium text-green-600">
+                              -{getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)}
+                            </span>
                           </div>
+                        )}
+                        {(selectedSplitBill ? calculateSplitBillCharge() : cartCharge) > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">Charge:</span>
+                            <span className="text-sm font-medium text-gray-700">
+                              {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillCharge().toFixed(2) : cartCharge.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        {(selectedSplitBill ? calculateSplitBillTips() : cartTips) > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">Tips:</span>
+                            <span className="text-sm font-medium text-gray-700">
+                              {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTips().toFixed(2) : cartTips.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Applied Coupons (if any) */}
+                      {appliedCoupon && (
+                        <div className="border-b border-gray-200 pb-2 mb-2">
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-green-600">
                               {appliedCoupon.title} ({appliedCoupon.code}):
                             </span>
                             <span className="text-sm font-medium text-green-600">
-                              -{getCurrencySymbol()}{calculateCartDiscount().toFixed(2)}
+                              -{getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)}
                             </span>
                           </div>
                         </div>
@@ -4329,7 +4433,9 @@ const RunningOrders = () => {
                       
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Payable:</span>
-                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{calculateCartTotal().toFixed(2)}</span>
+                        <span className="text-xl font-bold text-gray-800">
+                          {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Paid:</span>
@@ -4337,12 +4443,30 @@ const RunningOrders = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Due:</span>
-                        <span className="text-xl font-bold text-gray-800">{getCurrencySymbol()}{Math.max(0, calculateCartTotal() - addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0)).toFixed(2)}</span>
+                        <span className="text-xl font-bold text-gray-800">
+                          {getCurrencySymbol()}{Math.max(0, (selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal()) - addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0)).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  
+                  {/* Split Bill Items */}
+                  {selectedSplitBill && selectedSplitBill.items && selectedSplitBill.items.length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-3">Items in this Split Bill:</h4>
+                      <div className="space-y-2">
+                        {selectedSplitBill.items.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center text-sm">
+                            <div className="flex-1">
+                              <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
+                              <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
+                            </div>
+                            <span className="text-gray-800 font-medium">€{(item.totalPrice || 0).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Additional Options */}
                   <div className="flex gap-4">
@@ -4359,7 +4483,7 @@ const RunningOrders = () => {
                       onClick={() => setShowCartDetailsModal(true)}
                       className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
                     >
-                      Cart Details
+                      {selectedSplitBill ? 'Split Bill Details' : 'Cart Details'}
                     </button>
                   </div>
                 </div>
@@ -4709,31 +4833,31 @@ const RunningOrders = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Item:</span>
-                  <span className="font-semibold">6</span>
+                  <span className="font-semibold">{cartItems.reduce((total, item) => total + (item.quantity || 0), 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Sub Total:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}754.00</span>
+                  <span className="font-semibold">{getCurrencySymbol()}{calculateCartSubtotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Discount:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}0.00</span>
+                  <span className="font-semibold">{getCurrencySymbol()}{calculateCartDiscount().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Discount:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}0.00</span>
+                  <span className="font-semibold">{getCurrencySymbol()}{calculateCartDiscount().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tax:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}217.14</span>
+                  <span className="font-semibold">{getCurrencySymbol()}{calculateCartTax().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Charge:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}0.00</span>
+                  <span className="font-semibold">{getCurrencySymbol()}{cartCharge.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tips:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}0.00</span>
+                  <span className="font-semibold">{getCurrencySymbol()}{cartTips.toFixed(2)}</span>
                 </div>
               </div>
             </div>
