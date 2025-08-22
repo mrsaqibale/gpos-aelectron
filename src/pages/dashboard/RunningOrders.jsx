@@ -4159,7 +4159,7 @@ const RunningOrders = () => {
               {/* Content */}
               <div className="p-6 flex gap-6 flex-1 overflow-hidden">
                 {/* Left Panel - Payment Methods */}
-                <div className="w-64 flex-shrink-0">
+                <div className="w-44 flex-shrink-0">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Payment Method</h3>
                   <div className="space-y-2">
                     {['Cash', 'Credit Card', 'Check', 'Bank Transfer'].map((method) => (
@@ -4322,6 +4322,8 @@ const RunningOrders = () => {
                     </div>
                   </div>
 
+                  
+
                   {/* Additional Options */}
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2">
@@ -4342,44 +4344,193 @@ const RunningOrders = () => {
                   </div>
                 </div>
 
-                {/* Right Panel - Discount and Quick Amounts */}
-                <div className="w-64 flex-shrink-0">
+                {/* Right Panel - Coupons and offers */}
+                <div className=" flex-shrink-0">
                   <div className="space-y-4">
-                    {/* Discount Section */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Discount</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={finalizeDiscountAmount}
-                          onChange={(e) => setFinalizeDiscountAmount(e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span className="px-3 py-2 text-sm text-gray-600">
-                          {getCurrencySymbol()}{calculateCartTotal().toFixed(2)}
-                        </span>
+                    {/* Coupons & Discounts Section */}
+                  <div className="space-y-4 mb-6">
+                    <h4 className="text-lg font-semibold text-gray-800">Coupons & Discounts</h4>
+                    
+                    {/* Manual Discount Section */}
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Gift className="w-5 h-5 text-green-600" />
+                        <span className="text-sm font-medium text-gray-800">Manual Discount</span>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Discount Type
+                              </label>
+                              <select
+                                name="discountType"
+                                value={discountType}
+                                onChange={(e) => setDiscountType(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                              >
+                                <option value="percentage">Percentage (%)</option>
+                                <option value="fixed">Fixed Amount (€)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Disc. Amount
+                              </label>
+                              <input
+                                type="number"
+                                name="discountAmount"
+                                value={discountAmount}
+                                onChange={(e) => setDiscountAmount(e.target.value)}
+                                onFocus={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
+                                onClick={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
+                                onBlur={(e) => {
+                                  if (numericActiveInput === 'discountAmount' && numericKeyboardInput !== undefined) {
+                                    setDiscountAmount(numericKeyboardInput);
+                                  }
+                                  setNumericActiveInput('');
+                                }}
+                                min="0"
+                                step="0.01"
+                                placeholder={discountType === 'percentage' ? '20' : '10'}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                              />
+                            </div>
+                          </div>
+                          {discountAmount && (
+                            <div className="mt-2 text-sm text-green-600">
+                              ✓ Manual discount of {discountAmount}{discountType === 'percentage' ? '%' : '€'} is ready to apply.
+                            </div>
+                          )}
+                          <div className="flex justify-end mt-3">
+                            <button
+                              onClick={handleApplyManualDiscount}
+                              disabled={!discountAmount || parseFloat(discountAmount) <= 0}
+                              className={`px-4 py-2 rounded-lg transition-colors font-medium ${discountAmount && parseFloat(discountAmount) > 0
+                                  ? 'bg-green-600 text-white hover:bg-green-700'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                }`}
+                            >
+                              Apply Manual Discount
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Quick Amount Buttons */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {['10', '20', '30', '40', '50', '100'].map((amount) => (
-                                                 <button
-                           key={amount}
-                           onClick={() => handleQuickAmountClick(amount)}
-                           className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
-                         >
-                           {amount}
-                         </button>
-                      ))}
+                    {/* Enter Coupon Code Section */}
+                    <div className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Gift className="w-5 h-5 text-green-600" />
+                        <span className="text-sm font-medium text-gray-800">Enter Coupon Code</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          name="couponCode"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value)}
+                          onFocus={(e) => handleAnyInputFocus(e, 'couponCode')}
+                          onClick={(e) => handleAnyInputClick(e, 'couponCode')}
+                          onBlur={(e) => handleCustomInputBlur(e, 'couponCode')}
+                          placeholder="Enter promo code or click a coupon below"
+                          className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${couponCode.trim()
+                              ? 'border-green-400 focus:ring-green-500 focus:ring-green-500 bg-green-50'
+                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
+                            }`}
+                          onKeyUp={(e) => {
+                            if (e.key === 'Enter') {
+                              handleApplyCoupon();
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={handleApplyCoupon}
+                          disabled={!couponCode.trim()}
+                          className={`px-4 py-2 rounded-lg transition-colors font-medium ${couponCode.trim()
+                              ? 'bg-green-600 text-white hover:bg-green-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                        >
+                          Apply
+                        </button>
+                      </div>
+                      {couponCode.trim() && (
+                        <div className="mt-2 text-sm text-green-600">
+                          ✓ Coupon code "{couponCode}" is ready to apply. Click "Apply".
+                        </div>
+                      )}
                     </div>
 
-                                         <button
-                       onClick={resetFinalizeSaleModal}
-                       className="w-full px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors"
-                     >
-                       Clear
-                     </button>
+                    {/* Applied Coupon Display */}
+                    {appliedCoupon && (
+                      <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="font-semibold text-green-800">Applied Coupon</h4>
+                            <p className="text-sm text-green-600">{appliedCoupon.title}</p>
+                            <p className="text-xs text-green-600">Code: {appliedCoupon.code}</p>
+                            {appliedCoupon.discountType === 'percentage' ? (
+                              <p className="text-green-700 font-medium">{appliedCoupon.discount}% OFF</p>
+                            ) : (
+                              <p className="text-green-700 font-medium">€{appliedCoupon.discount} OFF</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={removeAppliedCoupon}
+                            className="text-red-600 hover:text-red-800 p-1"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Available Coupons Section */}
+                    <div>
+                      <h5 className="text-md font-semibold text-gray-800 mb-3">Available Coupons</h5>
+                      {couponsLoading ? (
+                        <div className="text-center py-4">
+                          <div className="text-gray-500 text-sm">Loading coupons...</div>
+                        </div>
+                      ) : availableCoupons.length > 0 ? (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {availableCoupons.slice(0, 3).map((coupon) => (
+                            <div
+                              key={coupon.id}
+                              className="border border-gray-200 rounded-lg p-3 hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer group"
+                              onClick={() => {
+                                setCouponCode(coupon.code);
+                              }}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h6 className="font-semibold text-gray-800 text-sm">{coupon.title}</h6>
+                                  <p className="text-xs text-gray-600 mt-1">Customer Type: {coupon.customerType}</p>
+                                  {coupon.discountType === 'percentage' ? (
+                                    <p className="text-green-600 font-medium mt-1 text-sm">{coupon.discount}% OFF</p>
+                                  ) : (
+                                    <p className="text-green-600 font-medium mt-1 text-sm">€{coupon.discount} OFF</p>
+                                  )}
+                                </div>
+                                <div className="text-right ml-4">
+                                  <span className="text-xs text-gray-500 font-mono">Code: {coupon.code}</span>
+                                </div>
+                              </div>
+                              <div className="mt-1 text-xs text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Click to use this coupon code
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <div className="text-gray-500 text-sm">No coupons available</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   </div>
                 </div>
               </div>
