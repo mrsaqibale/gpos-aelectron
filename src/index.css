@@ -38,7 +38,7 @@ html, body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 8px; /* Restore original padding */
+  padding: 6px; 
 }
 
 .dashboard-main {

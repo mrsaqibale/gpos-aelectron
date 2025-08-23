@@ -2688,7 +2688,7 @@ const RunningOrders = () => {
         </div>
 
         {/* Menu Items */}
-        <div className="w-[50%] bg-white flex flex-col shadow-lg rounded-xl overflow-hidden">
+        <div className="w-[40%] bg-white flex flex-col shadow-lg rounded-xl overflow-hidden">
           {/* Search and categories section */}
           <div className="py-3 px-2 border-b border-gray-200">
             {/* Search bar */}
@@ -2763,12 +2763,12 @@ const RunningOrders = () => {
         </div>
 
         {/* Order Summary */}
-        <div className="w-[30%] h-[100%] border border-gray-300 rounded-lg ">
-          <div className="flex flex-wrap gap-1.5 px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
+        <div className="w-[40%] bg-white rounded-lg flex flex-col">
+          <div className="grid grid-cols-5 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
             <button
               onClick={() => setSelectedOrderType('In Store')}
-              className={`px-3 py-1 text-black text-[11px] rounded flex items-center gap-1 
+              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                       border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -2780,7 +2780,7 @@ const RunningOrders = () => {
                 setSelectedOrderType('Table');
                 setShowTableModal(true);
               }}
-              className={`px-3 py-1 text-black text-xs rounded flex items-center gap-1 
+              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                       border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Table' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"></rect>
@@ -2789,7 +2789,7 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => setSelectedOrderType('Collection')}
-              className={`px-2.5 py-1 text-black text-xs rounded flex items-center gap-1 
+              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                       border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -2798,14 +2798,14 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => setSelectedOrderType('Delivery')}
-              className={`px-2.5 py-1 text-black text-xs rounded flex items-center gap-1 
+              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                       border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
               Delivery
             </button>
-            <button className="px-2 py-1 bg-white text-black text-xs rounded flex items-center gap-1 
+            <button className="h-9 px-2 bg-white text-black text-[13px] rounded flex items-center justify-center gap-1 
                       border border-gray-200 btn-lifted cursor-pointer bg-white hover:border-primary hover:border-2">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
@@ -2814,23 +2814,22 @@ const RunningOrders = () => {
             </button>
             {/* Status section */}
 
-            <button className="px-2.5 py-1 bg-white text-black text-xs rounded flex items-center gap-1 
+            <button className="h-9 px-2 bg-white text-black text-[13px] rounded flex items-center justify-center gap-1 
                       border border-gray-300 btn-lifted cursor-pointer bg-white hover:border-primary hover:border-2">
               <Clock size={14} />
               Due to
             </button>
             <button
               onClick={() => setShowCustomerSearchModal(true)}
-              className="px-2.5 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
+              className="h-9 px-2 bg-primary text-white text-[13px] rounded flex items-center justify-center gap-1 
                      btn-lifted hover:bg-primary/90 transition-colors cursor-pointer">
               <Users2 size={12} />
               Customer
             </button>
 
-
             <button
               onClick={() => setSelectedCustomer(null)}
-              className={`px-1.5 py-1 text-[11px] rounded flex items-center gap-1 
+              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
                       border border-gray-300 btn-lifted transition-colors cursor-pointer ${!selectedCustomer ? 'bg-primary text-white' : 'bg-[#d3D3D3] text-black'
                 }`}>
               {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
@@ -2838,7 +2837,7 @@ const RunningOrders = () => {
 
             <button
               onClick={() => setShowCustomerModal(true)}
-              className=" px-2 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
+              className="h-9 px-2 bg-primary text-white text-[13px] rounded flex items-center justify-center gap-1 
                       border border-[#1e4a9a] btn-lifted hover:bg-primary/90 transition-colors cursor-pointer">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14"></path>
@@ -2849,7 +2848,7 @@ const RunningOrders = () => {
             <button
               onClick={handleOpenEditModal}
               disabled={!selectedCustomer}
-              className={`btn-lifted flex items-center gap-1 bg-primary text-white text-xs rounded transition-colors cursor-pointer px-2 ${selectedCustomer
+              className={`h-9 px-2 btn-lifted flex items-center justify-center gap-1 bg-primary text-white text-[13px] rounded transition-colors cursor-pointer ${selectedCustomer
                 ? 'hover:text-green-800 cursor-pointer'
                 : 'cursor-not-allowed'
                 }`}>
@@ -2861,10 +2860,10 @@ const RunningOrders = () => {
 
           {/* Items table */}
           {/* Items table header */}
-          <div className='bg-white flex flex-col h-[79%] mb-2 rounded-lg p-2 relative'>
-            <div className="mt-3 border border-primary overflow-y-auto h-[60%]">
-              <table className="w-full">
-                <thead>
+          <div className='bg-white flex flex-col mb-2 rounded-lg p-2 flex-1'>
+            <div className="mt-3 border border-gray-200 rounded-lg flex flex-col flex-1 min-h-0">
+              <table className="w-full flex flex-col h-full">
+                <thead className='bg-gray-100 flex-shrink-0'>
                   <tr className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 text-sm font-medium text-gray-700 p-3">
                     <th className="text-center w-8">Edit</th>
                     <th className="text-left">Items</th>
@@ -2873,7 +2872,7 @@ const RunningOrders = () => {
                     <th className="text-center">Total</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white">
+                <tbody className="bg-white flex-1 overflow-y-auto">
                   {cartItems.length > 0 ? (
                     cartItems.map((item) => (
                       <tr key={item.id} className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
@@ -2927,7 +2926,7 @@ const RunningOrders = () => {
               </table>
             </div>
             {/* Summary section */}
-            <div className='bg-white p-2 absolute bottom-0 right-0 w-[100%] rounded-lg'>
+            <div className='bg-white mt-5 w-[100%] rounded-lg'>
               <div className=" mx-auto">
                 <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
                   <span className="font-medium">Subtotal</span>
