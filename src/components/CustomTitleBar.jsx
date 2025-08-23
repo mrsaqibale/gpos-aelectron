@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Minus, Square, X, Maximize2, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
 const CustomTitleBar = () => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
+  const location = useLocation();
   const { themeColors, changeTheme } = useTheme();
+
+  // Check if user is logged in
+  const isLoggedIn = () => {
+    const currentEmployee = localStorage.getItem('currentEmployee');
+    return currentEmployee !== null;
+  };
+
+  // Check if user is on login page
+  const isOnLoginPage = () => {
+    return location.pathname === '/login' || location.pathname === '/';
+  };
 
   // Update time every minute
   useEffect(() => {
@@ -117,17 +129,23 @@ const CustomTitleBar = () => {
         borderBottom: `1px solid ${themeColors.primaryLight}`
       }}
     >
-      {/* Left side - App title and logout button */}
-      <div className="flex items-center space-x-3">
-        <button
-          onClick={handleLogout}
-          className="flex cursor-pointer items-center space-x-1 text-gray-300 hover:text-white transition-colors duration-200 rounded-sm px-2 py-1 hover:bg-red-600"
-          title="Logout"
-        >
-          <ArrowLeft className="w-5 h-5 text-white" />
-          <span className="text-white text-sm font-semibold">Logout</span>
-        </button>
-      </div>
+              {/* Left side - App title and logout button */}
+        <div className="flex items-center space-x-3">
+          {isOnLoginPage() ? (
+            <span className="text-white text-sm font-semibold">POS System</span>
+          ) : isLoggedIn() ? (
+            <button
+              onClick={handleLogout}
+              className="flex cursor-pointer items-center space-x-1 text-gray-300 hover:text-white transition-colors duration-200 rounded-sm px-2 py-1 hover:bg-red-600"
+              title="Logout"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+              <span className="text-white text-sm font-semibold">Logout</span>
+            </button>
+          ) : (
+            <span className="text-white text-sm font-semibold">POS System</span>
+          )}
+        </div>
 
       {/* Middle section - Time and Date */}
       <div className="flex items-center space-x-4">
