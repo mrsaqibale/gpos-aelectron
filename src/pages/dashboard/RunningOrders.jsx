@@ -2489,8 +2489,8 @@ const RunningOrders = () => {
                     <div
                       key={order.id}
                       className={`relative bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md rounded-lg p-4 cursor-pointer transition-all duration-200 ${selectedPlacedOrder?.id === order.id
-                          ? 'border-blue-400 bg-blue-50 shadow-md'
-                          : 'hover:bg-gray-50'
+                        ? 'border-blue-400 bg-blue-50 shadow-md'
+                        : 'hover:bg-gray-50'
                         }`}
                       onClick={() => setSelectedPlacedOrder(order)}
                     >
@@ -2507,7 +2507,7 @@ const RunningOrders = () => {
                       </div>
 
                       {/* Order header */}
-                      <div className="flex items-start justify-between mb-3">
+                      <div className={`flex items-start justify-between ${expandedOrders.has(order.id) ? 'bg-blue-50 p-3 border-b border-blue-200  -m-3 rounded-t-lg' : ''}`}>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h3 className="font-semibold text-gray-800 text-sm">
@@ -2518,45 +2518,25 @@ const RunningOrders = () => {
                               {order.orderType === 'Dine In' ? `${order.orderType} - ${order.table}` : order.orderType}
                             </span>
                           </div>
-                          <div className="flex justify-between">
-                            <p className="text-sm font-medium text-gray-800">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-1">
+                              <p className="text-sm font-medium text-gray-800">
                               {order.customer.name}
-                            </p>
-                            <div className="flex text-right">
-                              <span className="text-xs text-gray-500">{timeAgo}</span>
-                              <div className="mt-1">
-                                <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                                  NEW
-                                </span>
-                              </div>
+                              </p>
+                              <p className="text-xs text-gray-500">{timeAgo}</p>
                             </div>
+                              <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                NEW
+                              </span>
                           </div>
 
                         </div>
 
-                      </div>
-
-                      {/* Order details */}
-                      <div className="text-xs text-gray-600 space-y-1">
-                        <div className="flex justify-between">
-                          <span>Waiter:</span>
-                          <span className="font-medium">{order.waiter}</span>
-                        </div>
-                        {order.orderType === 'Dine In' && (
-                          <div className="flex justify-between">
-                            <span>Table:</span>
-                            <span className="font-medium">{order.table}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span>Total:</span>
-                          <span className="font-medium">€{order.total.toFixed(2)}</span>
-                        </div>
                       </div>
 
                       {/* Expanded Order Details */}
                       {expandedOrders.has(order.id) && (
-                        <div className="mt-4 pt-4 border-t border-blue-200">
+                        <div className=" pt-4 ">
                           {/* Order Items */}
                           <div className="space-y-2 mb-4">
                             <h4 className="text-sm font-semibold text-gray-800 mb-2">Order Items:</h4>
@@ -2572,7 +2552,7 @@ const RunningOrders = () => {
                           </div>
 
                           {/* Total Section */}
-                          <div className="border-t border-gray-200 pt-3 mb-4">
+                          <div className="border-t border-gray-200 pt-2 mb-2">
                             <div className="flex justify-between items-center">
                               <span className="text-sm font-semibold text-gray-800">Total:</span>
                               <span className="text-lg font-bold text-gray-800">€{order.total.toFixed(2)}</span>
@@ -3070,8 +3050,8 @@ const RunningOrders = () => {
                                     onClick={() => handleRemoveItemFromSplit(item.id, selectedSplitBill?.id)}
                                     disabled={!selectedSplitBill || getItemQuantityInSplit(item.id, selectedSplitBill?.id) === 0}
                                     className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${selectedSplitBill && getItemQuantityInSplit(item.id, selectedSplitBill?.id) > 0
-                                        ? 'bg-red-500 text-white hover:bg-red-600'
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                      ? 'bg-red-500 text-white hover:bg-red-600'
+                                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                       }`}
                                     title="Remove from selected split"
                                   >
@@ -3081,8 +3061,8 @@ const RunningOrders = () => {
                                     onClick={() => handleAddItemToSplit(item.id, selectedSplitBill?.id)}
                                     disabled={!selectedSplitBill || getRemainingQuantity(item.id) <= 0}
                                     className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${selectedSplitBill && getRemainingQuantity(item.id) > 0
-                                        ? 'bg-green-500 text-white hover:bg-green-600'
-                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                      ? 'bg-green-500 text-white hover:bg-green-600'
+                                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                       }`}
                                     title="Add to selected split"
                                   >
@@ -3160,8 +3140,8 @@ const RunningOrders = () => {
                                 onClick={handleSplitGo}
                                 disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > calculateMaxSplits()}
                                 className={`px-6 py-2 font-medium rounded-lg transition-colors ${totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()
-                                    ? 'bg-primary text-white hover:bg-primary/90'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  ? 'bg-primary text-white hover:bg-primary/90'
+                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                   }`}
                               >
                                 Go
@@ -3179,8 +3159,8 @@ const RunningOrders = () => {
                           <div
                             key={splitBill.id}
                             className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${selectedSplitBill?.id === splitBill.id
-                                ? 'border-primary bg-primary/5'
-                                : 'border-gray-200 hover:border-gray-300'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-gray-200 hover:border-gray-300'
                               }`}
                             onClick={() => setSelectedSplitBill(splitBill)}
                           >
@@ -3264,8 +3244,8 @@ const RunningOrders = () => {
                             <button
                               disabled={!areAllItemsDistributed()}
                               className={`w-full mt-3 text-xs font-medium py-2 px-3 rounded transition-colors ${areAllItemsDistributed()
-                                  ? 'bg-green-500 text-white hover:bg-green-600'
-                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 }`}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -3332,8 +3312,8 @@ const RunningOrders = () => {
                         onChange={handlePizzaSlicesChange}
                         disabled={completedSlices.length === pizzaSlices}
                         className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${completedSlices.length === pizzaSlices
-                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'border-gray-300 bg-white'
+                          ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'border-gray-300 bg-white'
                           }`}
                       />
                     </div>
@@ -3384,8 +3364,8 @@ const RunningOrders = () => {
                         {selectedSlices.length > 0 ? 'Remove ingredients you don\'t want' : 'Select at least 1 slice to configure ingredients'}
                       </label>
                       <div className={`flex flex-wrap gap-1.5 p-2 border rounded-lg transition-colors ${selectedSlices.length > 0
-                          ? 'border-gray-300 bg-gray-50'
-                          : 'border-gray-200 bg-gray-100'
+                        ? 'border-gray-300 bg-gray-50'
+                        : 'border-gray-200 bg-gray-100'
                         }`}>
                         {selectedIngredients.length === 0 ? (
                           <span className="text-gray-400 text-sm">All ingredients removed</span>
@@ -3394,8 +3374,8 @@ const RunningOrders = () => {
                             <span
                               key={ingredient}
                               className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md shadow-sm transition-all ${selectedSlices.length > 0
-                                  ? 'bg-primary text-white hover:shadow-md'
-                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-primary text-white hover:shadow-md'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 }`}
                             >
                               {ingredient}
@@ -3423,8 +3403,8 @@ const RunningOrders = () => {
                         disabled={selectedSlices.length === 0}
                         onClick={handleAddSliceIngredients}
                         className={`w-fit py-2 px-4 rounded-lg transition-colors font-medium ${selectedSlices.length > 0
-                            ? 'bg-primary text-white hover:bg-primary-dark'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          ? 'bg-primary text-white hover:bg-primary-dark'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           }`}
                       >
                         Add
@@ -4451,8 +4431,8 @@ const RunningOrders = () => {
                           setCurrencyAmount('');
                         }}
                         className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${selectedPaymentMethod === method
-                            ? 'bg-gray-200 text-gray-800 font-medium'
-                            : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                          ? 'bg-gray-200 text-gray-800 font-medium'
+                          : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                           }`}
                       >
                         {method}
