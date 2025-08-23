@@ -171,6 +171,9 @@ const RunningOrders = () => {
   const [selectedPlacedOrder, setSelectedPlacedOrder] = useState(null);
   const [showInvoiceOptions, setShowInvoiceOptions] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState(new Set()); // Track which orders are expanded
+  const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false);
+  const [selectedOrderForStatusUpdate, setSelectedOrderForStatusUpdate] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState('New');
 
   // Finalize Sale Modal State
   const [showFinalizeSaleModal, setShowFinalizeSaleModal] = useState(false);
@@ -1712,7 +1715,7 @@ const RunningOrders = () => {
       orderType: orderType,
       table: selectedTable ? selectedTable : 'None',
       waiter: 'Ds Waiter',
-      status: 'Pending',
+      status: 'New',
       placedAt: new Date().toISOString()
     };
 
@@ -2403,6 +2406,46 @@ const RunningOrders = () => {
     });
   };
 
+  // Handle opening status update modal
+  const handleOpenStatusUpdateModal = (order, event) => {
+    event.stopPropagation();
+    setSelectedOrderForStatusUpdate(order);
+    setSelectedStatus(order.status || 'New');
+    setShowStatusUpdateModal(true);
+  };
+
+  // Handle updating order status
+  const handleUpdateOrderStatus = () => {
+    if (!selectedOrderForStatusUpdate) return;
+
+    setPlacedOrders(prev => prev.map(order => 
+      order.id === selectedOrderForStatusUpdate.id 
+        ? { ...order, status: selectedStatus }
+        : order
+    ));
+
+    showSuccess(`Order status updated to ${selectedStatus}!`);
+    setShowStatusUpdateModal(false);
+    setSelectedOrderForStatusUpdate(null);
+    setSelectedStatus('New');
+  };
+
+  // Get status badge styling
+  const getStatusBadgeStyle = (status) => {
+    switch (status) {
+      case 'New':
+        return 'bg-green-100 text-green-700';
+      case 'In Progress':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'Ready':
+        return 'bg-blue-100 text-blue-700';
+      case 'Completed':
+        return 'bg-purple-100 text-purple-700';
+      default:
+        return 'bg-green-100 text-green-700';
+    }
+  };
+
   return (
     <>
 
@@ -2525,8 +2568,8 @@ const RunningOrders = () => {
                               </p>
                               <p className="text-xs text-gray-500">{timeAgo}</p>
                             </div>
-                              <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                                NEW
+                              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeStyle(order.status || 'New')}`}>
+                                {order.status || 'NEW'}
                               </span>
                           </div>
 
@@ -2576,7 +2619,7 @@ const RunningOrders = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 // Handle mark as action
-                                showInfo('Mark as functionality coming soon!');
+                                handleOpenStatusUpdateModal(order, e);
                               }}
                             >
                               Mark As
@@ -5193,6 +5236,117 @@ const RunningOrders = () => {
                 Cancel
               </button>
             </div> */}
+          </div>
+        </div>
+      )}
+
+      {/* Status Update Modal */}
+      {showStatusUpdateModal && selectedOrderForStatusUpdate && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
+            {/* Header */}
+            <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+              <h2 className="text-xl font-bold">Update Order Status</h2>
+              <button
+                onClick={() => setShowStatusUpdateModal(false)}
+                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Order Information */}
+            <div className="p-6 bg-gray-50">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  #{selectedOrderForStatusUpdate.orderNumber}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Current: {selectedOrderForStatusUpdate.status || 'New'}
+                </p>
+              </div>
+            </div>
+
+            {/* Status Selection */}
+            <div className="p-6">
+              <div className="grid grid-cols-4 gap-3">
+                {/* New Status */}
+                <button
+                  onClick={() => setSelectedStatus('New')}
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    selectedStatus === 'New'
+                      ? 'bg-white border-primary text-primary'
+                      : 'bg-primary text-white border-primary'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Plus size={20} />
+                    <span className="font-medium">New</span>
+                  </div>
+                </button>
+
+                {/* In Progress Status */}
+                <button
+                  onClick={() => setSelectedStatus('In Progress')}
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    selectedStatus === 'In Progress'
+                      ? 'bg-white border-primary text-primary'
+                      : 'bg-primary text-white border-primary'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Clock size={20} />
+                    <span className="font-medium">In Progress</span>
+                  </div>
+                </button>
+
+                {/* Ready Status */}
+                <button
+                  onClick={() => setSelectedStatus('Ready')}
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    selectedStatus === 'Ready'
+                      ? 'bg-white border-primary text-primary'
+                      : 'bg-primary text-white border-primary'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <CheckCircle size={20} />
+                    <span className="font-medium">Ready</span>
+                  </div>
+                </button>
+
+                {/* Completed Status */}
+                <button
+                  onClick={() => setSelectedStatus('Completed')}
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                    selectedStatus === 'Completed'
+                      ? 'bg-white border-primary text-primary'
+                      : 'bg-primary text-white border-primary'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Star size={20} />
+                    <span className="font-medium">Completed</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => setShowStatusUpdateModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateOrderStatus}
+                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors cursor-pointer"
+              >
+                Update Status
+              </button>
+            </div>
           </div>
         </div>
       )}
