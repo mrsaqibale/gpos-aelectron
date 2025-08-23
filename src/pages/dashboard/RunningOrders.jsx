@@ -30,6 +30,7 @@ import {
   Menu,
   ChevronLeft,
   ChevronDown,
+  ChevronUp,
   LogOut,
   LayoutDashboard,
   Utensils,
@@ -54,7 +55,8 @@ import {
   Square,
   Circle,
   Hash,
-  HashIcon
+  HashIcon,
+  Truck
 } from 'lucide-react';
 import Keyboard from 'react-simple-keyboard';
 import 'react-simple-keyboard/build/css/index.css';
@@ -133,7 +135,7 @@ const RunningOrders = () => {
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
   const [pizzaSlices, setPizzaSlices] = useState(8);
   const [selectedIngredients, setSelectedIngredients] = useState([
-    'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
+    'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives',
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
   ]);
   const [selectedSlices, setSelectedSlices] = useState([]);
@@ -142,7 +144,7 @@ const RunningOrders = () => {
   const [currentSliceSelection, setCurrentSliceSelection] = useState([]);
   const [completedBatches, setCompletedBatches] = useState([]);
   const [availableIngredients] = useState([
-    'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives', 
+    'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives',
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
   ]);
 
@@ -159,7 +161,7 @@ const RunningOrders = () => {
   // Calculate maximum splits based on total quantity
   const calculateMaxSplits = () => {
     if (!splitItems || splitItems.length === 0) return 10;
-    
+
     const totalQuantity = splitItems.reduce((sum, item) => sum + item.quantity, 0);
     return Math.min(totalQuantity, 10);
   };
@@ -168,6 +170,7 @@ const RunningOrders = () => {
   const [placedOrders, setPlacedOrders] = useState([]);
   const [selectedPlacedOrder, setSelectedPlacedOrder] = useState(null);
   const [showInvoiceOptions, setShowInvoiceOptions] = useState(false);
+  const [expandedOrders, setExpandedOrders] = useState(new Set()); // Track which orders are expanded
 
   // Finalize Sale Modal State
   const [showFinalizeSaleModal, setShowFinalizeSaleModal] = useState(false);
@@ -180,7 +183,7 @@ const RunningOrders = () => {
   const [sendSMS, setSendSMS] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('EUR');
   const [currencyAmount, setCurrencyAmount] = useState('');
-  
+
   // Cart Details Modal State
   const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
 
@@ -239,9 +242,9 @@ const RunningOrders = () => {
       if (showInvoiceOptions) {
         const invoiceButton = document.querySelector('[data-invoice-button]');
         const invoiceOptions = document.querySelector('[data-invoice-options]');
-        
-        if (invoiceButton && !invoiceButton.contains(event.target) && 
-            invoiceOptions && !invoiceOptions.contains(event.target)) {
+
+        if (invoiceButton && !invoiceButton.contains(event.target) &&
+          invoiceOptions && !invoiceOptions.contains(event.target)) {
           setShowInvoiceOptions(false);
         }
       }
@@ -747,7 +750,7 @@ const RunningOrders = () => {
         if (result && result.success) {
           console.log('Food details loaded successfully:', result.data);
           setFoodDetails(result.data);
-          
+
           // Check if the food has variations
           const hasVariations = result.data.variations && result.data.variations.length > 0;
           console.log('Food has variations:', hasVariations);
@@ -1575,21 +1578,21 @@ const RunningOrders = () => {
     if (selectedSlices.length > 0) {
       // Add selected slices to completed slices
       setCompletedSlices(prev => [...prev, ...selectedSlices]);
-      
+
       // Save ingredients for these slices
       const newSliceIngredients = { ...sliceIngredients };
       selectedSlices.forEach(sliceIndex => {
         newSliceIngredients[sliceIndex] = [...selectedIngredients];
       });
       setSliceIngredients(newSliceIngredients);
-      
+
       // Create a new batch with current slices and ingredients
       const newBatch = {
         slices: [...selectedSlices],
         ingredients: [...selectedIngredients]
       };
       setCompletedBatches(prev => [...prev, newBatch]);
-      
+
       // Clear current selection
       setSelectedSlices([]);
       setSelectedIngredients([...availableIngredients]);
@@ -1616,7 +1619,7 @@ const RunningOrders = () => {
     if (completedSlices.includes(sliceIndex)) {
       return;
     }
-    
+
     setSelectedSlices(prev => {
       if (prev.includes(sliceIndex)) {
         return prev.filter(index => index !== sliceIndex);
@@ -1629,22 +1632,22 @@ const RunningOrders = () => {
   const renderPizzaSlices = () => {
     const slices = [];
     const angleStep = 360 / pizzaSlices;
-    
+
     for (let i = 0; i < pizzaSlices; i++) {
       const startAngle = i * angleStep;
       const endAngle = (i + 1) * angleStep;
       const isSelected = selectedSlices.includes(i);
       const isCompleted = completedSlices.includes(i);
-      
+
       // Calculate the slice path
       const x1 = 100 + 80 * Math.cos(startAngle * Math.PI / 180);
       const y1 = 100 + 80 * Math.sin(startAngle * Math.PI / 180);
       const x2 = 100 + 80 * Math.cos(endAngle * Math.PI / 180);
       const y2 = 100 + 80 * Math.sin(endAngle * Math.PI / 180);
-      
+
       // Create large arc flag (1 if angle > 180 degrees, 0 otherwise)
       const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
-      
+
       // Determine fill color based on state
       let fillColor = "#FFD700"; // Default gold
       if (isCompleted) {
@@ -1652,7 +1655,7 @@ const RunningOrders = () => {
       } else if (isSelected) {
         fillColor = "#E6C200"; // Darker gold for selected
       }
-      
+
       slices.push(
         <g key={i}>
           {/* Invisible clickable area - only if not completed */}
@@ -1677,7 +1680,7 @@ const RunningOrders = () => {
         </g>
       );
     }
-    
+
     return slices;
   };
 
@@ -1688,16 +1691,26 @@ const RunningOrders = () => {
       return;
     }
 
+    // Map order type based on selection
+    let orderType = 'In Store'; // default
+    if (selectedOrderType === 'Table') {
+      orderType = 'Dine In';
+    } else if (selectedOrderType === 'Collection') {
+      orderType = 'Collection';
+    } else if (selectedOrderType === 'Delivery') {
+      orderType = 'Delivery';
+    }
+
     // Create a new order
     const newOrder = {
       id: Date.now(),
-      orderNumber: `aVR${Date.now().toString().slice(-8)}-${String(placedOrders.length + 1).padStart(3, '0')}`,
+      orderNumber: `ORD-${String(placedOrders.length + 1).padStart(3, '0')}`,
       items: [...cartItems],
       customer: selectedCustomer || { name: 'Walk-in Customer' },
       total: calculateCartTotal(),
       coupon: appliedCoupon,
-      orderType: selectedTable ? 'Dine In' : 'Take Away',
-      table: selectedTable ? `Table ${selectedTable}` : 'None',
+      orderType: orderType,
+      table: selectedTable ? selectedTable : 'None',
       waiter: 'Ds Waiter',
       status: 'Pending',
       placedAt: new Date().toISOString()
@@ -1705,7 +1718,7 @@ const RunningOrders = () => {
 
     // Add to placed orders
     setPlacedOrders(prev => [newOrder, ...prev]);
-    
+
     showSuccess('Order placed successfully!', 'success');
     clearCart();
   };
@@ -1967,8 +1980,8 @@ const RunningOrders = () => {
   };
 
   const handleSplitItemToggle = (itemId) => {
-    setSplitItems(prev => prev.map(item => 
-      item.id === itemId 
+    setSplitItems(prev => prev.map(item =>
+      item.id === itemId
         ? { ...item, isSelected: !item.isSelected, splitQuantity: !item.isSelected ? 1 : 0 }
         : item
     ));
@@ -1976,9 +1989,9 @@ const RunningOrders = () => {
 
   const handleSplitItemQuantityChange = (itemId, newQuantity) => {
     if (newQuantity < 0) return;
-    
-    setSplitItems(prev => prev.map(item => 
-      item.id === itemId 
+
+    setSplitItems(prev => prev.map(item =>
+      item.id === itemId
         ? { ...item, splitQuantity: newQuantity }
         : item
     ));
@@ -1989,7 +2002,7 @@ const RunningOrders = () => {
       showError('Please enter a valid number of splits');
       return;
     }
-    
+
     const numSplits = parseInt(totalSplit);
     const maxSplits = calculateMaxSplits();
     if (numSplits > maxSplits) {
@@ -2047,8 +2060,8 @@ const RunningOrders = () => {
           // Increase quantity if item already exists
           return {
             ...split,
-            items: split.items.map(i => 
-              i.food.id === item.food.id 
+            items: split.items.map(i =>
+              i.food.id === item.food.id
                 ? { ...i, quantity: (i.quantity || 0) + 1, totalPrice: ((i.totalPrice || 0) / (i.quantity || 1)) * ((i.quantity || 0) + 1) }
                 : i
             )
@@ -2082,9 +2095,9 @@ const RunningOrders = () => {
             // Decrease quantity if more than 1
             return {
               ...split,
-              items: split.items.map(i => 
-                i.food.id === item.food.id 
-                ? { ...i, quantity: (i.quantity || 0) - 1, totalPrice: ((i.totalPrice || 0) / (i.quantity || 1)) * ((i.quantity || 0) - 1) }
+              items: split.items.map(i =>
+                i.food.id === item.food.id
+                  ? { ...i, quantity: (i.quantity || 0) - 1, totalPrice: ((i.totalPrice || 0) / (i.quantity || 1)) * ((i.quantity || 0) - 1) }
                   : i
               )
             };
@@ -2131,7 +2144,7 @@ const RunningOrders = () => {
 
   const areAllItemsDistributed = () => {
     if (!splitItems || splitItems.length === 0) return false;
-    
+
     // Check if all items have been fully distributed (remaining quantity = 0)
     return splitItems.every(item => getRemainingQuantity(item.id) === 0);
   };
@@ -2142,7 +2155,7 @@ const RunningOrders = () => {
         const subtotal = split.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
         const tax = subtotal * 0.13; // 13% tax
         const total = subtotal + tax + (split.charge || 0) + (split.tips || 0) - (split.discount || 0);
-        
+
         return {
           ...split,
           subtotal,
@@ -2155,7 +2168,7 @@ const RunningOrders = () => {
   };
 
   const handleSplitBillCustomerChange = (splitBillId, customer) => {
-    setSplitBills(prev => prev.map(split => 
+    setSplitBills(prev => prev.map(split =>
       split.id === splitBillId ? { ...split, customer } : split
     ));
   };
@@ -2376,12 +2389,26 @@ const RunningOrders = () => {
     return total;
   };
 
+  // Handle expanding/collapsing order details
+  const handleToggleOrderExpansion = (orderId, event) => {
+    event.stopPropagation(); // Prevent triggering the card click
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <>
 
 
       <div className="flex justify-between gap-2 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
-                      <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
+        <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
           {/* Running Orders */}
           <div className=" h-[85%] flex flex-col overflow-y-auto">
@@ -2411,22 +2438,175 @@ const RunningOrders = () => {
             </div>
 
             {/* Placed Orders List */}
-            <div className="py-4 mt-2 my-auto px-2 space-y-2 h-auto overflow-y-auto">
+            <div className="py-4 mt-2 my-auto px-2 space-y-3 h-auto overflow-y-auto">
               {placedOrders.length > 0 ? (
-                placedOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className={`p-4 border-b cursor-pointer border border-gray-300 hover:bg-gray-50 rounded-lg shadow-md ${selectedPlacedOrder?.id === order.id ? 'bg-blue-50' : ''
-                      }`}
-                    onClick={() => setSelectedPlacedOrder(order)}
-                  >
-                    <div className="font-semibold text-sm text-gray-800">{order.customer.name}</div>
-                    <div className="text-xs mt-1 text-gray-700">Order: {order.orderNumber}</div>
-                    <div className="text-xs text-gray-700">Type: {order.orderType}</div>
-                    <div className="text-xs text-gray-700">Table: {order.table}</div>
-                    <div className="text-xs text-gray-700">Waiter: {order.waiter}</div>
-                  </div>
-                ))
+                placedOrders.map((order) => {
+                  // Calculate time elapsed
+                  const orderTime = new Date(order.placedAt);
+                  const now = new Date();
+                  const timeDiff = Math.floor((now - orderTime) / (1000 * 60)); // minutes
+                  const timeAgo = timeDiff === 0 ? 'Just now' : `${timeDiff} min ago`;
+
+                  // Get order type styling
+                  const getOrderTypeStyle = (type) => {
+                    switch (type) {
+                      case 'Dine In':
+                        return {
+                          bgColor: 'bg-blue-100',
+                          textColor: 'text-blue-700',
+                          icon: <Utensils size={12} />
+                        };
+                      case 'Collection':
+                        return {
+                          bgColor: 'bg-orange-100',
+                          textColor: 'text-orange-700',
+                          icon: <ShoppingBag size={12} />
+                        };
+                      case 'Delivery':
+                        return {
+                          bgColor: 'bg-green-100',
+                          textColor: 'text-green-700',
+                          icon: <Truck size={12} />
+                        };
+                      case 'In Store':
+                        return {
+                          bgColor: 'bg-purple-100',
+                          textColor: 'text-purple-700',
+                          icon: <Printer size={12} />
+                        };
+                      default:
+                        return {
+                          bgColor: 'bg-gray-100',
+                          textColor: 'text-gray-700',
+                          icon: <Receipt size={12} />
+                        };
+                    }
+                  };
+
+                  const orderTypeStyle = getOrderTypeStyle(order.orderType);
+
+                  return (
+                    <div
+                      key={order.id}
+                      className={`relative bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md rounded-lg p-4 cursor-pointer transition-all duration-200 ${selectedPlacedOrder?.id === order.id
+                          ? 'border-blue-400 bg-blue-50 shadow-md'
+                          : 'hover:bg-gray-50'
+                        }`}
+                      onClick={() => setSelectedPlacedOrder(order)}
+                    >
+                      {/* Dropdown arrow */}
+                      <div
+                        className="absolute top-3 right-3 cursor-pointer"
+                        onClick={(e) => handleToggleOrderExpansion(order.id, e)}
+                      >
+                        {expandedOrders.has(order.id) ? (
+                          <ChevronUp size={16} className="text-blue-500" />
+                        ) : (
+                          <ChevronDown size={16} className="text-gray-400" />
+                        )}
+                      </div>
+
+                      {/* Order header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-gray-800 text-sm">
+                              #{order.orderNumber}
+                            </h3>
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${orderTypeStyle.bgColor} ${orderTypeStyle.textColor}`}>
+                              {orderTypeStyle.icon}
+                              {order.orderType === 'Dine In' ? `${order.orderType} - ${order.table}` : order.orderType}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium text-gray-800">
+                              {order.customer.name}
+                            </p>
+                            <div className="flex text-right">
+                              <span className="text-xs text-gray-500">{timeAgo}</span>
+                              <div className="mt-1">
+                                <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                  NEW
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                      {/* Order details */}
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Waiter:</span>
+                          <span className="font-medium">{order.waiter}</span>
+                        </div>
+                        {order.orderType === 'Dine In' && (
+                          <div className="flex justify-between">
+                            <span>Table:</span>
+                            <span className="font-medium">{order.table}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>Total:</span>
+                          <span className="font-medium">€{order.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      {/* Expanded Order Details */}
+                      {expandedOrders.has(order.id) && (
+                        <div className="mt-4 pt-4 border-t border-blue-200">
+                          {/* Order Items */}
+                          <div className="space-y-2 mb-4">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-2">Order Items:</h4>
+                            {order.items.map((item, index) => (
+                              <div key={index} className="flex justify-between items-center text-sm">
+                                <div className="flex-1">
+                                  <span className="font-medium text-gray-800">{item.food.name}</span>
+                                  <span className="text-blue-600 ml-2">x{item.quantity}</span>
+                                </div>
+                                <span className="font-medium text-gray-800">€{item.totalPrice.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Total Section */}
+                          <div className="border-t border-gray-200 pt-3 mb-4">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-semibold text-gray-800">Total:</span>
+                              <span className="text-lg font-bold text-gray-800">€{order.total.toFixed(2)}</span>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-3">
+                            <button
+                              className="flex-1 bg-gray-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-gray-700 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Handle view details
+                                setSelectedPlacedOrder(order);
+                              }}
+                            >
+                              View Details
+                            </button>
+                            <button
+                              className="flex-1 bg-blue-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-blue-700 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Handle mark as action
+                                showInfo('Mark as functionality coming soon!');
+                              }}
+                            >
+                              Mark As
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <div className="text-center py-8">
                   <div className="text-gray-500 text-sm">No orders placed</div>
@@ -2444,7 +2624,7 @@ const RunningOrders = () => {
                   <Receipt size={14} />
                   BILL
                 </button>
-                <button 
+                <button
                   data-invoice-button
                   onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
                   disabled={!selectedPlacedOrder}
@@ -2453,7 +2633,7 @@ const RunningOrders = () => {
                   INVOICE
                 </button>
               </div>
-              
+
               {/* Second Row - Order Details, Modify Order, Cancel */}
               <div className="flex gap-2">
                 <button className="flex-1 bg-[#4d36eb] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
@@ -2476,7 +2656,7 @@ const RunningOrders = () => {
           {showInvoiceOptions && selectedPlacedOrder && (
             <div data-invoice-options className="absolute bottom-23 left-1/2 transform -translate-x-7 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
               <div className="flex flex-col gap-1">
-                <button 
+                <button
                   onClick={handleOpenSplitBillModal}
                   className="w-32 bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors text-xs">
                   Split Bill
@@ -2516,7 +2696,7 @@ const RunningOrders = () => {
                   <X className="w-4 h-4" />
                 </button>
               )}
-              
+
             </div>
 
             {/* Search results info */}
@@ -2549,11 +2729,11 @@ const RunningOrders = () => {
                 <div className="text-gray-500 text-sm">No categories found</div>
               )}
               <button
-                  onClick={handleOpenSplitPizzaModal}
-                  className="bg-[#4d35ee] text-white btn-lifted py-1.5 px-2 rounded-lg text-[11px] font-bold hover:bg-blue-700"
-                >
-                  SPLIT PIZZA
-                </button>
+                onClick={handleOpenSplitPizzaModal}
+                className="bg-[#4d35ee] text-white btn-lifted py-1.5 px-2 rounded-lg text-[11px] font-bold hover:bg-blue-700"
+              >
+                SPLIT PIZZA
+              </button>
             </div>
           </div>
 
@@ -2565,7 +2745,7 @@ const RunningOrders = () => {
         <div className="w-[30%] h-[100%] border border-gray-300 rounded-lg ">
           <div className="flex flex-wrap gap-1.5 px-2 py-2 mb-2 h-[20%] bg-white border-b border-gray-200 rounded-lg">
             {/* Tabs row */}
-            <button 
+            <button
               onClick={() => setSelectedOrderType('In Store')}
               className={`px-3 py-1 text-black text-[11px] rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
@@ -2586,7 +2766,7 @@ const RunningOrders = () => {
               </svg>
               Table
             </button>
-            <button 
+            <button
               onClick={() => setSelectedOrderType('Collection')}
               className={`px-2.5 py-1 text-black text-xs rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
@@ -2595,7 +2775,7 @@ const RunningOrders = () => {
               </svg>
               Collection
             </button>
-            <button 
+            <button
               onClick={() => setSelectedOrderType('Delivery')}
               className={`px-2.5 py-1 text-black text-xs rounded flex items-center gap-1 
                       border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
@@ -2768,7 +2948,7 @@ const RunningOrders = () => {
               </div>
               {/* Total Payable */}
               <div className='flex justify-center items-center'>
-                <div 
+                <div
                   className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer w-[70%] rounded flex items-center justify-center mb-4 hover:bg-gray-300 transition-colors"
                 >
                   <div className="flex items-center gap-2">
@@ -2785,7 +2965,7 @@ const RunningOrders = () => {
                 >
                   DISCOUNT
                 </button>
-                
+
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
                 </button>
@@ -2852,7 +3032,7 @@ const RunningOrders = () => {
                   {/* Left Section - Order Items */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Order Items</h3>
-                    
+
                     {/* Items Table */}
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <table className="w-full">
@@ -2870,7 +3050,7 @@ const RunningOrders = () => {
                           {splitItems.map((item) => (
                             <tr key={item.id} className="border-t border-gray-100">
                               <td className="px-3 py-2 text-sm text-gray-800">
-                                  <span className="truncate">{item.food.name}</span>
+                                <span className="truncate">{item.food.name}</span>
                               </td>
                               <td className="px-3 py-2 text-sm text-center text-gray-600">
                                 €{(item.totalPrice / item.quantity).toFixed(2)}
@@ -2889,11 +3069,10 @@ const RunningOrders = () => {
                                   <button
                                     onClick={() => handleRemoveItemFromSplit(item.id, selectedSplitBill?.id)}
                                     disabled={!selectedSplitBill || getItemQuantityInSplit(item.id, selectedSplitBill?.id) === 0}
-                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${
-                                      selectedSplitBill && getItemQuantityInSplit(item.id, selectedSplitBill?.id) > 0
-                                        ? 'bg-red-500 text-white hover:bg-red-600' 
+                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${selectedSplitBill && getItemQuantityInSplit(item.id, selectedSplitBill?.id) > 0
+                                        ? 'bg-red-500 text-white hover:bg-red-600'
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    }`}
+                                      }`}
                                     title="Remove from selected split"
                                   >
                                     -
@@ -2901,11 +3080,10 @@ const RunningOrders = () => {
                                   <button
                                     onClick={() => handleAddItemToSplit(item.id, selectedSplitBill?.id)}
                                     disabled={!selectedSplitBill || getRemainingQuantity(item.id) <= 0}
-                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${
-                                      selectedSplitBill && getRemainingQuantity(item.id) > 0
-                                        ? 'bg-green-500 text-white hover:bg-green-600' 
+                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${selectedSplitBill && getRemainingQuantity(item.id) > 0
+                                        ? 'bg-green-500 text-white hover:bg-green-600'
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    }`}
+                                      }`}
                                     title="Add to selected split"
                                   >
                                     +
@@ -2919,78 +3097,77 @@ const RunningOrders = () => {
                     </div>
 
                     {/* Summary Section */}
-                      
-                      <div className="border-gray-200 pt-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-800">Total Items:</span>
-                          <span className="text-sm font-bold text-gray-800">{splitItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-800">Sub Total:</span>
-                          <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / 1.13).toFixed(2) : '0.00'}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-800">Tax:</span>
-                          <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? ((selectedPlacedOrder.total / 1.13) * 0.13).toFixed(2) : '0.00'}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-800">Total Payable:</span>
-                          <span className="text-lg font-bold text-primary">€{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}</span>
-                        </div>
+
+                    <div className="border-gray-200 pt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-800">Total Items:</span>
+                        <span className="text-sm font-bold text-gray-800">{splitItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
                       </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-800">Sub Total:</span>
+                        <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / 1.13).toFixed(2) : '0.00'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-800">Tax:</span>
+                        <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? ((selectedPlacedOrder.total / 1.13) * 0.13).toFixed(2) : '0.00'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-bold text-gray-800">Total Payable:</span>
+                        <span className="text-lg font-bold text-primary">€{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Right Section - Split Bills */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Split Bills</h3>
-                    
+
                     {/* Split Creation */}
                     {splitBills.length === 0 && (
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="text-sm text-blue-800 font-medium mb-2">
-                        Maximum Split(s): {calculateMaxSplits()}
-                        {calculateMaxSplits() < 10 && (
-                          <span className="text-xs text-blue-600 block mt-1">
-                            (Based on total quantity: {splitItems.reduce((sum, item) => sum + item.quantity, 0)} items)
-                          </span>
-                        )}
-                      </div>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Total Split
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="1"
-                            max={calculateMaxSplits()}
-                            value={totalSplit}
-                            onChange={(e) => setTotalSplit(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()) {
-                                  handleSplitGo();
-                                }
-                              }
-                            }}
-                            placeholder="Enter number of splits"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                          />
-                          <button
-                            onClick={handleSplitGo}
-                            disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > calculateMaxSplits()}
-                            className={`px-6 py-2 font-medium rounded-lg transition-colors ${
-                              totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()
-                                ? 'bg-primary text-white hover:bg-primary/90'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                          >
-                            Go
-                          </button>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <div className="text-sm text-blue-800 font-medium mb-2">
+                          Maximum Split(s): {calculateMaxSplits()}
+                          {calculateMaxSplits() < 10 && (
+                            <span className="text-xs text-blue-600 block mt-1">
+                              (Based on total quantity: {splitItems.reduce((sum, item) => sum + item.quantity, 0)} items)
+                            </span>
+                          )}
                         </div>
-                      </div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Total Split
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                min="1"
+                                max={calculateMaxSplits()}
+                                value={totalSplit}
+                                onChange={(e) => setTotalSplit(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()) {
+                                      handleSplitGo();
+                                    }
+                                  }
+                                }}
+                                placeholder="Enter number of splits"
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                              />
+                              <button
+                                onClick={handleSplitGo}
+                                disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > calculateMaxSplits()}
+                                className={`px-6 py-2 font-medium rounded-lg transition-colors ${totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()
+                                    ? 'bg-primary text-white hover:bg-primary/90'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  }`}
+                              >
+                                Go
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2999,13 +3176,12 @@ const RunningOrders = () => {
                     {splitBills.length > 0 && (
                       <div className="grid grid-cols-2 gap-4">
                         {splitBills.map((splitBill) => (
-                          <div 
-                            key={splitBill.id} 
-                            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                              selectedSplitBill?.id === splitBill.id 
-                                ? 'border-primary bg-primary/5' 
+                          <div
+                            key={splitBill.id}
+                            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${selectedSplitBill?.id === splitBill.id
+                                ? 'border-primary bg-primary/5'
                                 : 'border-gray-200 hover:border-gray-300'
-                            }`}
+                              }`}
                             onClick={() => setSelectedSplitBill(splitBill)}
                           >
                             {/* Header */}
@@ -3017,7 +3193,7 @@ const RunningOrders = () => {
                                 {selectedSplitBill?.id === splitBill.id && (
                                   <CheckCircle size={16} className="text-green-600" />
                                 )}
-                          </div>
+                              </div>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -3027,7 +3203,7 @@ const RunningOrders = () => {
                               >
                                 <X size={16} />
                               </button>
-                        </div>
+                            </div>
 
                             {/* Customer Selection */}
                             <div className="mb-3">
@@ -3073,11 +3249,11 @@ const RunningOrders = () => {
                               <div className="flex justify-between">
                                 <span>Sub Total:</span>
                                 <span>€{(splitBill.subtotal || 0).toFixed(2)}</span>
-                  </div>
+                              </div>
                               <div className="flex justify-between">
                                 <span>Disc Amt(%):</span>
                                 <span>€{(splitBill.discount || 0).toFixed(2)}X</span>
-                </div>
+                              </div>
                               <div className="flex justify-between font-bold border-t border-gray-200 pt-1">
                                 <span>Total Payable:</span>
                                 <span>€{(splitBill.total || 0).toFixed(2)}</span>
@@ -3087,11 +3263,10 @@ const RunningOrders = () => {
                             {/* Checkout Button */}
                             <button
                               disabled={!areAllItemsDistributed()}
-                              className={`w-full mt-3 text-xs font-medium py-2 px-3 rounded transition-colors ${
-                                areAllItemsDistributed()
+                              className={`w-full mt-3 text-xs font-medium py-2 px-3 rounded transition-colors ${areAllItemsDistributed()
                                   ? 'bg-green-500 text-white hover:bg-green-600'
                                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              }`}
+                                }`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (areAllItemsDistributed()) {
@@ -3106,11 +3281,11 @@ const RunningOrders = () => {
                             >
                               Checkout
                             </button>
-                              {!areAllItemsDistributed() && (
-                                <div className="text-xs text-gray-500 mt-1 text-center">
-                                  All items must be distributed before checkout
-                                </div>
-                              )}
+                            {!areAllItemsDistributed() && (
+                              <div className="text-xs text-gray-500 mt-1 text-center">
+                                All items must be distributed before checkout
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -3143,7 +3318,7 @@ const RunningOrders = () => {
                   {/* First Column - Pizza Slices */}
                   <div className="col-span-3 space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Pizza Configuration</h3>
-                    
+
                     {/* Number of Slices Input */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -3156,11 +3331,10 @@ const RunningOrders = () => {
                         value={pizzaSlices}
                         onChange={handlePizzaSlicesChange}
                         disabled={completedSlices.length === pizzaSlices}
-                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${
-                          completedSlices.length === pizzaSlices
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${completedSlices.length === pizzaSlices
                             ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
                             : 'border-gray-300 bg-white'
-                        }`}
+                          }`}
                       />
                     </div>
 
@@ -3203,28 +3377,26 @@ const RunningOrders = () => {
                   {/* Second Column - Ingredients */}
                   <div className="col-span-7 space-y-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Ingredients Selection</h3>
-                    
+
                     {/* All Ingredients as Removable Tags */}
                     <div>
                       <label className={`block text-sm font-medium mb-2 ${selectedSlices.length > 0 ? 'text-gray-700' : 'text-gray-400'}`}>
                         {selectedSlices.length > 0 ? 'Remove ingredients you don\'t want' : 'Select at least 1 slice to configure ingredients'}
                       </label>
-                      <div className={`flex flex-wrap gap-1.5 p-2 border rounded-lg transition-colors ${
-                        selectedSlices.length > 0 
-                          ? 'border-gray-300 bg-gray-50' 
+                      <div className={`flex flex-wrap gap-1.5 p-2 border rounded-lg transition-colors ${selectedSlices.length > 0
+                          ? 'border-gray-300 bg-gray-50'
                           : 'border-gray-200 bg-gray-100'
-                      }`}>
+                        }`}>
                         {selectedIngredients.length === 0 ? (
                           <span className="text-gray-400 text-sm">All ingredients removed</span>
                         ) : (
                           selectedIngredients.map((ingredient) => (
                             <span
                               key={ingredient}
-                              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md shadow-sm transition-all ${
-                                selectedSlices.length > 0
+                              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md shadow-sm transition-all ${selectedSlices.length > 0
                                   ? 'bg-primary text-white hover:shadow-md'
                                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              }`}
+                                }`}
                             >
                               {ingredient}
                               {selectedSlices.length > 0 && (
@@ -3250,11 +3422,10 @@ const RunningOrders = () => {
                       <button
                         disabled={selectedSlices.length === 0}
                         onClick={handleAddSliceIngredients}
-                        className={`w-fit py-2 px-4 rounded-lg transition-colors font-medium ${
-                          selectedSlices.length > 0
+                        className={`w-fit py-2 px-4 rounded-lg transition-colors font-medium ${selectedSlices.length > 0
                             ? 'bg-primary text-white hover:bg-primary-dark'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
+                          }`}
                       >
                         Add
                       </button>
@@ -3713,16 +3884,16 @@ const RunningOrders = () => {
                     {/* Food Image and Info */}
                     {/* Food Image */}
                     <div className="flex items-center gap-4">
-                    <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 mb-3">
-                      <FoodImageDisplay food={selectedFood} />
-                    </div>
-                    {/* Food Name and Description */}
-                    <div className="flex flex-col gap-2">
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedFood.name}</h3>
-                      {selectedFood.description && (
-                        <p className="text-sm text-gray-600">{selectedFood.description}</p>
-                      )}
-                    </div>
+                      <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 mb-3">
+                        <FoodImageDisplay food={selectedFood} />
+                      </div>
+                      {/* Food Name and Description */}
+                      <div className="flex flex-col gap-2">
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedFood.name}</h3>
+                        {selectedFood.description && (
+                          <p className="text-sm text-gray-600">{selectedFood.description}</p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Food Price */}
@@ -3790,14 +3961,14 @@ const RunningOrders = () => {
                                   key={option.id}
                                   onClick={() => handleVariationSelect(variation.id, option.id)}
                                   className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${isSelected
-                                      ? 'bg-primary/10 border-primary'
-                                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                                    ? 'bg-primary/10 border-primary'
+                                    : 'bg-white border-gray-200 hover:bg-gray-50'
                                     }`}
                                 >
                                   <div className="flex items-center gap-3">
                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
-                                        ? 'border-primary bg-primary'
-                                        : 'border-gray-300'
+                                      ? 'border-primary bg-primary'
+                                      : 'border-gray-300'
                                       }`}>
                                       {isSelected && (
                                         <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -3879,14 +4050,14 @@ const RunningOrders = () => {
                               key={adon.id}
                               onClick={() => handleAdonSelect(adon.id)}
                               className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${isSelected
-                                  ? 'bg-primary/10 border-primary'
-                                  : 'bg-white border-gray-200 hover:bg-gray-50'
+                                ? 'bg-primary/10 border-primary'
+                                : 'bg-white border-gray-200 hover:bg-gray-50'
                                 }`}
                             >
                               <div className="flex items-center gap-3">
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected
-                                    ? 'border-primary bg-primary'
-                                    : 'border-gray-300'
+                                  ? 'border-primary bg-primary'
+                                  : 'border-gray-300'
                                   }`}>
                                   {isSelected && (
                                     <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -3944,8 +4115,8 @@ const RunningOrders = () => {
                     onClick={handleAddToCart}
                     disabled={!validateVariationSelections()}
                     className={`flex-1 px-4 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${validateVariationSelections()
-                        ? 'bg-primary text-white hover:bg-primary/90'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      ? 'bg-primary text-white hover:bg-primary/90'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
                   >
                     <ShoppingCart size={18} />
@@ -4042,8 +4213,8 @@ const RunningOrders = () => {
                             onClick={handleApplyManualDiscount}
                             disabled={!discountAmount || parseFloat(discountAmount) <= 0}
                             className={`px-4 py-2 rounded-lg transition-colors font-medium ${discountAmount && parseFloat(discountAmount) > 0
-                                ? 'bg-green-600 text-white hover:bg-green-700'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              ? 'bg-green-600 text-white hover:bg-green-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                               }`}
                           >
                             Apply Manual Discount
@@ -4066,8 +4237,8 @@ const RunningOrders = () => {
                               onBlur={(e) => handleCustomInputBlur(e, 'couponCode')}
                               placeholder="Enter promo code or click a coupon below"
                               className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${couponCode.trim()
-                                  ? 'border-green-400 focus:ring-green-500 focus:ring-green-500 bg-green-50'
-                                  : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
+                                ? 'border-green-400 focus:ring-green-500 focus:ring-green-500 bg-green-50'
+                                : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
                                 }`}
                               onKeyUp={(e) => {
                                 if (e.key === 'Enter') {
@@ -4079,8 +4250,8 @@ const RunningOrders = () => {
                               onClick={handleApplyCoupon}
                               disabled={!couponCode.trim()}
                               className={`px-4 py-2 rounded-lg transition-colors font-medium ${couponCode.trim()
-                                  ? 'bg-green-600 text-white hover:bg-green-700'
-                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 }`}
                             >
                               Apply
@@ -4279,11 +4450,10 @@ const RunningOrders = () => {
                           setChangeAmount('');
                           setCurrencyAmount('');
                         }}
-                        className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                          selectedPaymentMethod === method
+                        className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${selectedPaymentMethod === method
                             ? 'bg-gray-200 text-gray-800 font-medium'
                             : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                        }`}
+                          }`}
                       >
                         {method}
                       </button>
@@ -4294,8 +4464,8 @@ const RunningOrders = () => {
                 {/* Center Panel - Payment Details */}
                 <div className="flex-1 flex flex-col overflow-y-auto max-h-[70vh]">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">{selectedPaymentMethod}</h3>
-                  
-                                    {/* Payment Input Section */}
+
+                  {/* Payment Input Section */}
                   <div className="flex gap-4 mb-6">
                     {selectedPaymentMethod === 'Cash' ? (
                       <>
@@ -4460,7 +4630,7 @@ const RunningOrders = () => {
                       </div>
                     )}
                     {selectedPaymentMethod !== 'Change Currency' && (
-                      <button 
+                      <button
                         onClick={handleAddPayment}
                         className="px-6 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors self-end"
                       >
@@ -4504,7 +4674,7 @@ const RunningOrders = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Bill Breakdown */}
                       <div className="border-b border-gray-200 pb-2 mb-2">
                         <div className="flex justify-between items-center">
@@ -4544,7 +4714,7 @@ const RunningOrders = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Applied Coupons (if any) */}
                       {appliedCoupon && (
                         <div className="border-b border-gray-200 pb-2 mb-2">
@@ -4558,7 +4728,7 @@ const RunningOrders = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Payable:</span>
                         <span className="text-xl font-bold text-gray-800">
@@ -4607,7 +4777,7 @@ const RunningOrders = () => {
                       />
                       <span className="text-sm text-gray-700">Send SMS</span>
                     </label>
-                    <button 
+                    <button
                       onClick={() => setShowCartDetailsModal(true)}
                       className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
                     >
@@ -4666,197 +4836,197 @@ const RunningOrders = () => {
                   <div className="flex-1 overflow-y-auto pr-2">
                     <div className="space-y-4">
                       <h4 className="text-lg font-semibold text-gray-800">Coupons & Discounts</h4>
-                    
-                    {/* Manual Discount Section */}
-                    <div className="mb-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Gift className="w-5 h-5 text-green-600" />
-                        <span className="text-sm font-medium text-gray-800">Manual Discount</span>
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Discount Type
-                              </label>
-                              <select
-                                name="discountType"
-                                value={discountType}
-                                onChange={(e) => setDiscountType(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                              >
-                                <option value="percentage">Percentage (%)</option>
-                                <option value="fixed">Fixed Amount (€)</option>
-                              </select>
+
+                      {/* Manual Discount Section */}
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Gift className="w-5 h-5 text-green-600" />
+                          <span className="text-sm font-medium text-gray-800">Manual Discount</span>
+                        </div>
+                        <div className="flex gap-4">
+                          <div className="flex-1">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Discount Type
+                                </label>
+                                <select
+                                  name="discountType"
+                                  value={discountType}
+                                  onChange={(e) => setDiscountType(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                                >
+                                  <option value="percentage">Percentage (%)</option>
+                                  <option value="fixed">Fixed Amount (€)</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Disc. Amount
+                                </label>
+                                <input
+                                  type="number"
+                                  name="discountAmount"
+                                  value={discountAmount}
+                                  onChange={(e) => setDiscountAmount(e.target.value)}
+                                  onFocus={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
+                                  onClick={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
+                                  onBlur={(e) => {
+                                    if (numericActiveInput === 'discountAmount' && numericKeyboardInput !== undefined) {
+                                      setDiscountAmount(numericKeyboardInput);
+                                    }
+                                    setNumericActiveInput('');
+                                  }}
+                                  onInput={(e) => {
+                                    // Update both the field value and keyboard input immediately
+                                    const value = e.target.value;
+                                    setDiscountAmount(value);
+                                    if (numericActiveInput === 'discountAmount') {
+                                      setNumericKeyboardInput(value);
+                                    }
+                                  }}
+                                  min="0"
+                                  step="0.01"
+                                  placeholder={discountType === 'percentage' ? '20' : '10'}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Disc. Amount
-                              </label>
-                              <input
-                                type="number"
-                                name="discountAmount"
-                                value={discountAmount}
-                                onChange={(e) => setDiscountAmount(e.target.value)}
-                                onFocus={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
-                                onClick={(e) => handleNumericInputFocus(e, 'discountAmount', discountAmount)}
-                                onBlur={(e) => {
-                                  if (numericActiveInput === 'discountAmount' && numericKeyboardInput !== undefined) {
-                                    setDiscountAmount(numericKeyboardInput);
-                                  }
-                                  setNumericActiveInput('');
-                                }}
-                                onInput={(e) => {
-                                  // Update both the field value and keyboard input immediately
-                                  const value = e.target.value;
-                                  setDiscountAmount(value);
-                                  if (numericActiveInput === 'discountAmount') {
-                                    setNumericKeyboardInput(value);
-                                  }
-                                }}
-                                min="0"
-                                step="0.01"
-                                placeholder={discountType === 'percentage' ? '20' : '10'}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
-                              />
-                            </div>
-                          </div>
-                          {discountAmount && (
-                            <div className="mt-2 text-sm text-green-600">
-                              ✓ Manual discount of {discountAmount}{discountType === 'percentage' ? '%' : '€'} is ready to apply.
-                            </div>
-                          )}
-                          <div className="flex justify-end mt-3">
-                            <button
-                              onClick={handleApplyManualDiscount}
-                              disabled={!discountAmount || parseFloat(discountAmount) <= 0}
-                              className={`px-4 py-2 rounded-lg transition-colors font-medium ${discountAmount && parseFloat(discountAmount) > 0
+                            {discountAmount && (
+                              <div className="mt-2 text-sm text-green-600">
+                                ✓ Manual discount of {discountAmount}{discountType === 'percentage' ? '%' : '€'} is ready to apply.
+                              </div>
+                            )}
+                            <div className="flex justify-end mt-3">
+                              <button
+                                onClick={handleApplyManualDiscount}
+                                disabled={!discountAmount || parseFloat(discountAmount) <= 0}
+                                className={`px-4 py-2 rounded-lg transition-colors font-medium ${discountAmount && parseFloat(discountAmount) > 0
                                   ? 'bg-green-600 text-white hover:bg-green-700'
                                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }`}
+                                  }`}
+                              >
+                                Apply Manual Discount
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Enter Coupon Code Section */}
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Gift className="w-5 h-5 text-green-600" />
+                          <span className="text-sm font-medium text-gray-800">Enter Coupon Code</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            name="couponCode"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value)}
+                            onFocus={(e) => handleAnyInputFocus(e, 'couponCode')}
+                            onClick={(e) => handleAnyInputClick(e, 'couponCode')}
+                            onBlur={(e) => handleCustomInputBlur(e, 'couponCode')}
+                            placeholder="Enter promo code or click a coupon below"
+                            className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${couponCode.trim()
+                              ? 'border-green-400 focus:ring-green-500 focus:ring-green-500 bg-green-50'
+                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
+                              }`}
+                            onKeyUp={(e) => {
+                              if (e.key === 'Enter') {
+                                handleApplyCoupon();
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={handleApplyCoupon}
+                            disabled={!couponCode.trim()}
+                            className={`px-4 py-2 rounded-lg transition-colors font-medium ${couponCode.trim()
+                              ? 'bg-green-600 text-white hover:bg-green-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                        {couponCode.trim() && (
+                          <div className="mt-2 text-sm text-green-600">
+                            ✓ Coupon code "{couponCode}" is ready to apply. Click "Apply".
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Applied Coupon Display */}
+                      {appliedCoupon && (
+                        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h4 className="font-semibold text-green-800">Applied Coupon</h4>
+                              <p className="text-sm text-green-600">{appliedCoupon.title}</p>
+                              <p className="text-xs text-green-600">Code: {appliedCoupon.code}</p>
+                              {appliedCoupon.discountType === 'percentage' ? (
+                                <p className="text-green-700 font-medium">{appliedCoupon.discount}% OFF</p>
+                              ) : (
+                                <p className="text-green-700 font-medium">€{appliedCoupon.discount} OFF</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={removeAppliedCoupon}
+                              className="text-red-600 hover:text-red-800 p-1"
                             >
-                              Apply Manual Discount
+                              <X size={16} />
                             </button>
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Enter Coupon Code Section */}
-                    <div className="mb-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Gift className="w-5 h-5 text-green-600" />
-                        <span className="text-sm font-medium text-gray-800">Enter Coupon Code</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          name="couponCode"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value)}
-                          onFocus={(e) => handleAnyInputFocus(e, 'couponCode')}
-                          onClick={(e) => handleAnyInputClick(e, 'couponCode')}
-                          onBlur={(e) => handleCustomInputBlur(e, 'couponCode')}
-                          placeholder="Enter promo code or click a coupon below"
-                          className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${couponCode.trim()
-                              ? 'border-green-400 focus:ring-green-500 focus:ring-green-500 bg-green-50'
-                              : 'border-gray-300 focus:ring-green-500 focus:border-green-500'
-                            }`}
-                          onKeyUp={(e) => {
-                            if (e.key === 'Enter') {
-                              handleApplyCoupon();
-                            }
-                          }}
-                        />
-                        <button
-                          onClick={handleApplyCoupon}
-                          disabled={!couponCode.trim()}
-                          className={`px-4 py-2 rounded-lg transition-colors font-medium ${couponCode.trim()
-                              ? 'bg-green-600 text-white hover:bg-green-700'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                        >
-                          Apply
-                        </button>
-                      </div>
-                      {couponCode.trim() && (
-                        <div className="mt-2 text-sm text-green-600">
-                          ✓ Coupon code "{couponCode}" is ready to apply. Click "Apply".
-                        </div>
                       )}
-                    </div>
 
-                    {/* Applied Coupon Display */}
-                    {appliedCoupon && (
-                      <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-semibold text-green-800">Applied Coupon</h4>
-                            <p className="text-sm text-green-600">{appliedCoupon.title}</p>
-                            <p className="text-xs text-green-600">Code: {appliedCoupon.code}</p>
-                            {appliedCoupon.discountType === 'percentage' ? (
-                              <p className="text-green-700 font-medium">{appliedCoupon.discount}% OFF</p>
-                            ) : (
-                              <p className="text-green-700 font-medium">€{appliedCoupon.discount} OFF</p>
-                            )}
+                      {/* Available Coupons Section */}
+                      <div>
+                        <h5 className="text-md font-semibold text-gray-800 mb-3">Available Coupons</h5>
+                        {couponsLoading ? (
+                          <div className="text-center py-4">
+                            <div className="text-gray-500 text-sm">Loading coupons...</div>
                           </div>
-                          <button
-                            onClick={removeAppliedCoupon}
-                            className="text-red-600 hover:text-red-800 p-1"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
+                        ) : availableCoupons.length > 0 ? (
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {availableCoupons.map((coupon) => (
+                              <div
+                                key={coupon.id}
+                                className="border border-gray-200 rounded-lg p-3 hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer group"
+                                onClick={() => {
+                                  setCouponCode(coupon.code);
+                                }}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <h6 className="font-semibold text-gray-800 text-sm">{coupon.title}</h6>
+                                    <p className="text-xs text-gray-600 mt-1">Customer Type: {coupon.customerType}</p>
+                                    {coupon.discountType === 'percentage' ? (
+                                      <p className="text-green-600 font-medium mt-1 text-sm">{coupon.discount}% OFF</p>
+                                    ) : (
+                                      <p className="text-green-600 font-medium mt-1 text-sm">€{coupon.discount} OFF</p>
+                                    )}
+                                  </div>
+                                  <div className="text-right ml-4">
+                                    <span className="text-xs text-gray-500 font-mono">Code: {coupon.code}</span>
+                                  </div>
+                                </div>
+                                <div className="mt-1 text-xs text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  Click to use this coupon code
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4">
+                            <div className="text-gray-500 text-sm">No coupons available</div>
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    {/* Available Coupons Section */}
-                    <div>
-                      <h5 className="text-md font-semibold text-gray-800 mb-3">Available Coupons</h5>
-                      {couponsLoading ? (
-                        <div className="text-center py-4">
-                          <div className="text-gray-500 text-sm">Loading coupons...</div>
-                        </div>
-                      ) : availableCoupons.length > 0 ? (
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {availableCoupons.map((coupon) => (
-                            <div
-                              key={coupon.id}
-                              className="border border-gray-200 rounded-lg p-3 hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer group"
-                              onClick={() => {
-                                setCouponCode(coupon.code);
-                              }}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <h6 className="font-semibold text-gray-800 text-sm">{coupon.title}</h6>
-                                  <p className="text-xs text-gray-600 mt-1">Customer Type: {coupon.customerType}</p>
-                                  {coupon.discountType === 'percentage' ? (
-                                    <p className="text-green-600 font-medium mt-1 text-sm">{coupon.discount}% OFF</p>
-                                  ) : (
-                                    <p className="text-green-600 font-medium mt-1 text-sm">€{coupon.discount} OFF</p>
-                                  )}
-                                </div>
-                                <div className="text-right ml-4">
-                                  <span className="text-xs text-gray-500 font-mono">Code: {coupon.code}</span>
-                                </div>
-                              </div>
-                              <div className="mt-1 text-xs text-green-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                                Click to use this coupon code
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <div className="text-gray-500 text-sm">No coupons available</div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
-              </div>
               </div>
 
               {/* Footer - Action Buttons */}
