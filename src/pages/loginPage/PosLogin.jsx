@@ -291,25 +291,6 @@ const POSLogin = () => {
       >
 
         <div className="py-4 rounded-t-xl">
-          <div className="absolute top-4 right-6 flex gap-2">
-           <button
-              onClick={() => changeTheme("default")}
-              className="w-5 h-5 rounded-full border border-white cursor-pointer transform active:scale-95"
-              style={{ background: "linear-gradient(to bottom right, #003E5C, #1976d2)" }}
-            />
-            <button
-              onClick={() => changeTheme("blue")}
-              className="w-5 h-5 rounded-full border border-white cursor-pointer transform active:scale-95"
-              style={{ background: "linear-gradient(to bottom right, #176B87, #3498db)" }}
-            />
-            <button
-              onClick={() => changeTheme("green")}
-              className="w-5 h-5 rounded-full border border-white cursor-pointer transform active:scale-95"
-              style={{ background: "linear-gradient(to bottom right, #25A18E, #34A0A4)" }}
-            />
-          </div>
-
-
           <div
             className="flex flex-col items-center justify-center text-center mt-4"
           >
