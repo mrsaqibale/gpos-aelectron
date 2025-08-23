@@ -2418,8 +2418,8 @@ const RunningOrders = () => {
   const handleUpdateOrderStatus = () => {
     if (!selectedOrderForStatusUpdate) return;
 
-    setPlacedOrders(prev => prev.map(order => 
-      order.id === selectedOrderForStatusUpdate.id 
+    setPlacedOrders(prev => prev.map(order =>
+      order.id === selectedOrderForStatusUpdate.id
         ? { ...order, status: selectedStatus }
         : order
     ));
@@ -2564,13 +2564,13 @@ const RunningOrders = () => {
                           <div className="flex justify-between items-center">
                             <div className="flex items-center gap-1">
                               <p className="text-sm font-medium text-gray-800">
-                              {order.customer.name}
+                                {order.customer.name}
                               </p>
                               <p className="text-xs text-gray-500">{timeAgo}</p>
                             </div>
-                              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeStyle(order.status || 'New')}`}>
-                                {order.status || 'NEW'}
-                              </span>
+                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeStyle(order.status || 'New')}`}>
+                              {order.status || 'NEW'}
+                            </span>
                           </div>
 
                         </div>
@@ -2851,29 +2851,12 @@ const RunningOrders = () => {
             <button
               onClick={handleOpenEditModal}
               disabled={!selectedCustomer}
-              className={`btn-lifted transition-colors cursor-pointer px-2 ${selectedCustomer
-                ? 'text-green-600 hover:text-green-800 cursor-pointer'
-                : 'text-gray-400 cursor-not-allowed'
+              className={`btn-lifted flex items-center gap-1 bg-primary text-white text-xs rounded transition-colors cursor-pointer px-2 ${selectedCustomer
+                ? 'hover:text-green-800 cursor-pointer'
+                : 'cursor-not-allowed'
                 }`}>
               <Edit size={17} />
-            </button>
-            <button
-              onClick={() => {
-                if (cartItems.length === 0) {
-                  showError('Cart is already empty');
-                  return;
-                }
-
-                setShowDeleteCartModal(true);
-              }}
-              disabled={cartItems.length === 0}
-              className={`px-2 py-1.5 text-white text-xs rounded flex items-center gap-1 
-                      border border-gray-300 btn-lifted transition-colors ${cartItems.length > 0
-                  ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
-                  : 'bg-gray-400 cursor-not-allowed'
-                }`}>
-              <Trash2 size={17} />
-              Delete All
+              Edit
             </button>
 
           </div>
@@ -2982,13 +2965,33 @@ const RunningOrders = () => {
               </div>
               {/* Action buttons */}
               <div className="flex gap-2 justify-center pb-2">
-                <button
+                {/* <button
                   onClick={handleOpenCouponModal}
                   className="bg-[#43a148] text-white  btn-lifted py-1.5 px-1 w-[100%]  text-[11px] font-bold rounded  hover:bg-green-600"
                 >
                   DISCOUNT
-                </button>
+                </button> */}
+                <button
+                  onClick={() => {
+                    if (cartItems.length === 0) {
+                      showError('Cart is already empty');
+                      return;
+                    }
 
+                    setShowDeleteCartModal(true);
+                  }}
+                  disabled={cartItems.length === 0}
+                  className={`px-2 py-1.5 text-white text-xs rounded flex items-center gap-1 
+                      border border-gray-300 btn-lifted transition-colors ${cartItems.length > 0
+                      ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
+                      : 'bg-gray-400 cursor-not-allowed'
+                    }`}>
+                  <Trash2 size={17} />
+                  Delete
+                </button>
+                <button className="bg-[#5A32A3] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
+                  DRAFT
+                </button>
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
                   KOT
                 </button>
@@ -5273,11 +5276,10 @@ const RunningOrders = () => {
                 {/* New Status */}
                 <button
                   onClick={() => setSelectedStatus('New')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                    selectedStatus === 'New'
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'New'
                       ? 'bg-white border-primary text-primary'
                       : 'bg-primary text-white border-primary'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Plus size={20} />
@@ -5288,11 +5290,10 @@ const RunningOrders = () => {
                 {/* In Progress Status */}
                 <button
                   onClick={() => setSelectedStatus('In Progress')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                    selectedStatus === 'In Progress'
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'In Progress'
                       ? 'bg-white border-primary text-primary'
                       : 'bg-primary text-white border-primary'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Clock size={20} />
@@ -5303,11 +5304,10 @@ const RunningOrders = () => {
                 {/* Ready Status */}
                 <button
                   onClick={() => setSelectedStatus('Ready')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                    selectedStatus === 'Ready'
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Ready'
                       ? 'bg-white border-primary text-primary'
                       : 'bg-primary text-white border-primary'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <CheckCircle size={20} />
@@ -5318,11 +5318,10 @@ const RunningOrders = () => {
                 {/* Completed Status */}
                 <button
                   onClick={() => setSelectedStatus('Completed')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                    selectedStatus === 'Completed'
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Completed'
                       ? 'bg-white border-primary text-primary'
                       : 'bg-primary text-white border-primary'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Star size={20} />
