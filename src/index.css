@@ -46,14 +46,12 @@ html, body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 8px; /* Restore original padding */
 }
 
 .dashboard-scrollable {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px; /* Restore original padding */
 }
 
 @layer components {

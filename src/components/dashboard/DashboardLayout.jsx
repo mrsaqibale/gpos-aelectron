@@ -310,7 +310,7 @@ const DashboardLayout = () => {
          
               <main className="dashboard-main">
                 <div className={`dashboard-scrollable rounded-br-xl ${
-                  shouldHideSidebar ? 'bg-[#d3d3d3] p-0' : 'p-2'
+                  shouldHideSidebar ? 'p-0' : 'p-2'
                 } ${
                   shouldHideSidebar ? '' : 'md:ml-2'
                 } ${
@@ -318,7 +318,7 @@ const DashboardLayout = () => {
                 }`}
                   style={{
                     transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    backgroundColor: shouldHideSidebar ? '#d3d3d3' : themeColors.dashboardBackground
+                    backgroundColor: shouldHideSidebar ? 'transparent' : themeColors.dashboardBackground
                   }}
                 >
                   <Outlet />

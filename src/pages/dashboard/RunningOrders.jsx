@@ -2448,9 +2448,7 @@ const RunningOrders = () => {
 
   return (
     <>
-
-
-      <div className="flex justify-between gap-2 h-[100%] px-1.5 py-2 bg-[#d3D3D3]">
+      <div className="flex justify-between gap-2 h-[100%]">
         <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
           {/* Running Orders */}
