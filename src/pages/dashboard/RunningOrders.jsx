@@ -2448,12 +2448,12 @@ const RunningOrders = () => {
 
   return (
     <>
-      <div className="flex justify-between gap-2 h-[100%]">
-        <div className='flex w-[20%] flex-col relative gap-2 bg-[#ffffff]  border-r border-gray-200 shadow-lg rounded-xl'>
+      <div className="flex justify-between gap-2 h-full">
+        <div className='flex w-[20%] flex-col bg-[#ffffff] border-r border-gray-200 shadow-lg rounded-xl'>
           {/* Main content row */}
           {/* Running Orders */}
-          <div className=" h-[85%] flex flex-col overflow-y-auto">
-            <div className="p-3 flex items-center justify-between">
+          <div className="flex-1 flex flex-col overflow-y-auto p-3">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-gray-800">Running Orders</h2>
               <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                 <RefreshCw size={12} />
@@ -2461,7 +2461,7 @@ const RunningOrders = () => {
               </button>
             </div>
 
-            <div className="px-2">
+            <div className="mb-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
                 <input
@@ -2479,7 +2479,7 @@ const RunningOrders = () => {
             </div>
 
             {/* Placed Orders List */}
-            <div className="py-4 mt-2 my-auto px-2 space-y-3 h-auto overflow-y-auto">
+            <div className="flex-1 space-y-3 overflow-y-auto">
               {placedOrders.length > 0 ? (
                 placedOrders.map((order) => {
                   // Calculate time elapsed
@@ -2537,13 +2537,13 @@ const RunningOrders = () => {
                     >
                       {/* Dropdown arrow */}
                       <div
-                        className="absolute top-3 right-3 cursor-pointer"
+                        className="absolute top-4 right-3 cursor-pointer"
                         onClick={(e) => handleToggleOrderExpansion(order.id, e)}
                       >
                         {expandedOrders.has(order.id) ? (
-                          <ChevronUp size={16} className="text-blue-500" />
+                          <ChevronUp size={20} className="text-blue-500" />
                         ) : (
-                          <ChevronDown size={16} className="text-gray-400" />
+                          <ChevronDown size={20} className="text-gray-400" />
                         )}
                       </div>
 
@@ -2637,11 +2637,11 @@ const RunningOrders = () => {
             </div>
           </div>
           {/* Order Action Buttons - Below Running Orders Box */}
-          <div className="flex justify-center absolute bottom-0 left-0 w-[100%]">
-            <div className="flex flex-col gap-2 p-2 text-[10px] w-full">
+          <div className="flex justify-center p-2">
+            <div className="flex flex-col gap-2 text-[10px] w-full">
               {/* First Row - Bill and Invoice */}
               <div className="flex gap-2">
-                <button className="flex-1 bg-[#010101] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button className="flex-1 h-10 bg-[#010101] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <Receipt size={14} />
                   BILL
                 </button>
@@ -2649,7 +2649,7 @@ const RunningOrders = () => {
                   data-invoice-button
                   onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  className={`flex-1 h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <FileText size={14} />
                   INVOICE
                 </button>
@@ -2657,19 +2657,19 @@ const RunningOrders = () => {
 
               {/* Second Row - Order Details, Modify Order, Cancel */}
               <div className="flex gap-2">
-                <button className="flex-1 bg-[#4d36eb] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button className="flex-1 h-10 bg-[#4d36eb] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <Eye size={14} />
                   ORDER DETAILS
                 </button>
-                <button className="flex-1 bg-[#f3be25] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button className="flex-1 h-10 bg-[#f3be25] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <Edit size={14} />
                   MODIFY ORDER
                 </button>
-                <button className="flex-1 bg-[#c81118] text-white font-bold rounded-lg px-3 py-2 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+              </div>
+                <button className="w-[70%] mx-auto h-10 bg-[#c81118] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <X size={14} />
                   CANCEL
                 </button>
-              </div>
             </div>
           </div>
 
@@ -2759,7 +2759,9 @@ const RunningOrders = () => {
           </div>
 
           {/* Menu items section */}
-          <MenuGrid />
+          <div className="flex-1 overflow-y-auto">
+            <MenuGrid />
+          </div>
         </div>
 
         {/* Order Summary */}
