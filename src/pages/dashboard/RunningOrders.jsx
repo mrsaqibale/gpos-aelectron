@@ -2568,7 +2568,7 @@ const RunningOrders = () => {
             <button 
               onClick={() => setSelectedOrderType('In Store')}
               className={`px-3 py-1 text-black text-[11px] rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted transition-colors ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-[#d3D3D3] hover:bg-gray-200'}`}>
+                      border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               </svg>
@@ -2580,7 +2580,7 @@ const RunningOrders = () => {
                 setShowTableModal(true);
               }}
               className={`px-3 py-1 text-black text-xs rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted transition-colors ${selectedOrderType === 'Table' ? 'bg-primary text-white' : 'bg-[#d3D3D3] hover:bg-gray-200'}`}>
+                      border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Table' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"></rect>
               </svg>
@@ -2589,7 +2589,7 @@ const RunningOrders = () => {
             <button 
               onClick={() => setSelectedOrderType('Collection')}
               className={`px-2.5 py-1 text-black text-xs rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted transition-colors ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-[#d3D3D3] hover:bg-gray-200'}`}>
+                      border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"></circle>
               </svg>
@@ -2598,14 +2598,14 @@ const RunningOrders = () => {
             <button 
               onClick={() => setSelectedOrderType('Delivery')}
               className={`px-2.5 py-1 text-black text-xs rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted transition-colors ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-[#d3D3D3] hover:bg-gray-200'}`}>
+                      border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
               Delivery
             </button>
-            <button className="px-2 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
-                      border border-gray-200 btn-lifted ">
+            <button className="px-2 py-1 bg-white text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-200 btn-lifted cursor-pointer bg-white hover:border-primary hover:border-2">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
@@ -2613,15 +2613,15 @@ const RunningOrders = () => {
             </button>
             {/* Status section */}
 
-            <button className="px-2.5 py-1 bg-[#d3D3D3] text-black text-xs rounded flex items-center gap-1 
-                      border border-gray-300 btn-lifted ">
+            <button className="px-2.5 py-1 bg-white text-black text-xs rounded flex items-center gap-1 
+                      border border-gray-300 btn-lifted cursor-pointer bg-white hover:border-primary hover:border-2">
               <Clock size={14} />
               Due to
             </button>
             <button
               onClick={() => setShowCustomerSearchModal(true)}
               className="px-2.5 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
-                     btn-lifted hover:bg-primary/90 transition-colors">
+                     btn-lifted hover:bg-primary/90 transition-colors cursor-pointer">
               <Users2 size={12} />
               Customer
             </button>
@@ -2630,7 +2630,7 @@ const RunningOrders = () => {
             <button
               onClick={() => setSelectedCustomer(null)}
               className={`px-1.5 py-1 text-[11px] rounded flex items-center gap-1 
-                      border border-gray-300 btn-lifted transition-colors ${!selectedCustomer ? 'bg-primary text-white' : 'bg-[#d3D3D3] text-black'
+                      border border-gray-300 btn-lifted transition-colors cursor-pointer ${!selectedCustomer ? 'bg-primary text-white' : 'bg-[#d3D3D3] text-black'
                 }`}>
               {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
             </button>
@@ -2638,7 +2638,7 @@ const RunningOrders = () => {
             <button
               onClick={() => setShowCustomerModal(true)}
               className=" px-2 py-1 bg-primary text-white text-xs rounded flex items-center gap-1 
-                      border border-[#1e4a9a] btn-lifted hover:bg-primary/90 transition-colors">
+                      border border-[#1e4a9a] btn-lifted hover:bg-primary/90 transition-colors cursor-pointer">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14"></path>
               </svg>
@@ -2648,7 +2648,7 @@ const RunningOrders = () => {
             <button
               onClick={handleOpenEditModal}
               disabled={!selectedCustomer}
-              className={`btn-lifted transition-colors px-2 ${selectedCustomer
+              className={`btn-lifted transition-colors cursor-pointer px-2 ${selectedCustomer
                 ? 'text-green-600 hover:text-green-800 cursor-pointer'
                 : 'text-gray-400 cursor-not-allowed'
                 }`}>
