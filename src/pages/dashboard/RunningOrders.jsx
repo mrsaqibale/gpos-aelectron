@@ -191,7 +191,7 @@ const RunningOrders = () => {
   const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
 
   // Order Type State
-  const [selectedOrderType, setSelectedOrderType] = useState('');
+  const [selectedOrderType, setSelectedOrderType] = useState('In Store');
 
   // Use the custom hook for keyboard functionality
   const {
@@ -2771,7 +2771,7 @@ const RunningOrders = () => {
             <button
               onClick={() => setSelectedOrderType('In Store')}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
+                       btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               </svg>
@@ -2783,7 +2783,7 @@ const RunningOrders = () => {
                 setShowTableModal(true);
               }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Table' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
+                       btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Table' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"></rect>
               </svg>
@@ -2792,7 +2792,7 @@ const RunningOrders = () => {
             <button
               onClick={() => setSelectedOrderType('Collection')}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
+                       btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"></circle>
               </svg>
@@ -2801,14 +2801,14 @@ const RunningOrders = () => {
             <button
               onClick={() => setSelectedOrderType('Delivery')}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-gray-200 btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
+                       btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
               Delivery
             </button>
-            <button className="h-9 px-2 bg-white text-black text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-gray-200 btn-lifted cursor-pointer bg-white hover:border-primary hover:border-2">
+            <button className="h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
@@ -2816,8 +2816,8 @@ const RunningOrders = () => {
             </button>
             {/* Status section */}
 
-            <button className="h-9 px-2 bg-white text-black text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-gray-300 btn-lifted cursor-pointer bg-white hover:border-primary hover:border-2">
+            <button className="h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
               <Clock size={14} />
               Due to
             </button>
@@ -2831,16 +2831,15 @@ const RunningOrders = () => {
 
             <button
               onClick={() => setSelectedCustomer(null)}
-              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-gray-300 btn-lifted transition-colors cursor-pointer ${!selectedCustomer ? 'bg-primary text-white' : 'bg-[#d3D3D3] text-black'
-                }`}>
+              className="h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
               {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
             </button>
 
             <button
               onClick={() => setShowCustomerModal(true)}
-              className="h-9 px-2 bg-white text-black text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-gray-300 btn-lifted cursor-pointer bg-white hover:border-primary hover:border-2">
+              className="h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14"></path>
               </svg>
