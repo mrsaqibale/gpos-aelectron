@@ -2641,7 +2641,7 @@ const RunningOrders = () => {
             <div className="flex flex-col gap-2 text-[10px] w-full">
               {/* First Row - Bill and Invoice */}
               <div className="flex gap-2">
-                <button className="flex-1 h-10 bg-[#010101] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button className="flex-1 h-10 bg-[#010101] text-[13px] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <Receipt size={14} />
                   BILL
                 </button>
@@ -2649,7 +2649,7 @@ const RunningOrders = () => {
                   data-invoice-button
                   onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  className={`flex-1 h-10 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <FileText size={14} />
                   INVOICE
                 </button>
@@ -2657,16 +2657,16 @@ const RunningOrders = () => {
 
               {/* Second Row - Order Details, Modify Order, Cancel */}
               <div className="flex gap-2">
-                <button className="flex-1 h-10 bg-[#4d36eb] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button className="flex-1 text-[13px] h-10 bg-[#4d36eb] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <Eye size={14} />
                   ORDER DETAILS
                 </button>
-                <button className="flex-1 h-10 bg-[#f3be25] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button className="flex-1 text-[13px] h-10 bg-[#f3be25] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <Edit size={14} />
                   MODIFY ORDER
                 </button>
               </div>
-                <button className="w-[70%] mx-auto h-10 bg-[#c81118] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button className="w-[70%] text-[13px] mx-auto h-10 bg-[#c81118] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <X size={14} />
                   CANCEL
                 </button>
@@ -2692,7 +2692,7 @@ const RunningOrders = () => {
           {/* Search and categories section */}
           <div className="py-3 px-2 border-b border-gray-200">
             {/* Search bar */}
-            <div className="relative mb-4 w-full">
+            {/* <div className="relative mb-4 w-full">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <Search className="w-4 h-4 text-primary" />
               </div>
@@ -2719,14 +2719,27 @@ const RunningOrders = () => {
               )}
 
             </div>
-
-            {/* Search results info */}
             {debouncedSearchQuery && (
               <div className="mb-2 text-xs text-gray-600">
                 Found {filteredFoods.length} result{filteredFoods.length !== 1 ? 's' : ''} for "{debouncedSearchQuery}"
               </div>
-            )}
-
+            )} */}
+            <div className="flex items-center justify-between mb-2 border-b border-gray-200 pb-2">
+              <div className="flex items-center gap-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" stroke="#222" strokeWidth="2" fill="none"/>
+                  <path d="M15.5 8.5c-1.5-1.5-4.5-1.5-6 0s-1.5 4.5 0 6 4.5 1.5 6 0 1.5-4.5 0-6z" stroke="#222" strokeWidth="2" fill="none"/>
+                  <circle cx="12" cy="12" r="1.5" fill="#222"/>
+                </svg>
+                <span className="font-semibold text-gray-800 text-[16px]">Food &amp; Categories</span>
+              </div>
+              <button
+                onClick={handleOpenSplitPizzaModal}
+                className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 py-2 text-sm transition-colors"
+              >
+                Create Your Own
+              </button>
+            </div>
             {/* Category buttons */}
             <div className="flex flex-wrap gap-1.5">
               {loading ? (
@@ -2735,11 +2748,8 @@ const RunningOrders = () => {
                 categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`px-2 py-1.5 rounded-lg text-white text-[10.5px] font-medium bg-primary 
-                shadow-[0_4px_4px_rgba(0,0,0,0.15),0_1px_2px_rgba(0,0,0,0.1)] 
-                active:shadow-[0_1px_2px_rgba(0,0,0,0.15)] 
-                active:translate-y-[1px] 
-                transition-all duration-150 hover:bg-primary/90 ${selectedCategory?.id === category.id ? 'bg-primary/90' : ''
+                    className={`{py-2 px-3 text-black text-[14px] rounded flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer bg-primary  ${selectedCategory?.id === category.id ? 'bg-white text-black' : 'text-white'
                       }`}
                     onClick={() => handleCategorySelect(category)}
                   >
@@ -2749,12 +2759,7 @@ const RunningOrders = () => {
               ) : (
                 <div className="text-gray-500 text-sm">No categories found</div>
               )}
-              <button
-                onClick={handleOpenSplitPizzaModal}
-                className="bg-[#4d35ee] text-white btn-lifted py-1.5 px-2 rounded-lg text-[11px] font-bold hover:bg-blue-700"
-              >
-                SPLIT PIZZA
-              </button>
+              
             </div>
           </div>
 
@@ -2979,28 +2984,28 @@ const RunningOrders = () => {
                     setShowDeleteCartModal(true);
                   }}
                   disabled={cartItems.length === 0}
-                  className={`bg-red-700 text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  ${cartItems.length > 0
+                  className={`bg-red-700 text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0
                       ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                     }`}>
                   {/* <Trash2 size={17} /> */}
                   Delete
                 </button>
-                <button className="bg-[#5A32A3] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded">
+                <button className="bg-[#5A32A3] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded">
                   DRAFT
                 </button>
-                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded cursor-pointer">
+                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded cursor-pointer">
                   KOT
                 </button>
                 <button
                   onClick={handlePlaceOrder}
-                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded  cursor-pointer"
+                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-2 px-1 text-[13px] font-bold rounded  cursor-pointer"
                 >
                   PLACE ORDER
                 </button>
                 <button
                   onClick={handlePayment}
-                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded cursor-pointer"
+                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-2 px-1 text-[13px] font-bold rounded cursor-pointer"
                 >
                   PAY
                 </button>
