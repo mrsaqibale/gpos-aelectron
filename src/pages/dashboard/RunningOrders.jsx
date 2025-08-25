@@ -1850,11 +1850,11 @@ const RunningOrders = () => {
             </div>
           )}
         </div>
-          <h3 className="font-semibold text-gray-800 text-md my-2 text-center">{item.name}</h3>
+          <h3 className="font-semibold text-gray-800 text-md mt-2 mb-1 text-center">{item.name}</h3>
         <div className="flex justify-between p-2 items-center">
           <p className="text-gray-600 font-semibold text-md mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
         <button
-          className="mt-2 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
+          className="mt-1 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
           title="Add"
           onClick={() => handleFoodItemClick(item)}
         >
