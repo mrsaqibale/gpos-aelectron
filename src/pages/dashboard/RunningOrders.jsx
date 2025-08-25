@@ -2726,12 +2726,8 @@ const RunningOrders = () => {
             )} */}
             <div className="flex items-center justify-between mb-2 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" stroke="#222" strokeWidth="2" fill="none"/>
-                  <path d="M15.5 8.5c-1.5-1.5-4.5-1.5-6 0s-1.5 4.5 0 6 4.5 1.5 6 0 1.5-4.5 0-6z" stroke="#222" strokeWidth="2" fill="none"/>
-                  <circle cx="12" cy="12" r="1.5" fill="#222"/>
-                </svg>
-                <span className="font-semibold text-gray-800 text-[16px]">Food &amp; Categories</span>
+                
+                <span className="font-semibold text-gray-800 text-[16px]">🍽 Food &amp; Categories</span>
               </div>
               <button
                 onClick={handleOpenSplitPizzaModal}
@@ -2748,7 +2744,7 @@ const RunningOrders = () => {
                 categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`{py-2 px-3 text-black text-[14px] rounded flex items-center justify-center gap-1 
+                    className={`{h-9 px-3 text-black text-[14px] flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer bg-primary  ${selectedCategory?.id === category.id ? 'bg-white text-black' : 'text-white'
                       }`}
                     onClick={() => handleCategorySelect(category)}
@@ -2870,30 +2866,24 @@ const RunningOrders = () => {
             <div className="mt-3 border border-gray-200 rounded-lg flex flex-col flex-1 min-h-0">
               <table className="w-full flex flex-col h-full">
                 <thead className='bg-gray-100 flex-shrink-0'>
-                  <tr className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 text-sm font-medium text-gray-700 p-3">
-                    <th className="text-center w-8">Edit</th>
+                  <tr className="grid grid-cols-[auto_100px_100px_100px] gap-2 text-sm font-medium text-gray-700 p-3">
+                    {/* <th className="text-center w-8">Edit</th> */}
                     <th className="text-left">Items</th>
-                    <th className="text-center">Price</th>
                     <th className="text-center">Qty</th>
+                    {/* <th className="text-center">Price</th> */}
                     <th className="text-center">Total</th>
+                    <th className="text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white flex-1 overflow-y-auto">
                   {cartItems.length > 0 ? (
                     cartItems.map((item) => (
-                      <tr key={item.id} className="grid grid-cols-[auto_1fr_80px_80px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
-                        <td className="flex items-center justify-center w-8">
-                          <Edit2
-                            size={13}
-                            className="text-primary cursor-pointer hover:text-primary-dark transition-colors"
-                            onClick={() => handleEditCartItem(item)}
-                            title="Edit item"
-                          />
-                        </td>
+                      <tr key={item.id} className="grid grid-cols-[auto_100px_100px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
+                        
                         <td className="text-gray-800 text-sm truncate">
                           <span>{item.food.name}</span>
                         </td>
-                        <td className="text-gray-800 text-center">€{(item.totalPrice / item.quantity).toFixed(2)}</td>
+                        {/* <td className="text-gray-800 text-center">€{(item.totalPrice / item.quantity).toFixed(2)}</td> */}
                         <td className="flex items-center justify-center">
                           <div className="flex items-center rounded">
                             <button
@@ -2911,10 +2901,18 @@ const RunningOrders = () => {
                             </button>
                           </div>
                         </td>
-                        <td className="flex items-center justify-center gap-1">
+                        <td className='flex items-center justify-center'>
                           <span className="text-gray-800">€{item.totalPrice.toFixed(2)}</span>
+                        </td>
+                        <td className="flex items-center justify-center gap-2">
+                          <Edit2
+                            size={15}
+                            className="text-primary cursor-pointer hover:text-primary-dark transition-colors"
+                            onClick={() => handleEditCartItem(item)}
+                            title="Edit item"
+                          />
                           <Trash2
-                            size={14}
+                            size={16}
                             className="text-[#c81118] mt-0.5 cursor-pointer"
                             onClick={() => removeCartItem(item.id)}
                           />
