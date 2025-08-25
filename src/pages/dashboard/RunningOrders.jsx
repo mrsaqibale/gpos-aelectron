@@ -2449,7 +2449,7 @@ const RunningOrders = () => {
   return (
     <>
       <div className="flex justify-between gap-2 h-full">
-        <div className='flex w-[20%] flex-col bg-[#ffffff] border-r border-gray-200 shadow-lg rounded-xl'>
+        <div className='flex w-[20%] flex-col bg-[#ffffff] border-r border-gray-200 shadow-lg rounded-xl pb-4'>
           {/* Main content row */}
           {/* Running Orders */}
           <div className="flex-1 flex flex-col overflow-y-auto p-3">
@@ -2839,12 +2839,12 @@ const RunningOrders = () => {
 
             <button
               onClick={() => setShowCustomerModal(true)}
-              className="h-9 px-2 bg-primary text-white text-[13px] rounded flex items-center justify-center gap-1 
-                      border border-[#1e4a9a] btn-lifted hover:bg-primary/90 transition-colors cursor-pointer">
+              className="h-9 px-2 bg-white text-black text-[13px] rounded flex items-center justify-center gap-1 
+                      border border-gray-300 btn-lifted cursor-pointer bg-white hover:border-primary hover:border-2">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14"></path>
               </svg>
-              Add New Customer
+              New Customer
             </button>
 
             <button
@@ -2980,29 +2980,28 @@ const RunningOrders = () => {
                     setShowDeleteCartModal(true);
                   }}
                   disabled={cartItems.length === 0}
-                  className={`px-2 py-1.5 text-white text-xs rounded flex items-center gap-1 
-                      border border-gray-300 btn-lifted transition-colors ${cartItems.length > 0
+                  className={`bg-red-700 text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  ${cartItems.length > 0
                       ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                     }`}>
-                  <Trash2 size={17} />
+                  {/* <Trash2 size={17} /> */}
                   Delete
                 </button>
-                <button className="bg-[#5A32A3] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
+                <button className="bg-[#5A32A3] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded">
                   DRAFT
                 </button>
-                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded  hover:bg-cyan-500">
+                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-1.5 px-1  text-[11px] font-bold rounded cursor-pointer">
                   KOT
                 </button>
                 <button
                   onClick={handlePlaceOrder}
-                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded   hover:bg-orange-600"
+                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded  cursor-pointer"
                 >
                   PLACE ORDER
                 </button>
                 <button
                   onClick={handlePayment}
-                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded  hover:bg-pink-600"
+                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-1.5 px-1 text-[11px] font-bold rounded cursor-pointer"
                 >
                   PAY
                 </button>
