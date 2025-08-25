@@ -1830,7 +1830,7 @@ const RunningOrders = () => {
     return (
       <div
         className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all overflow-hidden transform hover:-translate-y-1 cursor-pointer"
-        onClick={() => handleFoodItemClick(item)}
+        
       >
         <div className="h-[88px] relative">
           {imageLoading ? (
@@ -1850,9 +1850,26 @@ const RunningOrders = () => {
             </div>
           )}
         </div>
-        <div className="flex justify-center py-2 items-center flex-col">
-          <h3 className="font-semibold text-gray-800 text-sm text-center">{item.name}</h3>
-          <p className="text-gray-600 font-semibold text-xs mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
+          <h3 className="font-semibold text-gray-800 text-md my-2 text-center">{item.name}</h3>
+        <div className="flex justify-between p-2 items-center">
+          <p className="text-gray-600 font-semibold text-md mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
+        <button
+          className="mt-2 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
+          title="Add"
+          onClick={() => handleFoodItemClick(item)}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="w-3 h-3"
+          >
+            <path d="M10 4v12M4 10h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
         </div>
       </div>
     );
