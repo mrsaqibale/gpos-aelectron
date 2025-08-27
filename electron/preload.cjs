@@ -3,11 +3,16 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Window control functions
 contextBridge.exposeInMainWorld('windowControls', {
   minimize: () => ipcRenderer.send('window:minimize'),
-  maximize: () => ipcRenderer.send('window:maximize'),
+  // maximize: () => ipcRenderer.send('window:maximize'),
+  // close: () => ipcRenderer.send('window:close'),
+  // isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+  // onMaximizeChange: (callback) => ipcRenderer.on('window:maximize-change', callback),
+  // onUnmaximizeChange: (callback) => ipcRenderer.on('window:unmaximize-change', callback)
+});
+
+// Login page specific close function
+contextBridge.exposeInMainWorld('loginWindowControls', {
   close: () => ipcRenderer.send('window:close'),
-  isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
-  onMaximizeChange: (callback) => ipcRenderer.on('window:maximize-change', callback),
-  onUnmaximizeChange: (callback) => ipcRenderer.on('window:unmaximize-change', callback)
 });
 
 contextBridge.exposeInMainWorld('myAPI', {

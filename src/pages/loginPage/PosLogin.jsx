@@ -289,6 +289,14 @@ const POSLogin = () => {
         className="w-full h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
         style={{ backgroundColor: 'white' }}
       >
+        {/* Close button for login page */}
+        <button
+          onClick={() => window.loginWindowControls?.close()}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-full border border-gray-300 hover:border-red-300"
+          title="Close Application"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
         <div className="py-4 rounded-t-xl">
           <div

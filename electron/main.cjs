@@ -162,30 +162,32 @@ app.whenReady().then(async () => {
     win.minimize();
   });
 
-  ipcMain.on('window:maximize', () => {
-    if (win.isMaximized()) {
-      win.unmaximize();
-    } else {
-      win.maximize();
-    }
-  });
+  // Only allow minimize - no maximize or close from main window
+  // ipcMain.on('window:maximize', () => {
+  //   if (win.isMaximized()) {
+  //     win.unmaximize();
+  //   } else {
+  //     win.maximize();
+  //   }
+  // });
 
+  // Close handler for login pages only
   ipcMain.on('window:close', () => {
     win.close();
   });
 
-  ipcMain.handle('window:isMaximized', () => {
-    return win.isMaximized();
-  });
+  // ipcMain.handle('window:isMaximized', () => {
+  //   return win.isMaximized();
+  // });
 
   // Handle maximize/unmaximize events
-  win.on('maximize', () => {
-    console.log('Window maximized');
-  });
+  // win.on('maximize', () => {
+  //   console.log('Window maximized');
+  // });
 
-  win.on('unmaximize', () => {
-    console.log('Window unmaximized');
-  });
+  // win.on('unmaximize', () => {
+  //   console.log('Window unmaximized');
+  // });
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
-import { ArrowRight, Sparkles, Coffee, Utensils, Users, Clock } from 'lucide-react';
+import { ArrowRight, Sparkles, Coffee, Utensils, Users, Clock, X } from 'lucide-react';
 
 const WelcomeScreen = () => {
   const navigate = useNavigate();
@@ -57,6 +57,14 @@ const WelcomeScreen = () => {
       className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
       style={{ backgroundColor: themeColors.dashboardBackground }}
     >
+      {/* Close button for welcome screen */}
+      <button
+        onClick={() => window.loginWindowControls?.close()}
+        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-full border border-gray-300 hover:border-red-300 z-50"
+        title="Close Application"
+      >
+        <X className="w-5 h-5" />
+      </button>
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-20 left-20 w-32 h-32 rounded-full" style={{ backgroundColor: themeColors.primary }}></div>
