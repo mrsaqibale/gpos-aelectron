@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Settings,
   Key,
@@ -17,18 +18,22 @@ const adminItems = [
   {
     icon: <Utensils size={18} className="text-primary" />,
     label: "Menu",
+    path: "/dashboard/food-management"
   },
   {
     icon: <Table size={18} className="text-primary" />,
     label: "Tables",
+    path: "/dashboard/table-management"
   },
   {
     icon: <Users size={18} className="text-primary" />,
     label: "Employee",
+    path: "/dashboard/employee-management"
   },
   {
     icon: <Box size={18} className="text-primary" />,
     label: "Stock Management",
+    path: "/dashboard/food-management"
   },
 ];
 
@@ -48,6 +53,12 @@ const settingsItems = [
 ];
 
 export default function AdminPanel() {
+  const navigate = useNavigate();
+
+  const handleNavigation = (path) => {
+    navigate(path);
+  };
+
   return (
     <div className="mt-10 flex flex-col items-center justify-center">
       <div className="mb-2 text-center">
@@ -81,7 +92,8 @@ export default function AdminPanel() {
             {adminItems.map((item) => (
               <button
                 key={item.label}
-                className="flex items-center gap-3 p-3 rounded-lg bg-[#f6fafd] hover:bg-cyan-50 transition border border-transparent focus:outline-none"
+                onClick={() => handleNavigation(item.path)}
+                className="flex items-center gap-3 p-3 rounded-lg bg-[#f6fafd] hover:bg-cyan-50 transition border border-transparent focus:outline-none cursor-pointer"
                 style={{ boxShadow: "0 1px 2px 0 rgba(0,0,0,0.01)" }}
               >
                 {item.icon}
