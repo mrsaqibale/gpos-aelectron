@@ -83,6 +83,10 @@ const ApplicationSettings = () => {
   const [editingDay, setEditingDay] = useState(null);
   const [tempSchedule, setTempSchedule] = useState({ open: "", close: "" });
 
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingDay, setDeletingDay] = useState(null);
+
   const navigationTabs = [
     {
       id: "appearance",
@@ -188,6 +192,24 @@ const ApplicationSettings = () => {
     }));
   };
 
+  // Delete modal handlers
+  const handleDeleteSchedule = (day) => {
+    setDeletingDay(day);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    // This is just UI - no actual deletion happens
+    console.log(`Delete confirmed for ${deletingDay}`);
+    setShowDeleteModal(false);
+    setDeletingDay(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setDeletingDay(null);
+  };
+
   const handleSave = () => {
     // Save settings logic here
     if (activeTab === "finance") {
@@ -263,7 +285,7 @@ const ApplicationSettings = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Navigation Tabs */}
-      <div className="bg-white rounded-lg shadow-sm mb-6 w-full">
+      <div className="bg-white flex justify-center rounded-lg shadow-sm mb-6">
         <div className="flex items-center p-2 ">
           {navigationTabs.map((tab) => (
             <button
@@ -480,7 +502,7 @@ const ApplicationSettings = () => {
                         type="text"
                         value={orderSettings.minimumOrderAmount}
                         onChange={(e) => handleOrderSettingChange("minimumOrderAmount", e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        className="flex-1 pl-2 w-full py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       />
                       <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-600">
                         €
@@ -756,7 +778,7 @@ const ApplicationSettings = () => {
                             type="text"
                             value={deliverySettings.freeDeliveryIn}
                             onChange={(e) => handleDeliverySettingChange("freeDeliveryIn", e.target.value)}
-                            className="flex-1 pl-2 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="flex-1 w-full pl-2 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                           />
                           <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-600">
                             km
@@ -778,7 +800,7 @@ const ApplicationSettings = () => {
                             type="text"
                             value={deliverySettings.deliveryFeePerKm}
                             onChange={(e) => handleDeliverySettingChange("deliveryFeePerKm", e.target.value)}
-                            className="flex-1 pl-2 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="flex-1 w-full pl-2 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                           />
                           <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-600">
                             €
@@ -800,7 +822,7 @@ const ApplicationSettings = () => {
                             type="text"
                             value={deliverySettings.maximumDeliveryRange}
                             onChange={(e) => handleDeliverySettingChange("maximumDeliveryRange", e.target.value)}
-                            className="flex-1 pl-2 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="flex-1 w-full pl-2 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                           />
                           <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-600">
                             km
@@ -822,7 +844,7 @@ const ApplicationSettings = () => {
                             type="text"
                             value={deliverySettings.minimumDeliveryOrderAmount}
                             onChange={(e) => handleDeliverySettingChange("minimumDeliveryOrderAmount", e.target.value)}
-                            className="flex-1 pl-2 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="flex-1 w-full pl-2 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                           />
                           <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-gray-600">
                             €
@@ -854,7 +876,10 @@ const ApplicationSettings = () => {
                                 className="px-2 py-1 text-sm border border-gray-300 rounded bg-blue-50 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <div className="flex gap-1">
-                                <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleDeleteSchedule('monday')}
+                                  className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+                                >
                                   <Trash size={12} />
                                 </button>
                                 <button 
@@ -888,7 +913,10 @@ const ApplicationSettings = () => {
                                 className="px-2 py-1 text-sm border border-gray-300 rounded bg-blue-50 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <div className="flex gap-1">
-                                <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleDeleteSchedule('tuesday')}
+                                  className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+                                >
                                   <Trash size={12} />
                                 </button>
                                 <button 
@@ -922,7 +950,10 @@ const ApplicationSettings = () => {
                                 className="px-2 py-1 text-sm border border-gray-300 rounded bg-blue-50 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <div className="flex gap-1">
-                                <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleDeleteSchedule('wednesday')}
+                                  className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+                                >
                                   <Trash size={12} />
                                 </button>
                                 <button 
@@ -956,7 +987,10 @@ const ApplicationSettings = () => {
                                 className="px-2 py-1 text-sm border border-gray-300 rounded bg-blue-50 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <div className="flex gap-1">
-                                <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleDeleteSchedule('thursday')}
+                                  className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+                                >
                                   <Trash size={12} />
                                 </button>
                                 <button 
@@ -990,7 +1024,10 @@ const ApplicationSettings = () => {
                                 className="px-2 py-1 text-sm border border-gray-300 rounded bg-blue-50 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <div className="flex gap-1">
-                                <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleDeleteSchedule('friday')}
+                                  className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+                                >
                                   <Trash size={12} />
                                 </button>
                                 <button 
@@ -1024,7 +1061,10 @@ const ApplicationSettings = () => {
                                 className="px-2 py-1 text-sm border border-gray-300 rounded bg-blue-50 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <div className="flex gap-1">
-                                <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleDeleteSchedule('saturday')}
+                                  className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+                                >
                                   <Trash size={12} />
                                 </button>
                                 <button 
@@ -1058,7 +1098,10 @@ const ApplicationSettings = () => {
                                 className="px-2 py-1 text-sm border border-gray-300 rounded bg-blue-50 focus:outline-none focus:ring-1 focus:ring-primary"
                               />
                               <div className="flex gap-1">
-                                <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleDeleteSchedule('sunday')}
+                                  className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+                                >
                                   <Trash size={12} />
                                 </button>
                                 <button 
@@ -1087,8 +1130,8 @@ const ApplicationSettings = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       <option value="Blue Theme">Blue Theme</option>
-                      <option value="Dark Theme">Dark Theme</option>
-                      <option value="Light Theme">Light Theme</option>
+                      <option value="Dark Blue Theme">Dark Blue Theme</option>
+                      <option value="Green Theme">Green Theme</option>
                     </select>
                   </div>
 
@@ -1103,8 +1146,7 @@ const ApplicationSettings = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       <option value="System Keyboard">System Keyboard</option>
-                      <option value="Virtual Keyboard">Virtual Keyboard</option>
-                      <option value="Custom Keyboard">Custom Keyboard</option>
+                      <option value="System Keyboard">GBoard</option>
                     </select>
                   </div>
 
@@ -1299,6 +1341,48 @@ const ApplicationSettings = () => {
               >
                 Submit
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            {/* Warning Icon */}
+            <div className="flex justify-center pt-6 pb-4">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">!</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="px-6 pb-6 text-center">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Want to delete this schedule
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                If you select Yes the time schedule will be deleted
+              </p>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  No
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  Yes
+                </button>
+              </div>
             </div>
           </div>
         </div>
