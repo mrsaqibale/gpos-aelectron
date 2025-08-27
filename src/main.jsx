@@ -5,6 +5,7 @@ import App from './App.jsx'
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import WelcomeScreen from './pages/loginPage/WelcomeScreen.jsx'
 import POSLogin from './pages/loginPage/PosLogin.jsx'
+import LicenseScreen from './pages/loginPage/LicenseScreen.jsx'
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx'
 import Dashboard from './pages/dashboard/Dashboard.jsx'
 import ManageOrders from './pages/dashboard/ManageOrders.jsx'
@@ -45,6 +46,10 @@ const router = createBrowserRouter([
       {
         path: 'login',
         element: <ErrorBoundary><POSLogin /></ErrorBoundary>,
+      },
+      {
+        path: 'license',
+        element: <ErrorBoundary><LicenseScreen /></ErrorBoundary>,
       },
       {
         path: 'dashboard',
