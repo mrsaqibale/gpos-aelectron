@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Users, ChevronDown, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, Clock, Calendar, CheckCircle, XCircle, Eye, X } from 'lucide-react';
 import VirtualKeyboard from '../../VirtualKeyboard';
+import CustomAlert from '../../CustomAlert';
 
 const EmployeeAttendance = () => {
   // State for filters
@@ -9,6 +10,9 @@ const EmployeeAttendance = () => {
   const [employeeJoiningDate, setEmployeeJoiningDate] = useState('');
   const [sortBy, setSortBy] = useState('');
   const [chooseFirst, setChooseFirst] = useState('');
+  
+  // Salary payment state
+  const [paySalary, setPaySalary] = useState('');
 
   // Employee attendance list state
   const [employees, setEmployees] = useState([]);
@@ -24,6 +28,11 @@ const EmployeeAttendance = () => {
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
+  
+  // Custom Alert state
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('success');
 
   // Sample sorting options
   const sortingOptions = [
@@ -78,6 +87,14 @@ const EmployeeAttendance = () => {
     
     return attendance.sort((a, b) => new Date(b.date) - new Date(a.date));
   };
+
+  // Memoized attendance records for the selected employee
+  const selectedEmployeeAttendance = useMemo(() => {
+    if (selectedEmployee) {
+      return generateEmployeeAttendance(selectedEmployee.id, selectedEmployee.totalDays, selectedEmployee.presentDays, selectedEmployee.lateDays);
+    }
+    return [];
+  }, [selectedEmployee?.id, selectedEmployee?.totalDays, selectedEmployee?.presentDays, selectedEmployee?.lateDays]);
 
   // Dummy employee attendance data
   const dummyEmployees = [
@@ -223,6 +240,7 @@ const EmployeeAttendance = () => {
   const handleModalClose = () => {
     setShowModal(false);
     setSelectedEmployee(null);
+    setPaySalary(''); // Reset pay salary when closing modal
   };
 
   // Handle keyboard input
@@ -255,6 +273,10 @@ const EmployeeAttendance = () => {
   const onKeyboardChange = (input, inputName) => {
     if (inputName === 'chooseFirst') {
       setChooseFirst(input);
+    } else if (inputName === 'paySalary') {
+      setPaySalary(input);
+    } else if (inputName === 'searchTerm') {
+      setSearchTerm(input);
     }
   };
 
@@ -286,6 +308,38 @@ const EmployeeAttendance = () => {
     } else {
       return { text: 'Poor', color: 'bg-red-100 text-red-800' };
     }
+  };
+
+  // Handle salary payment
+  const handleSalaryPayment = () => {
+    if (!paySalary || parseFloat(paySalary) <= 0) {
+      setAlertMessage('Please enter a valid salary amount');
+      setAlertType('error');
+      setShowAlert(true);
+      return;
+    }
+    
+    // Here you would typically make an API call to save the salary payment
+    console.log('Paying salary:', paySalary, 'for employee:', selectedEmployee?.name);
+    
+    // Update the employee's payment status
+    if (selectedEmployee) {
+      setEmployees(prevEmployees =>
+        prevEmployees.map(employee =>
+          employee.id === selectedEmployee.id
+            ? { ...employee, isPaid: true }
+            : employee
+        )
+      );
+      
+      // Update the selected employee in the modal
+      setSelectedEmployee(prev => prev ? { ...prev, isPaid: true } : null);
+    }
+    
+    setAlertMessage(`Salary payment of €${parseFloat(paySalary).toLocaleString()} saved successfully for ${selectedEmployee?.name}!`);
+    setAlertType('success');
+    setShowAlert(true);
+    setPaySalary(''); // Reset the input
   };
 
   return (
@@ -362,17 +416,20 @@ const EmployeeAttendance = () => {
             <span className="text-sm text-gray-500">({filteredEmployees.length} employees)</span>
           </div>
           <div className="flex items-center gap-3">
-            {/* Search */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Ex: Search by name or role"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm w-64"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-            </div>
+                         {/* Search */}
+             <div className="relative">
+               <input
+                 type="text"
+                 placeholder="Ex: Search by name or role"
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 onFocus={() => handleInputFocus('searchTerm')}
+                 onBlur={handleInputBlur}
+                 onClick={() => handleAnyInputClick(null, 'searchTerm')}
+                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm w-64"
+               />
+               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+             </div>
           </div>
         </div>
 
@@ -600,8 +657,8 @@ const EmployeeAttendance = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {generateEmployeeAttendance(selectedEmployee.id, selectedEmployee.totalDays, selectedEmployee.presentDays, selectedEmployee.lateDays).map((record) => (
+                                         <tbody>
+                       {selectedEmployeeAttendance.map((record) => (
                         <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4 text-sm text-gray-600">
                             {formatDate(record.date)}
@@ -699,6 +756,54 @@ const EmployeeAttendance = () => {
                   </div>
                 </div>
                 
+                {/* Salary Section */}
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <h5 className="text-sm font-medium text-gray-700 mb-3">Salary Information</h5>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total Salary:</span>
+                      <span className="text-sm font-medium text-gray-800">€{selectedEmployee.salary.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Payment Status:</span>
+                      <span className={`text-sm font-medium ${selectedEmployee.isPaid ? 'text-green-600' : 'text-red-600'}`}>
+                        {selectedEmployee.isPaid ? 'Paid' : 'Unpaid'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Pay Salary Section */}
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Pay Salary Amount <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={paySalary}
+                        onChange={(e) => setPaySalary(e.target.value)}
+                        onFocus={() => handleInputFocus('paySalary')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'paySalary')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                    <button
+                      onClick={handleSalaryPayment}
+                      disabled={!paySalary || parseFloat(paySalary) <= 0}
+                      className="w-full px-4 py-2 bg-primary text-white font-medium rounded-lg 
+                      shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
+                      active:shadow-none active:translate-y-[4px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
+                    >
+                      Save Payment
+                    </button>
+                  </div>
+                </div>
+                
                 {/* Contact Info Section */}
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <h5 className="text-sm font-medium text-gray-700 mb-3">Contact info</h5>
@@ -726,8 +831,21 @@ const EmployeeAttendance = () => {
         activeInput={activeInput}
         onInputChange={onKeyboardChange}
         onInputBlur={handleInputBlur}
-        inputValue={chooseFirst || ''}
+        inputValue={
+          activeInput === 'paySalary' ? (paySalary || '') :
+          activeInput === 'searchTerm' ? (searchTerm || '') :
+          (chooseFirst || '')
+        }
         placeholder="Type here..."
+      />
+      
+      {/* Custom Alert */}
+      <CustomAlert
+        message={alertMessage}
+        isVisible={showAlert}
+        onClose={() => setShowAlert(false)}
+        type={alertType}
+        duration={2000}
       />
     </div>
   );

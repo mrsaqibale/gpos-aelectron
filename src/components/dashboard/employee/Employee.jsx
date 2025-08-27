@@ -25,6 +25,7 @@ const Employee = () => {
     email: '',
     pin: '',
     confirmPin: '',
+    salaryPerHour: '',
     image: null
   });
   const [pinError, setPinError] = useState('');
@@ -90,6 +91,7 @@ const Employee = () => {
       email: employee.email || '',
       pin: '',
       confirmPin: '',
+      salaryPerHour: employee.salaryPerHour || '',
       image: null
     });
     // Set image preview if employee has an image
@@ -134,6 +136,7 @@ const Employee = () => {
       email: '',
       pin: '',
       confirmPin: '',
+      salaryPerHour: '',
       image: null
     });
     setImagePreview(null);
@@ -355,6 +358,7 @@ const Employee = () => {
       email: '',
       pin: '',
       confirmPin: '',
+      salaryPerHour: '',
       image: null
     });
     setImagePreview(null);
@@ -454,23 +458,37 @@ const Employee = () => {
       return; // Don't hide keyboard if clicking within keyboard
     }
     
-    // Small delay to allow keyboard interactions to complete
+    // Check if focus is moving to another form input field
+    if (e.relatedTarget && e.relatedTarget.tagName === 'INPUT' && e.relatedTarget.closest('form')) {
+      // Don't hide keyboard if moving to another input in the same form
+      return;
+    }
+    
+    // Check if focus is moving to a select element in the form
+    if (e.relatedTarget && e.relatedTarget.tagName === 'SELECT' && e.relatedTarget.closest('form')) {
+      // Don't hide keyboard if moving to a select in the same form
+      return;
+    }
+    
+    // Only hide keyboard if focus is moving outside the form or to non-input elements
     setTimeout(() => {
       setShowKeyboard(false);
       setActiveInput('');
-    }, 300);
+    }, 100);
   };
 
   // Auto-show keyboard for any input focus
   const handleAnyInputFocus = (e, inputName) => {
-    handleInputFocus(inputName);
+    // Only show keyboard if it's not already showing for this input
+    if (!showKeyboard || activeInput !== inputName) {
+      handleInputFocus(inputName);
+    }
   };
 
   // Auto-show keyboard for any input click
   const handleAnyInputClick = (e, inputName) => {
-    if (!showKeyboard || activeInput !== inputName) {
-      handleInputFocus(inputName);
-    }
+    // Always show keyboard on click, regardless of current state
+    handleInputFocus(inputName);
   };
 
   const onKeyboardChange = (input, inputName, buttonType) => {
@@ -485,7 +503,7 @@ const Employee = () => {
     // Handle special button presses
     if (buttonType === 'enter') {
       // Move to next input field or submit form
-      const inputFields = ['firstName', 'lastName', 'role', 'phone', 'email', 'pin', 'confirmPin'];
+      const inputFields = ['firstName', 'lastName', 'role', 'phone', 'salaryPerHour', 'email', 'pin', 'confirmPin'];
       const currentIndex = inputFields.indexOf(inputName);
       if (currentIndex < inputFields.length - 1) {
         const nextField = inputFields[currentIndex + 1];
@@ -534,7 +552,7 @@ const Employee = () => {
               <div className="flex ">
                 {/* Left Side - Form Fields */}
                 <div className="flex-1">
-                  <div className="grid grid-cols-2 gap-5">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         First Name <span className="text-red-500">*</span>
@@ -621,6 +639,26 @@ const Employee = () => {
                       {phoneError && (
                         <p className="mt-1 text-xs text-red-600">{phoneError}</p>
                       )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Salary per Hour <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="salaryPerHour"
+                        value={newEmployee.salaryPerHour}
+                        onChange={handleInputChange}
+                        onFocus={() => handleAnyInputFocus(null, 'salaryPerHour')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'salaryPerHour')}
+                        className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        required
+                      />
                     </div>
                   </div>
                 </div>
