@@ -45,6 +45,7 @@ const settingsItems = [
   {
     icon: <Settings size={18} className="text-sky-500" />,
     label: "Application Settings",
+    path: "/dashboard/application-settings"
   },
   {
     icon: <Shield size={18} className="text-amber-600" />,
@@ -128,7 +129,8 @@ export default function AdminPanel() {
             {settingsItems.map((item) => (
               <button
                 key={item.label}
-                className="flex items-center gap-3 p-3 rounded-lg bg-[#f6fafd] hover:bg-cyan-50 transition border border-transparent focus:outline-none"
+                onClick={() => item.path && handleNavigation(item.path)}
+                className="flex items-center gap-3 p-3 rounded-lg bg-[#f6fafd] hover:bg-cyan-50 transition border border-transparent focus:outline-none cursor-pointer"
                 style={{ boxShadow: "0 1px 2px 0 rgba(0,0,0,0.01)" }}
               >
                 {item.icon}

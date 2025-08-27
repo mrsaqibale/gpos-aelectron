@@ -18,6 +18,7 @@ import Coupons from './pages/dashboard/Coupons.jsx'
 import RunningOrders from './pages/dashboard/RunningOrders.jsx'
 import CustomerManagement from './pages/dashboard/CustomerManagement.jsx'
 import AdminPanel from './pages/dashboard/AdminPanel.jsx'
+import ApplicationSettings from './pages/dashboard/ApplicationSettings.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 
 console.log('main.jsx loading...');
@@ -102,6 +103,10 @@ const router = createBrowserRouter([
           {
             path: 'admin-panel',
             element: <ErrorBoundary><AdminPanel /></ErrorBoundary>
+          },
+          {
+            path: 'application-settings',
+            element: <ErrorBoundary><ApplicationSettings /></ErrorBoundary>
           },
         ],
       },
