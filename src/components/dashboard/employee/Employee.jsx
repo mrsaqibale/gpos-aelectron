@@ -26,7 +26,9 @@ const Employee = () => {
     pin: '',
     confirmPin: '',
     salaryPerHour: '',
-    image: null
+    image: null,
+    vehicleNumber: '',
+    vehicleType: ''
   });
   const [pinError, setPinError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -92,7 +94,9 @@ const Employee = () => {
       pin: '',
       confirmPin: '',
       salaryPerHour: employee.salaryPerHour || '',
-      image: null
+      image: null,
+      vehicleNumber: employee.vehicleNumber || '',
+      vehicleType: employee.vehicleType || ''
     });
     // Set image preview if employee has an image
     if (employee.imgurl) {
@@ -137,7 +141,9 @@ const Employee = () => {
       pin: '',
       confirmPin: '',
       salaryPerHour: '',
-      image: null
+      image: null,
+      vehicleNumber: '',
+      vehicleType: ''
     });
     setImagePreview(null);
     setPinError(''); // Clear any previous PIN error messages
@@ -293,6 +299,12 @@ const Employee = () => {
         isSyncronized: 0
       };
 
+      // Add vehicle information for Delivery Man
+      if (newEmployee.role === 'Delivery Man') {
+        employeeData.vehicleNumber = newEmployee.vehicleNumber;
+        employeeData.vehicleType = newEmployee.vehicleType;
+      }
+
       // Only include image data if a new image is selected
       if (newEmployee.image) {
         employeeData.imgurl = imageBase64;
@@ -359,7 +371,9 @@ const Employee = () => {
       pin: '',
       confirmPin: '',
       salaryPerHour: '',
-      image: null
+      image: null,
+      vehicleNumber: '',
+      vehicleType: ''
     });
     setImagePreview(null);
     setPinError('');
@@ -607,6 +621,9 @@ const Employee = () => {
                         <option value="Manager">Manager</option>
                         <option value="Cashier">Cashier</option>
                         <option value="Chef">Chef</option>
+                        <option value="Waiter">Waiter</option>
+                        <option value="Sweeper">Sweeper</option>
+                        <option value="Delivery Man">Delivery Man</option>
                       </select>
                     </div>
                     
@@ -660,6 +677,51 @@ const Employee = () => {
                         required
                       />
                     </div>
+                    
+                    {/* Vehicle Information - Only show for Delivery Man */}
+                    {newEmployee.role === 'Delivery Man' && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Vehicle Number <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="vehicleNumber"
+                            value={newEmployee.vehicleNumber}
+                            onChange={handleInputChange}
+                            onFocus={() => handleAnyInputFocus(null, 'vehicleNumber')}
+                            onBlur={handleInputBlur}
+                            onClick={() => handleAnyInputClick(null, 'vehicleNumber')}
+                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            placeholder="Ex: ABC-123"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Vehicle Type <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="vehicleType"
+                            value={newEmployee.vehicleType}
+                            onChange={handleInputChange}
+                            onFocus={() => handleAnyInputFocus(null, 'vehicleType')}
+                            onBlur={handleInputBlur}
+                            onClick={() => handleAnyInputClick(null, 'vehicleType')}
+                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            required
+                          >
+                            <option value="">Select Vehicle Type</option>
+                            <option value="Bike">Bike</option>
+                            <option value="Car">Car</option>
+                            <option value="Truck">Truck</option>
+                            <option value="Bicycle">Bicycle</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
                 
