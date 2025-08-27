@@ -133,7 +133,7 @@ const RunningOrders = () => {
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
-  const [pizzaSlices, setPizzaSlices] = useState(8);
+  const [pizzaSlices, setPizzaSlices] = useState(4);
   const [selectedIngredients, setSelectedIngredients] = useState([
     'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives',
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
@@ -148,6 +148,9 @@ const RunningOrders = () => {
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
   ]);
 
+  // Add state for pizza price
+  const [pizzaPrice, setPizzaPrice] = useState('');
+
   // Flavor to ingredients mapping
   const flavorIngredients = {
     margherita: ['Mozzarella', 'Tomato Sauce', 'Basil', 'Olive Oil'],
@@ -158,6 +161,18 @@ const RunningOrders = () => {
     'meat-lovers': ['Mozzarella', 'Tomato Sauce', 'Pepperoni', 'Sausage', 'Bacon', 'Ham'],
     supreme: ['Mozzarella', 'Tomato Sauce', 'Pepperoni', 'Sausage', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives'],
     'buffalo-chicken': ['Mozzarella', 'Buffalo Sauce', 'Chicken', 'Red Onions', 'Ranch Drizzle']
+  };
+
+  // Flavor to color mapping
+  const flavorColors = {
+    margherita: '#FF6B6B',      // Red
+    pepperoni: '#FF8E53',       // Orange
+    hawaiian: '#FFD93D',        // Yellow
+    vegetarian: '#6BCF7F',      // Green
+    'bbq-chicken': '#8B4513',   // Brown
+    'meat-lovers': '#DC143C',   // Crimson
+    supreme: '#9370DB',         // Purple
+    'buffalo-chicken': '#FF4500' // Orange Red
   };
 
   // State for tracking selected flavors for each slice
@@ -1625,7 +1640,7 @@ const RunningOrders = () => {
 
   const handlePizzaSlicesChange = (e) => {
     const value = parseInt(e.target.value);
-    if (value >= 2 && value <= 16) {
+    if (value >= 2 && value <= 4) {
       setPizzaSlices(value);
     }
   };
@@ -1705,7 +1720,7 @@ const RunningOrders = () => {
       // Create large arc flag (1 if angle > 180 degrees, 0 otherwise)
       const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
 
-      // Determine fill color based on state
+            // Determine fill color based on state
       let fillColor = "#FFD700"; // Default gold
       const hasFlavorSelected = selectedFlavors[i]; // Check if flavor is selected for this slice
       
@@ -1714,7 +1729,8 @@ const RunningOrders = () => {
       } else if (isSelected) {
         fillColor = "#E6C200"; // Darker gold for selected
       } else if (hasFlavorSelected) {
-        fillColor = "#D4AF37"; // Darker yellow for slices with flavors selected
+        // Use the specific flavor color
+        fillColor = flavorColors[hasFlavorSelected] || "#D4AF37"; // Fallback to darker yellow if flavor not found
       }
 
       slices.push(
@@ -1735,7 +1751,7 @@ const RunningOrders = () => {
             fill={fillColor}
             stroke="#FF8C00"
             strokeWidth="2"
-            style={{ 
+            style={{
               cursor: isCompleted ? 'default' : 'pointer',
               transition: 'fill 0.3s ease-in-out'
             }}
@@ -1891,7 +1907,7 @@ const RunningOrders = () => {
     return (
       <div
         className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all overflow-hidden transform hover:-translate-y-1 cursor-pointer"
-        
+
       >
         <div className="h-[88px] relative">
           {imageLoading ? (
@@ -1911,26 +1927,26 @@ const RunningOrders = () => {
             </div>
           )}
         </div>
-          <h3 className="font-semibold text-gray-800 text-md mt-2 mb-1 text-center">{item.name}</h3>
+        <h3 className="font-semibold text-gray-800 text-md mt-2 mb-1 text-center">{item.name}</h3>
         <div className="flex justify-between p-2 items-center">
           <p className="text-gray-600 font-semibold text-md mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
-        <button
-          className="mt-1 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
-          title="Add"
-          onClick={() => handleFoodItemClick(item)}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="w-3 h-3"
+          <button
+            className="mt-1 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
+            title="Add"
+            onClick={() => handleFoodItemClick(item)}
           >
-            <path d="M10 4v12M4 10h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="w-3 h-3"
+            >
+              <path d="M10 4v12M4 10h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
       </div>
     );
@@ -2744,10 +2760,10 @@ const RunningOrders = () => {
                   MODIFY ORDER
                 </button>
               </div>
-                <button className="w-[70%] text-[13px] mx-auto h-10 bg-[#c81118] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                  <X size={14} />
-                  CANCEL
-                </button>
+              <button className="w-[70%] text-[13px] mx-auto h-10 bg-[#c81118] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <X size={14} />
+                CANCEL
+              </button>
             </div>
           </div>
 
@@ -2804,7 +2820,7 @@ const RunningOrders = () => {
             )} */}
             <div className="flex items-center justify-between mb-2 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
-                
+
                 <span className="font-semibold text-gray-800 text-[16px]">🍽 Food &amp; Categories</span>
               </div>
               <button
@@ -2833,7 +2849,7 @@ const RunningOrders = () => {
               ) : (
                 <div className="text-gray-500 text-sm">No categories found</div>
               )}
-              
+
             </div>
           </div>
 
@@ -2957,7 +2973,7 @@ const RunningOrders = () => {
                   {cartItems.length > 0 ? (
                     cartItems.map((item) => (
                       <tr key={item.id} className="grid grid-cols-[auto_100px_100px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
-                        
+
                         <td className="text-gray-800 text-sm truncate">
                           <span>{item.food.name}</span>
                         </td>
@@ -3061,8 +3077,8 @@ const RunningOrders = () => {
                   }}
                   disabled={cartItems.length === 0}
                   className={`bg-red-700 text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0
-                      ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
-                      : 'bg-gray-400 cursor-not-allowed'
+                    ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
+                    : 'bg-gray-400 cursor-not-allowed'
                     }`}>
                   {/* <Trash2 size={17} /> */}
                   Delete
@@ -3420,7 +3436,7 @@ const RunningOrders = () => {
               <div className="p-6 flex-1 overflow-y-auto">
                 {/* Top Section - Order Details */}
                 <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Food Type:</label>
                     <div className="bg-gray-100 rounded-lg px-3 py-2 text-center">
                       <span className="text-sm font-medium text-gray-800">Pizza</span>
@@ -3436,30 +3452,30 @@ const RunningOrders = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">No. of Splits:</label>
-                    <select 
-                        value={pizzaSlices}
-                        onChange={handlePizzaSlicesChange}
+                    <select
+                      value={pizzaSlices}
+                      onChange={handlePizzaSlicesChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                     >
                       <option value="2">2</option>
+                      <option value="3">3</option>
                       <option value="4">4</option>
-                      <option value="6">6</option>
-                      <option value="8">8</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Price:</label>
                     <div className="flex items-center">
-                      <input 
-                        type="text" 
-                        value="0.00" 
-                        readOnly
+                      <input
+                        type="text"
+                        value={pizzaPrice}
+                        onChange={(e) => setPizzaPrice(e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                        placeholder="0.00"
                       />
                       <span className="ml-2 text-sm font-medium text-gray-800">€</span>
                     </div>
                   </div>
-                    </div>
+                </div>
 
                 {/* Middle Section - Pizza Visualization & Flavor Selection */}
                 <div className="grid grid-cols-2 gap-8 mb-6">
@@ -3483,17 +3499,16 @@ const RunningOrders = () => {
                       {Array.from({ length: pizzaSlices }, (_, index) => (
                         <div key={index}>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {index === 0 ? 'First' : index === 1 ? 'Second' : index === 2 ? 'Third' : index === 3 ? 'Fourth' : 
-                             index === 4 ? 'Fifth' : index === 5 ? 'Sixth' : index === 6 ? 'Seventh' : index === 7 ? 'Eighth' :
-                             index === 8 ? 'Ninth' : index === 9 ? 'Tenth' : index === 10 ? 'Eleventh' : index === 11 ? 'Twelfth' :
-                             index === 12 ? 'Thirteenth' : index === 13 ? 'Fourteenth' : index === 14 ? 'Fifteenth' : 'Sixteenth'} Half:
-                      </label>
-                          <select 
+                            {index === 0 ? 'First' : index === 1 ? 'Second' : index === 2 ? 'Third' : index === 3 ? 'Fourth' :
+                              index === 4 ? 'Fifth' : index === 5 ? 'Sixth' : index === 6 ? 'Seventh' : index === 7 ? 'Eighth' :
+                                index === 8 ? 'Ninth' : index === 9 ? 'Tenth' : index === 10 ? 'Eleventh' : index === 11 ? 'Twelfth' :
+                                  index === 12 ? 'Thirteenth' : index === 13 ? 'Fourteenth' : index === 14 ? 'Fifteenth' : 'Sixteenth'} Half:
+                          </label>
+                          <select
                             value={selectedFlavors[index] || ''}
                             onChange={(e) => handleFlavorChange(index, e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ${
-                              index === 1 ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' : 'border-gray-300'
-                            }`}
+                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ${index === 1 ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' : 'border-gray-300'
+                              }`}
                           >
                             <option value="">Select flavor...</option>
                             <option value="margherita">Margherita</option>
@@ -3505,42 +3520,41 @@ const RunningOrders = () => {
                             <option value="supreme">Supreme</option>
                             <option value="buffalo-chicken">Buffalo Chicken</option>
                           </select>
-                      </div>
+                        </div>
                       ))}
                     </div>
-                    </div>
-                              </div>
-
-                {/* Bottom Section - Customize Your Pizza */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Customize Your Pizza</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {currentIngredients.length > 0 ? (
-                      currentIngredients.map((ingredient) => (
-                        <button
-                          key={ingredient}
-                          className="bg-primary  text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                        >
-                          {ingredient}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="text-gray-500 text-sm italic">
-                        Select flavors from the dropdowns above to see available ingredients
+                    <div className='mt-4'>
+                      <div className="flex flex-wrap gap-2">
+                        {currentIngredients.length > 0 ? (
+                          currentIngredients.map((ingredient) => (
+                            <button
+                              key={ingredient}
+                              className="bg-primary  text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                              {ingredient}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-gray-500 text-sm italic">
+                            Select flavors from the dropdowns above to see available ingredients
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  {currentIngredients.length > 0 && (
-                    <div className="mt-3 text-xs text-gray-600">
-                      Showing ingredients from {Object.values(selectedFlavors).filter(f => f).length} selected flavor(s)
+                      {currentIngredients.length > 0 && (
+                        <div className="mt-3 text-xs text-gray-600">
+                          Showing ingredients from {Object.values(selectedFlavors).filter(f => f).length} selected flavor(s)
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
+
+
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 justify-end mt-6 pt-4 border-t border-gray-200">
-                          <button
-                            onClick={handleCloseSplitPizzaModal}
+                  <button
+                    onClick={handleCloseSplitPizzaModal}
                     className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
                   >
                     Cancel
@@ -3550,7 +3564,7 @@ const RunningOrders = () => {
                     className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Add to Order
-                          </button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -5319,8 +5333,8 @@ const RunningOrders = () => {
                 <button
                   onClick={() => setSelectedStatus('New')}
                   className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'New'
-                      ? 'bg-white border-primary text-primary'
-                      : 'bg-primary text-white border-primary'
+                    ? 'bg-white border-primary text-primary'
+                    : 'bg-primary text-white border-primary'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -5333,8 +5347,8 @@ const RunningOrders = () => {
                 <button
                   onClick={() => setSelectedStatus('In Progress')}
                   className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'In Progress'
-                      ? 'bg-white border-primary text-primary'
-                      : 'bg-primary text-white border-primary'
+                    ? 'bg-white border-primary text-primary'
+                    : 'bg-primary text-white border-primary'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -5347,8 +5361,8 @@ const RunningOrders = () => {
                 <button
                   onClick={() => setSelectedStatus('Ready')}
                   className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Ready'
-                      ? 'bg-white border-primary text-primary'
-                      : 'bg-primary text-white border-primary'
+                    ? 'bg-white border-primary text-primary'
+                    : 'bg-primary text-white border-primary'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -5361,8 +5375,8 @@ const RunningOrders = () => {
                 <button
                   onClick={() => setSelectedStatus('Completed')}
                   className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Completed'
-                      ? 'bg-white border-primary text-primary'
-                      : 'bg-primary text-white border-primary'
+                    ? 'bg-white border-primary text-primary'
+                    : 'bg-primary text-white border-primary'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">
