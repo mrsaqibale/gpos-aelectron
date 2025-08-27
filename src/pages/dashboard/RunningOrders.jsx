@@ -3509,7 +3509,7 @@ const RunningOrders = () => {
                   {/* Right Panel - Select Flavors */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Select Flavors</h3>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                       {Array.from({ length: pizzaSlices }, (_, index) => (
                         <div key={index}>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -3570,10 +3570,7 @@ const RunningOrders = () => {
                     </div>
                   )}
                     </div>
-                  </div>
-                </div>
-
-                <div className="mt-6">
+                    <div className="mt-2">
                   <label htmlFor="customPizzaNote" className="block text-sm font-medium text-gray-700 mb-1">
                     Add a custom note (optional)
                   </label>
@@ -3605,6 +3602,10 @@ const RunningOrders = () => {
                     </button>
                   </div>
                 </div>
+                  </div>
+                </div>
+
+                
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 justify-end mt-6 pt-4 border-t border-gray-200">
