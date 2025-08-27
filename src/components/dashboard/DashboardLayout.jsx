@@ -123,27 +123,9 @@ const DashboardLayout = () => {
         allowedRoles: ["admin", "bde", "cashier"]
       },
       {
-        name: "Food Management",
-        icon: <Utensils size={18} />,
-        path: "/dashboard/food-management",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
-        name: "Employee Management",
-        icon: <Users2 size={18} />,
-        path: "/dashboard/employee-management",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
         name: "Customer Management",
         icon: <User size={18} />,
         path: "/dashboard/customer-management",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
-        name: "Table Management",
-        icon: <Table size={18} />,
-        path: "/dashboard/table-management",
         allowedRoles: ["admin", "cashier"]
       },
       {

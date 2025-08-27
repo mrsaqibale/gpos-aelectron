@@ -16,28 +16,7 @@ const VirtualKeyboard = ({
   const [keyboardInput, setKeyboardInput] = useState('');
   const [capsLock, setCapsLock] = useState(false);
 
-  // Update keyboard input when activeInput or inputValue changes
-  useEffect(() => {
-    if (activeInput && isVisible) {
-      setKeyboardInput(inputValue || '');
-    }
-  }, [activeInput, inputValue, isVisible]);
-
   // Reset keyboard input when activeInput changes
-  useEffect(() => {
-    if (activeInput) {
-      setKeyboardInput(inputValue || '');
-    }
-  }, [activeInput, inputValue]);
-
-  // Ensure keyboard input is synchronized with form value
-  useEffect(() => {
-    if (activeInput && inputValue !== undefined) {
-      setKeyboardInput(inputValue);
-    }
-  }, [activeInput, inputValue]);
-
-  // Reset keyboard input when switching between fields
   useEffect(() => {
     if (activeInput && inputValue !== undefined) {
       setKeyboardInput(inputValue);
@@ -183,6 +162,7 @@ const VirtualKeyboard = ({
           onMouseDown={(e) => e.preventDefault()}
         >
           <Keyboard
+            key={activeInput} // Force re-render when activeInput changes
             keyboardRef={(r) => (window.keyboard = r)}
             input={keyboardInput}
             onChange={onKeyboardChange}
