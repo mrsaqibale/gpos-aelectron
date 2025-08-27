@@ -25,6 +25,11 @@ const EmployeeAttendance = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
+  // New modal state for attendance check-in/check-out
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [selectedEmployeeForAttendance, setSelectedEmployeeForAttendance] = useState('');
+  const [attendanceAction, setAttendanceAction] = useState('');
+
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
@@ -243,6 +248,52 @@ const EmployeeAttendance = () => {
     setPaySalary(''); // Reset pay salary when closing modal
   };
 
+  // Handle attendance modal open
+  const handleAttendanceModalOpen = () => {
+    setShowAttendanceModal(true);
+    setSelectedEmployeeForAttendance('');
+    setAttendanceAction('');
+  };
+
+  // Handle attendance modal close
+  const handleAttendanceModalClose = () => {
+    setShowAttendanceModal(false);
+    setSelectedEmployeeForAttendance('');
+    setAttendanceAction('');
+  };
+
+  // Handle attendance save
+  const handleAttendanceSave = () => {
+    if (!selectedEmployeeForAttendance || !attendanceAction) {
+      setAlertMessage('Please select both employee and action');
+      setAlertType('error');
+      setShowAlert(true);
+      return;
+    }
+
+    const selectedEmp = employees.find(emp => emp.id.toString() === selectedEmployeeForAttendance);
+    const currentTime = new Date().toLocaleTimeString('en-GB', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    });
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    // Here you would typically make an API call to save the attendance record
+    console.log('Attendance record:', {
+      employeeId: selectedEmployeeForAttendance,
+      employeeName: selectedEmp?.name,
+      action: attendanceAction,
+      time: currentTime,
+      date: currentDate
+    });
+
+    setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${currentTime}`);
+    setAlertType('success');
+    setShowAlert(true);
+    handleAttendanceModalClose();
+  };
+
   // Handle keyboard input
   const handleInputFocus = (inputName) => {
     setActiveInput(inputName);
@@ -404,6 +455,18 @@ const EmployeeAttendance = () => {
             </div>
           </div>
 
+        </div>
+
+        {/* Employee Attendance Button */}
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <button
+            onClick={handleAttendanceModalOpen}
+            className="px-6 py-3 bg-primary text-white font-medium rounded-lg cursor-pointer
+            hover:translate-y-[2px] 
+             transition-all flex items-center gap-2"
+          >
+            Employee Attendance
+          </button>
         </div>
       </div>
 
@@ -818,6 +881,86 @@ const EmployeeAttendance = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attendance Modal */}
+      {showAttendanceModal && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800">Employee Attendance</h3>
+              <button onClick={handleAttendanceModalClose} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Employee Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Employee <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedEmployeeForAttendance}
+                    onChange={(e) => setSelectedEmployeeForAttendance(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="">Choose an employee</option>
+                    {employees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.employeeId} - {employee.name} ({employee.role})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
+              {/* Action Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Action <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={attendanceAction}
+                    onChange={(e) => setAttendanceAction(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="">Choose action</option>
+                    <option value="Check In">Check In</option>
+                    <option value="Check Out">Check Out</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleAttendanceModalClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAttendanceSave}
+                  disabled={!selectedEmployeeForAttendance || !attendanceAction}
+                  className="flex-1 px-4 py-2 bg-primary text-white font-medium rounded-lg 
+                  shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
+                  active:shadow-none active:translate-y-[4px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
+                >
+                  Save
+                </button>
               </div>
             </div>
           </div>
