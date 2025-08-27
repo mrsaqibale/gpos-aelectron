@@ -3492,7 +3492,7 @@ const RunningOrders = () => {
                     </div>
 
                 {/* Middle Section - Pizza Visualization & Flavor Selection */}
-                <div className="grid grid-cols-2 gap-8 mb-6">
+                <div className="grid grid-cols-[30%_70%] gap-8 mb-6">
                   {/* Left Panel - Pizza Visualization */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Pizza Visualization</h3>
