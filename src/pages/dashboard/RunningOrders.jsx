@@ -1701,6 +1701,11 @@ const RunningOrders = () => {
     setCurrentIngredients(ingredients);
   }, [selectedFlavors]);
 
+  // Handle removing an ingredient from current ingredients list
+  const handleRemoveCurrentIngredient = (ingredientToRemove) => {
+    setCurrentIngredients(prev => prev.filter(ingredient => ingredient !== ingredientToRemove));
+  };
+
   const renderPizzaSlices = () => {
     const slices = [];
     const angleStep = 360 / pizzaSlices;
@@ -3529,9 +3534,19 @@ const RunningOrders = () => {
                           currentIngredients.map((ingredient) => (
                             <button
                               key={ingredient}
-                              className="bg-primary  text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                              className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 hover:bg-primary/90"
                             >
-                              {ingredient}
+                              <span>{ingredient}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveCurrentIngredient(ingredient);
+                                }}
+                                className="w-4 h-4 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                                title={`Remove ${ingredient}`}
+                              >
+                                <X size={12} className="text-white" />
+                              </button>
                             </button>
                           ))
                         ) : (
