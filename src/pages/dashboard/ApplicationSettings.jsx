@@ -18,6 +18,7 @@ import {
   MapPin,
   ShoppingCart,
   Edit,
+  Trash,
   Square,
 } from "lucide-react";
 
@@ -76,6 +77,11 @@ const ApplicationSettings = () => {
     saturday: { open: "12:00", close: "23:59" },
     sunday: { open: "12:00", close: "23:59" },
   });
+
+  // Schedule modal state
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [editingDay, setEditingDay] = useState(null);
+  const [tempSchedule, setTempSchedule] = useState({ open: "", close: "" });
 
   const navigationTabs = [
     {
@@ -140,6 +146,45 @@ const ApplicationSettings = () => {
         ...prev[day],
         [type]: value
       }
+    }));
+  };
+
+  // Schedule modal handlers
+  const handleEditSchedule = (day) => {
+    setEditingDay(day);
+    setTempSchedule({
+      open: scheduleSettings[day].open,
+      close: scheduleSettings[day].close
+    });
+    setShowScheduleModal(true);
+  };
+
+  const handleScheduleModalSubmit = () => {
+    if (editingDay) {
+      setScheduleSettings(prev => ({
+        ...prev,
+        [editingDay]: {
+          ...prev[editingDay],
+          open: tempSchedule.open,
+          close: tempSchedule.close
+        }
+      }));
+    }
+    setShowScheduleModal(false);
+    setEditingDay(null);
+    setTempSchedule({ open: "", close: "" });
+  };
+
+  const handleScheduleModalClose = () => {
+    setShowScheduleModal(false);
+    setEditingDay(null);
+    setTempSchedule({ open: "", close: "" });
+  };
+
+  const handleTempScheduleChange = (type, value) => {
+    setTempSchedule(prev => ({
+      ...prev,
+      [type]: value
     }));
   };
 
@@ -810,9 +855,12 @@ const ApplicationSettings = () => {
                               />
                               <div className="flex gap-1">
                                 <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
-                                  <Square size={12} />
+                                  <Trash size={12} />
                                 </button>
-                                <button className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleEditSchedule('monday')}
+                                  className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                >
                                   <Edit size={12} />
                                 </button>
                               </div>
@@ -841,9 +889,12 @@ const ApplicationSettings = () => {
                               />
                               <div className="flex gap-1">
                                 <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
-                                  <Square size={12} />
+                                  <Trash size={12} />
                                 </button>
-                                <button className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleEditSchedule('tuesday')}
+                                  className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                >
                                   <Edit size={12} />
                                 </button>
                               </div>
@@ -872,9 +923,12 @@ const ApplicationSettings = () => {
                               />
                               <div className="flex gap-1">
                                 <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
-                                  <Square size={12} />
+                                  <Trash size={12} />
                                 </button>
-                                <button className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleEditSchedule('wednesday')}
+                                  className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                >
                                   <Edit size={12} />
                                 </button>
                               </div>
@@ -903,9 +957,12 @@ const ApplicationSettings = () => {
                               />
                               <div className="flex gap-1">
                                 <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
-                                  <Square size={12} />
+                                  <Trash size={12} />
                                 </button>
-                                <button className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleEditSchedule('thursday')}
+                                  className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                >
                                   <Edit size={12} />
                                 </button>
                               </div>
@@ -934,9 +991,12 @@ const ApplicationSettings = () => {
                               />
                               <div className="flex gap-1">
                                 <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
-                                  <Square size={12} />
+                                  <Trash size={12} />
                                 </button>
-                                <button className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleEditSchedule('friday')}
+                                  className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                >
                                   <Edit size={12} />
                                 </button>
                               </div>
@@ -965,9 +1025,12 @@ const ApplicationSettings = () => {
                               />
                               <div className="flex gap-1">
                                 <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
-                                  <Square size={12} />
+                                  <Trash size={12} />
                                 </button>
-                                <button className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleEditSchedule('saturday')}
+                                  className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                >
                                   <Edit size={12} />
                                 </button>
                               </div>
@@ -996,9 +1059,12 @@ const ApplicationSettings = () => {
                               />
                               <div className="flex gap-1">
                                 <button className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center">
-                                  <Square size={12} />
+                                  <Trash size={12} />
                                 </button>
-                                <button className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center">
+                                <button 
+                                  onClick={() => handleEditSchedule('sunday')}
+                                  className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center hover:bg-primary/80 transition-colors"
+                                >
                                   <Edit size={12} />
                                 </button>
                               </div>
@@ -1143,6 +1209,100 @@ const ApplicationSettings = () => {
           </div>
         </div>
       </div>
+
+      {/* Schedule Edit Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0  bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center bg-primary text-white p-4">
+              <h2 className="text-xl font-bold">
+                Create Schedule For {editingDay ? editingDay.charAt(0).toUpperCase() + editingDay.slice(1) : ''}
+              </h2>
+              {/* Close Button */}
+              <button
+                onClick={handleScheduleModalClose}
+                className=" text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-6 relative">
+              
+              
+              <div className="space-y-4">
+                {/* Start Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Start time :
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="time"
+                      value={tempSchedule.open}
+                      onChange={(e) => handleTempScheduleChange("open", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                      <Clock size={16} className="text-gray-400" />
+                      <button 
+                        onClick={() => {
+                          const time = new Date();
+                          const timeString = time.toTimeString().slice(0, 5);
+                          handleTempScheduleChange("open", timeString);
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        ▶
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* End Time */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    End time :
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="time"
+                      value={tempSchedule.close}
+                      onChange={(e) => handleTempScheduleChange("close", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                      <Clock size={16} className="text-gray-400" />
+                      <button 
+                        onClick={() => {
+                          const time = new Date();
+                          const timeString = time.toTimeString().slice(0, 5);
+                          handleTempScheduleChange("close", timeString);
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        ▶
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={handleScheduleModalSubmit}
+                className="px-6 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
