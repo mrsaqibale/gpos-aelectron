@@ -374,13 +374,8 @@ const RunningOrders = () => {
 
   // Handle category selection
   const handleCategorySelect = (category) => {
-    if (selectedCategory?.id === category.id) {
-      setSelectedCategory(null);
-      setFoods([]); // Clear foods when deselecting
-    } else {
-      setSelectedCategory(category);
-      fetchFoodsByCategory(category.id);
-    }
+    setSelectedCategory(category);
+    fetchFoodsByCategory(category.id);
   };
 
   // Fetch categories on component mount
@@ -1971,7 +1966,7 @@ const RunningOrders = () => {
       <div className="flex-1 overflow-y-auto py-4 px-2">
         {foodsLoading ? (
           <div className="text-center py-8">
-            <div className="text-gray-500 text-sm">Loading foods...</div>
+            {/* <div className="text-gray-500 text-sm">Loading foods...</div> */}
           </div>
         ) : searchQuery !== debouncedSearchQuery ? (
           <div className="text-center py-8">
@@ -2852,9 +2847,12 @@ const RunningOrders = () => {
                 categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`{h-9 px-3 text-black text-[14px] flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer bg-primary  ${selectedCategory?.id === category.id ? 'bg-white text-black' : 'text-white'
-                      }`}
+                    className={`h-9 px-3 text-[14px] flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer ${
+                         selectedCategory?.id === category.id 
+                           ? 'bg-white text-black border-2 border-primary' 
+                           : 'bg-primary text-white hover:bg-primary/90'
+                       }`}
                     onClick={() => handleCategorySelect(category)}
                   >
                     {category.name}
@@ -2863,7 +2861,6 @@ const RunningOrders = () => {
               ) : (
                 <div className="text-gray-500 text-sm">No categories found</div>
               )}
-              
             </div>
           </div>
 
