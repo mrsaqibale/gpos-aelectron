@@ -165,25 +165,26 @@ contextBridge.exposeInMainWorld('myAPI', {
   updateOrder: (id, updates) => ipcRenderer.invoke('order:update', id, updates),
   updateOrderStatus: (id, status, updatedBy) => ipcRenderer.invoke('order:updateStatus', id, status, updatedBy),
   getOrderById: (id) => ipcRenderer.invoke('order:getById', id),
-  getOrdersByRestaurant: (restaurantId, limit, offset) => ipcRenderer.invoke('order:getByRestaurant', restaurantId, limit, offset),
-  getOrdersByStatus: (restaurantId, status, limit, offset) => ipcRenderer.invoke('order:getByStatus', restaurantId, status, limit, offset),
+  getAllOrders: (limit, offset) => ipcRenderer.invoke('order:getAll', limit, offset),
+  getOrdersByStatus: (status, limit, offset) => ipcRenderer.invoke('order:getByStatus', status, limit, offset),
   getOrdersByCustomer: (customerId, limit, offset) => ipcRenderer.invoke('order:getByCustomer', customerId, limit, offset),
   cancelOrder: (id, reason, canceledBy, note) => ipcRenderer.invoke('order:cancel', id, reason, canceledBy, note),
-  requestRefund: (id, reason) => ipcRenderer.invoke('order:requestRefund', id, reason),
-  processRefund: (id, processedBy) => ipcRenderer.invoke('order:processRefund', id, processedBy),
-  getOrderStatistics: (restaurantId, startDate, endDate) => ipcRenderer.invoke('order:getStatistics', restaurantId, startDate, endDate),
+  getOrderStatistics: (startDate, endDate) => ipcRenderer.invoke('order:getStatistics', startDate, endDate),
   deleteOrder: (id) => ipcRenderer.invoke('order:delete', id),
 
   // Order Details
   createOrderDetail: (data) => ipcRenderer.invoke('orderDetail:create', data),
+  createMultipleOrderDetails: (orderDetailsArray) => ipcRenderer.invoke('orderDetail:createMultiple', orderDetailsArray),
   updateOrderDetail: (id, updates) => ipcRenderer.invoke('orderDetail:update', id, updates),
   getOrderDetailById: (id) => ipcRenderer.invoke('orderDetail:getById', id),
   getOrderDetailsByOrderId: (orderId) => ipcRenderer.invoke('orderDetail:getByOrderId', orderId),
-  getOrderDetailsByFoodId: (foodId) => ipcRenderer.invoke('orderDetail:getByFoodId', foodId),
-  deleteOrderDetail: (id) => ipcRenderer.invoke('orderDetail:delete', id),
+  getOrderDetailsByFoodId: (foodId, limit, offset) => ipcRenderer.invoke('orderDetail:getByFoodId', foodId, limit, offset),
   getAllOrderDetails: (limit, offset) => ipcRenderer.invoke('orderDetail:getAll', limit, offset),
+  deleteOrderDetail: (id) => ipcRenderer.invoke('orderDetail:delete', id),
+  getOrderDetailsWithFood: (orderId) => ipcRenderer.invoke('orderDetail:getWithFood', orderId),
   getOrderDetailsStatistics: (startDate, endDate) => ipcRenderer.invoke('orderDetail:getStatistics', startDate, endDate),
-  createMultipleOrderDetails: (orderDetailsArray) => ipcRenderer.invoke('orderDetail:createMultiple', orderDetailsArray),
+  getTopSellingFoods: (limit, startDate, endDate) => ipcRenderer.invoke('orderDetail:getTopSellingFoods', limit, startDate, endDate),
+  calculateOrderTotal: (orderId) => ipcRenderer.invoke('orderDetail:calculateOrderTotal', orderId),
 
   // Coupon
   createCoupon: (data) => ipcRenderer.invoke('coupon:create', data),
@@ -201,6 +202,14 @@ contextBridge.exposeInMainWorld('myAPI', {
   getVoucherById: (id) => ipcRenderer.invoke('voucher:getById', id),
   deleteVoucher: (id) => ipcRenderer.invoke('voucher:delete', id),
   searchVoucherByCode: (code) => ipcRenderer.invoke('voucher:searchByCode', code),
+
+  // Hotel
+  checkHotelStatus: () => ipcRenderer.invoke('check-hotel-status'),
+  getHotelInfo: () => ipcRenderer.invoke('get-hotel-info'),
+  createOrUpdateHotel: (hotelData) => ipcRenderer.invoke('create-or-update-hotel', hotelData),
+  updateHotelStatus: (status) => ipcRenderer.invoke('update-hotel-status', status),
+  checkHotelTable: () => ipcRenderer.invoke('check-hotel-table'),
+  getDatabasePath: () => ipcRenderer.invoke('get-database-path'),
 
 });
 
