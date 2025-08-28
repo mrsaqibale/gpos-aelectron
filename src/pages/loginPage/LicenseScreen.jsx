@@ -22,7 +22,7 @@ const LicenseScreen = () => {
   const checkNetworkStatus = async () => {
     try {
       setNetworkStatus('checking');
-      const response = await fetch(`http://51.21.7.24:8080/api/v1/check/license/test`, {
+      const response = await fetch(`http://127.0.0.1:8080/api/v1/check/license/test`, {
         method: 'GET',
         signal: AbortSignal.timeout(5000) // 5 second timeout
       });
@@ -42,7 +42,7 @@ const LicenseScreen = () => {
   const verifyLicense = async (licenseKey) => {
     try {
       setNetworkStatus('checking');
-      const response = await fetch(`http://51.21.7.24:8080/api/v1/check/license/${licenseKey}`, {
+      const response = await fetch(`http://127.0.0.1:8080/api/v1/check/license/${licenseKey}`, {
         signal: AbortSignal.timeout(10000) // 10 second timeout
       });
       
@@ -375,7 +375,7 @@ const LicenseScreen = () => {
             <button
               onClick={async () => {
                 try {
-                  const response = await fetch('http://51.21.7.24:8080/api/v1/check/license/test');
+                  const response = await fetch('http://127.0.0.1:8080/api/v1/check/license/test');
                   const text = await response.text();
                   console.log('Test endpoint response:', text);
                   setApiResponse({
@@ -431,13 +431,13 @@ const LicenseScreen = () => {
         {/* API Response Display for Testing */}
         {apiResponse && (
           <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
-            <div className="flex items-center gap-3 mb-3">
-              <Globe className="w-6 h-6 text-blue-500" />
-              <div>
-                <p className="font-semibold text-blue-800">API Response (Testing)</p>
-                <p className="text-sm text-blue-600">Server: 51.21.7.24:8080</p>
+                          <div className="flex items-center gap-3 mb-3">
+                <Globe className="w-6 h-6 text-blue-500" />
+                <div>
+                  <p className="font-semibold text-blue-800">API Response (Testing)</p>
+                  <p className="text-sm text-blue-600">Server: 127.0.0.1:8080</p>
+                </div>
               </div>
-            </div>
             
             <div className="bg-white p-3 rounded-lg border">
               <pre className="text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">

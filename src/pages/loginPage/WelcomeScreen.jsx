@@ -60,7 +60,7 @@ const WelcomeScreen = () => {
       formData.append('adminName', adminName);
       formData.append('hotelUsername', hotelUsername);
 
-      const response = await fetch('http://51.21.7.24:8080/api/v1/upload/database', {
+      const response = await fetch('http://127.0.0.1:8080/api/v1/upload/database', {
         method: 'POST',
         body: formData
       });
@@ -402,7 +402,7 @@ const WelcomeScreen = () => {
 
               {/* Server Info */}
               <div className="text-xs text-gray-400 mb-4">
-                Server: 51.21.7.24:8080
+                Server: 127.0.0.1:8080
               </div>
 
               {/* Status Message */}
