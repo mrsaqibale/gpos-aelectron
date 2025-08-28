@@ -2474,7 +2474,26 @@ const RunningOrders = () => {
 
   const calculateSplitBillDiscount = () => {
     if (!selectedSplitBill) return 0;
-    return selectedSplitBill.discount || 0;
+    
+    // Get the split bill's own discount
+    const splitBillDiscount = selectedSplitBill.discount || 0;
+    
+    // Calculate discount from applied coupon (manual discount)
+    let couponDiscount = 0;
+    if (appliedCoupon) {
+      const subtotal = selectedSplitBill.subtotal || 0;
+      if (appliedCoupon.discountType === 'percentage') {
+        couponDiscount = subtotal * (appliedCoupon.discount / 100);
+        if (appliedCoupon.maxDiscount > 0) {
+          couponDiscount = Math.min(couponDiscount, appliedCoupon.maxDiscount);
+        }
+      } else {
+        couponDiscount = appliedCoupon.discount;
+      }
+    }
+    
+    // Return the total discount (split bill discount + coupon discount)
+    return splitBillDiscount + couponDiscount;
   };
 
   const calculateSplitBillCharge = () => {
@@ -2490,7 +2509,14 @@ const RunningOrders = () => {
   const calculateSplitBillTotal = () => {
     console.log('calculateSplitBillTotal - selectedSplitBill:', selectedSplitBill);
     if (!selectedSplitBill) return 0;
-    const total = selectedSplitBill.total || 0;
+    
+    const subtotal = selectedSplitBill.subtotal || 0;
+    const tax = selectedSplitBill.tax || 0;
+    const charge = selectedSplitBill.charge || 0;
+    const tips = selectedSplitBill.tips || 0;
+    const discount = calculateSplitBillDiscount(); // Use the updated discount calculation
+    
+    const total = subtotal + tax + charge + tips - discount;
     console.log('calculateSplitBillTotal - returning:', total);
     return total;
   };
@@ -2848,7 +2874,7 @@ const RunningOrders = () => {
 
           {/* Invoice Options Dropdown */}
           {showInvoiceOptions && selectedPlacedOrder && (
-            <div data-invoice-options className="absolute bottom-23 left-1/2 transform -translate-x-7 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
+            <div data-invoice-options className="absolute bottom-37 left-40 transform -translate-x-7 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
               <div className="flex flex-col gap-1">
                 <button
                   onClick={handleOpenSplitBillModal}
@@ -5382,31 +5408,54 @@ const RunningOrders = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Item:</span>
-                  <span className="font-semibold">{cartItems.reduce((total, item) => total + (item.quantity || 0), 0)}</span>
+                  <span className="font-semibold">
+                    {selectedSplitBill 
+                      ? selectedSplitBill.items.reduce((total, item) => total + (item.quantity || 0), 0)
+                      : cartItems.reduce((total, item) => total + (item.quantity || 0), 0)
+                    }
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Sub Total:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}{calculateCartSubtotal().toFixed(2)}</span>
+                  <span className="font-semibold">
+                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Discount:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}{calculateCartDiscount().toFixed(2)}</span>
+                  <span className="font-semibold">
+                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Discount:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}{calculateCartDiscount().toFixed(2)}</span>
+                  <span className="font-semibold">
+                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tax:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}{calculateCartTax().toFixed(2)}</span>
+                  <span className="font-semibold">
+                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Charge:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}{cartCharge.toFixed(2)}</span>
+                  <span className="font-semibold">
+                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillCharge().toFixed(2) : cartCharge.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tips:</span>
-                  <span className="font-semibold">{getCurrencySymbol()}{cartTips.toFixed(2)}</span>
+                  <span className="font-semibold">
+                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTips().toFixed(2) : cartTips.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-gray-200 pt-3">
+                  <span className="text-gray-800 font-semibold">Total Payable:</span>
+                  <span className="font-bold text-lg">
+                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>
