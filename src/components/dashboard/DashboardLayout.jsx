@@ -8,7 +8,7 @@ import {
   LayoutDashboard,
   Search,
   Users2, Utensils, Table,
-  Tag, X, LogOut
+  Tag, X, LogOut, User, Home, Settings
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -68,19 +68,20 @@ const DashboardLayout = () => {
   // Check if we should show check-in popup
   useEffect(() => {
     const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
+    const triggerCheckIn = sessionStorage.getItem('triggerCheckIn');
     const currentEmployee = localStorage.getItem('currentEmployee');
 
-    // Show check-in popup if:
-    // 1. We're on dashboard page
-    // 2. User is not admin
-    // 3. Hasn't checked in this session
-    // 4. Has valid employee data
-    if (location.pathname === '/dashboard' && 
-        userRole !== 'admin' && 
-        !hasCheckedIn && 
-        currentEmployee) {
+    // Show check-in popup if landing on dashboard with a login trigger or normal rules
+    const onDashboard = location.pathname === '/dashboard';
+    const shouldTriggerFromLogin = triggerCheckIn === 'true';
+    const shouldShowByRules = userRole !== 'admin' && !hasCheckedIn && currentEmployee;
+
+    if (onDashboard && (shouldTriggerFromLogin || shouldShowByRules)) {
       setShowCheckIn(true);
       sessionStorage.setItem('hasCheckedIn', 'true');
+      if (shouldTriggerFromLogin) {
+        sessionStorage.removeItem('triggerCheckIn');
+      }
     }
   }, [location, userRole]);
 
@@ -104,6 +105,12 @@ const DashboardLayout = () => {
   const navigationItems = React.useMemo(() => {
     const allItems = [
       {
+        name: "Dashboard",
+        icon: <Home size={18} />,
+        path: "/dashboard",
+        allowedRoles: ["admin", "cashier", "manager", "chef", "waiter"]
+      },
+      {
         name: "Manage-Orders",
         icon: <LayoutDashboard size={18} />,
         path: "/dashboard/manage-orders",
@@ -116,21 +123,9 @@ const DashboardLayout = () => {
         allowedRoles: ["admin", "bde", "cashier"]
       },
       {
-        name: "Food Management",
-        icon: <Utensils size={18} />,
-        path: "/dashboard/food-management",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
-        name: "Employee Management",
-        icon: <Users2 size={18} />,
-        path: "/dashboard/employee-management",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
-        name: "Table Management",
-        icon: <Table size={18} />,
-        path: "/dashboard/table-management",
+        name: "Customer Management",
+        icon: <User size={18} />,
+        path: "/dashboard/customer-management",
         allowedRoles: ["admin", "cashier"]
       },
       {
@@ -144,6 +139,12 @@ const DashboardLayout = () => {
         icon: <Users2 size={18} />,
         path: "/dashboard/sales",
         allowedRoles: ["admin", "cashier"]
+      },
+      {
+        name: "Admin Panel",
+        icon: <Settings size={18} />,
+        path: "/dashboard/admin-panel",
+        allowedRoles: ["admin"]
       },
     ];
 
@@ -174,7 +175,7 @@ const DashboardLayout = () => {
           {/* Dashboard Slider */}
           <div 
             className="w-64 h-full shadow-2xl transform transition-transform duration-300 ease-in-out rounded-r-xl"
-            style={{ backgroundColor: themeColors.primaryLight }}
+            style={{ backgroundColor: themeColors.primary }}
           >
             {/* Header */}
             <div 
@@ -297,14 +298,15 @@ const DashboardLayout = () => {
          
               <main className="dashboard-main">
                 <div className={`dashboard-scrollable rounded-br-xl ${
-                  shouldHideSidebar ? 'bg-[#d3d3d3] p-0' : 'bg-bgColor p-2'
+                  shouldHideSidebar ? 'p-0' : 'p-2'
                 } ${
                   shouldHideSidebar ? '' : 'md:ml-2'
                 } ${
                   isKDSRoute ? '' : 'mt-6 md:mt-3'
                 }`}
                   style={{
-                    transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+                    transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    backgroundColor: shouldHideSidebar ? 'transparent' : themeColors.dashboardBackground
                   }}
                 >
                   <Outlet />

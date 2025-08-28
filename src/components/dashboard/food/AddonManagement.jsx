@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Edit, Plus, X, Trash2 } from 'lucide-react';
+import VirtualKeyboard from '../../VirtualKeyboard';
+import useVirtualKeyboard from '../../../hooks/useVirtualKeyboard';
 
 const AddonManagement = () => {
   const [addons, setAddons] = useState([]);
@@ -43,6 +45,23 @@ if (result && result.success) {
   const [editingAddon, setEditingAddon] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [addonToDelete, setAddonToDelete] = useState(null);
+
+  // Virtual Keyboard integration for modal inputs
+  const {
+    showKeyboard,
+    activeInput,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    handleInputBlur,
+    hideKeyboard
+  } = useVirtualKeyboard(['addon_name', 'addon_price', 'addon_stock']);
+
+  const getKeyboardValue = (name) => {
+    if (name === 'addon_name') return newAddon.name || '';
+    if (name === 'addon_price') return (newAddon.price ?? '').toString();
+    if (name === 'addon_stock') return (newAddon.addon_stock ?? '').toString();
+    return '';
+  };
 
 
   const handleEditAddon = (addon) => {
@@ -111,11 +130,18 @@ if (result && result.success) {
 
   const toggleStatus = async(id) => {
     try{
-      await window.myAPI?.updateAdon?.(id,{status:0})
+      // Find the current addon to get its current status
+      const currentAddon = addons.find(addon => addon.id === id);
+      if (!currentAddon) return;
+      
+      // Toggle the status (if current is 1, set to 0; if current is 0, set to 1)
+      const newStatus = currentAddon.status === 1 ? 0 : 1;
+      
+      await window.myAPI?.updateAdon?.(id, { status: newStatus });
       fetchAddons();
-        }catch(error){
+    } catch(error){
       console.error('Error toggling status:', error);
-        }
+    }
   };
 
   const handleDeleteClick = (addon) => {
@@ -135,6 +161,7 @@ setAddonToDelete(null);
   };
 
   return (
+    <>
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800">Addon List</h2>
@@ -248,6 +275,9 @@ setAddonToDelete(null);
                     name="name"
                     value={newAddon.name}
                     onChange={handleInputChange}
+                    onFocus={(e) => { handleAnyInputFocus(e, 'addon_name', newAddon.name || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(newAddon.name || ''); } }}
+                    onClick={(e) => { handleAnyInputClick(e, 'addon_name', newAddon.name || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(newAddon.name || ''); } }}
+                    onBlur={handleInputBlur}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                     placeholder="Ex: water"
                     required
@@ -263,6 +293,9 @@ setAddonToDelete(null);
                     name="price"
                     value={newAddon.price}
                     onChange={handleInputChange}
+                    onFocus={(e) => { handleAnyInputFocus(e, 'addon_price', (newAddon.price ?? '').toString()); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput((newAddon.price ?? '').toString()); } }}
+                    onClick={(e) => { handleAnyInputClick(e, 'addon_price', (newAddon.price ?? '').toString()); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput((newAddon.price ?? '').toString()); } }}
+                    onBlur={handleInputBlur}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                     placeholder="100"
                     step="0.01"
@@ -298,6 +331,9 @@ setAddonToDelete(null);
                       name="addon_stock"
                       value={newAddon.addon_stock ?? ""}
                       onChange={handleInputChange}
+                      onFocus={(e) => { handleAnyInputFocus(e, 'addon_stock', (newAddon.addon_stock ?? '').toString()); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput((newAddon.addon_stock ?? '').toString()); } }}
+                      onClick={(e) => { handleAnyInputClick(e, 'addon_stock', (newAddon.addon_stock ?? '').toString()); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput((newAddon.addon_stock ?? '').toString()); } }}
+                      onBlur={handleInputBlur}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                       placeholder="Enter stock quantity"
                       min="0"
@@ -369,6 +405,23 @@ setAddonToDelete(null);
         </div>
       )}
     </div>
+    <VirtualKeyboard
+      isVisible={showKeyboard}
+      onClose={() => hideKeyboard()}
+      activeInput={activeInput}
+      onInputChange={(input, inputName) => {
+        if (inputName === 'addon_name') {
+          setNewAddon(prev => ({ ...prev, name: input }));
+        } else if (inputName === 'addon_price') {
+          setNewAddon(prev => ({ ...prev, price: input }));
+        } else if (inputName === 'addon_stock') {
+          setNewAddon(prev => ({ ...prev, addon_stock: input }));
+        }
+      }}
+      onInputBlur={handleInputBlur}
+      inputValue={getKeyboardValue(activeInput)}
+    />
+    </>
   );
 };
 

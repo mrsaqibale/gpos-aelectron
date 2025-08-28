@@ -3,8 +3,11 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
+import WelcomeScreen from './pages/loginPage/WelcomeScreen.jsx'
 import POSLogin from './pages/loginPage/PosLogin.jsx'
+import LicenseScreen from './pages/loginPage/LicenseScreen.jsx'
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx'
+import Dashboard from './pages/dashboard/Dashboard.jsx'
 import ManageOrders from './pages/dashboard/ManageOrders.jsx'
 import KitchenDisplaySystem from './pages/dashboard/KitchenDisplaySystem.jsx'
 import FoodList from './pages/dashboard/FoodList.jsx'
@@ -13,6 +16,9 @@ import EmployeeManagement from './pages/dashboard/EmployeeManagement.jsx'
 import TableManagementPage from './pages/dashboard/TableManagement.jsx'
 import Coupons from './pages/dashboard/Coupons.jsx'
 import RunningOrders from './pages/dashboard/RunningOrders.jsx'
+import CustomerManagement from './pages/dashboard/CustomerManagement.jsx'
+import AdminPanel from './pages/dashboard/AdminPanel.jsx'
+import ApplicationSettings from './pages/dashboard/ApplicationSettings.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 
 console.log('main.jsx loading...');
@@ -35,17 +41,25 @@ const ErrorBoundary = ({ children }) => {
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <ErrorBoundary><App /></ErrorBoundary>,
+    element: <ErrorBoundary><ThemeProvider><App /></ThemeProvider></ErrorBoundary>,
     children: [
-      { index: true, element: <Navigate to="/login" replace /> },
+      { index: true, element: <ErrorBoundary><WelcomeScreen /></ErrorBoundary> },
       {
         path: 'login',
-        element: <ErrorBoundary><ThemeProvider><POSLogin /></ThemeProvider></ErrorBoundary>,
+        element: <ErrorBoundary><POSLogin /></ErrorBoundary>,
+      },
+      {
+        path: 'license',
+        element: <ErrorBoundary><LicenseScreen /></ErrorBoundary>,
       },
       {
         path: 'dashboard',
-        element: <ErrorBoundary><ThemeProvider><DashboardLayout /></ThemeProvider></ErrorBoundary>,
+        element: <ErrorBoundary><DashboardLayout /></ErrorBoundary>,
         children: [
+          {
+            index: true,
+            element: <ErrorBoundary><Dashboard /></ErrorBoundary>
+          },
           {
             path: 'manage-orders',
             element: <ErrorBoundary><ManageOrders /></ErrorBoundary>
@@ -71,6 +85,10 @@ const router = createBrowserRouter([
             element: <ErrorBoundary><EmployeeManagement /></ErrorBoundary>
           },
           {
+            path: 'customer-management',
+            element: <ErrorBoundary><CustomerManagement /></ErrorBoundary>
+          },
+          {
             path: 'table-management',
             element: <ErrorBoundary><TableManagementPage /></ErrorBoundary>
           },
@@ -81,6 +99,14 @@ const router = createBrowserRouter([
             {
             path: 'sales',
             element: <ErrorBoundary><RunningOrders/></ErrorBoundary>
+          },
+          {
+            path: 'admin-panel',
+            element: <ErrorBoundary><AdminPanel /></ErrorBoundary>
+          },
+          {
+            path: 'application-settings',
+            element: <ErrorBoundary><ApplicationSettings /></ErrorBoundary>
           },
         ],
       },

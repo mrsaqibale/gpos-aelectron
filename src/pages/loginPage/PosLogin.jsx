@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Crown, Settings, DollarSign, ChefHat, X, BarChart3, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Crown, Settings, DollarSign, ChefHat, X, BarChart3, AlertCircle, User } from 'lucide-react';
 import ForgotPinModals from './ForgotPassword';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -11,6 +11,8 @@ const POSLogin = () => {
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
   const [showForgotPinModal, setShowForgotPinModal] = useState(false);
@@ -20,7 +22,8 @@ const POSLogin = () => {
     { id: 'Admin', name: 'Admin', icon: Crown },
     { id: 'Manager', name: 'Manager', icon: Settings },
     { id: 'Cashier', name: 'Cashier', icon: DollarSign, subtitle: 'Multiple Users' },
-    { id: 'Chef', name: 'Chef', icon: ChefHat }
+    { id: 'Chef', name: 'Chef', icon: ChefHat },
+    { id: 'Waiter', name: 'Waiter', icon: User }
   ];
 
   // Handle keyboard input
@@ -43,6 +46,21 @@ const POSLogin = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [pin, selectedRole, showForgotPinModal]);
 
+  // Update time every minute
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date());
+    };
+
+    // Update immediately
+    updateTime();
+
+    // Set interval to update every minute
+    const interval = setInterval(updateTime, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleRoleSelect = (roleId) => {
     setSelectedRole(roleId);
     setError(''); // Clear any previous error when role is selected
@@ -53,7 +71,7 @@ const POSLogin = () => {
       setError('⚠ Please select a role first.');
       return;
     }
-    if (pin.length < 6) {
+    if (pin.length < 4) {
       setPin(prev => prev + number);
       setError(''); // Clear error when user starts typing
     }
@@ -72,16 +90,24 @@ const POSLogin = () => {
       setError('⚠ Please select a role first.');
       return;
     }
-    if (pin.length < 6) {
-      setError('⚠ PIN must be 6 digits.');
+    if (pin.length < 4) {
+      setError('⚠ PIN must be 4 digits.');
       return;
     }
-    if (selectedRole && pin.length >= 6) {
+    if (selectedRole && pin.length >= 4) {
+      setIsLoading(true);
+      
+      // Add a minimum loading time of 1 second
+      const loadingPromise = new Promise(resolve => setTimeout(resolve, 1000));
+      
       try {
         console.log('Login attempt:', { role: selectedRole, pin });
 
         // Call the backend login function
-        const result = await window.myAPI?.loginEmployee(pin, selectedRole);
+        const loginPromise = window.myAPI?.loginEmployee(pin, selectedRole);
+        
+        // Wait for both the minimum loading time and the actual login
+        const [result] = await Promise.all([loginPromise, loadingPromise]);
 
         if (result.success) {
           console.log('Login successful:', result.data);
@@ -108,6 +134,8 @@ const POSLogin = () => {
             localStorage.setItem('currentEmployee', JSON.stringify(result.data));
           }
           
+          // Navigate to dashboard and trigger Check-In popup there
+          sessionStorage.setItem('triggerCheckIn', 'true');
           navigate('/dashboard');
         } else {
           setError('⚠ Invalid PIN or role. Please try again.');
@@ -117,6 +145,8 @@ const POSLogin = () => {
         console.error('Login error:', error);
         setError('⚠ Login failed. Please try again.');
         setPin(''); // Clear PIN on error
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -128,6 +158,14 @@ const POSLogin = () => {
   const getSelectedRoleName = () => {
     const role = roles.find(r => r.id === selectedRole);
     return role ? role.name : '';
+  };
+
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   const handleForgotPinClick = () => {
@@ -163,7 +201,7 @@ const POSLogin = () => {
   }, []);
 
   const renderPinDisplay = () => {
-    const boxes = Array.from({ length: 6 }, (_, index) => {
+    const boxes = Array.from({ length: 4 }, (_, index) => {
       const hasDigit = index < pin.length;
       const digit = pin[index] || '';
       const isEmpty = !hasDigit;
@@ -205,9 +243,11 @@ const POSLogin = () => {
       <button
         onClick={() => onClick(number)}
         disabled={!selectedRole}
-        className="rounded-xl py-2 px-4 shadow-lg cursor-pointer hover:shadow-xl text-white font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+        className="rounded-xl py-1 px-0 shadow-lg cursor-pointer hover:shadow-xl font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
         style={{
-          background: `linear-gradient(145deg, ${style?.start} 60%, ${style?.end} 100%)`
+          backgroundColor: 'white',
+          color: themeColors.primary,
+          border: `2px solid ${themeColors.primary}`
         }}
       >
         {number}
@@ -222,64 +262,45 @@ const POSLogin = () => {
     disabled = false,
   }) => {
     const baseClasses =
-      "h-11 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
+      "py-1 px-0 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
-    const isBackspace = variant === "backspace";
-
-    const gradientStyle = {
-      background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`,
+    const buttonStyle = {
+      backgroundColor: selectedRole ? (variant === "clear" ? '#ffebee' : variant === "backspace" ? themeColors.primary + '20' : themeColors.primary) : 'white',
+      color: selectedRole ? (variant === "clear" ? '#d32f2f' : 'white') : themeColors.primary,
+      border: selectedRole ? (variant === "clear" ? `2px solid #d32f2f` : variant === "backspace" ? `2px solid ${themeColors.primary}` : 'none') : `2px solid ${themeColors.primary}`,
     };
-
-    const variantClasses = isBackspace
-      ? disabled
-        ? "text-red-300 cursor-not-allowed border-[#4a7ca3]"
-        : "hover:bg-[#2d5a87] border-[#4a7ca3] cursor-pointer text-white hover:border-[#4a7ca3]"
-      : disabled
-      ? "text-red-300 cursor-not-allowed border-[#4a7ca3]"
-      : "cursor-pointer text-white border-[#4a7ca3]";
 
     return (
       <button
         onClick={onClick}
         disabled={disabled}
-        className={`${baseClasses} ${variantClasses} ${className}`}
-        style={gradientStyle}
+        className={`${baseClasses} ${className}`}
+        style={buttonStyle}
       >
         {children}
       </button>
-    );
+      );
   };
 
 
   return (
     <>
       <div
-        className="w-full min-h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
-        style={{ backgroundColor: themeColors.background }}
+        className="w-full h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
+        style={{ backgroundColor: 'white' }}
       >
+        {/* Close button for login page */}
+        <button
+          onClick={() => window.loginWindowControls?.close()}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-full border border-gray-300 hover:border-red-300"
+          title="Close Application"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
-        <div className="py-6 rounded-t-xl">
-          <div className="absolute top-4 right-6 flex gap-2">
-           <button
-              onClick={() => changeTheme("default")}
-              className="w-5 h-5 rounded-full border border-white cursor-pointer transform active:scale-95"
-              style={{ background: "linear-gradient(to bottom right, #003E5C, #1976d2)" }}
-            />
-            <button
-              onClick={() => changeTheme("blue")}
-              className="w-5 h-5 rounded-full border border-white cursor-pointer transform active:scale-95"
-              style={{ background: "linear-gradient(to bottom right, #176B87, #3498db)" }}
-            />
-            <button
-              onClick={() => changeTheme("green")}
-              className="w-5 h-5 rounded-full border border-white cursor-pointer transform active:scale-95"
-              style={{ background: "linear-gradient(to bottom right, #25A18E, #34A0A4)" }}
-            />
-          </div>
-
-
+        <div className="py-4 rounded-t-xl">
           <div
-            className="flex flex-col items-center justify-center text-center mt-6"
+            className="flex flex-col items-center justify-center text-center mt-4"
           >
             <div className="w-24 h-20 rounded-2xl border-2 flex flex-col items-center justify-center mb-3 shadow-md shadow-black"
             style={{ backgroundColor: themeColors.logo, borderColor: themeColors.logo_border  }} 
@@ -287,8 +308,8 @@ const POSLogin = () => {
               <span className="text-white font-bold text-5xl">G</span>
               <span className="text-white font-medium text-base">POS</span>
             </div>
-            <p className="text-xl text-white font-semibold">
-              Smart Restaurant Billing System
+            <p className="text-lg text-black font-bold">
+              Welcome to GPOS – Smart & Simplified Point of Sale
             </p>
           </div>
 
@@ -296,15 +317,15 @@ const POSLogin = () => {
 
 
         {/* Main Content */}
-        <div className="w-full max-w-4xl flex gap-8 transform perspective-1000">
+        <div className="w-full h-[500px] max-w-4xl flex transform perspective-1000">
 
-          {/* Left Section - Role Selection with 3D effect */}
-          <div className="w-1/2 bg-transparent rounded-3xl p-6 border-[#4a7ca3] border shadow-2xl">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
+                      {/* Left Section - Role Selection with 3D effect */}
+            <div className="w-1/2 rounded-l-3xl border-r p-6 border-[#4a7ca3] border shadow-2xl" style={{ backgroundColor: themeColors.primary }}>
+            <h2 className="text-2xl mt-2 font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid h-[380px] grid-cols-2 gap-4">
               {roles.map((role) => {
                 const IconComponent = role.icon;
                 const isSelected = selectedRole === role.id;
@@ -318,27 +339,25 @@ const POSLogin = () => {
                         ${isSelected
                           ? 'text-white scale-[1.04] z-[1]'
                           : 'text-black hover:bg-transparent hover:border-white'}
-                        p-4 rounded-xl transition-all duration-300 
-                        flex flex-col items-center justify-center h-24 
+                         rounded-xl transition-all duration-300 
+                        flex flex-col items-center justify-center
                         hover:cursor-pointer transform hover:-translate-y-1 hover:scale-105 active:translate-y-0 
                         border-[2.5px]
                       `}
-                      style={{
-                        transformStyle: 'preserve-3d',
-                        background: isSelected
-                          ? `linear-gradient(135deg, ${themeColors.loginBg} 60%, ${themeColors.buttonHover} 100%)`
-                          : '#ffffff',
-                        borderColor: isSelected ? themeColors.loginBg : '#1e3a5f',
-                        boxShadow: isSelected
-                          ? `0 0 16px 2px ${themeColors.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
-                          : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
-                      }}
+                                                                                              style={{
+                          transformStyle: 'preserve-3d',
+                          background: isSelected ? themeColors.primary : 'white',
+                          borderColor: isSelected ? themeColors.loginBg : '#1e3a5f',
+                          boxShadow: isSelected
+                            ? `0 0 16px 2px ${themeColors.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
+                            : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
+                        }}
                     >
-                      <IconComponent className="w-6 h-6 mb-1" />
-                      <span className="text-md font-bold">{role.name}</span>
-                      {role.subtitle && (
-                        <span className="text-xs opacity-70">{role.subtitle}</span>
-                      )}
+                      <IconComponent className="w-8 h-8 mb-1" style={{ color: isSelected ? 'white' : 'black' }} />
+                      <span className="text-xl font-bold" style={{ color: isSelected ? 'white' : 'black' }}>{role.name}</span>
+                                              {role.subtitle && (
+                          <span className="text-xs opacity-70" style={{ color: isSelected ? 'white' : 'black' }}>{role.subtitle}</span>
+                        )}
                     </button>
 
                 );
@@ -348,14 +367,14 @@ const POSLogin = () => {
 
           {/* Right Section - PIN Entry with 3D effect */}
           <div
-            className="w-1/2 bg-[#ffffff] text-black rounded-2xl p-6 shadow-2xl border-1 border-[#2d5a87]"
+            className="w-1/2 bg-[#ffffff] text-black rounded-r-3xl border-l p-6 shadow-2xl border-1 border-[#2d5a87]"
             style={{
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
             }}
           >
             {/* Logging in as Role Header */}
             {selectedRole && (
-              <div className="mb-3 p-2] rounded-md border border-[#4a7ca3] shadow-inner max-w-xs mx-auto">
+              <div className="mb-2 p-2] rounded-md border border-[#4a7ca3] shadow-inner max-w-xs mx-auto">
                 <div className="flex items-center justify-center gap-1 text-black">
                   <BarChart3 className="w-3 h-3" />
                   <span className="text-sm font-medium">
@@ -365,7 +384,7 @@ const POSLogin = () => {
               </div>
             )}
 
-            <h2 className="text-2xl font-semibold text-black mb-6 text-center transform transition-transform hover:scale-105">
+            <h2 className="text-2xl mt-0 font-semibold text-black mb-2 text-center transform transition-transform hover:scale-105">
               Enter PIN To Continue
             </h2>
 
@@ -373,13 +392,13 @@ const POSLogin = () => {
             <div className="mb-4">
               {renderPinDisplay()}
               <p className="text-center text-xs text-gray-400 mt-2">
-                {pin.length}/6 digits
+                {pin.length}/4 digits
               </p>
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-4 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
+              <div className="mb-6 mx-10 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">{error}</span>
               </div>
@@ -402,7 +421,6 @@ const POSLogin = () => {
                 ))}
               </div>
 
-
               <div className="grid grid-cols-3 gap-3">
                   <ActionButton
                     onClick={handleClear}
@@ -411,7 +429,6 @@ const POSLogin = () => {
                   >
                     Clear
                   </ActionButton>
-
                                      <NumberButton
                      number={0}
                      onClick={handleNumberClick}
@@ -425,28 +442,41 @@ const POSLogin = () => {
                     onClick={handleBackspace}
                     variant="backspace"
                     disabled={!selectedRole}
-                                         style={{
-                       background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`
-                     }}
                   >
-                    <X className="w-4 h-4" />
+                                         <svg className="w-7 h-7" viewBox="0 0 20 20" fill="none">
+                       <path
+                         d="M7.5 10H15M5.5 5L2 10L5.5 15M15 5V15"
+                         stroke={themeColors.primary}
+                         strokeWidth="1.5"
+                         strokeLinecap="round"
+                         strokeLinejoin="round"
+                         style={{ opacity: 0.6 }}
+                       />
+                     </svg>
                   </ActionButton>
                 </div>
 
             </div>
 
             {/* Login Button with 3D effect */}
-            <div className="mb-4 flex justify-center">
+            <div className="mb-2 flex justify-center">
               <button
                 onClick={handleLogin}
-                disabled={!selectedRole || pin.length < 6}
-                className="w-[86%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
+                disabled={!selectedRole || pin.length < 4 || isLoading}
+                className="w-[80%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
                                  style={{
-                     background: `linear-gradient(145deg, ${themeColors.keypad} 60%, ${themeColors.keypad_end} 100%)`,
+                     backgroundColor: themeColors.primary,
                      borderColor: themeColors.loginBg,
                    }}
               >
-                Login
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Logging in...
+                  </>
+                ) : (
+                  'Login'
+                )}
               </button>
 
             </div>
@@ -455,10 +485,45 @@ const POSLogin = () => {
             <div className="text-center">
               <button
                 onClick={handleForgotPinClick}
-                className="text-gray-300 hover:text-white cursor-pointer text-sm font-semibold transition-colors hover:-translate-y-0.5"
+                className="text-gray-300 hover:text-white text-underline cursor-pointer text-sm font-bold transition-colors hover:-translate-y-0.5"
+                                 style={{
+                     color: themeColors.primary,
+                   }}
               >
                 Forgot PIN?
               </button>
+            </div>
+
+            {/* Current Time Display */}
+            <div className="text-center mt-2">
+              <div className="text-lg flex items-start justify-start ml-10 font-semibold text-gray-600">
+                <span
+                  className="inline-flex items-center justify-center rounded-full mr-2"
+                  style={{
+                    backgroundColor: themeColors.primary,
+                    width: 24,
+                    height: 24,
+                  }}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M5 10.5L9 14.5L15 7.5"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <p className='text-[16px]'>Time In logged at {formatTime(currentTime)}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -469,6 +534,7 @@ const POSLogin = () => {
         isOpen={showForgotPinModal}
         onClose={handleForgotPinClose}
       />
+
 
     </>
   );

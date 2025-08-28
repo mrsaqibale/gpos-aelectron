@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search } from 'lucide-react';
+import VirtualKeyboard from '../VirtualKeyboard';
 
 const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
   const [searchName, setSearchName] = useState('');
@@ -10,6 +11,11 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Keyboard state
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [activeInput, setActiveInput] = useState('');
+  const [keyboardInput, setKeyboardInput] = useState('');
+
   useEffect(() => {
     if (isOpen) {
       // Don't fetch all customers by default
@@ -18,8 +24,6 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
       setHasSearched(false);
     }
   }, [isOpen]);
-
-  // Remove the auto-filter effect since we're now using direct search
 
   const fetchCustomers = async () => {
     setLoading(true);
@@ -120,6 +124,63 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
     }
   };
 
+  // Keyboard event handlers
+  const handleInputFocus = (inputName) => {
+    setActiveInput(inputName);
+    if (inputName === 'searchName') {
+      setKeyboardInput(searchName || '');
+    } else if (inputName === 'searchPhone') {
+      setKeyboardInput(searchPhone || '');
+    }
+    setShowKeyboard(true);
+  };
+
+  const handleInputBlur = (e) => {
+    // Small delay to allow keyboard interactions to complete
+    setTimeout(() => {
+      setShowKeyboard(false);
+      setActiveInput('');
+    }, 300);
+  };
+
+  // Auto-show keyboard for any input focus
+  const handleAnyInputFocus = (e, inputName) => {
+    handleInputFocus(inputName);
+  };
+
+  // Auto-show keyboard for any input click
+  const handleAnyInputClick = (e, inputName) => {
+    if (!showKeyboard || activeInput !== inputName) {
+      handleInputFocus(inputName);
+    }
+  };
+
+  const onKeyboardChange = (input, inputName) => {
+    setKeyboardInput(input);
+    
+    // Update the corresponding form field
+    if (inputName === 'searchName') {
+      setSearchName(input);
+    } else if (inputName === 'searchPhone') {
+      setSearchPhone(input);
+    }
+  };
+
+  const onKeyboardKeyPress = (button) => {
+    if (button === '{enter}') {
+      // Move to next input field or submit search
+      if (activeInput === 'searchName') {
+        const phoneInput = document.querySelector('[name="searchPhone"]');
+        if (phoneInput) {
+          phoneInput.focus();
+        }
+      } else if (activeInput === 'searchPhone') {
+        // Submit search when pressing enter on phone field
+        handleSearch();
+      }
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -145,8 +206,12 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
               </label>
               <input
                 type="text"
+                name="searchName"
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
+                onFocus={(e) => handleAnyInputFocus(e, 'searchName')}
+                onBlur={handleInputBlur}
+                onClick={(e) => handleAnyInputClick(e, 'searchName')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                 placeholder="Enter customer name"
               />
@@ -157,8 +222,12 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
               </label>
               <input
                 type="text"
+                name="searchPhone"
                 value={searchPhone}
                 onChange={(e) => setSearchPhone(e.target.value)}
+                onFocus={(e) => handleAnyInputFocus(e, 'searchPhone')}
+                onBlur={handleInputBlur}
+                onClick={(e) => handleAnyInputClick(e, 'searchPhone')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                 placeholder="Enter phone number"
               />
@@ -281,6 +350,17 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
           </button>
         </div>
       </div>
+
+      {/* Virtual Keyboard - Always visible when needed */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={() => setShowKeyboard(false)}
+        activeInput={activeInput}
+        onInputChange={onKeyboardChange}
+        onInputBlur={handleInputBlur}
+        inputValue={keyboardInput}
+        onKeyPress={onKeyboardKeyPress}
+      />
     </div>
   );
 };

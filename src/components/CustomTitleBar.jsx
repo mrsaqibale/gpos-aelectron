@@ -1,159 +1,216 @@
 import React, { useState, useEffect } from 'react';
-import { Minus, Square, X, Maximize2 } from 'lucide-react';
-
-// Default theme colors
-const defaultThemeColors = {
-  primary: '#032d81',
-  primaryLight: '#20407f'
-};
+import { Minus, ArrowLeft } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 
 const CustomTitleBar = () => {
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [themeColors, setThemeColors] = useState(defaultThemeColors);
+  // const [isMaximized, setIsMaximized] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { themeColors, changeTheme } = useTheme();
 
-  // Try to get theme colors from context if available
+  // Check if user is logged in
+  const isLoggedIn = () => {
+    const currentEmployee = localStorage.getItem('currentEmployee');
+    return currentEmployee !== null;
+  };
+
+  // Check if user is on login page
+  const isOnLoginPage = () => {
+    return location.pathname === '/login' || location.pathname === '/';
+  };
+
+  // Update time every minute
   useEffect(() => {
-    const getThemeColors = () => {
-      try {
-        // Check if theme context is available
-        const savedTheme = localStorage.getItem('posTheme');
-        if (savedTheme) {
-          const themes = {
-            default: {
-              primary: '#032d81',
-              primaryLight: '#20407f',
-            },
-            blue: {
-              primary: '#00428C',
-              primaryLight: '#4f8cff',
-            },
-            green: {
-              primary: '#25A18E',
-              primaryLight: '#34A0A4',
-            },
-          };
-          
-          if (themes[savedTheme]) {
-            setThemeColors(themes[savedTheme]);
-          }
-        }
-      } catch (error) {
-        console.log('Using default theme colors');
-      }
+    const updateTime = () => {
+      setCurrentTime(new Date());
     };
 
-    getThemeColors();
+    // Update immediately
+    updateTime();
 
-    // Listen for theme changes
-    const handleStorageChange = (e) => {
-      if (e.key === 'posTheme') {
-        getThemeColors();
-      }
-    };
+    // Set interval to update every minute
+    const interval = setInterval(updateTime, 60000);
 
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom theme change events
-    const handleThemeChange = () => {
-      getThemeColors();
-    };
-    
-    window.addEventListener('themeChanged', handleThemeChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('themeChanged', handleThemeChange);
-    };
+    return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    // Check initial maximize state
-    const checkMaximized = async () => {
-      try {
-        const maximized = await window.windowControls?.isMaximized();
-        setIsMaximized(maximized);
-      } catch (error) {
-        console.error('Error checking maximize state:', error);
-      }
-    };
+  // useEffect(() => {
+  //   // Check initial maximize state
+  //   const checkMaximized = async () => {
+  //     try {
+  //       const maximized = await window.windowControls?.isMaximized();
+  //       setIsMaximized(maximized);
+  //     } catch (error) {
+  //       console.error('Error checking maximize state:', error);
+  //     }
+  //   };
     
-    checkMaximized();
+  //   checkMaximized();
 
-    // Listen for maximize/unmaximize events
-    const handleMaximize = () => setIsMaximized(true);
-    const handleUnmaximize = () => setIsMaximized(false);
+  //   // Listen for maximize/unmaximize events
+  //   const handleMaximize = () => setIsMaximized(true);
+  //   const handleUnmaximize = () => setIsMaximized(false);
 
-    window.windowControls?.onMaximizeChange(handleMaximize);
-    window.windowControls?.onUnmaximizeChange(handleUnmaximize);
+  //   window.windowControls?.onMaximizeChange(handleMaximize);
+  //   window.windowControls?.onUnmaximizeChange(handleUnmaximize);
 
-    return () => {
-      // Cleanup listeners if needed
-    };
-  }, []);
+  //   return () => {
+  //     // Cleanup listeners if needed
+  //   };
+  // }, []);
 
   const handleMinimize = () => {
     window.windowControls?.minimize();
   };
 
-  const handleMaximize = () => {
-    window.windowControls?.maximize();
+  // const handleMaximize = () => {
+  //   window.windowControls?.maximize();
+  // };
+
+  // const handleClose = () => {
+  //   window.windowControls?.close();
+  // };
+
+  const handleLogout = async () => {
+    try {
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      if (currentEmployee) {
+        const employeeData = JSON.parse(currentEmployee);
+        if (employeeData.id) {
+          // Use the global logout function if available, otherwise call directly
+          if (window.handleEmployeeLogout) {
+            await window.handleEmployeeLogout(employeeData.id);
+          } else {
+            await window.myAPI?.updateEmployeeLogout(employeeData.id);
+          }
+        }
+      }
+      // Clear local storage
+      localStorage.removeItem('currentEmployee');
+      sessionStorage.clear();
+      // Navigate to login
+      navigate('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still navigate to login even if logout fails
+      localStorage.removeItem('currentEmployee');
+      sessionStorage.clear();
+      navigate('/login');
+    }
   };
 
-  const handleClose = () => {
-    window.windowControls?.close();
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatDay = (date) => {
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
   };
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 h-8 z-50 flex items-center justify-between px-4 select-none title-bar"
+      className="fixed top-0 left-0 right-0 h-9 z-50 flex items-center justify-between px-4 select-none title-bar"
       style={{ 
         backgroundColor: themeColors.primary,
         borderBottom: `1px solid ${themeColors.primaryLight}`
       }}
     >
-      {/* Left side - App title */}
-      <div className="flex items-center">
-        <span className="text-white text-sm font-semibold">POS System</span>
+              {/* Left side - App title and logout button */}
+        <div className="flex items-center space-x-3">
+          {isOnLoginPage() ? (
+            <span className="text-white text-sm font-semibold">POS System</span>
+          ) : isLoggedIn() ? (
+            <button
+              onClick={handleLogout}
+              className="flex cursor-pointer items-center space-x-1 text-gray-300 hover:text-white transition-colors duration-200 rounded-sm px-2 py-1 hover:bg-red-600"
+              title="Logout"
+            >
+              <ArrowLeft className="w-5 h-5 text-white" />
+              <span className="text-white text-sm font-semibold">Logout</span>
+            </button>
+          ) : (
+            <span className="text-white text-sm font-semibold">POS System</span>
+          )}
+        </div>
+
+      {/* Middle section - Time and Date */}
+      <div className="flex items-center space-x-4">
+        {/* Clock icon */}
+        <div className="w-4 h-4 relative mr-2">
+          <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 stroke-white stroke-2">
+            <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" fill="none"/>
+            <path d="M12 6v6l4 2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        
+        {/* Time */}
+        <span className="text-white text-md font-bold">
+          {formatTime(currentTime)}
+        </span>
+        
+        {/* Date */}
+        <span className="text-white text-sm font-semibold">
+          {formatDate(currentTime)}
+        </span>
+        
+        {/* Day */}
+        <span className="text-white text-sm font-semibold">
+          {formatDay(currentTime)}
+        </span>
       </div>
 
-      {/* Right side - Window controls */}
-      <div className="flex items-center space-x-1">
-        {/* Minimize button */}
-        <button
-          onClick={handleMinimize}
-          className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200 rounded-sm"
-          style={{ 
-            '--hover-bg-color': themeColors.primaryLight 
-          }}
-          title="Minimize"
-        >
-          <Minus className="w-4 h-4" />
-        </button>
+      {/* Right side - Theme switcher and Window controls */}
+      <div className="flex items-center space-x-2">
+        {/* Theme switcher buttons */}
+        <div className="flex items-center space-x-1 mr-2">
+          <button
+            onClick={() => changeTheme("default")}
+            className="w-4 h-4 rounded-full border border-white cursor-pointer transform active:scale-95"
+            style={{ background: "linear-gradient(to bottom right, #003E5C, #1976d2)" }}
+            title="Default Theme"
+          />
+          <button
+            onClick={() => changeTheme("blue")}
+            className="w-4 h-4 rounded-full border border-white cursor-pointer transform active:scale-95"
+            style={{ background: "linear-gradient(to bottom right, #176B87, #3498db)" }}
+            title="Blue Theme"
+          />
+          <button
+            onClick={() => changeTheme("green")}
+            className="w-4 h-4 rounded-full border border-white cursor-pointer transform active:scale-95"
+            style={{ background: "linear-gradient(to bottom right, #25A18E, #34A0A4)" }}
+            title="Green Theme"
+          />
+        </div>
 
-        {/* Maximize/Restore button */}
-        <button
-          onClick={handleMaximize}
-          className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200 rounded-sm"
-          style={{ 
-            '--hover-bg-color': themeColors.primaryLight 
-          }}
-          title={isMaximized ? "Restore" : "Maximize"}
-        >
-          {isMaximized ? (
-            <Square className="w-3 h-3" />
-          ) : (
-            <Maximize2 className="w-3 h-3" />
-          )}
-        </button>
-
-        {/* Close button */}
-        <button
-          onClick={handleClose}
-          className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-red-600 transition-colors duration-200 rounded-sm"
-          title="Close"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        {/* Window controls */}
+        <div className="flex items-center space-x-1">
+          {/* Minimize button only */}
+          <button
+            onClick={handleMinimize}
+            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200 rounded-sm"
+            style={{ 
+              '--hover-bg-color': themeColors.primaryLight 
+            }}
+            title="Minimize"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

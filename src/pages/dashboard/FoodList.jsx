@@ -4,7 +4,61 @@ import { Search, Plus, Edit, Trash2, ChevronUp, ChevronDown, Utensils, List, Lay
 import CategoryManagement from '../../components/dashboard/food/CategoryManagement';
 import SubCategoryManagement from '../../components/dashboard/food/SubCategoryManagement';
 import AddonManagement from '../../components/dashboard/food/AddonManagement';
+import Ingredients from '../../components/dashboard/food/Ingredients';
 import FoodForm from '../../components/dashboard/food/FoodForm';
+import VirtualKeyboard from '../../components/VirtualKeyboard';
+import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
+
+// FoodImage component to handle image loading
+const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded" }) => {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        // Check if imagePath exists and is a valid string
+        if (imagePath && typeof imagePath === 'string' && imagePath.startsWith('uploads/')) {
+          const result = await window.myAPI?.getFoodImage(imagePath);
+          if (result && result.success) {
+            setImageSrc(result.data);
+          } else {
+            setError(true);
+          }
+        } else {
+          setError(true);
+        }
+      } catch (error) {
+        console.error('Error loading food image:', error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only load image if imagePath is provided
+    if (imagePath) {
+      loadImage();
+    } else {
+      setLoading(false);
+      setError(true);
+    }
+  }, [imagePath]);
+
+  if (loading) {
+    return <div className={`${className} bg-gray-200 animate-pulse`}></div>;
+  }
+
+  if (error || !imageSrc) {
+    return <div className={`${className} bg-gray-200`}></div>;
+  }
+
+  return <img src={imageSrc} alt={alt} className={className} />;
+};
 
 const FoodList = () => {
   const [activeTab, setActiveTab] = useState('foodList');
@@ -20,6 +74,21 @@ const FoodList = () => {
 
   const categories = ['Traditional', 'Burgers', 'Pizza', 'Beverages'];
 
+  // Virtual Keyboard for search input
+  const {
+    showKeyboard,
+    activeInput,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    handleInputBlur,
+    hideKeyboard
+  } = useVirtualKeyboard(['foodSearch']);
+
+  const getKeyboardValue = (name) => {
+    if (name === 'foodSearch') return searchTerm || '';
+    return '';
+  };
+
   // Function to fetch food data from database
   const fetchFoodData = async () => {
     try {
@@ -31,7 +100,7 @@ const FoodList = () => {
         const transformedData = result.data.map(food => ({
           id: food.id,
           name: food.name,
-          image: food.image || "https://via.placeholder.com/200",
+          image: food.image && typeof food.image === 'string' && food.image.trim() !== '' ? food.image : null,
           category: food.category_name || 'Uncategorized',
           price: food.price || 0,
           type: food.veg === 1 ? 'Veg' : 'Non-Veg',
@@ -71,10 +140,18 @@ const FoodList = () => {
 
   const handleDeleteFood = async (id) => {
     try {
+      console.log('Attempting to delete food with ID:', id);
+      console.log('window.myAPI available:', !!window.myAPI);
+      console.log('deleteFood available:', !!window.myAPI?.deleteFood);
+      
       // Call the backend API to delete the food
-      const result = await window.myAPI?.updateFood(id, { isDelete: 1 });
+      const result = await window.myAPI?.deleteFood(id);
+      console.log('Delete result:', result);
+      
       if (result && result.success) {
-        setFoodItems(foodItems.filter(item => item.id !== id));
+        console.log('Food deleted successfully');
+        // Refresh the food list from database
+        fetchFoodData();
         setShowDeleteConfirm(false);
         setFoodToDelete(null);
       } else {
@@ -83,20 +160,52 @@ const FoodList = () => {
       }
     } catch (error) {
       console.error('Error deleting food:', error);
-      alert('Error deleting food');
+      alert('Error deleting food: ' + error.message);
     }
   };
 
-  const toggleRecommended = (id) => {
-    setFoodItems(foodItems.map(item => 
-      item.id === id ? { ...item, recommended: !item.recommended } : item
-    ));
+  const toggleRecommended = async (id) => {
+    try {
+      // Find the current food item to get its current recommended status
+      const currentFood = foodItems.find(food => food.id === id);
+      if (!currentFood) return;
+      
+      // Toggle the recommended status
+      const newRecommended = !currentFood.recommended;
+      
+      // Call the backend API to update the recommended status
+      const result = await window.myAPI?.updateFood(id, { foodData: { recommended: newRecommended ? 1 : 0 } });
+      if (result && result.success) {
+        // Refresh the food list from database
+        fetchFoodData();
+      } else {
+        console.error('Failed to update recommended status:', result?.message);
+      }
+    } catch (error) {
+      console.error('Error toggling recommended status:', error);
+    }
   };
 
-  const toggleStatus = (id) => {
-    setFoodItems(foodItems.map(item => 
-      item.id === id ? { ...item, status: !item.status } : item
-    ));
+  const toggleStatus = async (id) => {
+    try {
+      // Find the current food item to get its current status
+      const currentFood = foodItems.find(food => food.id === id);
+      if (!currentFood) return;
+      
+      // Toggle the status (if current is true, set to false; if current is false, set to true)
+      const newStatus = !currentFood.status;
+      
+      // Call the backend API to update the status
+      const result = await window.myAPI?.updateFood(id, { foodData: { status: newStatus ? 1 : 0 } });
+      if (result && result.success) {
+        // Refresh the food list from database
+        fetchFoodData();
+      } else {
+        console.error('Failed to update status:', result?.message);
+      }
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
   };
 
   const requestSort = (key) => {
@@ -198,7 +307,18 @@ const FoodList = () => {
             }`}
           >
             <Layers size={16} />
-          Add New Addon
+          Addons
+          </button>
+           <button
+            onClick={() => setActiveTab('ingredients')}
+            className={`px-3 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors flex items-center gap-2 ${
+              activeTab === 'ingredients' 
+                ? 'bg-primaryLight text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Layers size={16} />
+          Ingredients
           </button>
         </div>
       </div>
@@ -226,8 +346,12 @@ const FoodList = () => {
                 <input
                   type="text"
                   placeholder="Search food items..."
+                  name="foodSearch"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={(e) => { handleAnyInputFocus(e, 'foodSearch', searchTerm || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(searchTerm || ''); } }}
+                  onClick={(e) => { handleAnyInputClick(e, 'foodSearch', searchTerm || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(searchTerm || ''); } }}
+                  onBlur={handleInputBlur}
                   className="w-64 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
                 />
               </div>
@@ -326,15 +450,13 @@ const FoodList = () => {
                     <span className="text-sm font-medium text-gray-700">{index + 1}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-10 h-10 rounded object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null; 
-                        e.target.src = "https://via.placeholder.com/40x40?text=🍽️";
-                      }}
-                    />
+                    {item.image && typeof item.image === 'string' && item.image.trim() !== '' ? (
+                      <FoodImage imagePath={item.image} alt={item.name} />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">🍽️</span>
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm font-medium text-gray-800">{item.name}</span>
@@ -416,6 +538,7 @@ const FoodList = () => {
       {activeTab === 'categories' && <CategoryManagement />}
       {activeTab === 'subCategories' && <SubCategoryManagement />}
        {activeTab === 'addons' && <AddonManagement/>}
+      {activeTab === 'ingredients' && <Ingredients />}
 
       {showFoodForm && (
         <FoodForm 
@@ -482,6 +605,20 @@ const FoodList = () => {
           </div>
         </div>
       )}
+
+      {/* Virtual Keyboard */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={() => hideKeyboard()}
+        activeInput={activeInput}
+        onInputChange={(input, inputName) => {
+          if (inputName === 'foodSearch') {
+            setSearchTerm(input);
+          }
+        }}
+        onInputBlur={handleInputBlur}
+        inputValue={getKeyboardValue(activeInput)}
+      />
     </div>
   );
 };

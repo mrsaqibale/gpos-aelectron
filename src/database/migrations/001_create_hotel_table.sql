@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS hotel (
     package_id INTEGER,
     bgimg TEXT,
     icon TEXT,
+    loyal_limit NUMERIC DEFAULT 0,
     isDelete BOOLEAN DEFAULT 0,
     isSyncronized BOOLEAN DEFAULT 0
 );

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, ChevronDown, Info, Package, DollarSign, Clock, Settings, Tag, Pen, PenIcon, PenTool, X } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronDown, Info, Package, DollarSign, Settings, Tag, Pen, PenIcon, PenTool, X } from 'lucide-react';
+import VirtualKeyboard from '../../VirtualKeyboard';
+import useVirtualKeyboard from '../../../hooks/useVirtualKeyboard';
 
 const FoodForm = ({ food, onSubmit }) => {
   const navigate = useNavigate();
@@ -10,26 +12,27 @@ const FoodForm = ({ food, onSubmit }) => {
     image: null,
     category_id: '',
     subcategory_id: '',
-    veg: 0, // 0 for Non-Veg, 1 for Veg
+    veg: '', // 0 for Non-Veg, 1 for Veg
+    isPizza: false, // New field for pizza toggle
     status: 'active',
     restaurant_id: 1,
-    position: 0,
-    price: 0,
-    tax: 0,
+    position: '',
+    price: '',
+    tax: '',
     tax_type: 'percentage',
-    discount: 0,
+    discount: '',
     discount_type: 'percentage',
     available_time_starts: '',
     available_time_ends: '',
     sku: '',
     barcode: '',
-    stock_type: 'unlimited',
-    item_stock: 0,
+    stock_type: '',
+    item_stock: '',
     sell_count: 0,
     // Keep form-specific fields that aren't in database
-    allergenIngredients: '',
+    // allergenIngredients: '',
     addons: [],
-    allowNotes: false,
+    allowNotes: true,
     productNote: '',
     trackInventory: false,
     lowInventory: 5,
@@ -55,8 +58,142 @@ const FoodForm = ({ food, onSubmit }) => {
   const [adonSuggestions, setAdonSuggestions] = useState([]);
   const [showAdonSuggestions, setShowAdonSuggestions] = useState(false);
   const [selectedAdonSuggestionIndex, setSelectedAdonSuggestionIndex] = useState(-1);
+
+  // Ingredients state variables (similar to allergens)
+  const [ingredients, setIngredients] = useState([]);
+  const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [ingredientInput, setIngredientInput] = useState('');
+  const [ingredientSuggestions, setIngredientSuggestions] = useState([]);
+  const [showIngredientSuggestions, setShowIngredientSuggestions] = useState(false);
+  const [selectedIngredientSuggestionIndex, setSelectedIngredientSuggestionIndex] = useState(-1);
+
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Virtual Keyboard integration
+  const {
+    showKeyboard,
+    activeInput,
+    keyboardInput,
+    handleInputFocus,
+    handleInputBlur,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    onKeyboardChange,
+    onKeyboardKeyPress,
+    hideKeyboard
+  } = useVirtualKeyboard([
+    'name',
+    'description',
+    'position',
+    'price',
+    'tax',
+    'discount',
+    'available_time_starts',
+    'available_time_ends',
+    'maxPurchaseQty',
+    'stock_type',
+    'item_stock',
+    'sku',
+    'barcode',
+    'lowInventory',
+    'productNote',
+    'ingredientInput',
+    'allerginInput',
+    'adonInput'
+  ]);
+
+  const handleFormFocus = (e) => {
+    const el = e.target;
+    if (!el || !el.tagName) return;
+    const tag = el.tagName.toLowerCase();
+    const type = (el.getAttribute('type') || '').toLowerCase();
+    // Only show keyboard for text-like inputs and textareas; skip toggles/selects/etc.
+    const allowInputTypes = ['text', 'number', 'time', 'date'];
+    if (tag === 'textarea' || (tag === 'input' && allowInputTypes.includes(type))) {
+      const inputName = el.name || '';
+      handleAnyInputFocus(e, inputName, el.value || '');
+      if (window.keyboard && typeof window.keyboard.setInput === 'function') {
+        window.keyboard.setInput(el.value || '');
+      }
+    }
+  };
+
+  const handleFormClick = (e) => {
+    const el = e.target;
+    if (!el || !el.tagName) return;
+    const tag = el.tagName.toLowerCase();
+    const type = (el.getAttribute('type') || '').toLowerCase();
+    const allowInputTypes = ['text', 'number', 'time', 'date'];
+    if (tag === 'textarea' || (tag === 'input' && allowInputTypes.includes(type))) {
+      const inputName = el.name || '';
+      handleAnyInputClick(e, inputName, el.value || '');
+      if (window.keyboard && typeof window.keyboard.setInput === 'function') {
+        window.keyboard.setInput(el.value || '');
+      }
+    }
+  };
+
+  // Helpers for handling dynamic variation fields with the keyboard
+  const updateFieldFromKeyboard = (fieldName, value) => {
+    if (!fieldName) return;
+    // variation_<vIndex>_name|min|max
+    let match = fieldName.match(/^variation_(\d+)_(name|min|max)$/);
+    if (match) {
+      const vIndex = parseInt(match[1], 10);
+      const key = match[2];
+      setFormData(prev => {
+        const variations = [...(prev.variations || [])];
+        if (!variations[vIndex]) return prev;
+        variations[vIndex] = { ...variations[vIndex], [key]: value };
+        return { ...prev, variations };
+      });
+      return;
+    }
+    // variation_<vIndex>_option_<oIndex>_(option_name|option_price|total_stock)
+    match = fieldName.match(/^variation_(\d+)_option_(\d+)_(option_name|option_price|total_stock)$/);
+    if (match) {
+      const vIndex = parseInt(match[1], 10);
+      const oIndex = parseInt(match[2], 10);
+      const key = match[3];
+      setFormData(prev => {
+        const variations = [...(prev.variations || [])];
+        if (!variations[vIndex]) return prev;
+        const v = { ...variations[vIndex] };
+        const options = [...(v.options || [])];
+        if (!options[oIndex]) return prev;
+        options[oIndex] = { ...options[oIndex], [key]: value };
+        v.options = options;
+        variations[vIndex] = v;
+        return { ...prev, variations };
+      });
+      return;
+    }
+    // default: top-level formData
+    setFormData(prev => ({ ...prev, [fieldName]: value }));
+  };
+
+  const getValueForActiveInput = (fieldName) => {
+    if (!fieldName) return '';
+    let match = fieldName.match(/^variation_(\d+)_(name|min|max)$/);
+    if (match) {
+      const vIndex = parseInt(match[1], 10);
+      const key = match[2];
+      return (formData.variations?.[vIndex]?.[key] ?? '').toString();
+    }
+    match = fieldName.match(/^variation_(\d+)_option_(\d+)_(option_name|option_price|total_stock)$/);
+    if (match) {
+      const vIndex = parseInt(match[1], 10);
+      const oIndex = parseInt(match[2], 10);
+      const key = match[3];
+      return (formData.variations?.[vIndex]?.options?.[oIndex]?.[key] ?? '').toString();
+    }
+    if (fieldName === 'ingredientInput') return ingredientInput || '';
+    if (fieldName === 'allerginInput') return allerginInput || '';
+    if (fieldName === 'adonInput') return adonInput || '';
+    const val = formData[fieldName];
+    return (val !== undefined && val !== null ? String(val) : '');
+  };
 
   // Load categories and subcategories
   useEffect(() => {
@@ -128,6 +265,29 @@ const FoodForm = ({ food, onSubmit }) => {
     loadAdons();
   }, []);
 
+  // Load ingredients
+  useEffect(() => {
+    const loadIngredients = async () => {
+      try {
+        console.log('Loading ingredients...');
+        const result = await window.myAPI?.getAllIngredients();
+        console.log('Ingredients API result:', result);
+        if (result && result.success) {
+          // Filter ingredients to only show active ones (status = 1)
+          const activeIngredients = (result.data || []).filter(ingredient => ingredient.status === 1);
+          setIngredients(activeIngredients);
+          console.log('Active ingredients loaded:', activeIngredients);
+        } else {
+          console.error('Failed to load ingredients:', result?.message);
+        }
+      } catch (error) {
+        console.error('Error loading ingredients:', error);
+      }
+    };
+
+    loadIngredients();
+  }, []);
+
   // Load subcategories when category changes
   useEffect(() => {
     const loadSubcategories = async () => {
@@ -158,6 +318,17 @@ const FoodForm = ({ food, onSubmit }) => {
     loadSubcategories();
   }, [formData.category_id]);
 
+  // Clear ingredients when category changes (for new food items)
+  useEffect(() => {
+    if (!food) { // Only for new food items, not when editing
+      setSelectedIngredients([]);
+      setIngredientInput('');
+      setIngredientSuggestions([]);
+      setShowIngredientSuggestions(false);
+      setSelectedIngredientSuggestionIndex(-1);
+    }
+  }, [formData.category_id, food]);
+
   useEffect(() => {
     if (food) {
       setFormData({
@@ -167,6 +338,7 @@ const FoodForm = ({ food, onSubmit }) => {
         category_id: food.category_id || '',
         subcategory_id: food.subcategory_id || '',
         type: food.type || '',
+        isPizza: food.isPizza === 1 || food.isPizza === true || false,
         allergenIngredients: food.allergenIngredients || '',
         addons: food.addons || [],
         availableFrom: food.availableFrom || '',
@@ -213,7 +385,7 @@ const FoodForm = ({ food, onSubmit }) => {
       } else {
         setImagePreview(null);
       }
-      
+
       // Load existing allergens if editing
       if (food.allergins && food.allergins.length > 0) {
         setSelectedAllergins(food.allergins);
@@ -236,6 +408,25 @@ const FoodForm = ({ food, onSubmit }) => {
           }
         };
         loadFoodAdons();
+      }
+
+      // Load existing ingredients if editing
+      if (food.ingredients && food.ingredients.length > 0) {
+        // If ingredients are already loaded in the food object
+        setSelectedIngredients(food.ingredients);
+      } else if (food.id) {
+        // If not loaded, fetch them separately
+        const loadFoodIngredients = async () => {
+          try {
+            const ingredientResult = await window.myAPI?.getFoodIngredients(food.id);
+            if (ingredientResult && ingredientResult.success) {
+              setSelectedIngredients(ingredientResult.data || []);
+            }
+          } catch (error) {
+            console.error('Error loading food ingredients:', error);
+          }
+        };
+        loadFoodIngredients();
       }
     }
   }, [food]);
@@ -266,13 +457,13 @@ const FoodForm = ({ food, onSubmit }) => {
       ...prev,
       variations: [
         ...(prev.variations || []),
-        { 
-          name: '', 
+        {
+          name: '',
           type: 'single',
           min: 1,
           max: '',
           is_required: false,
-          options: [{ option_name: '', option_price: 0, total_stock: 0, stock_type: 'unlimited', sell_count: 0 }]
+          options: [{ option_name: '', option_price: 0, total_stock: '', stock_type: '', sell_count: 0 }]
         }
       ]
     }));
@@ -283,12 +474,12 @@ const FoodForm = ({ food, onSubmit }) => {
     if (!updatedVariations[variationIndex].options) {
       updatedVariations[variationIndex].options = [];
     }
-    updatedVariations[variationIndex].options.push({ 
-      option_name: '', 
-      option_price: 0, 
-      total_stock: 0, 
-      stock_type: 'unlimited', 
-      sell_count: 0 
+    updatedVariations[variationIndex].options.push({
+      option_name: '',
+      option_price: 0,
+      total_stock: '',
+      stock_type: '',
+      sell_count: 0
     });
     setFormData(prev => ({ ...prev, variations: updatedVariations }));
   };
@@ -328,10 +519,10 @@ const FoodForm = ({ food, onSubmit }) => {
     const value = e.target.value;
     setAllerginInput(value);
     setSelectedSuggestionIndex(-1); // Reset selection when typing
-    
+
     if (value.trim()) {
       // Filter suggestions based on input
-      const filtered = allergins.filter(allergin => 
+      const filtered = allergins.filter(allergin =>
         allergin.name.toLowerCase().includes(value.toLowerCase()) &&
         !selectedAllergins.some(selected => selected.id === allergin.id)
       );
@@ -339,7 +530,7 @@ const FoodForm = ({ food, onSubmit }) => {
       setShowAllerginSuggestions(true);
     } else {
       // Show all available allergens when input is empty
-      const availableAllergins = allergins.filter(allergin => 
+      const availableAllergins = allergins.filter(allergin =>
         !selectedAllergins.some(selected => selected.id === allergin.id)
       );
       setAllerginSuggestions(availableAllergins);
@@ -349,7 +540,7 @@ const FoodForm = ({ food, onSubmit }) => {
 
   const handleAllerginFocus = () => {
     // Show all available allergens when field is focused
-    const availableAllergins = allergins.filter(allergin => 
+    const availableAllergins = allergins.filter(allergin =>
       !selectedAllergins.some(selected => selected.id === allergin.id)
     );
     setAllerginSuggestions(availableAllergins);
@@ -373,16 +564,16 @@ const FoodForm = ({ food, onSubmit }) => {
   const handleAllerginKeyDown = async (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      
+
       if (selectedSuggestionIndex >= 0 && allerginSuggestions[selectedSuggestionIndex]) {
         // Select the highlighted suggestion
         handleAllerginSelect(allerginSuggestions[selectedSuggestionIndex]);
       } else if (allerginInput.trim()) {
         // Create new allergen or select existing
-        const existingAllergin = allergins.find(allergin => 
+        const existingAllergin = allergins.find(allergin =>
           allergin.name.toLowerCase() === allerginInput.trim().toLowerCase()
         );
-        
+
         if (existingAllergin) {
           handleAllerginSelect(existingAllergin);
         } else {
@@ -407,7 +598,7 @@ const FoodForm = ({ food, onSubmit }) => {
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedSuggestionIndex(prev => 
+      setSelectedSuggestionIndex(prev =>
         prev < allerginSuggestions.length - 1 ? prev + 1 : prev
       );
     } else if (e.key === 'ArrowUp') {
@@ -419,15 +610,15 @@ const FoodForm = ({ food, onSubmit }) => {
     }
   };
 
-    const handleAllerginKeyPress = async (e) => {
+  const handleAllerginKeyPress = async (e) => {
     if (e.key === 'Enter' && allerginInput.trim()) {
       e.preventDefault();
-      
+
       // Check if allergen already exists
-      const existingAllergin = allergins.find(allergin => 
+      const existingAllergin = allergins.find(allergin =>
         allergin.name.toLowerCase() === allerginInput.trim().toLowerCase()
       );
-      
+
       if (existingAllergin) {
         handleAllerginSelect(existingAllergin);
       } else {
@@ -456,10 +647,10 @@ const FoodForm = ({ food, onSubmit }) => {
     const value = e.target.value;
     setAdonInput(value);
     setSelectedAdonSuggestionIndex(-1); // Reset selection when typing
-    
+
     if (value.trim()) {
       // Filter suggestions based on input
-      const filtered = adons.filter(adon => 
+      const filtered = adons.filter(adon =>
         adon.name.toLowerCase().includes(value.toLowerCase()) &&
         !selectedAdons.some(selected => selected.id === adon.id)
       );
@@ -467,7 +658,7 @@ const FoodForm = ({ food, onSubmit }) => {
       setShowAdonSuggestions(true);
     } else {
       // Show all available adons when input is empty
-      const availableAdons = adons.filter(adon => 
+      const availableAdons = adons.filter(adon =>
         !selectedAdons.some(selected => selected.id === adon.id)
       );
       setAdonSuggestions(availableAdons);
@@ -477,7 +668,7 @@ const FoodForm = ({ food, onSubmit }) => {
 
   const handleAdonFocus = () => {
     // Show all available adons when field is focused
-    const availableAdons = adons.filter(adon => 
+    const availableAdons = adons.filter(adon =>
       !selectedAdons.some(selected => selected.id === adon.id)
     );
     setAdonSuggestions(availableAdons);
@@ -501,14 +692,14 @@ const FoodForm = ({ food, onSubmit }) => {
   const handleAdonKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      
+
       if (selectedAdonSuggestionIndex >= 0 && adonSuggestions[selectedAdonSuggestionIndex]) {
         // Select the highlighted suggestion
         handleAdonSelect(adonSuggestions[selectedAdonSuggestionIndex]);
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedAdonSuggestionIndex(prev => 
+      setSelectedAdonSuggestionIndex(prev =>
         prev < adonSuggestions.length - 1 ? prev + 1 : prev
       );
     } else if (e.key === 'ArrowUp') {
@@ -517,6 +708,122 @@ const FoodForm = ({ food, onSubmit }) => {
     } else if (e.key === 'Escape') {
       setShowAdonSuggestions(false);
       setSelectedAdonSuggestionIndex(-1);
+    }
+  };
+
+  // Ingredient handling functions (similar to allergens)
+  const handleIngredientInputChange = (e) => {
+    if (!formData.category_id) return; // Don't process if category not selected
+
+    const value = e.target.value;
+    setIngredientInput(value);
+    setSelectedIngredientSuggestionIndex(-1); // Reset selection when typing
+
+    if (value.trim()) {
+      // Filter suggestions based on input
+      const filtered = ingredients.filter(ingredient =>
+        ingredient.name.toLowerCase().includes(value.toLowerCase()) &&
+        !selectedIngredients.some(selected => selected.id === ingredient.id)
+      );
+      setIngredientSuggestions(filtered);
+      setShowIngredientSuggestions(true);
+    } else {
+      // Show all available ingredients when input is empty
+      const availableIngredients = ingredients.filter(ingredient =>
+        !selectedIngredients.some(selected => selected.id === ingredient.id)
+      );
+      setIngredientSuggestions(availableIngredients);
+      setShowIngredientSuggestions(true);
+    }
+  };
+
+  const handleIngredientFocus = () => {
+    if (!formData.category_id) return; // Don't process if category not selected
+
+    // Show all available ingredients when field is focused
+    const availableIngredients = ingredients.filter(ingredient =>
+      !selectedIngredients.some(selected => selected.id === ingredient.id)
+    );
+    setIngredientSuggestions(availableIngredients);
+    setShowIngredientSuggestions(true);
+  };
+
+  const handleIngredientSelect = (ingredient) => {
+    console.log('Selecting ingredient:', ingredient);
+    if (!selectedIngredients.some(selected => selected.id === ingredient.id)) {
+      setSelectedIngredients(prev => {
+        const newIngredients = [...prev, ingredient];
+        console.log('Updated selectedIngredients:', newIngredients);
+        return newIngredients;
+      });
+    } else {
+      console.log('Ingredient already selected:', ingredient.name);
+    }
+    setIngredientInput('');
+    setIngredientSuggestions([]);
+    setShowIngredientSuggestions(false);
+    setSelectedIngredientSuggestionIndex(-1);
+  };
+
+  const handleIngredientRemove = (ingredientId) => {
+    setSelectedIngredients(prev => prev.filter(ingredient => ingredient.id !== ingredientId));
+  };
+
+  const handleIngredientKeyDown = async (e) => {
+    if (!formData.category_id) return; // Don't process if category not selected
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+
+      if (selectedIngredientSuggestionIndex >= 0 && ingredientSuggestions[selectedIngredientSuggestionIndex]) {
+        // Select the highlighted suggestion
+        handleIngredientSelect(ingredientSuggestions[selectedIngredientSuggestionIndex]);
+      } else if (ingredientInput.trim()) {
+        // Create new ingredient or select existing
+        const existingIngredient = ingredients.find(ingredient =>
+          ingredient.name.toLowerCase() === ingredientInput.trim().toLowerCase()
+        );
+
+        if (existingIngredient) {
+          handleIngredientSelect(existingIngredient);
+        } else {
+          // Create new ingredient
+          console.log('Creating new ingredient:', ingredientInput.trim());
+          try {
+            const result = await window.myAPI?.createIngredient({ name: ingredientInput.trim() });
+            console.log('createIngredient result:', result);
+            if (result && result.success) {
+              const newIngredient = { id: result.id, name: ingredientInput.trim() };
+              console.log('Created new ingredient:', newIngredient);
+              setIngredients(prev => [...prev, newIngredient]);
+              setSelectedIngredients(prev => {
+                const newIngredients = [...prev, newIngredient];
+                console.log('Added new ingredient to selectedIngredients:', newIngredients);
+                return newIngredients;
+              });
+              setIngredientInput('');
+              setIngredientSuggestions([]);
+              setShowIngredientSuggestions(false);
+              setSelectedIngredientSuggestionIndex(-1);
+            } else {
+              console.error('Failed to create ingredient:', result?.message);
+            }
+          } catch (error) {
+            console.error('Error creating ingredient:', error);
+          }
+        }
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIngredientSuggestionIndex(prev =>
+        prev < ingredientSuggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIngredientSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Escape') {
+      setShowIngredientSuggestions(false);
+      setSelectedIngredientSuggestionIndex(-1);
     }
   };
 
@@ -532,13 +839,13 @@ const FoodForm = ({ food, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
+
     setSubmitting(true);
     try {
       // Handle image data
       let imageData = null;
       let originalFilename = null;
-      
+
       if (formData.image && formData.image instanceof File) {
         // Convert file to base64
         imageData = await new Promise((resolve, reject) => {
@@ -565,20 +872,23 @@ const FoodForm = ({ food, onSubmit }) => {
         category_id: parseInt(formData.category_id),
         subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : null,
         price: parseFloat(formData.price),
-        tax: parseFloat(formData.tax),
+        tax: formData.tax === '' ? 0 : parseFloat(formData.tax),
         tax_type: formData.tax_type,
-        discount: parseFloat(formData.discount),
+        discount: formData.discount === '' ? 0 : parseFloat(formData.discount),
         discount_type: formData.discount_type,
         available_time_starts: formData.available_time_starts,
         available_time_ends: formData.available_time_ends,
         veg: formData.veg,
+        isPizza: formData.isPizza ? 1 : 0,
         status: formData.status,
         restaurant_id: formData.restaurant_id,
-        position: parseInt(formData.position),
+        position: formData.position ? parseInt(formData.position) : null,
         sku: formData.sku,
         barcode: formData.barcode,
-        stock_type: formData.stock_type,
-        item_stock: parseInt(formData.item_stock),
+        stock_type: formData.stock_type || 'unlimited',
+        item_stock: formData.stock_type === 'limited' && formData.item_stock !== ''
+          ? parseInt(formData.item_stock)
+          : null,
         sell_count: parseInt(formData.sell_count),
         maximum_cart_quantity: formData.maxPurchaseQty ? parseInt(formData.maxPurchaseQty) : null,
         track_inventory: formData.trackInventory ? 1 : 0,
@@ -591,13 +901,13 @@ const FoodForm = ({ food, onSubmit }) => {
 
       if (result && result.success) {
         console.log('Food created successfully:', result);
-        
+
         // Save food-allergin relationships if allergens are selected
         if (selectedAllergins.length > 0) {
           try {
             const allerginIds = selectedAllergins.map(allergin => allergin.id);
             const relationshipResult = await window.myAPI?.updateFoodAllergins(result.food_id, allerginIds);
-            
+
             if (relationshipResult && relationshipResult.success) {
               console.log('Food-allergin relationships saved successfully');
             } else {
@@ -613,7 +923,7 @@ const FoodForm = ({ food, onSubmit }) => {
           try {
             const adonIds = selectedAdons.map(adon => adon.id);
             const adonResult = await window.myAPI?.updateFoodAdons(result.food_id, adonIds);
-            
+
             if (adonResult && adonResult.success) {
               console.log('Food-addon relationships saved successfully');
             } else {
@@ -622,6 +932,39 @@ const FoodForm = ({ food, onSubmit }) => {
           } catch (error) {
             console.error('Error saving food-addon relationships:', error);
           }
+        }
+
+        // Save food-ingredient relationships if ingredients are selected
+        if (selectedIngredients.length > 0 && formData.category_id) {
+          try {
+            console.log('Processing ingredients for food:', result.food_id);
+            console.log('Selected ingredients:', selectedIngredients);
+            console.log('Category ID:', formData.category_id);
+
+            // Use the complex processing function that handles all the logic
+            const ingredientNames = selectedIngredients.map(ingredient => ingredient.name);
+            console.log('Ingredient names to process:', ingredientNames);
+
+            const ingredientResult = await window.myAPI?.processFoodIngredients(
+              result.food_id,
+              parseInt(formData.category_id),
+              ingredientNames
+            );
+
+            console.log('processFoodIngredients result:', ingredientResult);
+
+            if (ingredientResult && ingredientResult.success) {
+              console.log('Food-ingredient relationships processed successfully:', ingredientResult.data);
+            } else {
+              console.error('Failed to process food-ingredient relationships:', ingredientResult?.message);
+            }
+          } catch (error) {
+            console.error('Error processing food-ingredient relationships:', error);
+          }
+        } else {
+          console.log('No ingredients to save or no category selected');
+          console.log('selectedIngredients.length:', selectedIngredients.length);
+          console.log('formData.category_id:', formData.category_id);
         }
 
         // Save variations and variation options if they exist
@@ -638,13 +981,13 @@ const FoodForm = ({ food, onSubmit }) => {
                   max: variation.max ? parseInt(variation.max) : null,
                   is_required: variation.is_required || false
                 };
-                
+
                 const variationResult = await window.myAPI?.createVariation(variationData);
-                
+
                 if (variationResult) {
                   const variationId = variationResult;
                   console.log('Variation created successfully:', variationId);
-                  
+
                   // Create variation options
                   for (const option of variation.options) {
                     if (option.option_name) {
@@ -657,7 +1000,7 @@ const FoodForm = ({ food, onSubmit }) => {
                         stock_type: option.stock_type || 'unlimited',
                         sell_count: parseInt(option.sell_count) || 0
                       };
-                      
+
                       const optionResult = await window.myAPI?.createVariationOption(optionData);
                       if (optionResult) {
                         console.log('Variation option created successfully:', optionResult);
@@ -676,7 +1019,7 @@ const FoodForm = ({ food, onSubmit }) => {
             console.error('Error saving variations:', error);
           }
         }
-        
+
         navigate('/dashboard/food-management');
       } else {
         console.error('Failed to create food:', result?.message);
@@ -695,7 +1038,7 @@ const FoodForm = ({ food, onSubmit }) => {
     const errorClasses = hasError ? "border-red-500 focus:ring-red-500" : "";
     const focusClasses = focusedField === fieldName && !hasError ? "border-primaryLight focus:ring-primaryLight focus:border-primaryLight" : "";
     const normalClasses = !hasError && focusedField !== fieldName ? "border-gray-300 hover:border-primaryLight" : "";
-    
+
     return `${baseClasses} ${errorClasses} ${focusClasses} ${normalClasses}`;
   };
 
@@ -714,14 +1057,14 @@ const FoodForm = ({ food, onSubmit }) => {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <form onSubmit={handleSubmit} onFocus={handleFormFocus} onClick={handleFormClick} onBlur={handleInputBlur} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         {/* Basic Information Section */}
         <div className="mb-8">
           <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
             <Info className="h-5 w-5 text-primaryLight mr-2" />
             <h2 className="text-lg font-semibold">Basic Information</h2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <div className="mb-4">
@@ -794,7 +1137,7 @@ const FoodForm = ({ food, onSubmit }) => {
             <Tag className="h-5 w-5 text-primaryLight mr-2" />
             <h2 className="text-lg font-semibold">Category & Position</h2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -856,6 +1199,7 @@ const FoodForm = ({ food, onSubmit }) => {
                   onBlur={() => setFocusedField('')}
                   className={`${getInputClasses('veg')} appearance-none pr-8`}
                 >
+                  <option value="">Select Food Type</option>
                   <option value={0}>Non-Veg</option>
                   <option value={1}>Veg</option>
                 </select>
@@ -879,7 +1223,180 @@ const FoodForm = ({ food, onSubmit }) => {
             </div>
           </div>
 
-          <div className="mb-4">
+          <div className="my-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Is Pizza */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Is Pizza</label>
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" name="isPizza" checked={formData.isPizza} onChange={handleChange} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
+                  <span className="ml-3 text-sm font-medium text-gray-700">{formData.isPizza ? 'Yes' : 'No'}</span>
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">Enable if this is a pizza item</p>
+            </div>
+
+            {/* Product Notes Toggle */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Product Notes</label>
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" name="allowNotes" checked={formData.allowNotes} onChange={handleChange} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
+                  <span className="ml-3 text-sm font-medium text-gray-700">{formData.allowNotes ? 'ON' : 'OFF'}</span>
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">Allow staff to add custom notes while ordering</p>
+            </div>
+
+            {/* Default Product Note */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Default Product Note</label>
+              <input
+                type="text"
+                name="productNote"
+                value={formData.productNote}
+                onChange={handleChange}
+                onFocus={() => setFocusedField('productNote')}
+                onBlur={() => setFocusedField('')}
+                disabled={!formData.allowNotes}
+                className={`${getInputClasses('productNote')} ${!formData.allowNotes ? 'opacity-50 cursor-not-allowed' : ''}`}
+                placeholder="e.g., No onions, Extra spicy"
+                title={!formData.allowNotes ? 'Enable Product Notes to add a default note' : ''}
+              />
+            </div>
+          </div>
+
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Ingredients Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ingredients {!formData.category_id && <span className="text-gray-400">(Select category first)</span>}
+              </label>
+
+              {/* Search Input */}
+              <div className="relative">
+                <input
+                  name="ingredientInput"
+                  type="text"
+                  value={ingredientInput}
+                  onChange={handleIngredientInputChange}
+                  onKeyDown={handleIngredientKeyDown}
+                  onFocus={handleIngredientFocus}
+                  onBlur={() => setTimeout(() => setShowIngredientSuggestions(false), 200)}
+                  className={`${getInputClasses('ingredientInput')} ${!formData.category_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  placeholder={formData.category_id ? "Click to see all ingredients, type to search" : "Select category first to enable ingredients"}
+                  disabled={!formData.category_id}
+                />
+
+                {/* Suggestions dropdown */}
+                {showIngredientSuggestions && ingredientSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {ingredientSuggestions.map((ingredient, index) => (
+                      <div
+                        key={ingredient.id}
+                        className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${index === selectedIngredientSuggestionIndex
+                            ? 'bg-primary text-white'
+                            : 'hover:bg-gray-100'
+                          }`}
+                        onClick={() => handleIngredientSelect(ingredient)}
+                      >
+                        {ingredient.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Selected ingredients tags */}
+              {selectedIngredients.length > 0 && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Selected Ingredients:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedIngredients.map((ingredient) => (
+                      <div
+                        key={ingredient.id}
+                        className="flex items-center bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm"
+                      >
+                        <span>{ingredient.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleIngredientRemove(ingredient.id)}
+                          className="ml-2 text-orange-600 hover:text-orange-800"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Allergin Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Allergins</label>
+
+              {/* Search Input */}
+              <div className="relative">
+                <input
+                  name="allerginInput"
+                  type="text"
+                  value={allerginInput}
+                  onChange={handleAllerginInputChange}
+                  onKeyDown={handleAllerginKeyDown}
+                  onFocus={handleAllerginFocus}
+                  onBlur={() => setTimeout(() => setShowAllerginSuggestions(false), 200)}
+                  className={getInputClasses('allerginInput')}
+                  placeholder="Click to see all allergens, type to search"
+                />
+
+                {/* Suggestions dropdown */}
+                {showAllerginSuggestions && allerginSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {allerginSuggestions.map((allergin, index) => (
+                      <div
+                        key={allergin.id}
+                        className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${index === selectedSuggestionIndex
+                            ? 'bg-primary text-white'
+                            : 'hover:bg-gray-100'
+                          }`}
+                        onClick={() => handleAllerginSelect(allergin)}
+                      >
+                        {allergin.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Selected allergens tags */}
+              {selectedAllergins.length > 0 && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Selected Allergins:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedAllergins.map((allergin) => (
+                      <div
+                        key={allergin.id}
+                        className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                      >
+                        <span>{allergin.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleAllerginRemove(allergin.id)}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Allergen Ingredients</label>
             <input
               type="text"
@@ -891,69 +1408,9 @@ const FoodForm = ({ food, onSubmit }) => {
               className={getInputClasses('allergenIngredients')}
               placeholder="e.g., Contains peanuts, gluten"
             />
-          </div>
+          </div> */}
 
-          {/* Allergin Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Allergins</label>
-            
-            {/* Search Input */}
-            <div className="relative">
-              <input
-                type="text"
-                value={allerginInput}
-                onChange={handleAllerginInputChange}
-                onKeyDown={handleAllerginKeyDown}
-                onFocus={handleAllerginFocus}
-                onBlur={() => setTimeout(() => setShowAllerginSuggestions(false), 200)}
-                className={getInputClasses('allerginInput')}
-                placeholder="Click to see all allergens, type to search"
-              />
-              
-              {/* Suggestions dropdown */}
-              {showAllerginSuggestions && allerginSuggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                  {allerginSuggestions.map((allergin, index) => (
-                    <div
-                      key={allergin.id}
-                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                        index === selectedSuggestionIndex 
-                          ? 'bg-primary text-white' 
-                          : 'hover:bg-gray-100'
-                      }`}
-                      onClick={() => handleAllerginSelect(allergin)}
-                    >
-                      {allergin.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* Selected allergens tags */}
-            {selectedAllergins.length > 0 && (
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Selected Allergins:</label>
-                <div className="flex flex-wrap gap-2">
-                  {selectedAllergins.map((allergin) => (
-                    <div
-                      key={allergin.id}
-                      className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                    >
-                      <span>{allergin.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleAllerginRemove(allergin.id)}
-                        className="ml-2 text-blue-600 hover:text-blue-800"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+
         </div>
 
         {/* Price & Availability Section */}
@@ -962,7 +1419,7 @@ const FoodForm = ({ food, onSubmit }) => {
             <DollarSign className="h-5 w-5 text-primaryLight mr-2" />
             <h2 className="text-lg font-semibold">Price & Availability</h2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <div className="mb-4">
@@ -1096,20 +1553,42 @@ const FoodForm = ({ food, onSubmit }) => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
-                <div className="relative">
-                  <select
-                    name="stock_type"
-                    value={formData.stock_type}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('stock_type')}
-                    onBlur={() => setFocusedField('')}
-                    className={`${getInputClasses('stock_type')} appearance-none pr-8`}
-                  >
-                    <option value="unlimited">Unlimited</option>
-                    <option value="limited">Limited</option>
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                    <div className="relative">
+                      <select
+                        name="stock_type"
+                        value={formData.stock_type}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('stock_type')}
+                        onBlur={() => setFocusedField('')}
+                        className={`${getInputClasses('stock_type')} appearance-none pr-8`}
+                      >
+                        <option value="">Select Stock Type</option>
+                        <option value="unlimited">Unlimited</option>
+                        <option value="limited">Limited</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  {formData.stock_type === 'limited' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                      <input
+                        type="number"
+                        name="item_stock"
+                        value={formData.item_stock}
+                        onChange={handleChange}
+                        onFocus={(e) => { setFocusedField('item_stock'); handleAnyInputFocus(e, 'item_stock', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                        onClick={(e) => { handleAnyInputClick(e, 'item_stock', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                        onBlur={() => setFocusedField('')}
+                        className={getInputClasses('item_stock')}
+                        min="0"
+                        placeholder="Enter stock amount"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1122,14 +1601,15 @@ const FoodForm = ({ food, onSubmit }) => {
             <Package className="h-5 w-5 text-primaryLight mr-2" />
             <h2 className="text-lg font-semibold">Adons</h2>
           </div>
-          
+
           {/* Adon Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Adons</label>
-            
+
             {/* Search Input */}
             <div className="relative">
               <input
+                name="adonInput"
                 type="text"
                 value={adonInput}
                 onChange={handleAdonInputChange}
@@ -1139,18 +1619,17 @@ const FoodForm = ({ food, onSubmit }) => {
                 className={getInputClasses('adonInput')}
                 placeholder="Click to see all adons, type to search"
               />
-              
+
               {/* Suggestions dropdown */}
               {showAdonSuggestions && adonSuggestions.length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
                   {adonSuggestions.map((adon, index) => (
                     <div
                       key={adon.id}
-                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                        index === selectedAdonSuggestionIndex 
-                          ? 'bg-primary text-white' 
+                      className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${index === selectedAdonSuggestionIndex
+                          ? 'bg-primary text-white'
                           : 'hover:bg-gray-100'
-                      }`}
+                        }`}
                       onClick={() => handleAdonSelect(adon)}
                     >
                       <div className="flex justify-between items-center">
@@ -1162,7 +1641,7 @@ const FoodForm = ({ food, onSubmit }) => {
                 </div>
               )}
             </div>
-            
+
             {/* Selected adons tags */}
             {selectedAdons.length > 0 && (
               <div className="mt-3">
@@ -1206,7 +1685,7 @@ const FoodForm = ({ food, onSubmit }) => {
               Add Variation
             </button>
           </div>
-          
+
           <div className="space-y-6">
             {formData.variations?.map((variation, vIndex) => (
               <div key={vIndex} className="border border-gray-200 rounded-lg p-6 bg-gray-50">
@@ -1228,6 +1707,7 @@ const FoodForm = ({ food, onSubmit }) => {
                       Variation Name <span className="text-red-500">*</span>
                     </label>
                     <input
+                      name={`variation_${vIndex}_name`}
                       type="text"
                       value={variation.name || ''}
                       onChange={(e) => handleVariationChange(vIndex, 'name', e.target.value)}
@@ -1256,327 +1736,265 @@ const FoodForm = ({ food, onSubmit }) => {
                           name={`type-${vIndex}`}
                           checked={variation.type === 'multiple'}
                           onChange={() => handleVariationChange(vIndex, 'type', 'multiple')}
-                          className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300"/>
-                       <span className="ml-2 text-sm text-gray-700">Multiple Selection</span>
-                     </label>
-                   </div>
-                 </div>
-               </div>
+                          className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300" />
+                        <span className="ml-2 text-sm text-gray-700">Multiple Selection</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Min Selections</label>
-                   <input
-                     type="number"
-                     value={variation.min || 1}
-                     onChange={(e) => handleVariationChange(vIndex, 'min', e.target.value)}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
-                     min="1"
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Max Selections</label>
-                   <input
-                     type="number"
-                     value={variation.max || ''}
-                     onChange={(e) => handleVariationChange(vIndex, 'max', e.target.value)}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
-                     min="1"
-                   />
-                 </div>
-                 <div className="flex items-center pt-6">
-                   <label className="inline-flex items-center">
-                     <input
-                       type="checkbox"
-                       checked={variation.is_required || false}
-                       onChange={(e) => handleVariationChange(vIndex, 'is_required', e.target.checked)}
-                       className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300 rounded"
-                     />
-                     <span className="ml-2 text-sm text-gray-700">Required</span>
-                   </label>
-                 </div>
-               </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Min Selections</label>
+                    <input
+                      name={`variation_${vIndex}_min`}
+                      type="number"
+                      value={variation.min || 1}
+                      onChange={(e) => handleVariationChange(vIndex, 'min', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                      min="1"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Selections</label>
+                    <input
+                      name={`variation_${vIndex}_max`}
+                      type="number"
+                      value={variation.max || ''}
+                      onChange={(e) => handleVariationChange(vIndex, 'max', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                      min="1"
+                    />
+                  </div>
+                  <div className="flex items-center pt-6">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={variation.is_required || false}
+                        onChange={(e) => handleVariationChange(vIndex, 'is_required', e.target.checked)}
+                        className="h-4 w-4 text-primaryLight focus:ring-primaryLight border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Required</span>
+                    </label>
+                  </div>
+                </div>
 
-               <div className="space-y-4">
-                 <div className="flex items-center justify-between">
-                   <label className="block text-sm font-medium text-gray-700">Options</label>
-                   <button
-                     type="button"
-                     onClick={() => handleAddOption(vIndex)}
-                     className="flex items-center text-primaryLight hover:text-primaryDark text-sm"
-                   >
-                     <Plus className="h-4 w-4 mr-1" />
-                     Add Option
-                   </button>
-                 </div>
-                 
-                 {variation.options?.map((option, oIndex) => (
-                   <div key={oIndex} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end bg-white p-4 rounded-lg border">
-                     <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                         Option Name <span className="text-red-500">*</span>
-                       </label>
-                       <input
-                         type="text"
-                         value={option.option_name || ''}
-                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_name', e.target.value)}
-                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
-                         required
-                       />
-                     </div>
-                     <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-1">Additional Price (€)</label>
-                       <input
-                         type="number"
-                         value={option.option_price || 0}
-                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_price', e.target.value)}
-                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
-                         step="0.01"
-                         min="0"
-                       />
-                     </div>
-                     <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
-                       <select
-                         value={option.stock_type || 'unlimited'}
-                         onChange={(e) => handleOptionChange(vIndex, oIndex, 'stock_type', e.target.value)}
-                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
-                       >
-                         <option value="unlimited">Unlimited</option>
-                         <option value="limited">Limited</option>
-                       </select>
-                     </div>
-                     <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-1">Total Stock</label>
-                                                <input
-                           type="number"
-                           value={option.total_stock || 0}
-                           onChange={(e) => handleOptionChange(vIndex, oIndex, 'total_stock', e.target.value)}
-                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
-                           min="0"
-                           disabled={option.stock_type === 'unlimited'}
-                         />
-                     </div>
-                     <div>
-                       <button
-                         type="button"
-                         onClick={() => handleRemoveOption(vIndex, oIndex)}
-                         className="flex items-center text-red-600 hover:text-red-800 text-sm"
-                       >
-                         <Trash2 className="h-4 w-4 mr-1" />
-                         Remove
-                       </button>
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             </div>
-           ))}
-         </div>
-       </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">Options</label>
+                    <button
+                      type="button"
+                      onClick={() => handleAddOption(vIndex)}
+                      className="flex items-center text-primaryLight hover:text-primaryDark text-sm"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Option
+                    </button>
+                  </div>
 
-       {/* Inventory Section */}
-     <div className="mb-8">
-  <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
-    <Package className="h-5 w-5 text-primaryLight mr-2" />
-    <h2 className="text-lg font-semibold">Inventory</h2>
-  </div>
-
-  <div className="space-y-6">
-    {/* SKU and Barcode in one line */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="p-4 border border-gray-200 rounded-lg">
-        <label className="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
-        <input
-          type="text"
-          name="sku"
-          value={formData.sku}
-          onChange={handleChange}
-          className={getInputClasses('sku')}
-          placeholder="e.g., ABC-123"
-        />
-      </div>
-      <div className="p-4 border border-gray-200 rounded-lg">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
-        <input
-          type="text"
-          name="barcode"
-          value={formData.barcode}
-          onChange={handleChange}
-          className={getInputClasses('barcode')}
-          placeholder="EAN, UPC, GTIN, etc"
-        />
-      </div>
-    </div>
-
-    {/* Inventory Tracking Toggle */}
-    <div className="p-4 border border-gray-200 rounded-lg">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="text-sm font-medium text-gray-700">Track Inventory</h3>
-          <p className="text-xs text-gray-500">Enable to track stock levels for this item</p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input 
-            type="checkbox" 
-            name="trackInventory"
-            checked={formData.trackInventory}
-            onChange={handleChange}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
-          <span className="ml-3 text-sm font-medium text-gray-700">
-            {formData.trackInventory ? 'ON' : 'OFF'}
-          </span>
-        </label>
-      </div>
-      
-      {formData.trackInventory && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item Stock</label>
-            <input
-              type="number"
-              name="item_stock"
-              value={formData.item_stock}
-              onChange={handleChange}
-              className={getInputClasses('item_stock')}
-              min="0"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Low Inventory Threshold</label>
-            <input
-              type="number"
-              name="lowInventory"
-              value={formData.lowInventory}
-              onChange={handleChange}
-              className={getInputClasses('lowInventory')}
-              min="1"
-            />
+                  {variation.options?.map((option, oIndex) => (
+                    <div key={oIndex} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end bg-white p-4 rounded-lg border">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Option Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          name={`variation_${vIndex}_option_${oIndex}_option_name`}
+                          type="text"
+                          value={option.option_name || ''}
+                          onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_name', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Additional Price (€)</label>
+                        <input
+                          name={`variation_${vIndex}_option_${oIndex}_option_price`}
+                          type="number"
+                          value={option.option_price || ''}
+                          onChange={(e) => handleOptionChange(vIndex, oIndex, 'option_price', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                          step="0.01"
+                          min="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                        <select
+                          value={option.stock_type || ''}
+                          onChange={(e) => handleOptionChange(vIndex, oIndex, 'stock_type', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                        >
+                          <option value="">Select Stock Type</option>
+                          <option value="unlimited">Unlimited</option>
+                          <option value="limited">Limited</option>
+                        </select>
+                      </div>
+                      {option.stock_type === 'limited' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Stock Type</label>
+                          <input
+                            name={`variation_${vIndex}_option_${oIndex}_total_stock`}
+                            type="number"
+                            value={option.total_stock !== undefined && option.total_stock !== null ? option.total_stock : ''}
+                            onChange={(e) => handleOptionChange(vIndex, oIndex, 'total_stock', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primaryLight focus:border-primaryLight"
+                            min="0"
+                            placeholder="Enter stock amount"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveOption(vIndex, oIndex)}
+                          className="flex items-center text-red-600 hover:text-red-800 text-sm"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Inventory Section */}
+        <div className="mb-8">
+          <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
+            <Package className="h-5 w-5 text-primaryLight mr-2" />
+            <h2 className="text-lg font-semibold">Inventory</h2>
+          </div>
+
+          <div className="space-y-6">
+            {/* SKU and Barcode in one line */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border border-gray-200 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
+                <input
+                  type="text"
+                  name="sku"
+                  value={formData.sku}
+                  onChange={handleChange}
+                  className={getInputClasses('sku')}
+                  placeholder="e.g., ABC-123"
+                />
+              </div>
+              <div className="p-4 border border-gray-200 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                <input
+                  type="text"
+                  name="barcode"
+                  value={formData.barcode}
+                  onChange={handleChange}
+                  className={getInputClasses('barcode')}
+                  placeholder="EAN, UPC, GTIN, etc"
+                />
+              </div>
+            </div>
+
+            {/* Inventory Tracking Toggle */}
+            <div className="p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700">Track Inventory</h3>
+                  <p className="text-xs text-gray-500">Enable to track stock levels for this item</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="trackInventory"
+                    checked={formData.trackInventory}
+                    onChange={handleChange}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
+                  <span className="ml-3 text-sm font-medium text-gray-700">
+                    {formData.trackInventory ? 'ON' : 'OFF'}
+                  </span>
+                </label>
+              </div>
+
+              {formData.trackInventory && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Item Stock</label>
+                    <input
+                      type="number"
+                      name="item_stock"
+                      value={formData.item_stock}
+                      onChange={handleChange}
+                      onFocus={(e) => { setFocusedField('item_stock'); handleAnyInputFocus(e, 'item_stock', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                      onClick={(e) => { handleAnyInputClick(e, 'item_stock', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                      onBlur={() => setFocusedField('')}
+                      className={getInputClasses('item_stock')}
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Low Inventory Threshold</label>
+                    <input
+                      type="number"
+                      name="lowInventory"
+                      value={formData.lowInventory}
+                      onChange={handleChange}
+                      onFocus={(e) => { setFocusedField('lowInventory'); handleAnyInputFocus(e, 'lowInventory', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                      onClick={(e) => { handleAnyInputClick(e, 'lowInventory', e.target.value || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(e.target.value || ''); } }}
+                      onBlur={() => setFocusedField('')}
+                      className={getInputClasses('lowInventory')}
+                      min="1"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+
+
+        {/* Form Actions */}
+        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/food-management')}
+            className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primaryDark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            {submitting ? 'Creating...' : (food ? 'Update Food Item' : 'Add Food Item')}
+          </button>
+        </div>
+      </form>
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={() => hideKeyboard()}
+        activeInput={activeInput}
+        onInputChange={(input, inputName) => {
+          if (inputName === 'ingredientInput') {
+            setIngredientInput(input);
+          } else if (inputName === 'allerginInput') {
+            setAllerginInput(input);
+          } else if (inputName === 'adonInput') {
+            setAdonInput(input);
+          } else {
+            updateFieldFromKeyboard(inputName, input);
+          }
+        }}
+        onInputBlur={handleInputBlur}
+        inputValue={getValueForActiveInput(activeInput)}
+      />
     </div>
-  </div>
-</div>
-
-       {/* Additional Options */}
-       <div className="mb-8">
-         <div className="flex items-center mb-4 pb-2 border-b border-gray-200">
-           <Clock className="h-5 w-5 text-primaryLight mr-2" />
-           <h2 className="text-lg font-semibold">Additional Options</h2>
-         </div>
-         
-         <div className="space-y-6">
-           {/* Product Notes Toggle */}
-           <div className="p-4 border border-gray-200 rounded-lg">
-             <div className="flex items-center justify-between mb-3">
-               <div>
-                 <h3 className="text-sm font-medium text-gray-700">Product Notes</h3>
-                 <p className="text-xs text-gray-500">Allow staff to add custom notes while ordering</p>
-               </div>
-               <label className="relative inline-flex items-center cursor-pointer">
-                 <input 
-                   type="checkbox" 
-                   name="allowNotes"
-                   checked={formData.allowNotes}
-                   onChange={handleChange}
-                   className="sr-only peer"
-                 />
-                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
-                 <span className="ml-3 text-sm font-medium text-gray-700">
-                   {formData.allowNotes ? 'ON' : 'OFF'}
-                 </span>
-               </label>
-             </div>
-             
-             {formData.allowNotes && (
-               <div className="mt-3">
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Default Product Note</label>
-                 <input
-                   type="text"
-                   name="productNote"
-                   value={formData.productNote}
-                   onChange={handleChange}
-                   onFocus={() => setFocusedField('productNote')}
-                   onBlur={() => setFocusedField('')}
-                   className={`${getInputClasses('productNote')} ` }
-                   placeholder="e.g., No onions, Extra spicy"
-                 />
-               
-               </div>
-             )}
-           </div>
-
-           {/* Recommended Toggle */}
-           {/* <div className="p-4 border border-gray-200 rounded-lg">
-             <div className="flex items-center justify-between">
-               <div>
-                 <h3 className="text-sm font-medium text-gray-700">Recommended Item</h3>
-                 <p className="text-xs text-gray-500">Mark this item as recommended</p>
-               </div>
-               <label className="relative inline-flex items-center cursor-pointer">
-                 <input 
-                   type="checkbox" 
-                   name="recommended"
-                   checked={formData.recommended}
-                   onChange={handleChange}
-                   className="sr-only peer"
-                 />
-                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
-                 <span className="ml-3 text-sm font-medium text-gray-700">
-                   {formData.recommended ? 'ON' : 'OFF'}
-                 </span>
-               </label>
-             </div>
-           </div> */}
-
-           {/* Status Toggle */}
-           {/* <div className="p-4 border border-gray-200 rounded-lg">
-             <div className="flex items-center justify-between">
-               <div>
-                 <h3 className="text-sm font-medium text-gray-700">Status</h3>
-                 <p className="text-xs text-gray-500">Enable or disable this item</p>
-               </div>
-               <label className="relative inline-flex items-center cursor-pointer">
-                 <input 
-                   type="checkbox" 
-                   name="status"
-                   checked={formData.status}
-                   onChange={handleChange}
-                   className="sr-only peer"
-                 />
-                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primaryLight/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primaryLight"></div>
-                 <span className="ml-3 text-sm font-medium text-gray-700">
-                   {formData.status ? 'Active' : 'Inactive'}
-                 </span>
-               </label>
-             </div>
-           </div> */}
-         </div>
-       </div>
-
-       {/* Form Actions */}
-       <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-         <button
-           type="button"
-           onClick={() => navigate('/foods')}
-           className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight transition-colors"
-         >
-           Cancel
-         </button>
-         <button
-           type="submit"
-           disabled={submitting}
-           className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primaryDark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-         >
-           {submitting ? 'Creating...' : (food ? 'Update Food Item' : 'Add Food Item')}
-         </button>
-       </div>
-     </form>
-   </div>
- );
+  );
 };
 
 export default FoodForm;

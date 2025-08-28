@@ -1,10 +1,10 @@
 @import "tailwindcss";
 @theme {
 
-  --color-bgColor:#f8faff;
-  --color-primary:#032d81;
-  --color-primaryLight:#20407f;
-  --color-primaryExtraLight:#20407f1b;
+  --color-bgColor: var(--color-dashboardBackground, #f0f8ff);
+  --color-primary:#003C58;
+  --color-primaryLight:#005a9c;
+  --color-primaryExtraLight:#005a9c1b;
   --color-secondary:#D4B85F;
 }
 
@@ -14,12 +14,13 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden; /* Prevent body scroll */
-  background-color: #f0f0f0;
+  background-color: var(--color-dashboardBackground, #f0f8ff);
 }
 
 #root {
   height: 100vh;
   overflow: hidden; /* Prevent root scroll */
+  background-color: var(--color-dashboardBackground, #f0f8ff);
 }
 
 /* Dashboard specific styles for full height with original spacing */
@@ -29,6 +30,7 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   padding: 8px; /* Restore original padding */
+  background-color: var(--color-dashboardBackground, #f0f8ff);
 }
 
 .dashboard-content {
@@ -36,7 +38,7 @@ html, body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 8px; /* Restore original padding */
+  padding: 6px; 
 }
 
 .dashboard-main {
@@ -44,14 +46,12 @@ html, body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 8px; /* Restore original padding */
 }
 
 .dashboard-scrollable {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px; /* Restore original padding */
 }
 
 @layer components {
@@ -102,6 +102,18 @@ html, body {
   
   .border-primaryExtraLight {
     border-color: var(--color-primaryExtraLight);
+  }
+  
+  .bg-dashboardBackground {
+    background-color: var(--color-dashboardBackground);
+  }
+  
+  .text-dashboardBackground {
+    color: var(--color-dashboardBackground);
+  }
+  
+  .border-dashboardBackground {
+    border-color: var(--color-dashboardBackground);
   }
   
   .bg-brown-400 {

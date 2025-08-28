@@ -224,4 +224,8 @@ For technical support or feature requests, please contact the development team.
 **GPOS** - Empowering restaurants with modern, efficient, and reliable point-of-sale solutions.
 
 
+new db update 
+new table for new food items 
+without binary 
+
 

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Edit, Plus, X, Trash2 } from 'lucide-react';
+import VirtualKeyboard from '../../VirtualKeyboard';
+import useVirtualKeyboard from '../../../hooks/useVirtualKeyboard';
 
 const SubCategoryManagement = () => {
   const [subCategories, setSubCategories] = useState([]);
@@ -14,6 +16,22 @@ const SubCategoryManagement = () => {
 const [mainCategories, setMainCategories] = useState([]);
 const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 const [subCategoryToDelete, setSubCategoryToDelete] = useState(null);
+
+  // Virtual Keyboard integration for modal inputs
+  const {
+    showKeyboard,
+    activeInput,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    handleInputBlur,
+    hideKeyboard
+  } = useVirtualKeyboard(['subcat_name', 'subcat_position']);
+
+  const getKeyboardValue = (name) => {
+    if (name === 'subcat_name') return newSubCategory.name || '';
+    if (name === 'subcat_position') return (newSubCategory.position ?? '').toString();
+    return '';
+  };
 
 const fetchMainCategories = async()=>{
   try{
@@ -139,6 +157,7 @@ useEffect(()=>{
   };
 
   return (
+    <>
     <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-semibold text-gray-800">Sub Category List</h2>
@@ -273,6 +292,9 @@ useEffect(()=>{
                     name="name"
                     value={newSubCategory.name}
                     onChange={handleInputChange}
+                    onFocus={(e) => { handleAnyInputFocus(e, 'subcat_name', newSubCategory.name || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(newSubCategory.name || ''); } }}
+                    onClick={(e) => { handleAnyInputClick(e, 'subcat_name', newSubCategory.name || ''); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput(newSubCategory.name || ''); } }}
+                    onBlur={handleInputBlur}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                     placeholder="e.g., Chicken Burgers"
                     required
@@ -288,6 +310,9 @@ useEffect(()=>{
                     name="position"
                     value={newSubCategory.position}
                     onChange={handleInputChange}
+                    onFocus={(e) => { handleAnyInputFocus(e, 'subcat_position', (newSubCategory.position ?? '').toString()); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput((newSubCategory.position ?? '').toString()); } }}
+                    onClick={(e) => { handleAnyInputClick(e, 'subcat_position', (newSubCategory.position ?? '').toString()); if (window.keyboard && typeof window.keyboard.setInput === 'function') { window.keyboard.setInput((newSubCategory.position ?? '').toString()); } }}
+                    onBlur={handleInputBlur}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primaryLight"
                     placeholder="e.g., 1"
                     min="1"
@@ -357,6 +382,21 @@ useEffect(()=>{
         </div>
       )}
     </div>
+    <VirtualKeyboard
+      isVisible={showKeyboard}
+      onClose={() => hideKeyboard()}
+      activeInput={activeInput}
+      onInputChange={(input, inputName) => {
+        if (inputName === 'subcat_name') {
+          setNewSubCategory(prev => ({ ...prev, name: input }));
+        } else if (inputName === 'subcat_position') {
+          setNewSubCategory(prev => ({ ...prev, position: input }));
+        }
+      }}
+      onInputBlur={handleInputBlur}
+      inputValue={getKeyboardValue(activeInput)}
+    />
+    </>
   );
 };
 

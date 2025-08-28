@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS order_details (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    food_id INTEGER NOT NULL,
+    order_id INTEGER NOT NULL,
+    price REAL NOT NULL,
+    food_details TEXT,
+    item_note TEXT,
+    variation TEXT,
+    add_ons TEXT,
+    ingredients TEXT,
+    discount_on_food REAL DEFAULT 0,
+    discount_type TEXT,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    tax_amount REAL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    total_add_on_price REAL DEFAULT 0,
+    issynicronized BOOLEAN DEFAULT 0,
+    isdeleted BOOLEAN DEFAULT 0,
+    FOREIGN KEY (food_id) REFERENCES food(id),
+    FOREIGN KEY (order_id) REFERENCES orders(id)
+); 

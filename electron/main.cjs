@@ -21,7 +21,10 @@ const { registerFloorIpcHandlers } = require('./ipchandler/floor.cjs');
 const { registerEmployeeIpcHandlers } = require('./ipchandler/employee.cjs');
 const { registerCustomerIpcHandlers } = require('./ipchandler/customer.cjs');
 const { registerOrdersIpcHandlers } = require('./ipchandler/orders.cjs');
+const { registerOrderDetailsIpcHandlers } = require('./ipchandler/orderDetails.cjs');
 const { registerCouponIpcHandlers } = require('./ipchandler/coupon.cjs');
+const { registerVoucherIpcHandlers } = require('./ipchandler/voucher.cjs');
+const { registerHotelIpcHandlers } = require('./ipchandler/hotel.cjs');
 const { initDatabase } = require('./init-database.cjs');
 
 async function createWindow() {
@@ -29,21 +32,12 @@ async function createWindow() {
   const { screen } = require('electron');
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
-  
-  // Calculate window size with 10% margin from all sides
-  const marginPercent = 0.10;
-  const windowWidth = Math.floor(screenWidth * (1 - 2 * marginPercent));
-  const windowHeight = Math.floor(screenHeight * (1 - 2 * marginPercent));
-  
-  // Calculate position to center the window
-  const x = Math.floor((screenWidth - windowWidth) / 2);
-  const y = Math.floor((screenHeight - windowHeight) / 2);
 
   const win = new BrowserWindow({
-    width: windowWidth,
-    height: windowHeight,
-    x: x,
-    y: y,
+    width: screenWidth,
+    height: screenHeight,
+    x: 0,
+    y: 0,
     minWidth: 800,
     minHeight: 600,
     resizable: true,
@@ -148,7 +142,10 @@ app.whenReady().then(async () => {
   registerEmployeeIpcHandlers();
   registerCustomerIpcHandlers();
   registerOrdersIpcHandlers();
+  registerOrderDetailsIpcHandlers();
   registerCouponIpcHandlers();
+  registerVoucherIpcHandlers();
+  registerHotelIpcHandlers();
   
   // Initialize database tables
   initDatabase();
@@ -160,30 +157,32 @@ app.whenReady().then(async () => {
     win.minimize();
   });
 
-  ipcMain.on('window:maximize', () => {
-    if (win.isMaximized()) {
-      win.unmaximize();
-    } else {
-      win.maximize();
-    }
-  });
+  // Only allow minimize - no maximize or close from main window
+  // ipcMain.on('window:maximize', () => {
+  //   if (win.isMaximized()) {
+  //     win.unmaximize();
+  //   } else {
+  //     win.maximize();
+  //   }
+  // });
 
+  // Close handler for login pages only
   ipcMain.on('window:close', () => {
     win.close();
   });
 
-  ipcMain.handle('window:isMaximized', () => {
-    return win.isMaximized();
-  });
+  // ipcMain.handle('window:isMaximized', () => {
+  //   return win.isMaximized();
+  // });
 
   // Handle maximize/unmaximize events
-  win.on('maximize', () => {
-    console.log('Window maximized');
-  });
+  // win.on('maximize', () => {
+  //   console.log('Window maximized');
+  // });
 
-  win.on('unmaximize', () => {
-    console.log('Window unmaximized');
-  });
+  // win.on('unmaximize', () => {
+  //   console.log('Window unmaximized');
+  // });
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
