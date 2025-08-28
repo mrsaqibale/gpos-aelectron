@@ -2533,6 +2533,73 @@ const RunningOrders = () => {
     setSelectedStatus('New');
   };
 
+  // Handle modify order - load order details back into cart
+  const handleModifyOrder = () => {
+    if (!selectedPlacedOrder) {
+      showError('Please select an order to modify');
+      return;
+    }
+
+    // Clear current cart first
+    setCartItems([]);
+    setAppliedCoupon(null);
+    setSelectedTable('');
+    setSelectedPersons('');
+    setSelectedFloor('');
+    setSelectedCustomer(null);
+    setMergeTable1('');
+    setMergeTable2('');
+    setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+    setEditingCartItem(null);
+    setFoodQuantity(1);
+    setSelectedVariations({});
+    setSelectedAdons([]);
+    setSelectedOrderType('');
+
+    // Load order details back into cart
+    if (selectedPlacedOrder.items && selectedPlacedOrder.items.length > 0) {
+      // Convert order items back to cart items
+      const cartItemsFromOrder = selectedPlacedOrder.items.map((item, index) => ({
+        id: Date.now() + index, // Generate unique IDs
+        food: item.food,
+        variations: item.variations || {},
+        adons: item.adons || [],
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        addedAt: new Date().toISOString()
+      }));
+
+      setCartItems(cartItemsFromOrder);
+      setCartItemId(Date.now() + cartItemsFromOrder.length + 1);
+    }
+
+    // Load customer information
+    if (selectedPlacedOrder.customer) {
+      setSelectedCustomer(selectedPlacedOrder.customer);
+    }
+
+    // Load order type
+    if (selectedPlacedOrder.orderType) {
+      setSelectedOrderType(selectedPlacedOrder.orderType);
+    }
+
+    // Load table information if it's a table order
+    if (selectedPlacedOrder.table && selectedPlacedOrder.table !== 'None') {
+      setSelectedTable(selectedPlacedOrder.table);
+    }
+
+    // Load applied coupon if any
+    if (selectedPlacedOrder.coupon) {
+      setAppliedCoupon(selectedPlacedOrder.coupon);
+    }
+
+    // Remove the order from placed orders since we're modifying it
+    setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
+    setSelectedPlacedOrder(null);
+
+    showSuccess('Order loaded for modification. You can now edit the items.');
+  };
+
   // Get status badge styling
   const getStatusBadgeStyle = (status) => {
     switch (status) {
@@ -2764,7 +2831,10 @@ const RunningOrders = () => {
                   <Eye size={14} />
                   ORDER DETAILS
                 </button>
-                <button className="flex-1 text-[13px] h-10 bg-[#f3be25] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button 
+                  onClick={handleModifyOrder}
+                  disabled={!selectedPlacedOrder}
+                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#f3be25] text-white hover:bg-[#e6b31e]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <Edit size={14} />
                   MODIFY ORDER
                 </button>
