@@ -223,6 +223,7 @@ const RunningOrders = () => {
 
   // Order Type State
   const [selectedOrderType, setSelectedOrderType] = useState('In Store');
+  const [isSinglePayMode, setIsSinglePayMode] = useState(false);
 
   // Use the custom hook for keyboard functionality
   const {
@@ -1306,31 +1307,33 @@ const RunningOrders = () => {
     setNumericKeyboardInput(input);
     if (numericActiveInput === 'discountAmount') {
       setDiscountAmount(input);
-    } else if (numericActiveInput === 'paymentAmount') {
-      setPaymentAmount(input);
-      if (selectedPaymentMethod === 'Cash') {
+          } else if (numericActiveInput === 'paymentAmount') {
+        setPaymentAmount(input);
+        if (selectedPaymentMethod === 'Cash') {
+          setGivenAmount(input);
+          // Calculate change based on the total
+          if (input) {
+            const total = isSinglePayMode ? calculateSinglePayTotals().total : 
+                         selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+            const change = parseFloat(input) - total;
+            setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+          } else {
+            setChangeAmount('0.00');
+          }
+        }
+      } else if (numericActiveInput === 'givenAmount') {
         setGivenAmount(input);
-        // Calculate change based on the split bill total
+        setPaymentAmount(input);
+        // Calculate change based on the total
         if (input) {
-          const splitBillTotal = calculateSplitBillTotal();
-          const change = parseFloat(input) - splitBillTotal;
+          const total = isSinglePayMode ? calculateSinglePayTotals().total : 
+                       selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+          const change = parseFloat(input) - total;
           setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
         } else {
           setChangeAmount('0.00');
         }
       }
-    } else if (numericActiveInput === 'givenAmount') {
-      setGivenAmount(input);
-      setPaymentAmount(input);
-      // Calculate change based on the split bill total
-      if (input) {
-        const splitBillTotal = calculateSplitBillTotal();
-        const change = parseFloat(input) - splitBillTotal;
-        setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
-      } else {
-        setChangeAmount('0.00');
-      }
-    }
   };
 
   // Custom handler for numeric keyboard key presses
@@ -2446,6 +2449,54 @@ const RunningOrders = () => {
     // Don't clear selectedSplitBill - we want to keep it for split bill finalization
   };
 
+  const resetFinalizeSaleModalForSinglePay = () => {
+    setSelectedPaymentMethod('Cash');
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+    setAddedPayments([]);
+    setFinalizeDiscountAmount('');
+    setSendSMS(false);
+    setSelectedCurrency('EUR');
+    setCurrencyAmount('');
+    setIsSinglePayMode(true);
+    setSelectedSplitBill(null);
+    setAppliedCoupon(null); // Clear any applied coupon
+  };
+
+  // Calculate totals for single pay mode
+  const calculateSinglePayTotals = () => {
+    if (!selectedPlacedOrder || !isSinglePayMode) return { subtotal: 0, tax: 0, total: 0 };
+    
+    const subtotal = selectedPlacedOrder.items?.reduce((sum, item) => {
+      return sum + (parseFloat(item.totalPrice) || 0);
+    }, 0) || 0;
+    
+    const tax = subtotal * 0.1; // 10% tax
+    
+    // Calculate discount
+    let discount = 0;
+    if (appliedCoupon) {
+      if (appliedCoupon.discountType === 'percentage') {
+        discount = subtotal * (appliedCoupon.discount / 100);
+        if (appliedCoupon.maxDiscount > 0) {
+          discount = Math.min(discount, appliedCoupon.maxDiscount);
+        }
+      } else {
+        discount = appliedCoupon.discount;
+      }
+    }
+    
+    // Add manual discount
+    if (finalizeDiscountAmount) {
+      discount += parseFloat(finalizeDiscountAmount) || 0;
+    }
+    
+    const total = subtotal + tax - discount;
+    
+    return { subtotal, tax, discount, total };
+  };
+
   // Currency options
   const currencyOptions = [
     { code: 'EUR', symbol: '€', name: 'Euro' },
@@ -2876,6 +2927,16 @@ const RunningOrders = () => {
           {showInvoiceOptions && selectedPlacedOrder && (
             <div data-invoice-options className="absolute bottom-37 left-40 transform -translate-x-7 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
               <div className="flex flex-col gap-1">
+                <button
+                  onClick={() => {
+                    resetFinalizeSaleModalForSinglePay();
+                    setIsSinglePayMode(true);
+                    setShowFinalizeSaleModal(true);
+                    setShowInvoiceOptions(false);
+                  }}
+                  className="w-32 bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors text-xs">
+                  Single Pay
+                </button>
                 <button
                   onClick={handleOpenSplitBillModal}
                   className="w-32 bg-gray-300 text-black font-medium rounded px-3 py-2 text-center hover:bg-gray-400 transition-colors text-xs">
@@ -4656,7 +4717,8 @@ const RunningOrders = () => {
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
                 <h2 className="text-xl font-bold">
-                  {selectedSplitBill ? `Finalize Sale - Split Bill ${selectedSplitBill.id}` : 'Finalize Sale'}
+                  {isSinglePayMode ? 'Finalize Sale - Single Pay' : 
+                   selectedSplitBill ? `Finalize Sale - Split Bill ${selectedSplitBill.id}` : 'Finalize Sale'}
                 </h2>
                 <button
                   onClick={() => setShowFinalizeSaleModal(false)}
@@ -4715,8 +4777,9 @@ const RunningOrders = () => {
                                 setGivenAmount(numericKeyboardInput);
                                 setPaymentAmount(numericKeyboardInput);
                                 if (numericKeyboardInput) {
-                                  const splitBillTotal = calculateSplitBillTotal();
-                                  const change = parseFloat(numericKeyboardInput) - splitBillTotal;
+                                  const total = isSinglePayMode ? calculateSinglePayTotals().total : 
+                                               selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                                  const change = parseFloat(numericKeyboardInput) - total;
                                   setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
                                 } else {
                                   setChangeAmount('0.00');
@@ -4732,8 +4795,9 @@ const RunningOrders = () => {
                                 setNumericKeyboardInput(value);
                               }
                               if (value) {
-                                const splitBillTotal = calculateSplitBillTotal();
-                                const change = parseFloat(value) - splitBillTotal;
+                                const total = isSinglePayMode ? calculateSinglePayTotals().total : 
+                                             selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                                const change = parseFloat(value) - total;
                                 setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
                               } else {
                                 setChangeAmount('0.00');
@@ -4768,8 +4832,9 @@ const RunningOrders = () => {
                                 if (selectedPaymentMethod === 'Cash') {
                                   setGivenAmount(numericKeyboardInput);
                                   if (numericKeyboardInput) {
-                                    const splitBillTotal = calculateSplitBillTotal();
-                                    const change = parseFloat(numericKeyboardInput) - splitBillTotal;
+                                    const total = isSinglePayMode ? calculateSinglePayTotals().total : 
+                                                 selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                                    const change = parseFloat(numericKeyboardInput) - total;
                                     setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
                                   } else {
                                     setChangeAmount('0.00');
@@ -4787,8 +4852,9 @@ const RunningOrders = () => {
                               if (selectedPaymentMethod === 'Cash') {
                                 setGivenAmount(value);
                                 if (value) {
-                                  const splitBillTotal = calculateSplitBillTotal();
-                                  const change = parseFloat(value) - splitBillTotal;
+                                  const total = isSinglePayMode ? calculateSinglePayTotals().total : 
+                                               selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                                  const change = parseFloat(value) - total;
                                   setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
                                 } else {
                                   setChangeAmount('0.00');
@@ -4908,29 +4974,48 @@ const RunningOrders = () => {
                         </div>
                       )}
 
+                      {/* Single Pay Header */}
+                      {isSinglePayMode && selectedPlacedOrder && (
+                        <div className="border-b border-gray-200 pb-2 mb-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-700">Order #{selectedPlacedOrder.id || selectedPlacedOrder.orderNumber}:</span>
+                            <span className="text-sm font-medium text-gray-700">{selectedPlacedOrder.customer?.name || selectedPlacedOrder.customer || 'Walk-in Customer'}</span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Bill Breakdown */}
                       <div className="border-b border-gray-200 pb-2 mb-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-700">Subtotal:</span>
                           <span className="text-sm font-medium text-gray-700">
-                            {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)}
+                            {getCurrencySymbol()}{
+                              isSinglePayMode ? calculateSinglePayTotals().subtotal.toFixed(2) :
+                              selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)
+                            }
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-700">Tax:</span>
                           <span className="text-sm font-medium text-gray-700">
-                            {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)}
+                            {getCurrencySymbol()}{
+                              isSinglePayMode ? calculateSinglePayTotals().tax.toFixed(2) :
+                              selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)
+                            }
                           </span>
                         </div>
-                        {(selectedSplitBill ? calculateSplitBillDiscount() : calculateCartDiscount()) > 0 && (
+                        {(isSinglePayMode ? calculateSinglePayTotals().discount : (selectedSplitBill ? calculateSplitBillDiscount() : calculateCartDiscount())) > 0 && (
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-green-600">Discount:</span>
                             <span className="text-sm font-medium text-green-600">
-                              -{getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)}
+                              -{getCurrencySymbol()}{
+                                isSinglePayMode ? calculateSinglePayTotals().discount.toFixed(2) :
+                                selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
+                              }
                             </span>
                           </div>
                         )}
-                        {(selectedSplitBill ? calculateSplitBillCharge() : cartCharge) > 0 && (
+                        {(isSinglePayMode ? 0 : (selectedSplitBill ? calculateSplitBillCharge() : cartCharge)) > 0 && (
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-gray-700">Charge:</span>
                             <span className="text-sm font-medium text-gray-700">
@@ -4938,7 +5023,7 @@ const RunningOrders = () => {
                             </span>
                           </div>
                         )}
-                        {(selectedSplitBill ? calculateSplitBillTips() : cartTips) > 0 && (
+                        {(isSinglePayMode ? 0 : (selectedSplitBill ? calculateSplitBillTips() : cartTips)) > 0 && (
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium text-gray-700">Tips:</span>
                             <span className="text-sm font-medium text-gray-700">
@@ -4956,7 +5041,10 @@ const RunningOrders = () => {
                               {appliedCoupon.title} ({appliedCoupon.code}):
                             </span>
                             <span className="text-sm font-medium text-green-600">
-                              -{getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)}
+                              -{getCurrencySymbol()}{
+                                isSinglePayMode ? calculateSinglePayTotals().discount.toFixed(2) :
+                                selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
+                              }
                             </span>
                           </div>
                         </div>
@@ -4965,7 +5053,10 @@ const RunningOrders = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Payable:</span>
                         <span className="text-xl font-bold text-gray-800">
-                          {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)}
+                          {getCurrencySymbol()}{
+                            isSinglePayMode ? calculateSinglePayTotals().total.toFixed(2) :
+                            selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)
+                          }
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -4975,7 +5066,10 @@ const RunningOrders = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold text-gray-800">Due:</span>
                         <span className="text-xl font-bold text-gray-800">
-                          {getCurrencySymbol()}{Math.max(0, (selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal()) - addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0)).toFixed(2)}
+                          {getCurrencySymbol()}{Math.max(0, (
+                            isSinglePayMode ? calculateSinglePayTotals().total :
+                            selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal()
+                          ) - addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0)).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -4999,6 +5093,24 @@ const RunningOrders = () => {
                     </div>
                   )}
 
+                  {/* Single Pay Items */}
+                  {isSinglePayMode && selectedPlacedOrder && selectedPlacedOrder.items && selectedPlacedOrder.items.length > 0 && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-3">Order Items:</h4>
+                      <div className="space-y-2">
+                        {selectedPlacedOrder.items.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center text-sm">
+                            <div className="flex-1">
+                              <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
+                              <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
+                            </div>
+                            <span className="text-gray-800 font-medium">€{(parseFloat(item.totalPrice) || 0).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Additional Options */}
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2">
@@ -5014,7 +5126,8 @@ const RunningOrders = () => {
                       onClick={() => setShowCartDetailsModal(true)}
                       className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
                     >
-                      {selectedSplitBill ? 'Split Bill Details' : 'Cart Details'}
+                      {isSinglePayMode ? 'Order Details' : 
+                       selectedSplitBill ? 'Split Bill Details' : 'Cart Details'}
                     </button>
                   </div>
                 </div>
@@ -5265,7 +5378,10 @@ const RunningOrders = () => {
               {/* Footer - Action Buttons */}
               <div className="p-6 border-t border-gray-200 flex gap-4">
                 <button
-                  onClick={() => setShowFinalizeSaleModal(false)}
+                  onClick={() => {
+                    setShowFinalizeSaleModal(false);
+                    setIsSinglePayMode(false);
+                  }}
                   className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <X size={20} />
@@ -5276,6 +5392,7 @@ const RunningOrders = () => {
                     // Handle payment submission
                     showSuccess('Payment processed successfully!');
                     setShowFinalizeSaleModal(false);
+                    setIsSinglePayMode(false);
                     clearCart();
                     resetFinalizeSaleModal();
                   }}
@@ -5406,55 +5523,96 @@ const RunningOrders = () => {
             {/* Content */}
             <div className="p-6">
               <div className="space-y-3">
+                {/* Items List for Single Pay Mode */}
+                {isSinglePayMode && selectedPlacedOrder && selectedPlacedOrder.items && selectedPlacedOrder.items.length > 0 && (
+                  <div className="border-b border-gray-200 pb-3 mb-3">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Order Items:</h3>
+                    <div className="space-y-2">
+                      {selectedPlacedOrder.items.map((item, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm">
+                          <div className="flex-1">
+                            <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
+                            <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
+                          </div>
+                          <span className="text-gray-800 font-medium">€{(parseFloat(item.totalPrice) || 0).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Item:</span>
                   <span className="font-semibold">
-                    {selectedSplitBill 
-                      ? selectedSplitBill.items.reduce((total, item) => total + (item.quantity || 0), 0)
-                      : cartItems.reduce((total, item) => total + (item.quantity || 0), 0)
+                    {isSinglePayMode && selectedPlacedOrder 
+                      ? selectedPlacedOrder.items.reduce((total, item) => total + (parseInt(item.quantity) || 0), 0)
+                      : selectedSplitBill 
+                        ? selectedSplitBill.items.reduce((total, item) => total + (item.quantity || 0), 0)
+                        : cartItems.reduce((total, item) => total + (item.quantity || 0), 0)
                     }
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Sub Total:</span>
                   <span className="font-semibold">
-                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)}
+                    {getCurrencySymbol()}{
+                      isSinglePayMode ? calculateSinglePayTotals().subtotal.toFixed(2) :
+                      selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)
+                    }
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Discount:</span>
                   <span className="font-semibold">
-                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)}
+                    {getCurrencySymbol()}{
+                      isSinglePayMode ? calculateSinglePayTotals().discount.toFixed(2) :
+                      selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
+                    }
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Discount:</span>
                   <span className="font-semibold">
-                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)}
+                    {getCurrencySymbol()}{
+                      isSinglePayMode ? calculateSinglePayTotals().discount.toFixed(2) :
+                      selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
+                    }
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tax:</span>
                   <span className="font-semibold">
-                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)}
+                    {getCurrencySymbol()}{
+                      isSinglePayMode ? calculateSinglePayTotals().tax.toFixed(2) :
+                      selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)
+                    }
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Charge:</span>
                   <span className="font-semibold">
-                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillCharge().toFixed(2) : cartCharge.toFixed(2)}
+                    {getCurrencySymbol()}{
+                      isSinglePayMode ? '0.00' :
+                      selectedSplitBill ? calculateSplitBillCharge().toFixed(2) : cartCharge.toFixed(2)
+                    }
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Tips:</span>
                   <span className="font-semibold">
-                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTips().toFixed(2) : cartTips.toFixed(2)}
+                    {getCurrencySymbol()}{
+                      isSinglePayMode ? '0.00' :
+                      selectedSplitBill ? calculateSplitBillTips().toFixed(2) : cartTips.toFixed(2)
+                    }
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-200 pt-3">
                   <span className="text-gray-800 font-semibold">Total Payable:</span>
                   <span className="font-bold text-lg">
-                    {getCurrencySymbol()}{selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)}
+                    {getCurrencySymbol()}{
+                      isSinglePayMode ? calculateSinglePayTotals().total.toFixed(2) :
+                      selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)
+                    }
                   </span>
                 </div>
               </div>
