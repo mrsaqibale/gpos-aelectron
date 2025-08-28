@@ -5,7 +5,7 @@ const CustomAlert = ({
   message, 
   isVisible, 
   onClose, 
-  duration = 3000, 
+  duration = 2000, 
   type = 'success'
 }) => {
   const [isShowing, setIsShowing] = useState(false);
@@ -13,10 +13,19 @@ const CustomAlert = ({
   useEffect(() => {
     if (isVisible) {
       setIsShowing(true);
+      
+      // Auto-dismiss after duration
+      const timer = setTimeout(() => {
+        if (onClose) {
+          onClose();
+        }
+      }, duration);
+      
+      return () => clearTimeout(timer);
     } else {
       setIsShowing(false);
     }
-  }, [isVisible]);
+  }, [isVisible, duration, onClose]);
 
   if (!isVisible) return null;
 

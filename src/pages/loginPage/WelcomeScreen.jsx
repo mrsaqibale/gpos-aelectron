@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
-import { ArrowRight, Sparkles, Coffee, Utensils, Users, Clock, X } from 'lucide-react';
+import { ArrowRight, Sparkles, Coffee, Utensils, Users, Clock, X, Key } from 'lucide-react';
 
 const WelcomeScreen = () => {
   const navigate = useNavigate();
@@ -43,6 +43,10 @@ const WelcomeScreen = () => {
 
   const handleGoToLogin = () => {
     navigate('/login');
+  };
+
+  const handleGoToLicense = () => {
+    navigate('/license');
   };
 
   const features = [
@@ -159,13 +163,13 @@ const WelcomeScreen = () => {
           })}
         </div>
 
-        {/* Login Button */}
-        <div className="mb-4">
+        {/* Buttons */}
+        <div className="mb-4 flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={handleGoToLogin}
             onMouseEnter={() => setIsButtonHovered(true)}
             onMouseLeave={() => setIsButtonHovered(false)}
-            className="group relative px-8 py-4 rounded-2xl cursor-pointer font-semibold text-lg transition-all duration-300 transform shadow-sm "
+            className="group relative px-8 py-4 rounded-2xl cursor-pointer font-semibold text-lg transition-all duration-300 transform shadow-sm hover:scale-105"
             style={{
               backgroundColor: themeColors.primary,
               color: 'white',
@@ -181,17 +185,24 @@ const WelcomeScreen = () => {
               />
             </span>
             
-            {/* Button glow effect */}
-            <div 
-              className={`absolute inset-0 rounded-2xl transition-opacity duration-300 ${
-                isButtonHovered ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                background: `linear-gradient(45deg, ${themeColors.primary}, ${themeColors.primaryLight})`,
-                filter: 'blur(5px)',
-                zIndex: -1
-              }}
-            />
+          </button>
+
+          <button
+            onClick={handleGoToLicense}
+            className="group relative px-8 py-4 rounded-2xl cursor-pointer font-semibold text-lg transition-all duration-300 transform shadow-sm hover:scale-105 border-2"
+            style={{
+              backgroundColor: 'white',
+              color: themeColors.primary,
+              borderColor: themeColors.primary,
+              boxShadow: `0 8px 25px ${themeColors.primary}20`
+            }}
+          >
+            <span className="flex items-center gap-3">
+              <Key className="w-5 h-5" />
+              License
+            </span>
+            
+            
           </button>
         </div>
 

@@ -25,7 +25,10 @@ const Employee = () => {
     email: '',
     pin: '',
     confirmPin: '',
-    image: null
+    salaryPerHour: '',
+    image: null,
+    vehicleNumber: '',
+    vehicleType: ''
   });
   const [pinError, setPinError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -90,7 +93,10 @@ const Employee = () => {
       email: employee.email || '',
       pin: '',
       confirmPin: '',
-      image: null
+      salaryPerHour: employee.salaryPerHour || '',
+      image: null,
+      vehicleNumber: employee.vehicleNumber || '',
+      vehicleType: employee.vehicleType || ''
     });
     // Set image preview if employee has an image
     if (employee.imgurl) {
@@ -134,7 +140,10 @@ const Employee = () => {
       email: '',
       pin: '',
       confirmPin: '',
-      image: null
+      salaryPerHour: '',
+      image: null,
+      vehicleNumber: '',
+      vehicleType: ''
     });
     setImagePreview(null);
     setPinError(''); // Clear any previous PIN error messages
@@ -290,6 +299,12 @@ const Employee = () => {
         isSyncronized: 0
       };
 
+      // Add vehicle information for Delivery Man
+      if (newEmployee.role === 'Delivery Man') {
+        employeeData.vehicleNumber = newEmployee.vehicleNumber;
+        employeeData.vehicleType = newEmployee.vehicleType;
+      }
+
       // Only include image data if a new image is selected
       if (newEmployee.image) {
         employeeData.imgurl = imageBase64;
@@ -355,7 +370,10 @@ const Employee = () => {
       email: '',
       pin: '',
       confirmPin: '',
-      image: null
+      salaryPerHour: '',
+      image: null,
+      vehicleNumber: '',
+      vehicleType: ''
     });
     setImagePreview(null);
     setPinError('');
@@ -454,23 +472,37 @@ const Employee = () => {
       return; // Don't hide keyboard if clicking within keyboard
     }
     
-    // Small delay to allow keyboard interactions to complete
+    // Check if focus is moving to another form input field
+    if (e.relatedTarget && e.relatedTarget.tagName === 'INPUT' && e.relatedTarget.closest('form')) {
+      // Don't hide keyboard if moving to another input in the same form
+      return;
+    }
+    
+    // Check if focus is moving to a select element in the form
+    if (e.relatedTarget && e.relatedTarget.tagName === 'SELECT' && e.relatedTarget.closest('form')) {
+      // Don't hide keyboard if moving to a select in the same form
+      return;
+    }
+    
+    // Only hide keyboard if focus is moving outside the form or to non-input elements
     setTimeout(() => {
       setShowKeyboard(false);
       setActiveInput('');
-    }, 300);
+    }, 100);
   };
 
   // Auto-show keyboard for any input focus
   const handleAnyInputFocus = (e, inputName) => {
-    handleInputFocus(inputName);
+    // Only show keyboard if it's not already showing for this input
+    if (!showKeyboard || activeInput !== inputName) {
+      handleInputFocus(inputName);
+    }
   };
 
   // Auto-show keyboard for any input click
   const handleAnyInputClick = (e, inputName) => {
-    if (!showKeyboard || activeInput !== inputName) {
-      handleInputFocus(inputName);
-    }
+    // Always show keyboard on click, regardless of current state
+    handleInputFocus(inputName);
   };
 
   const onKeyboardChange = (input, inputName, buttonType) => {
@@ -485,7 +517,7 @@ const Employee = () => {
     // Handle special button presses
     if (buttonType === 'enter') {
       // Move to next input field or submit form
-      const inputFields = ['firstName', 'lastName', 'role', 'phone', 'email', 'pin', 'confirmPin'];
+      const inputFields = ['firstName', 'lastName', 'role', 'phone', 'salaryPerHour', 'email', 'pin', 'confirmPin'];
       const currentIndex = inputFields.indexOf(inputName);
       if (currentIndex < inputFields.length - 1) {
         const nextField = inputFields[currentIndex + 1];
@@ -534,7 +566,7 @@ const Employee = () => {
               <div className="flex ">
                 {/* Left Side - Form Fields */}
                 <div className="flex-1">
-                  <div className="grid grid-cols-2 gap-5">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         First Name <span className="text-red-500">*</span>
@@ -589,6 +621,9 @@ const Employee = () => {
                         <option value="Manager">Manager</option>
                         <option value="Cashier">Cashier</option>
                         <option value="Chef">Chef</option>
+                        <option value="Waiter">Waiter</option>
+                        <option value="Sweeper">Sweeper</option>
+                        <option value="Delivery Man">Delivery Man</option>
                       </select>
                     </div>
                     
@@ -622,6 +657,71 @@ const Employee = () => {
                         <p className="mt-1 text-xs text-red-600">{phoneError}</p>
                       )}
                     </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Salary per Hour <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="salaryPerHour"
+                        value={newEmployee.salaryPerHour}
+                        onChange={handleInputChange}
+                        onFocus={() => handleAnyInputFocus(null, 'salaryPerHour')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'salaryPerHour')}
+                        className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                    
+                    {/* Vehicle Information - Only show for Delivery Man */}
+                    {newEmployee.role === 'Delivery Man' && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Vehicle Number <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="vehicleNumber"
+                            value={newEmployee.vehicleNumber}
+                            onChange={handleInputChange}
+                            onFocus={() => handleAnyInputFocus(null, 'vehicleNumber')}
+                            onBlur={handleInputBlur}
+                            onClick={() => handleAnyInputClick(null, 'vehicleNumber')}
+                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            placeholder="Ex: ABC-123"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Vehicle Type <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="vehicleType"
+                            value={newEmployee.vehicleType}
+                            onChange={handleInputChange}
+                            onFocus={() => handleAnyInputFocus(null, 'vehicleType')}
+                            onBlur={handleInputBlur}
+                            onClick={() => handleAnyInputClick(null, 'vehicleType')}
+                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            required
+                          >
+                            <option value="">Select Vehicle Type</option>
+                            <option value="Bike">Bike</option>
+                            <option value="Car">Car</option>
+                            <option value="Truck">Truck</option>
+                            <option value="Bicycle">Bicycle</option>
+                          </select>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
                 

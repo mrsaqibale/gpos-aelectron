@@ -133,7 +133,7 @@ const RunningOrders = () => {
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
-  const [pizzaSlices, setPizzaSlices] = useState(8);
+  const [pizzaSlices, setPizzaSlices] = useState(4);
   const [selectedIngredients, setSelectedIngredients] = useState([
     'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives',
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
@@ -148,6 +148,10 @@ const RunningOrders = () => {
     'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
   ]);
 
+  // Add state for pizza price
+  const [pizzaPrice, setPizzaPrice] = useState('');
+  const [pizzaNote, setPizzaNote] = useState('');
+
   // Flavor to ingredients mapping
   const flavorIngredients = {
     margherita: ['Mozzarella', 'Tomato Sauce', 'Basil', 'Olive Oil'],
@@ -158,6 +162,18 @@ const RunningOrders = () => {
     'meat-lovers': ['Mozzarella', 'Tomato Sauce', 'Pepperoni', 'Sausage', 'Bacon', 'Ham'],
     supreme: ['Mozzarella', 'Tomato Sauce', 'Pepperoni', 'Sausage', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives'],
     'buffalo-chicken': ['Mozzarella', 'Buffalo Sauce', 'Chicken', 'Red Onions', 'Ranch Drizzle']
+  };
+
+  // Flavor to color mapping
+  const flavorColors = {
+    margherita: '#FF6B6B',      // Red
+    pepperoni: '#FF8E53',       // Orange
+    hawaiian: '#FFD93D',        // Yellow
+    vegetarian: '#6BCF7F',      // Green
+    'bbq-chicken': '#8B4513',   // Brown
+    'meat-lovers': '#DC143C',   // Crimson
+    supreme: '#9370DB',         // Purple
+    'buffalo-chicken': '#FF4500' // Orange Red
   };
 
   // State for tracking selected flavors for each slice
@@ -1625,7 +1641,7 @@ const RunningOrders = () => {
 
   const handlePizzaSlicesChange = (e) => {
     const value = parseInt(e.target.value);
-    if (value >= 2 && value <= 16) {
+    if (value >= 2 && value <= 4) {
       setPizzaSlices(value);
     }
   };
@@ -1686,6 +1702,19 @@ const RunningOrders = () => {
     setCurrentIngredients(ingredients);
   }, [selectedFlavors]);
 
+  // Handle removing an ingredient from current ingredients list
+  const handleRemoveCurrentIngredient = (ingredientToRemove) => {
+    setCurrentIngredients(prev => prev.filter(ingredient => ingredient !== ingredientToRemove));
+  };
+
+  // Handle adding custom note
+  const handleAddCustomNote = () => {
+    if (pizzaNote.trim()) {
+      setCurrentIngredients(prev => [...prev, pizzaNote.trim()]);
+      setPizzaNote('');
+    }
+  };
+
   const renderPizzaSlices = () => {
     const slices = [];
     const angleStep = 360 / pizzaSlices;
@@ -1714,7 +1743,8 @@ const RunningOrders = () => {
       } else if (isSelected) {
         fillColor = "#E6C200"; // Darker gold for selected
       } else if (hasFlavorSelected) {
-        fillColor = "#D4AF37"; // Darker yellow for slices with flavors selected
+        // Use the specific flavor color
+        fillColor = flavorColors[hasFlavorSelected] || "#D4AF37"; // Fallback to darker yellow if flavor not found
       }
 
       slices.push(
@@ -3442,9 +3472,8 @@ const RunningOrders = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                     >
                       <option value="2">2</option>
+                      <option value="3">3</option>
                       <option value="4">4</option>
-                      <option value="6">6</option>
-                      <option value="8">8</option>
                     </select>
                   </div>
                   <div>
@@ -3452,9 +3481,10 @@ const RunningOrders = () => {
                     <div className="flex items-center">
                       <input 
                         type="text" 
-                        value="0.00" 
-                        readOnly
+                        value={pizzaPrice}
+                        onChange={(e) => setPizzaPrice(e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                        placeholder="0.00"
                       />
                       <span className="ml-2 text-sm font-medium text-gray-800">€</span>
                     </div>
@@ -3462,7 +3492,7 @@ const RunningOrders = () => {
                     </div>
 
                 {/* Middle Section - Pizza Visualization & Flavor Selection */}
-                <div className="grid grid-cols-2 gap-8 mb-6">
+                <div className="grid grid-cols-[30%_70%] gap-8 mb-6">
                   {/* Left Panel - Pizza Visualization */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Pizza Visualization</h3>
@@ -3479,7 +3509,7 @@ const RunningOrders = () => {
                   {/* Right Panel - Select Flavors */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Select Flavors</h3>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                       {Array.from({ length: pizzaSlices }, (_, index) => (
                         <div key={index}>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -3491,8 +3521,7 @@ const RunningOrders = () => {
                           <select 
                             value={selectedFlavors[index] || ''}
                             onChange={(e) => handleFlavorChange(index, e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ${
-                              index === 1 ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' : 'border-gray-300'
+                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ${index === 1 ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' : 'border-gray-300'
                             }`}
                           >
                             <option value="">Select flavor...</option>
@@ -3508,20 +3537,25 @@ const RunningOrders = () => {
                       </div>
                       ))}
                     </div>
-                    </div>
-                              </div>
-
-                {/* Bottom Section - Customize Your Pizza */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Customize Your Pizza</h3>
+                    <div className='mt-4'>
                   <div className="flex flex-wrap gap-2">
                     {currentIngredients.length > 0 ? (
                       currentIngredients.map((ingredient) => (
                         <button
                           key={ingredient}
-                          className="bg-primary  text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                        >
-                          {ingredient}
+                              className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 hover:bg-primary/90"
+                            >
+                              <span>{ingredient}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveCurrentIngredient(ingredient);
+                                }}
+                                className="w-4 h-4 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                                title={`Remove ${ingredient}`}
+                              >
+                                <X size={12} className="text-white" />
+                              </button>
                         </button>
                       ))
                     ) : (
@@ -3535,7 +3569,43 @@ const RunningOrders = () => {
                       Showing ingredients from {Object.values(selectedFlavors).filter(f => f).length} selected flavor(s)
                     </div>
                   )}
+                    </div>
+                    <div className="mt-2">
+                  <label htmlFor="customPizzaNote" className="block text-sm font-medium text-gray-700 mb-1">
+                    Add a custom note (optional)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      id="customPizzaNote"
+                      name="customPizzaNote"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="E.g. No onions, extra cheese..."
+                      value={pizzaNote || ''}
+                      onChange={e => setPizzaNote(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddCustomNote();
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={handleAddCustomNote}
+                      disabled={!pizzaNote.trim()}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        pizzaNote.trim() 
+                          ? 'bg-primary text-white hover:bg-primary/90' 
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
+                  </div>
+                </div>
+
+                
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 justify-end mt-6 pt-4 border-t border-gray-200">

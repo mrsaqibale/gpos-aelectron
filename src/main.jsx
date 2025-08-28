@@ -5,6 +5,7 @@ import App from './App.jsx'
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import WelcomeScreen from './pages/loginPage/WelcomeScreen.jsx'
 import POSLogin from './pages/loginPage/PosLogin.jsx'
+import LicenseScreen from './pages/loginPage/LicenseScreen.jsx'
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx'
 import Dashboard from './pages/dashboard/Dashboard.jsx'
 import ManageOrders from './pages/dashboard/ManageOrders.jsx'
@@ -17,6 +18,7 @@ import Coupons from './pages/dashboard/Coupons.jsx'
 import RunningOrders from './pages/dashboard/RunningOrders.jsx'
 import CustomerManagement from './pages/dashboard/CustomerManagement.jsx'
 import AdminPanel from './pages/dashboard/AdminPanel.jsx'
+import ApplicationSettings from './pages/dashboard/ApplicationSettings.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 
 console.log('main.jsx loading...');
@@ -45,6 +47,10 @@ const router = createBrowserRouter([
       {
         path: 'login',
         element: <ErrorBoundary><POSLogin /></ErrorBoundary>,
+      },
+      {
+        path: 'license',
+        element: <ErrorBoundary><LicenseScreen /></ErrorBoundary>,
       },
       {
         path: 'dashboard',
@@ -97,6 +103,10 @@ const router = createBrowserRouter([
           {
             path: 'admin-panel',
             element: <ErrorBoundary><AdminPanel /></ErrorBoundary>
+          },
+          {
+            path: 'application-settings',
+            element: <ErrorBoundary><ApplicationSettings /></ErrorBoundary>
           },
         ],
       },
