@@ -100,6 +100,7 @@ const RunningOrders = () => {
   const [tables, setTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState('');
   const [selectedPersons, setSelectedPersons] = useState('');
+  const [reservedTables, setReservedTables] = useState([]); // Track multiple reserved tables
   const [floorsLoading, setFloorsLoading] = useState(false);
   const [tablesLoading, setTablesLoading] = useState(false);
 
@@ -455,9 +456,9 @@ const RunningOrders = () => {
   // Handle floor selection
   const handleFloorSelect = (floor) => {
     setSelectedFloor(floor.name);
-    // Reset table and persons when floor changes
-    setSelectedTable('');
-    setSelectedPersons('');
+    // Don't reset table selection when changing floors - preserve the reservation
+    // setSelectedTable('');
+    // setSelectedPersons('');
     // Reset merge table selections to initial 2 columns when floor changes
     setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
     fetchTablesByFloor(floor.id); // Pass floor ID instead of name
@@ -879,6 +880,35 @@ const RunningOrders = () => {
     setSelectedTable(tableId);
     // Reset persons when table changes
     setSelectedPersons('');
+  };
+
+  // Check if a table is reserved (previously selected)
+  const isTableReserved = (tableId) => {
+    return reservedTables.some(table => table.id === tableId);
+  };
+
+  // Get the currently selected table details
+  const getSelectedTableDetails = () => {
+    if (!selectedTable) return null;
+    return tables.find(table => table.id.toString() === selectedTable);
+  };
+
+  // Add table to reserved tables
+  const addReservedTable = (tableId, persons) => {
+    const table = tables.find(t => t.id.toString() === tableId);
+    if (table && !isTableReserved(tableId)) {
+      setReservedTables(prev => [...prev, {
+        id: tableId,
+        tableNo: table.table_no,
+        persons: persons,
+        floor: selectedFloor
+      }]);
+    }
+  };
+
+  // Remove table from reserved tables
+  const removeReservedTable = (tableId) => {
+    setReservedTables(prev => prev.filter(table => table.id !== tableId));
   };
 
   // Handle persons selection
@@ -1572,6 +1602,7 @@ const RunningOrders = () => {
     setMergeTable1('');
     setMergeTable2('');
     setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+    setReservedTables([]); // Clear all reserved tables
     setEditingCartItem(null);
     setFoodQuantity(1);
     setSelectedVariations({});
@@ -3860,8 +3891,12 @@ const RunningOrders = () => {
                           <option value="" disabled>Loading tables...</option>
                         ) : tables.length > 0 ? (
                           tables.map((table) => (
-                            <option key={table.id} value={table.id}>
-                              Table {table.table_no} ({table.seat_capacity || 4} seats)
+                            <option 
+                              key={table.id} 
+                              value={table.id}
+                              disabled={isTableReserved(table.id.toString())}
+                            >
+                              Table {table.table_no} ({table.seat_capacity || 4} seats) {isTableReserved(table.id.toString()) ? '- RESERVED' : ''}
                             </option>
                           ))
                         ) : selectedFloor ? (
@@ -3870,6 +3905,33 @@ const RunningOrders = () => {
                           <option value="" disabled>Select a floor first</option>
                         )}
                       </select>
+                      {/* Reserved Tables Indicator */}
+                      {reservedTables.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          <h4 className="text-sm font-medium text-gray-700">Reserved Tables:</h4>
+                          <div className={`space-y-2 ${reservedTables.length > 3 ? 'max-h-32 overflow-y-auto pr-2' : ''}`}>
+                            {reservedTables.map((reservedTable) => (
+                              <div key={reservedTable.id} className="p-2 bg-orange-50 border border-orange-200 rounded-lg flex-shrink-0">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                                    <span className="text-sm text-orange-700 font-medium">
+                                      Table {reservedTable.tableNo} ({reservedTable.persons} persons) - {reservedTable.floor}
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => removeReservedTable(reservedTable.id)}
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                    title="Remove reservation"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Persons Selection Dropdown */}
@@ -3918,6 +3980,17 @@ const RunningOrders = () => {
                   </button>
                   <button
                     disabled={!selectedPersons}
+                    onClick={() => {
+                      // Add the current table to reserved tables
+                      if (selectedTable && selectedPersons) {
+                        addReservedTable(selectedTable, selectedPersons);
+                      }
+                      // Reset current selection
+                      setSelectedTable('');
+                      setSelectedPersons('');
+                      // Close the modal
+                      setShowTableModal(false);
+                    }}
                     className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${selectedPersons
                       ? 'bg-primary text-white hover:bg-primary/90'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -4026,8 +4099,12 @@ const RunningOrders = () => {
                                 <option value="" disabled>Loading tables...</option>
                               ) : tables.length > 0 ? (
                                 getAvailableTablesForSelection(selection.id).map((table) => (
-                                  <option key={table.id} value={table.id}>
-                                    Table {table.table_no} ({table.seat_capacity || 4} seats)
+                                  <option 
+                                    key={table.id} 
+                                    value={table.id}
+                                    disabled={isTableReserved(table.id.toString())}
+                                  >
+                                    Table {table.table_no} ({table.seat_capacity || 4} seats) {isTableReserved(table.id.toString()) ? '- RESERVED' : ''}
                                   </option>
                                 ))
                               ) : selectedFloor ? (
@@ -4081,6 +4158,35 @@ const RunningOrders = () => {
                   </button>
                   <button
                     disabled={mergeTableSelections.filter(s => s.tableId).length < 2}
+                    onClick={() => {
+                      // Get the selected tables for merging
+                      const selectedTables = mergeTableSelections
+                        .filter(selection => selection.tableId)
+                        .map(selection => {
+                          const table = tables.find(t => t.id.toString() === selection.tableId);
+                          return {
+                            id: selection.tableId,
+                            tableNo: table?.table_no,
+                            floor: selectedFloor
+                          };
+                        });
+
+                      // Add all selected tables to reserved tables
+                      selectedTables.forEach(table => {
+                        if (!isTableReserved(table.id)) {
+                          addReservedTable(table.id, 'Merged Table');
+                        }
+                      });
+
+                      // Show success message
+                      showSuccess(`Successfully merged ${selectedTables.length} tables!`);
+
+                      // Close the modal
+                      setShowMergeTableModal(false);
+                      
+                      // Reset merge table selections
+                      setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+                    }}
                     className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${mergeTableSelections.filter(s => s.tableId).length >= 2
                       ? 'bg-primary text-white hover:bg-primary/90'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
