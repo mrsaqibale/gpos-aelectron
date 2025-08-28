@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
-import { ArrowLeft, Key, Shield, CheckCircle, X, Sparkles } from 'lucide-react';
+import { ArrowLeft, Key, Shield, CheckCircle, X, Sparkles, Globe, Wifi, WifiOff } from 'lucide-react';
 
 const LicenseScreen = () => {
   const navigate = useNavigate();
@@ -9,10 +9,106 @@ const LicenseScreen = () => {
   const [licenseKey, setLicenseKey] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [isValid, setIsValid] = useState(null);
+  const [apiResponse, setApiResponse] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [networkStatus, setNetworkStatus] = useState('checking'); // 'checking', 'online', 'offline'
 
   const handleBackToWelcome = () => {
     console.log('Back to Welcome clicked, navigating to /');
     navigate('/');
+  };
+
+  // Check network connectivity
+  const checkNetworkStatus = async () => {
+    try {
+      setNetworkStatus('checking');
+      const response = await fetch(`http://51.21.7.24:8080/api/v1/check/license/test`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      
+      console.log('Network check - Status:', response.status);
+      console.log('Network check - Headers:', response.headers);
+      
+      // If we get any response (even an error), the server is reachable
+      setNetworkStatus('online');
+    } catch (error) {
+      console.log('Network check failed:', error);
+      setNetworkStatus('offline');
+    }
+  };
+
+  // License verification API function
+  const verifyLicense = async (licenseKey) => {
+    try {
+      setNetworkStatus('checking');
+      const response = await fetch(`http://51.21.7.24:8080/api/v1/check/license/${licenseKey}`, {
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        // Response is not JSON, get the text content
+        const textResponse = await response.text();
+        console.log('Non-JSON response:', textResponse);
+        
+        setApiResponse({
+          status: 'error',
+          message: 'Server returned non-JSON response',
+          rawResponse: textResponse,
+          statusCode: response.status
+        });
+        setNetworkStatus('online');
+        
+        return { 
+          success: false, 
+          error: 'INVALID_RESPONSE', 
+          message: `Server returned ${response.status}: ${textResponse.substring(0, 100)}...` 
+        };
+      }
+      
+      const result = await response.json();
+      
+      console.log('API Response:', result);
+      setApiResponse(result);
+      setNetworkStatus('online');
+      
+      if (result.status === 'ok') {
+        return {
+          success: true,
+          hotel: result.hotel,
+          isActive: result.hotel.status,
+          isExpired: new Date(result.hotel.validUntil) < new Date()
+        };
+      } else {
+        return { 
+          success: false, 
+          error: 'INVALID_LICENSE', 
+          message: result.message 
+        };
+      }
+    } catch (error) {
+      console.error('License verification error:', error);
+      setNetworkStatus('offline');
+      
+      // Set a more detailed error response
+      setApiResponse({
+        status: 'error',
+        message: 'Network or parsing error',
+        error: error.message,
+        type: error.name
+      });
+      
+      return { 
+        success: false, 
+        error: 'NETWORK_ERROR', 
+        message: error.message 
+      };
+    }
   };
 
   const handleValidateLicense = async () => {
@@ -21,21 +117,59 @@ const LicenseScreen = () => {
     }
 
     setIsValidating(true);
+    setApiResponse(null);
+    setErrorMessage('');
     
-    // Simulate license validation
-    setTimeout(() => {
-      // For demo purposes, accept any non-empty license key
-      const isValidLicense = licenseKey.trim().length > 0;
-      setIsValid(isValidLicense);
-      setIsValidating(false);
+    try {
+      // Verify license with real API
+      const verificationResult = await verifyLicense(licenseKey);
       
-      if (isValidLicense) {
-        // Navigate to login after successful validation
-        setTimeout(() => {
-          navigate('/login');
-        }, 1500);
+      if (verificationResult.success) {
+        // Check if license is active and not expired
+        if (verificationResult.isActive && !verificationResult.isExpired) {
+          // Check if hotel table exists and has data
+          const tableCheck = await window.myAPI.checkHotelTable();
+          if (!tableCheck.success) {
+            throw new Error('Failed to check hotel table');
+          }
+
+          // Create or update hotel record with licensed status (90500)
+          const hotelData = {
+            name: verificationResult.hotel.hotelName || 'GPOS Restaurant',
+            status: 90500, // Licensed status
+            active: true,
+            isDelete: false,
+            isSyncronized: false
+          };
+
+          const result = await window.myAPI.createOrUpdateHotel(hotelData);
+          if (!result.success) {
+            throw new Error(result.message || 'Failed to update hotel status');
+          }
+
+          setIsValid(true);
+          setIsValidating(false);
+          
+          // Navigate to welcome screen after successful validation
+          setTimeout(() => {
+            navigate('/');
+          }, 3000); // Increased delay to show API response
+        } else {
+          setIsValid(false);
+          setIsValidating(false);
+          setErrorMessage(verificationResult.isExpired ? 'License has expired' : 'License is inactive');
+        }
+      } else {
+        setIsValid(false);
+        setIsValidating(false);
+        setErrorMessage(verificationResult.message || 'Invalid license key');
       }
-    }, 2000);
+    } catch (error) {
+      console.error('Error validating license:', error);
+      setIsValid(false);
+      setIsValidating(false);
+      setErrorMessage(error.message);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -43,6 +177,11 @@ const LicenseScreen = () => {
       handleValidateLicense();
     }
   };
+
+  // Check network status on component mount
+  useEffect(() => {
+    checkNetworkStatus();
+  }, []);
 
   return (
     <div 
@@ -125,6 +264,28 @@ const LicenseScreen = () => {
           <p className="text-gray-500 text-sm">
             Please provide your valid license key to access GPOS
           </p>
+          
+          {/* Network Status Indicator */}
+          <div className="mt-4 flex items-center justify-center gap-2">
+            {networkStatus === 'checking' && (
+              <>
+                <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm text-blue-600">Checking server connection...</span>
+              </>
+            )}
+            {networkStatus === 'online' && (
+              <>
+                <Wifi className="w-4 h-4 text-green-500" />
+                <span className="text-sm text-green-600">Server connected</span>
+              </>
+            )}
+            {networkStatus === 'offline' && (
+              <>
+                <WifiOff className="w-4 h-4 text-red-500" />
+                <span className="text-sm text-red-600">Server offline</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* License Input */}
@@ -202,6 +363,41 @@ const LicenseScreen = () => {
               }}
             />
           </button>
+          
+          {/* Test License Key Button */}
+          <div className="mt-3 text-center space-y-2">
+            <button
+              onClick={() => setLicenseKey('ABC123XYZ789DEF456GHI')}
+              className="text-sm text-gray-500 hover:text-gray-700 underline block"
+            >
+              Use Test License Key
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const response = await fetch('http://51.21.7.24:8080/api/v1/check/license/test');
+                  const text = await response.text();
+                  console.log('Test endpoint response:', text);
+                  setApiResponse({
+                    status: 'test',
+                    message: 'Test endpoint response',
+                    rawResponse: text,
+                    statusCode: response.status
+                  });
+                } catch (error) {
+                  console.error('Test endpoint error:', error);
+                  setApiResponse({
+                    status: 'error',
+                    message: 'Test endpoint failed',
+                    error: error.message
+                  });
+                }
+              }}
+              className="text-sm text-blue-500 hover:text-blue-700 underline block"
+            >
+              Test API Endpoint
+            </button>
+          </div>
         </div>
 
         {/* Success Message */}
@@ -224,9 +420,52 @@ const LicenseScreen = () => {
               <X className="w-6 h-6 text-red-500" />
               <div>
                 <p className="font-semibold text-red-800">Invalid License</p>
-                <p className="text-sm text-red-600">Please check your license key and try again.</p>
+                <p className="text-sm text-red-600">
+                  {errorMessage || 'Please check your license key and try again.'}
+                </p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* API Response Display for Testing */}
+        {apiResponse && (
+          <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200">
+            <div className="flex items-center gap-3 mb-3">
+              <Globe className="w-6 h-6 text-blue-500" />
+              <div>
+                <p className="font-semibold text-blue-800">API Response (Testing)</p>
+                <p className="text-sm text-blue-600">Server: 51.21.7.24:8080</p>
+              </div>
+            </div>
+            
+            <div className="bg-white p-3 rounded-lg border">
+              <pre className="text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap">
+                {apiResponse.rawResponse ? 
+                  `Status: ${apiResponse.statusCode || 'N/A'}\n\nRaw Response:\n${apiResponse.rawResponse}` : 
+                  JSON.stringify(apiResponse, null, 2)
+                }
+              </pre>
+            </div>
+            
+            {apiResponse.status === 'ok' && apiResponse.hotel && (
+              <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><span className="font-medium">Hotel:</span> {apiResponse.hotel.hotelName}</div>
+                  <div><span className="font-medium">Admin:</span> {apiResponse.hotel.adminName}</div>
+                  <div><span className="font-medium">Email:</span> {apiResponse.hotel.adminEmail}</div>
+                  <div><span className="font-medium">Phone:</span> {apiResponse.hotel.adminPhone}</div>
+                  <div><span className="font-medium">Valid Until:</span> {new Date(apiResponse.hotel.validUntil).toLocaleDateString()}</div>
+                  <div><span className="font-medium">Status:</span> 
+                    <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                      apiResponse.hotel.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {apiResponse.hotel.status ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

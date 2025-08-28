@@ -202,6 +202,14 @@ contextBridge.exposeInMainWorld('myAPI', {
   deleteVoucher: (id) => ipcRenderer.invoke('voucher:delete', id),
   searchVoucherByCode: (code) => ipcRenderer.invoke('voucher:searchByCode', code),
 
+  // Hotel
+  checkHotelStatus: () => ipcRenderer.invoke('check-hotel-status'),
+  getHotelInfo: () => ipcRenderer.invoke('get-hotel-info'),
+  createOrUpdateHotel: (hotelData) => ipcRenderer.invoke('create-or-update-hotel', hotelData),
+  updateHotelStatus: (status) => ipcRenderer.invoke('update-hotel-status', status),
+  checkHotelTable: () => ipcRenderer.invoke('check-hotel-table'),
+  getDatabasePath: () => ipcRenderer.invoke('get-database-path'),
+
 });
 
 contextBridge.exposeInMainWorld('api', {
