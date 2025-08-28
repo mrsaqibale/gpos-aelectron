@@ -1532,7 +1532,7 @@ const RunningOrders = () => {
 
   const calculateCartTax = () => {
     const subtotal = calculateCartSubtotal();
-    return subtotal * 0.13; // 13% tax rate
+    return subtotal * 0.135; // 13.5% tax rate
   };
 
   const calculateCartDiscount = () => {
@@ -2259,7 +2259,7 @@ const RunningOrders = () => {
     setSplitBills(prev => prev.map(split => {
       if (split.id === splitBillId) {
         const subtotal = split.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-        const tax = subtotal * 0.13; // 13% tax
+        const tax = subtotal * 0.135; // 13.5% tax
         const total = subtotal + tax + (split.charge || 0) + (split.tips || 0) - (split.discount || 0);
 
         return {
@@ -3240,7 +3240,9 @@ const RunningOrders = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-800">Tax:</span>
-                        <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? ((selectedPlacedOrder.total / 1.13) * 0.13).toFixed(2) : '0.00'}</span>
+                        <span className="text-sm font-bold text-gray-800">
+                          €{selectedPlacedOrder ? (selectedPlacedOrder.total * 0.135 / 1.135).toFixed(2) : '0.00'}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-bold text-gray-800">Total Payable:</span>
