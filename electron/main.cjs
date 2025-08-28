@@ -21,6 +21,7 @@ const { registerFloorIpcHandlers } = require('./ipchandler/floor.cjs');
 const { registerEmployeeIpcHandlers } = require('./ipchandler/employee.cjs');
 const { registerCustomerIpcHandlers } = require('./ipchandler/customer.cjs');
 const { registerOrdersIpcHandlers } = require('./ipchandler/orders.cjs');
+const { registerOrderDetailsIpcHandlers } = require('./ipchandler/orderDetails.cjs');
 const { registerCouponIpcHandlers } = require('./ipchandler/coupon.cjs');
 const { registerVoucherIpcHandlers } = require('./ipchandler/voucher.cjs');
 const { registerHotelIpcHandlers } = require('./ipchandler/hotel.cjs');
@@ -141,6 +142,7 @@ app.whenReady().then(async () => {
   registerEmployeeIpcHandlers();
   registerCustomerIpcHandlers();
   registerOrdersIpcHandlers();
+  registerOrderDetailsIpcHandlers();
   registerCouponIpcHandlers();
   registerVoucherIpcHandlers();
   registerHotelIpcHandlers();
