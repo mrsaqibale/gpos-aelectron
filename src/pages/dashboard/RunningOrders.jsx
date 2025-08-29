@@ -2582,6 +2582,9 @@ const RunningOrders = () => {
       
       // Clear cart completely for new orders
       clearCart();
+      
+      // Automatically set order type to 'In Store' for new orders
+      setSelectedOrderType('In Store');
     }
 
     // Clear scheduled time after successful order placement
