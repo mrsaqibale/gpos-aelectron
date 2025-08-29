@@ -7499,7 +7499,7 @@ const RunningOrders = () => {
       {/* Status Update Modal */}
       {showStatusUpdateModal && selectedOrderForStatusUpdate && (
         <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl">
             {/* Header */}
             <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
               <h2 className="text-xl font-bold">Update Order Status</h2>
@@ -7525,7 +7525,7 @@ const RunningOrders = () => {
 
             {/* Status Selection */}
             <div className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {getStatusesForOrderType(selectedOrderForStatusUpdate.orderType).map((status) => {
                   // For In Store orders, maintain consistent styling for the only enabled button
                   const isInStoreOrder = selectedOrderForStatusUpdate.orderType === 'In Store';
