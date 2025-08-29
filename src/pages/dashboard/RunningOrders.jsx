@@ -1800,6 +1800,10 @@ const RunningOrders = () => {
     setSelectedVariations({});
     setSelectedAdons([]);
     setSelectedOrderType('');
+    
+    // Clear modification flags when starting fresh
+    setIsModifyingOrder(false);
+    setModifyingOrderId(null);
 
     // Show success alert if there were items in the cart
     if (itemCount > 0) {
@@ -2007,7 +2011,17 @@ const RunningOrders = () => {
     }
 
     try {
-    // Map order type based on selection
+      console.log('Starting order placement process...');
+      console.log('Is modifying order:', isModifyingOrder);
+      console.log('Modifying order ID:', modifyingOrderId);
+      
+      // Check if API is available
+      if (!window.myAPI) {
+        showError('API not available. Please refresh the page.');
+        return;
+      }
+      
+      // Map order type based on selection
       let orderType = 'dine_in'; // default for database
     if (selectedOrderType === 'Table') {
         orderType = 'dine_in';
@@ -2041,14 +2055,14 @@ const RunningOrders = () => {
         order_type: orderType,
         restaurant_id: 1, // Default restaurant ID
         delivery_charge: 0, // Can be calculated for delivery
-        additional_charge: cartCharge,
+        additional_charge: 0, // Set to 0 since cartCharge is not in schema
         discount_amount: discount,
         tax_percentage: 13.5, // 13.5% tax rate
-        scheduled: false,
-        failed: false,
-        refunded: false,
-        isdeleted: false,
-        issyncronized: false
+        scheduled: 0, // Convert boolean to integer for SQLite
+        failed: 0, // Convert boolean to integer for SQLite
+        refunded: 0, // Convert boolean to integer for SQLite
+        isdeleted: 0, // Convert boolean to integer for SQLite
+        issyncronized: 0 // Convert boolean to integer for SQLite
       };
 
       let orderId;
@@ -2056,7 +2070,9 @@ const RunningOrders = () => {
       if (isModifyingOrder && modifyingOrderId) {
         // Update existing order
         console.log('Updating existing order:', modifyingOrderId);
+        console.log('Order data to update:', orderData);
         const updateResult = await window.myAPI.updateOrder(modifyingOrderId, orderData);
+        console.log('Update result:', updateResult);
         
         if (!updateResult.success) {
           showError('Failed to update order: ' + updateResult.message);
@@ -2128,20 +2144,157 @@ const RunningOrders = () => {
       });
 
       if (isModifyingOrder && modifyingOrderId) {
-        // Delete existing order details first
-        console.log('Deleting existing order details for order:', modifyingOrderId);
-        const deleteResult = await window.myAPI.deleteOrderDetailsByOrderId(modifyingOrderId);
-        if (!deleteResult.success) {
-          console.warn('Failed to delete existing order details:', deleteResult.message);
+        // Smart update: Get existing order details and compare with new items
+        console.log('Smart updating order details for order:', modifyingOrderId);
+        
+        try {
+          // Get existing order details
+          const existingDetailsResult = await window.myAPI.getOrderDetailsWithFood(modifyingOrderId);
+          if (!existingDetailsResult.success) {
+            console.error('Failed to get existing order details:', existingDetailsResult.message);
+            showError('Failed to get existing order details');
+            return;
+          }
+          
+          const existingDetails = existingDetailsResult.data || [];
+          console.log('Existing order details:', existingDetails);
+          
+          // Process each new cart item
+          for (const newItem of orderDetailsArray) {
+            // Find matching existing item by food_id, variations, and addons
+            const existingItem = existingDetails.find(existing => {
+              // Match by food_id first
+              if (existing.food_id !== newItem.food_id) return false;
+              
+              // Match by variations (if both have variations)
+              if (newItem.variation && existing.variation) {
+                try {
+                  const newVariations = JSON.parse(newItem.variation);
+                  const existingVariations = JSON.parse(existing.variation);
+                  if (JSON.stringify(newVariations) !== JSON.stringify(existingVariations)) {
+                    return false;
+                  }
+                } catch (error) {
+                  console.warn('Error parsing variations:', error);
+                }
+              } else if (newItem.variation !== existing.variation) {
+                return false;
+              }
+              
+              // Match by addons (if both have addons)
+              if (newItem.add_ons && existing.add_ons) {
+                try {
+                  const newAddons = JSON.parse(newItem.add_ons);
+                  const existingAddons = JSON.parse(existing.add_ons);
+                  if (JSON.stringify(newAddons) !== JSON.stringify(existingAddons)) {
+                    return false;
+                  }
+                } catch (error) {
+                  console.warn('Error parsing addons:', error);
+                }
+              } else if (newItem.add_ons !== existing.add_ons) {
+                return false;
+              }
+              
+              return true;
+            });
+            
+            if (existingItem) {
+              // Update existing item
+              console.log('Updating existing item:', existingItem.id);
+              const updateResult = await window.myAPI.updateOrderDetail(existingItem.id, {
+                quantity: newItem.quantity,
+                price: newItem.price,
+                food_details: newItem.food_details,
+                variation: newItem.variation,
+                add_ons: newItem.add_ons,
+                ingredients: newItem.ingredients,
+                discount_on_food: newItem.discount_on_food,
+                tax_amount: newItem.tax_amount,
+                total_add_on_price: newItem.total_add_on_price
+              });
+              
+              if (!updateResult.success) {
+                console.error('Failed to update order detail:', updateResult.message);
+              }
+            } else {
+              // Add new item
+              console.log('Adding new item:', newItem.food_id);
+              const createResult = await window.myAPI.createOrderDetail(newItem);
+              
+              if (!createResult.success) {
+                console.error('Failed to create new order detail:', createResult.message);
+              }
+            }
+          }
+          
+          // Remove items that are no longer in the cart
+          for (const existingItem of existingDetails) {
+            const stillExists = orderDetailsArray.find(newItem => {
+              // Match by food_id first
+              if (existingItem.food_id !== newItem.food_id) return false;
+              
+              // Match by variations (if both have variations)
+              if (newItem.variation && existingItem.variation) {
+                try {
+                  const newVariations = JSON.parse(newItem.variation);
+                  const existingVariations = JSON.parse(existingItem.variation);
+                  if (JSON.stringify(newVariations) !== JSON.stringify(existingVariations)) {
+                    return false;
+                  }
+                } catch (error) {
+                  console.warn('Error parsing variations:', error);
+                }
+              } else if (newItem.variation !== existingItem.variation) {
+                return false;
+              }
+              
+              // Match by addons (if both have addons)
+              if (newItem.add_ons && existingItem.add_ons) {
+                try {
+                  const newAddons = JSON.parse(newItem.add_ons);
+                  const existingAddons = JSON.parse(existingItem.add_ons);
+                  if (JSON.stringify(newAddons) !== JSON.stringify(existingAddons)) {
+                    return false;
+                  }
+                } catch (error) {
+                  console.warn('Error parsing addons:', error);
+                }
+              } else if (newItem.add_ons !== existingItem.add_ons) {
+                return false;
+              }
+              
+              return true;
+            });
+            
+            if (!stillExists) {
+              console.log('Removing item:', existingItem.id);
+              const deleteResult = await window.myAPI.deleteOrderDetail(existingItem.id);
+              
+              if (!deleteResult.success) {
+                console.error('Failed to delete order detail:', deleteResult.message);
+              }
+            }
+          }
+          
+          console.log('Smart update completed');
+          
+        } catch (error) {
+          console.error('Error in smart update:', error);
+          showError('Failed to update order details: ' + error.message);
+          return;
         }
-      }
-
-      // Create order details in database
-      const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
-      
-      if (!orderDetailsResult.success) {
-        showError('Failed to create order details: ' + orderDetailsResult.message);
-        return;
+        
+      } else {
+        // Create new order details
+        console.log('Creating new order details:', orderDetailsArray);
+        const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
+        console.log('Order details result:', orderDetailsResult);
+        
+        if (!orderDetailsResult.success) {
+          showError('Failed to create order details: ' + orderDetailsResult.message);
+          return;
+        }
       }
 
       // Create order object for UI display
@@ -2183,7 +2336,8 @@ const RunningOrders = () => {
 
     } catch (error) {
       console.error('Error placing order:', error);
-      showError('Failed to place order. Please try again.');
+      console.error('Error details:', error.message, error.stack);
+      showError('Failed to place order: ' + error.message);
     }
   };
 
