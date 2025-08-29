@@ -153,6 +153,14 @@ const RunningOrders = () => {
   const [pizzaPrice, setPizzaPrice] = useState('');
   const [pizzaNote, setPizzaNote] = useState('');
 
+  // Schedule Order Modal State
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedScheduleTime, setSelectedScheduleTime] = useState('');
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState('');
+  const [selectedScheduleDateTime, setSelectedScheduleDateTime] = useState('');
+  const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
+  const [hotelInfo, setHotelInfo] = useState(null);
+
   // Flavor to ingredients mapping
   const flavorIngredients = {
     margherita: ['Mozzarella', 'Tomato Sauce', 'Basil', 'Olive Oil'],
@@ -419,11 +427,14 @@ const RunningOrders = () => {
         
         // Filter to only show orders that are not completed, delivered, or canceled
         const activeOrders = result.data.filter(order => {
-          const isActive = order.order_status !== 'completed' && 
-                          order.order_status !== 'delivered' && 
-                          order.order_status !== 'canceled' &&
-                          order.order_status !== 'Canceled';
-          console.log(`Order ${order.id}: status="${order.order_status}", isActive=${isActive}`);
+          const status = order.order_status?.toLowerCase();
+          const isActive = status !== 'completed' && 
+                          status !== 'delivered' && 
+                          status !== 'canceled' &&
+                          status !== 'done' &&
+                          status !== 'finished' &&
+                          status !== 'closed';
+          console.log(`Order ${order.id}: status="${order.order_status}" (normalized: "${status}"), isActive=${isActive}`);
           return isActive;
         });
         
@@ -510,11 +521,9 @@ const RunningOrders = () => {
               waiter: 'Ds Waiter',
               status:
                 dbOrder.order_status === 'pending'
-                  ? 'New'
+                  ? 'Pending'
                   : dbOrder.order_status === 'completed'
-                  ? 'Completed'
-                  : dbOrder.order_status === 'processing'
-                  ? 'In Progress'
+                  ? 'Complete'
                   : dbOrder.order_status === 'ready'
                   ? 'Ready'
                   : dbOrder.order_status,
@@ -537,7 +546,10 @@ const RunningOrders = () => {
               orderType: 'In Store',
               table: 'None',
               waiter: 'Ds Waiter',
-              status: dbOrder.order_status,
+              status: dbOrder.order_status === 'pending' ? 'Pending' : 
+                      dbOrder.order_status === 'completed' ? 'Complete' : 
+                      dbOrder.order_status === 'ready' ? 'Ready' : 
+                      dbOrder.order_status,
               placedAt: dbOrder.created_at,
               databaseId: dbOrder.id
             };
@@ -654,6 +666,11 @@ const RunningOrders = () => {
 
   // Handle floor selection
   const handleFloorSelect = (floor) => {
+    // If in modification mode and current order type is already Table, don't allow changing floors
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing floor selection change');
+      return;
+    }
     setSelectedFloor(floor.name);
     // Don't reset table selection when changing floors - preserve the reservation
     // setSelectedTable('');
@@ -1076,6 +1093,12 @@ const RunningOrders = () => {
 
   // Handle table selection
   const handleTableSelect = (tableId) => {
+    // If in modification mode and current order type is already Table, don't allow table changes
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing table selection change');
+      showWarning('Cannot change table selection while modifying a table order');
+      return;
+    }
     setSelectedTable(tableId);
     // Reset persons when table changes
     setSelectedPersons('');
@@ -1096,6 +1119,11 @@ const RunningOrders = () => {
 
   // Add table to reserved tables
   const addReservedTable = (tableId, persons) => {
+    // If in modification mode and current order type is already Table, don't allow adding reserved tables
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing reserved table addition');
+      return;
+    }
     const table = tables.find(t => t.id.toString() === tableId);
     if (table && !isTableReserved(tableId)) {
       setReservedTables(prev => [...prev, {
@@ -1111,11 +1139,21 @@ const RunningOrders = () => {
 
   // Remove table from reserved tables
   const removeReservedTable = (tableId) => {
+    // If in modification mode and current order type is already Table, don't allow removing reserved tables
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing reserved table removal');
+      return;
+    }
     setReservedTables(prev => prev.filter(table => table.id !== tableId));
   };
 
   // Handle persons selection
   const handlePersonsSelect = (persons) => {
+    // If in modification mode and current order type is already Table, don't allow changing persons
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing persons selection change');
+      return;
+    }
     setSelectedPersons(persons);
   };
 
@@ -1135,6 +1173,11 @@ const RunningOrders = () => {
 
   // Handle merge table button click
   const handleMergeTableClick = () => {
+    // If in modification mode and current order type is already Table, don't allow merge table modal
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing merge table modal');
+      return;
+    }
     setShowTableModal(false);
     setShowMergeTableModal(true);
     // Reset merge table selections to initial state
@@ -1143,6 +1186,11 @@ const RunningOrders = () => {
 
   // Handle back button in merge modal
   const handleBackToTableSelection = () => {
+    // If in modification mode and current order type is already Table, don't allow going back to table selection
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing back to table selection');
+      return;
+    }
     setShowMergeTableModal(false);
     setShowTableModal(true);
     // Reset merge table selections when going back
@@ -1151,6 +1199,11 @@ const RunningOrders = () => {
 
   // Handle merge table selections
   const handleMergeTable1Select = (tableId) => {
+    // If in modification mode and current order type is already Table, don't allow merge table changes
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing merge table 1 selection');
+      return;
+    }
     setMergeTable1(tableId);
     // If the same table is selected in table2, clear it
     if (mergeTable2 === tableId) {
@@ -1161,6 +1214,11 @@ const RunningOrders = () => {
   };
 
   const handleMergeTable2Select = (tableId) => {
+    // If in modification mode and current order type is already Table, don't allow merge table changes
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing merge table 2 selection');
+      return;
+    }
     setMergeTable2(tableId);
     // If the same table is selected in table1, clear it
     if (mergeTable1 === tableId) {
@@ -1172,6 +1230,11 @@ const RunningOrders = () => {
 
   // Handle dynamic merge table selections
   const handleMergeTableSelectionChange = (selectionId, tableId) => {
+    // If in modification mode and current order type is already Table, don't allow merge table changes
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing dynamic merge table selection');
+      return;
+    }
     setMergeTableSelections(prev =>
       prev.map(selection =>
         selection.id === selectionId
@@ -1185,12 +1248,22 @@ const RunningOrders = () => {
 
   // Add more table selection
   const handleAddMoreTableSelection = () => {
+    // If in modification mode and current order type is already Table, don't allow adding more table selections
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing add more table selection');
+      return;
+    }
     const newId = Math.max(...mergeTableSelections.map(s => s.id)) + 1;
     setMergeTableSelections(prev => [...prev, { id: newId, tableId: '' }]);
   };
 
   // Remove table selection
   const handleRemoveTableSelection = (selectionId) => {
+    // If in modification mode and current order type is already Table, don't allow removing table selections
+    if (isModifyingOrder && selectedOrderType === 'Table') {
+      console.log('In modification mode with Table order type - preventing remove table selection');
+      return;
+    }
     if (mergeTableSelections.length > 2) {
       setMergeTableSelections(prev => prev.filter(selection => selection.id !== selectionId));
     }
@@ -2162,7 +2235,8 @@ const RunningOrders = () => {
         additional_charge: 0, // Set to 0 since cartCharge is not in schema
         discount_amount: discount,
         tax_percentage: 13.5, // 13.5% tax rate
-        scheduled: 0, // Convert boolean to integer for SQLite
+        scheduled: selectedScheduleDateTime ? 1 : 0, // Set to 1 if scheduled
+        schedule_at: selectedScheduleDateTime || null, // Add scheduled time
         failed: 0, // Convert boolean to integer for SQLite
         refunded: 0, // Convert boolean to integer for SQLite
         isdeleted: 0, // Convert boolean to integer for SQLite
@@ -2453,7 +2527,7 @@ const RunningOrders = () => {
         return 'None';
       })(),
       waiter: 'Ds Waiter',
-      status: 'New',
+      status: 'Pending',
         placedAt: new Date().toISOString(),
         databaseId: orderId // Store database ID for reference
     };
@@ -2500,6 +2574,9 @@ const RunningOrders = () => {
       // Clear cart completely for new orders
       clearCart();
     }
+
+    // Clear scheduled time after successful order placement
+    setSelectedScheduleDateTime('');
 
     } catch (error) {
       console.error('Error placing order:', error);
@@ -3281,9 +3358,11 @@ const RunningOrders = () => {
 
   // Handle opening status update modal
   const handleOpenStatusUpdateModal = (order, event) => {
-    event.stopPropagation();
+    if (event) {
+      event.stopPropagation();
+    }
     setSelectedOrderForStatusUpdate(order);
-    setSelectedStatus(order.status || 'New');
+    setSelectedStatus(order.status || 'Pending');
     setShowStatusUpdateModal(true);
   };
 
@@ -3295,16 +3374,13 @@ const RunningOrders = () => {
       // Map UI status to database status
       let dbStatus = 'pending';
       switch (selectedStatus) {
-        case 'New':
+        case 'Pending':
           dbStatus = 'pending';
-          break;
-        case 'In Progress':
-          dbStatus = 'processing';
           break;
         case 'Ready':
           dbStatus = 'ready';
           break;
-        case 'Completed':
+        case 'Complete':
           dbStatus = 'completed';
           break;
         default:
@@ -3349,14 +3425,52 @@ const RunningOrders = () => {
         }
       }
 
-      // Update local state
-    setPlacedOrders(prev => prev.map(order =>
-      order.id === selectedOrderForStatusUpdate.id
-        ? { ...order, status: selectedStatus }
-        : order
-    ));
+      // Update local state - remove order if it's completed or canceled, otherwise update status
+      const normalizedStatus = selectedStatus.toLowerCase();
+      const shouldRemove = normalizedStatus === 'complete' || 
+                          normalizedStatus === 'completed' || 
+                          normalizedStatus === 'delivered' || 
+                          normalizedStatus === 'canceled' ||
+                          normalizedStatus === 'done' ||
+                          normalizedStatus === 'finished' ||
+                          normalizedStatus === 'closed';
 
-    showSuccess(`Order status updated to ${selectedStatus}!`);
+      console.log('Status update debug:', {
+        selectedStatus,
+        normalizedStatus,
+        shouldRemove,
+        orderId: selectedOrderForStatusUpdate.id
+      });
+
+      if (shouldRemove) {
+        // Remove the order from running orders immediately
+        console.log('Removing order from running orders:', selectedOrderForStatusUpdate.id);
+        console.log('Current orders before removal:', placedOrders.length);
+        setPlacedOrders(prev => {
+          console.log('Previous orders:', prev.map(o => ({ id: o.id, databaseId: o.databaseId, status: o.status })));
+          const filtered = prev.filter(order => 
+            order.id !== selectedOrderForStatusUpdate.id && 
+            order.databaseId !== selectedOrderForStatusUpdate.databaseId
+          );
+          console.log('Orders after removal:', filtered.length);
+          console.log('Removed order details:', {
+            targetId: selectedOrderForStatusUpdate.id,
+            targetDatabaseId: selectedOrderForStatusUpdate.databaseId
+          });
+          return filtered;
+        });
+        showSuccess(`Order ${selectedStatus.toLowerCase()} and removed from running orders!`);
+      } else {
+        // Update the order status in the list
+        console.log('Updating order status in list:', selectedOrderForStatusUpdate.id);
+        setPlacedOrders(prev => prev.map(order =>
+          (order.id === selectedOrderForStatusUpdate.id || order.databaseId === selectedOrderForStatusUpdate.databaseId)
+            ? { ...order, status: selectedStatus }
+            : order
+        ));
+        showSuccess(`Order status updated to ${selectedStatus}!`);
+      }
+
     setShowStatusUpdateModal(false);
     setSelectedOrderForStatusUpdate(null);
     setSelectedStatus('New');
@@ -3600,12 +3714,8 @@ const RunningOrders = () => {
         }
       }
 
-      // Update order status in local state
-      setPlacedOrders(prev => prev.map(order => 
-        order.id === selectedPlacedOrder.id 
-          ? { ...order, status: 'Canceled' }
-          : order
-      ));
+      // Remove the order from running orders since it's canceled
+      setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
       
       // Close modal and reset
       setShowCancelOrderModal(false);
@@ -3682,17 +3792,121 @@ const RunningOrders = () => {
   // Get status badge styling
   const getStatusBadgeStyle = (status) => {
     switch (status) {
-      case 'New':
-        return 'bg-green-100 text-green-700';
-      case 'In Progress':
+      case 'Pending':
         return 'bg-yellow-100 text-yellow-700';
       case 'Ready':
         return 'bg-blue-100 text-blue-700';
-      case 'Completed':
-        return 'bg-purple-100 text-purple-700';
-      default:
+      case 'Complete':
         return 'bg-green-100 text-green-700';
+      default:
+        return 'bg-yellow-100 text-yellow-700';
     }
+  };
+
+  // Schedule Order Functions
+  const handleOpenScheduleModal = async () => {
+    try {
+      // Fetch hotel information to get opening and closing times
+      if (!window.myAPI) {
+        showError('API not available');
+        return;
+      }
+
+      const hotelResult = await window.myAPI.getHotelInfo();
+      if (!hotelResult.success) {
+        showError('Failed to fetch hotel information');
+        return;
+      }
+
+      setHotelInfo(hotelResult.data);
+      
+      // Set today's date as default
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      setSelectedScheduleDate(todayString);
+      
+      // Generate time slots based on hotel opening and closing times
+      generateTimeSlots(hotelResult.data, todayString);
+      
+      setShowScheduleModal(true);
+    } catch (error) {
+      console.error('Error opening schedule modal:', error);
+      showError('Failed to open schedule modal');
+    }
+  };
+
+  const generateTimeSlots = (hotel, selectedDate) => {
+    if (!hotel.opening_time || !hotel.closeing_time) {
+      showError('Hotel opening/closing times not configured');
+      return;
+    }
+
+    const now = new Date();
+    const selectedDateObj = new Date(selectedDate);
+    const isToday = selectedDateObj.toDateString() === now.toDateString();
+
+    // Parse opening and closing times (assuming format like "09:00" or "09:00:00")
+    const openingTime = hotel.opening_time.split(':').slice(0, 2).join(':');
+    const closingTime = hotel.closeing_time.split(':').slice(0, 2).join(':');
+
+    const slots = [];
+    const startHour = parseInt(openingTime.split(':')[0]);
+    const startMinute = parseInt(openingTime.split(':')[1]);
+    const endHour = parseInt(closingTime.split(':')[0]);
+    const endMinute = parseInt(closingTime.split(':')[1]);
+
+    // Generate 30-minute intervals
+    for (let hour = startHour; hour <= endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        // Skip if this time is after closing time
+        if (hour === endHour && minute >= endMinute) break;
+        
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const slotDateTime = new Date(selectedDate + 'T' + timeString);
+        
+        // If it's today, only show future times
+        if (isToday && slotDateTime <= now) continue;
+        
+        slots.push(timeString);
+      }
+    }
+
+    setAvailableTimeSlots(slots);
+  };
+
+  const handleScheduleDateChange = (date) => {
+    setSelectedScheduleDate(date);
+    setSelectedScheduleTime(''); // Reset time when date changes
+    if (hotelInfo) {
+      generateTimeSlots(hotelInfo, date);
+    }
+  };
+
+  const handleScheduleTimeSelect = (time) => {
+    setSelectedScheduleTime(time);
+  };
+
+  const handleScheduleConfirm = () => {
+    if (!selectedScheduleTime) {
+      showError('Please select a time');
+      return;
+    }
+
+    // Combine date and time
+    const scheduledDateTime = `${selectedScheduleDate}T${selectedScheduleTime}:00`;
+    
+    // Store the scheduled time in the order data
+    // This will be used when placing the order
+    setSelectedScheduleDateTime(scheduledDateTime);
+    
+    setShowScheduleModal(false);
+    showSuccess(`Order scheduled for ${selectedScheduleDate} at ${selectedScheduleTime}`);
+  };
+
+  const handleScheduleCancel = () => {
+    setShowScheduleModal(false);
+    setSelectedScheduleTime('');
+    setSelectedScheduleDate('');
   };
 
   return (
@@ -3818,9 +4032,9 @@ const RunningOrders = () => {
                               </p>
                               <p className="text-xs text-gray-500">{timeAgo}</p>
                             </div>
-                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeStyle(order.status || 'New')}`}>
-                              {order.status || 'NEW'}
-                            </span>
+                                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeStyle(order.status || 'Pending')}`}>
+                  {order.status || 'PENDING'}
+                </span>
                           </div>
 
                         </div>
@@ -4135,11 +4349,23 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => {
+                // If in modification mode and current order type is already Table, don't show table modal
+                if (isModifyingOrder && selectedOrderType === 'Table') {
+                  console.log('In modification mode with Table order type - preventing table modal');
+                  showWarning('Cannot change table selection while modifying a table order');
+                  return;
+                }
                 setSelectedOrderType('Table');
                 setShowTableModal(true);
               }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Table' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
+                       btn-lifted transition-colors cursor-pointer ${
+                         isModifyingOrder && selectedOrderType === 'Table'
+                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                           : selectedOrderType === 'Table' 
+                           ? 'bg-primary text-white' 
+                           : 'bg-white hover:border-primary hover:border-2'
+                       }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"></rect>
               </svg>
@@ -4175,8 +4401,22 @@ const RunningOrders = () => {
               </svg>
               Delivery
             </button>
-            <button className="h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
+            <button 
+              onClick={() => {
+                if (!selectedPlacedOrder) {
+                  showWarning('Please select an order to update its status');
+                  return;
+                }
+                handleOpenStatusUpdateModal(selectedPlacedOrder, null);
+              }}
+              disabled={!selectedPlacedOrder}
+              title={!selectedPlacedOrder ? 'Select an order to update its status' : 'Update order status'}
+              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer ${
+                         selectedPlacedOrder 
+                           ? 'text-black hover:border-primary hover:border-2' 
+                           : 'text-gray-400 cursor-not-allowed'
+                       }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
@@ -4184,10 +4424,19 @@ const RunningOrders = () => {
             </button>
             {/* Status section */}
 
-            <button className="h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
+            <button 
+              onClick={handleOpenScheduleModal}
+              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2 ${
+                         selectedScheduleDateTime 
+                           ? 'bg-primary text-white border-primary' 
+                           : 'text-black hover:border-primary hover:border-2'
+                       }`}>
               <Clock size={14} />
               Due to
+              {selectedScheduleDateTime && (
+                <div className="w-2 h-2 bg-white rounded-full ml-1"></div>
+              )}
             </button>
             <button
               onClick={() => setShowCustomerSearchModal(true)}
@@ -6759,12 +7008,8 @@ const RunningOrders = () => {
                           console.error('Error freeing tables after payment:', error);
                         }
 
-                        // Update the order in local state
-                        setPlacedOrders(prev => prev.map(order => 
-                          order.id === selectedPlacedOrder.id 
-                            ? { ...order, status: 'Completed', paymentMethod: selectedPaymentMethod }
-                            : order
-                        ));
+                        // Remove the order from running orders since it's completed
+                        setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
                       }
 
                     showSuccess('Payment processed successfully!');
@@ -7157,39 +7402,25 @@ const RunningOrders = () => {
                   #{selectedOrderForStatusUpdate.orderNumber}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Current: {selectedOrderForStatusUpdate.status || 'New'}
+                  Current: {selectedOrderForStatusUpdate.status || 'Pending'}
                 </p>
               </div>
             </div>
 
             {/* Status Selection */}
             <div className="p-6">
-              <div className="grid grid-cols-4 gap-3">
-                {/* New Status */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Pending Status */}
                 <button
-                  onClick={() => setSelectedStatus('New')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'New'
-                      ? 'bg-white border-primary text-primary'
-                      : 'bg-primary text-white border-primary'
-                    }`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Plus size={20} />
-                    <span className="font-medium">New</span>
-                  </div>
-                </button>
-
-                {/* In Progress Status */}
-                <button
-                  onClick={() => setSelectedStatus('In Progress')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'In Progress'
+                  onClick={() => setSelectedStatus('Pending')}
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Pending'
                       ? 'bg-white border-primary text-primary'
                       : 'bg-primary text-white border-primary'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Clock size={20} />
-                    <span className="font-medium">In Progress</span>
+                    <span className="font-medium">Pending</span>
                   </div>
                 </button>
 
@@ -7207,17 +7438,17 @@ const RunningOrders = () => {
                   </div>
                 </button>
 
-                {/* Completed Status */}
+                {/* Complete Status */}
                 <button
-                  onClick={() => setSelectedStatus('Completed')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Completed'
+                  onClick={() => setSelectedStatus('Complete')}
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Complete'
                       ? 'bg-white border-primary text-primary'
                       : 'bg-primary text-white border-primary'
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">
                     <Star size={20} />
-                    <span className="font-medium">Completed</span>
+                    <span className="font-medium">Complete</span>
                   </div>
                 </button>
               </div>
@@ -7236,6 +7467,114 @@ const RunningOrders = () => {
                 className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors cursor-pointer"
               >
                 Update Status
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Order Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
+            {/* Header */}
+            <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+              <h2 className="text-xl font-bold">Schedule Order</h2>
+              <button
+                onClick={handleScheduleCancel}
+                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Hotel Information */}
+            {hotelInfo && (
+              <div className="p-4 bg-gray-50 border-b">
+                <div className="text-center">
+                  <h3 className="font-semibold text-gray-800">{hotelInfo.name}</h3>
+                  <p className="text-sm text-gray-600">
+                    Open: {hotelInfo.opening_time} - Close: {hotelInfo.closeing_time}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Date Selection */}
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Date
+                </label>
+                <input
+                  type="date"
+                  value={selectedScheduleDate}
+                  onChange={(e) => handleScheduleDateChange(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              {/* Time Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Time
+                </label>
+                {availableTimeSlots.length > 0 ? (
+                  <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto">
+                    {availableTimeSlots.map((time) => (
+                      <button
+                        key={time}
+                        onClick={() => handleScheduleTimeSelect(time)}
+                        className={`p-3 text-sm rounded-lg border transition-all cursor-pointer ${
+                          selectedScheduleTime === time
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:bg-gray-50'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Clock size={24} className="mx-auto mb-2" />
+                    <p>No available time slots for selected date</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Selected Schedule Display */}
+              {selectedScheduleTime && (
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">Order scheduled for:</p>
+                    <p className="text-lg font-semibold text-blue-800">
+                      {selectedScheduleDate} at {selectedScheduleTime}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={handleScheduleCancel}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScheduleConfirm}
+                disabled={!selectedScheduleTime}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
+                  selectedScheduleTime
+                    ? 'bg-primary text-white hover:bg-primary/90'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Confirm Schedule
               </button>
             </div>
           </div>
