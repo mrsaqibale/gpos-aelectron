@@ -23,7 +23,7 @@ const getModelPath = (modelPath) => {
   }
 };
 
-const { createTable, updateTable, getTableById, getAllTables, getTablesByFloor, getTablesByFloorWithStatus } = getModelPath('tables/tables.js');
+const { createTable, updateTable, getTableById, getAllTables, getTablesByFloor, getTablesByFloorWithStatus, updateTableStatus, updateMultipleTableStatuses } = getModelPath('tables/tables.js');
 
 function registerTableIpcHandlers() {
   ipcMain.handle('table:create', async (event, data) => createTable(data));
@@ -32,6 +32,8 @@ function registerTableIpcHandlers() {
   ipcMain.handle('table:getAll', async () => getAllTables());
   ipcMain.handle('table:getByFloor', async (event, floorId) => getTablesByFloor(floorId));
   ipcMain.handle('table:getByFloorWithStatus', async (event, floorId, status) => getTablesByFloorWithStatus(floorId, status));
+  ipcMain.handle('table:updateStatus', async (event, tableId, status) => updateTableStatus(tableId, status));
+  ipcMain.handle('table:updateMultipleStatuses', async (event, tableIds, status) => updateMultipleTableStatuses(tableIds, status));
 }
 
 module.exports = { registerTableIpcHandlers }; 

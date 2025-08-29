@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS orders (
     order_proof TEXT,
     cash_back_id INTEGER,
     extra_packaging_amount REAL DEFAULT 0,
+    table_details TEXT,
     isdeleted BOOLEAN DEFAULT 0,
     issyncronized BOOLEAN DEFAULT 0,
     FOREIGN KEY (customer_id) REFERENCES customer(id),

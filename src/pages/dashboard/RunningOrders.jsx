@@ -222,6 +222,10 @@ const RunningOrders = () => {
   // Cart Details Modal State
   const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
 
+  // Cancel Order Modal State
+  const [showCancelOrderModal, setShowCancelOrderModal] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
+
   // Order Type State
   const [selectedOrderType, setSelectedOrderType] = useState('In Store');
   const [isSinglePayMode, setIsSinglePayMode] = useState(false);
@@ -493,9 +497,11 @@ const RunningOrders = () => {
                   }
                 : null,
               orderType:
-                dbOrder.order_type === 'dine_in'
-                  ? 'Dine In'
-                  : dbOrder.order_type === 'takeaway'
+                dbOrder.order_type === 'instore'
+                  ? 'In Store'
+                  : dbOrder.order_type === 'table'
+                  ? 'Table'
+                  : dbOrder.order_type === 'collection'
                   ? 'Collection'
                   : dbOrder.order_type === 'delivery'
                   ? 'Delivery'
@@ -1073,6 +1079,8 @@ const RunningOrders = () => {
     setSelectedTable(tableId);
     // Reset persons when table changes
     setSelectedPersons('');
+    // Automatically set order type to "Table" when a table is selected
+    setSelectedOrderType('Table');
   };
 
   // Check if a table is reserved (previously selected)
@@ -1096,6 +1104,8 @@ const RunningOrders = () => {
         persons: persons,
         floor: selectedFloor
       }]);
+      // Automatically set order type to "Table" when adding reserved tables
+      setSelectedOrderType('Table');
     }
   };
 
@@ -1146,6 +1156,8 @@ const RunningOrders = () => {
     if (mergeTable2 === tableId) {
       setMergeTable2('');
     }
+    // Automatically set order type to "Table" when selecting merge tables
+    setSelectedOrderType('Table');
   };
 
   const handleMergeTable2Select = (tableId) => {
@@ -1154,6 +1166,8 @@ const RunningOrders = () => {
     if (mergeTable1 === tableId) {
       setMergeTable1('');
     }
+    // Automatically set order type to "Table" when selecting merge tables
+    setSelectedOrderType('Table');
   };
 
   // Handle dynamic merge table selections
@@ -1165,6 +1179,8 @@ const RunningOrders = () => {
           : selection
       )
     );
+    // Automatically set order type to "Table" when selecting merge tables
+    setSelectedOrderType('Table');
   };
 
   // Add more table selection
@@ -2065,22 +2081,67 @@ const RunningOrders = () => {
       }
       
       // Map order type based on selection
-      let orderType = 'dine_in'; // default for database
-    if (selectedOrderType === 'Table') {
-        orderType = 'dine_in';
-    } else if (selectedOrderType === 'Collection') {
-        orderType = 'takeaway';
-    } else if (selectedOrderType === 'Delivery') {
+      console.log('Mapping order type. selectedOrderType:', selectedOrderType);
+      let orderType = 'instore'; // default for database
+      if (selectedOrderType === 'Table') {
+        orderType = 'table';
+      } else if (selectedOrderType === 'Collection') {
+        orderType = 'collection';
+      } else if (selectedOrderType === 'Delivery') {
         orderType = 'delivery';
       } else if (selectedOrderType === 'In Store') {
-        orderType = 'dine_in';
+        orderType = 'instore';
       }
+      console.log('Mapped to database order type:', orderType);
 
       // Calculate totals
       const subtotal = calculateCartSubtotal();
       const tax = calculateCartTax();
       const discount = calculateCartDiscount();
       const total = calculateCartTotal();
+
+      // Prepare table details for database
+      let tableDetails = null;
+      let tableIdsToReserve = [];
+      
+      if (selectedOrderType === 'Table' && (selectedTable || reservedTables.length > 0)) {
+        // Handle single table selection
+        if (selectedTable) {
+          const table = tables.find(t => t.id.toString() === selectedTable);
+          if (table) {
+            tableDetails = JSON.stringify({
+              tables: [{
+                id: table.id,
+                table_no: table.table_no,
+                floor_name: table.floor_name,
+                persons: selectedPersons || table.seat_capacity || 4
+              }],
+              total_persons: selectedPersons || table.seat_capacity || 4
+            });
+            tableIdsToReserve.push(table.id);
+          }
+        }
+        
+        // Handle merged tables (reserved tables)
+        if (reservedTables.length > 0) {
+          const reservedTableDetails = reservedTables.map(reservedTable => {
+            const table = tables.find(t => t.id.toString() === reservedTable.id);
+            return {
+              id: table?.id || reservedTable.id,
+              table_no: table?.table_no || reservedTable.tableNo,
+              floor_name: table?.floor_name || reservedTable.floor,
+              persons: reservedTable.persons || table?.seat_capacity || 4
+            };
+          });
+          
+          tableDetails = JSON.stringify({
+            tables: reservedTableDetails,
+            total_persons: reservedTableDetails.reduce((sum, table) => sum + (table.persons || 0), 0)
+          });
+          
+          tableIdsToReserve = reservedTableDetails.map(table => table.id);
+        }
+      }
 
       // Prepare order data for database
       const orderData = {
@@ -2105,7 +2166,8 @@ const RunningOrders = () => {
         failed: 0, // Convert boolean to integer for SQLite
         refunded: 0, // Convert boolean to integer for SQLite
         isdeleted: 0, // Convert boolean to integer for SQLite
-        issyncronized: 0 // Convert boolean to integer for SQLite
+        issyncronized: 0, // Convert boolean to integer for SQLite
+        table_details: tableDetails // Add table details
       };
 
       let orderId;
@@ -2124,6 +2186,21 @@ const RunningOrders = () => {
         
         orderId = modifyingOrderId;
         console.log('Order updated successfully');
+        
+        // Update table status to Reserved if this is a table order modification
+        if (tableIdsToReserve.length > 0) {
+          try {
+            console.log('Reserving tables for modified order:', tableIdsToReserve);
+            const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIdsToReserve, 'Reserved');
+            if (tableUpdateResult.success) {
+              console.log('Tables reserved successfully for modified order:', tableUpdateResult.message);
+            } else {
+              console.warn('Failed to reserve tables for modified order:', tableUpdateResult.message);
+            }
+          } catch (error) {
+            console.error('Error reserving tables for modified order:', error);
+          }
+        }
       } else {
         // Create new order
         console.log('Creating new order');
@@ -2136,6 +2213,21 @@ const RunningOrders = () => {
         
         orderId = orderResult.id;
         console.log('Order created successfully');
+        
+        // Update table status to Reserved if this is a table order
+        if (tableIdsToReserve.length > 0) {
+          try {
+            console.log('Reserving tables:', tableIdsToReserve);
+            const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIdsToReserve, 'Reserved');
+            if (tableUpdateResult.success) {
+              console.log('Tables reserved successfully:', tableUpdateResult.message);
+            } else {
+              console.warn('Failed to reserve tables:', tableUpdateResult.message);
+            }
+          } catch (error) {
+            console.error('Error reserving tables:', error);
+          }
+        }
       }
 
       // Prepare order details data
@@ -2349,7 +2441,17 @@ const RunningOrders = () => {
         total: total,
       coupon: appliedCoupon,
         orderType: selectedOrderType,
-      table: selectedTable ? selectedTable : 'None',
+      table: (() => {
+        if (selectedOrderType === 'Table') {
+          if (selectedTable) {
+            const table = tables.find(t => t.id.toString() === selectedTable);
+            return table ? `Table ${table.table_no}` : selectedTable;
+          } else if (reservedTables.length > 0) {
+            return reservedTables.map(rt => `Table ${rt.tableNo}`).join(', ');
+          }
+        }
+        return 'None';
+      })(),
       waiter: 'Ds Waiter',
       status: 'New',
         placedAt: new Date().toISOString(),
@@ -2357,6 +2459,9 @@ const RunningOrders = () => {
     };
 
     if (isModifyingOrder && modifyingOrderId) {
+      console.log('Modifying order. Original order type:', selectedPlacedOrder?.orderType);
+      console.log('Current selectedOrderType:', selectedOrderType);
+      
       // Update existing order in the list
       setPlacedOrders(prev => prev.map(order => 
         order.databaseId === modifyingOrderId 
@@ -2368,14 +2473,33 @@ const RunningOrders = () => {
       setIsModifyingOrder(false);
       setModifyingOrderId(null);
       
+      // Clear cart but preserve order type for potential future modifications
+      setCartItems([]);
+      setAppliedCoupon(null);
+      setSelectedTable('');
+      setSelectedPersons('');
+      setSelectedFloor('');
+      setSelectedCustomer(null);
+      setMergeTable1('');
+      setMergeTable2('');
+      setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+      setReservedTables([]);
+      setEditingCartItem(null);
+      setFoodQuantity(1);
+      setSelectedVariations({});
+      setSelectedAdons([]);
+      // Don't clear selectedOrderType - preserve it for potential future use
+      console.log('Order type preserved after modification:', selectedOrderType);
+      
       showSuccess('Order updated successfully!', 'success');
     } else {
       // Add new order to the list
       setPlacedOrders(prev => [newOrder, ...prev]);
       showSuccess('Order placed successfully!', 'success');
+      
+      // Clear cart completely for new orders
+      clearCart();
     }
-    
-    clearCart();
 
     } catch (error) {
       console.error('Error placing order:', error);
@@ -2752,7 +2876,7 @@ const RunningOrders = () => {
             items: [...split.items, newItem]
           };
         }
-      }m
+      }
       return split;
     }));
 
@@ -3199,6 +3323,30 @@ const RunningOrders = () => {
           showError('Failed to update order status: ' + updateResult.message);
           return;
         }
+        
+        // If order is completed, free the associated tables
+        if (dbStatus === 'completed' && selectedOrderForStatusUpdate.databaseId) {
+          try {
+            // Get the order details to check for table information
+            const orderResult = await window.myAPI.getOrderById(selectedOrderForStatusUpdate.databaseId);
+            if (orderResult.success && orderResult.data.table_details) {
+              const tableDetails = JSON.parse(orderResult.data.table_details);
+              if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
+                const tableIds = tableDetails.tables.map(table => table.id);
+                console.log('Freeing tables:', tableIds);
+                
+                const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
+                if (tableUpdateResult.success) {
+                  console.log('Tables freed successfully:', tableUpdateResult.message);
+                } else {
+                  console.warn('Failed to free tables:', tableUpdateResult.message);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error freeing tables:', error);
+          }
+        }
       }
 
       // Update local state
@@ -3219,7 +3367,7 @@ const RunningOrders = () => {
   };
 
   // Handle modify order - load order details back into cart
-  const handleModifyOrder = () => {
+  const handleModifyOrder = async () => {
     if (!selectedPlacedOrder) {
       showError('Please select an order to modify');
       return;
@@ -3239,7 +3387,7 @@ const RunningOrders = () => {
     setFoodQuantity(1);
     setSelectedVariations({});
     setSelectedAdons([]);
-    setSelectedOrderType('');
+    // Don't clear selectedOrderType here - it will be set from the order being modified
 
     // Load order details back into cart with full details
     if (selectedPlacedOrder.items && selectedPlacedOrder.items.length > 0) {
@@ -3294,39 +3442,61 @@ const RunningOrders = () => {
       setSelectedCustomer(selectedPlacedOrder.customer);
     }
 
-    // Load order type - map database values to UI values
+    // Load order type - selectedPlacedOrder.orderType already contains UI display value
     if (selectedPlacedOrder.orderType) {
-      console.log('Loading order type from database:', selectedPlacedOrder.orderType);
-      
-      // Map database order type to UI order type
-      let uiOrderType = 'In Store'; // default
-      switch (selectedPlacedOrder.orderType) {
-        case 'dine_in':
-          // Check if it's a table order by looking at the table field
-          if (selectedPlacedOrder.table && selectedPlacedOrder.table !== 'None') {
-            uiOrderType = 'Table';
-          } else {
-            uiOrderType = 'In Store';
-          }
-          break;
-        case 'takeaway':
-          uiOrderType = 'Collection';
-          break;
-        case 'delivery':
-          uiOrderType = 'Delivery';
-          break;
-        default:
-          uiOrderType = 'In Store';
-      }
-      
-      console.log('Mapped to UI order type:', uiOrderType);
-      setSelectedOrderType(uiOrderType);
+      console.log('Loading order type from order:', selectedPlacedOrder.orderType);
+      setSelectedOrderType(selectedPlacedOrder.orderType);
+      console.log('Order type set to:', selectedPlacedOrder.orderType);
+    } else {
+      console.log('No order type found in selectedPlacedOrder');
     }
 
     // Load table information if it's a table order
     if (selectedPlacedOrder.table && selectedPlacedOrder.table !== 'None') {
       console.log('Loading table:', selectedPlacedOrder.table);
-      // Extract table number from "Table X" format
+      
+      // First, try to get table details from database if we have the database ID
+      if (selectedPlacedOrder.databaseId) {
+        try {
+          const orderResult = await window.myAPI.getOrderById(selectedPlacedOrder.databaseId);
+          if (orderResult.success && orderResult.data.table_details) {
+            const tableDetails = JSON.parse(orderResult.data.table_details);
+            if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
+              console.log('Loading table details from database:', tableDetails);
+              
+              // Load all tables from database into reserved tables
+              const reservedTablesFromDB = tableDetails.tables.map(tableDetail => {
+                const table = tables.find(t => t.id === tableDetail.id);
+                return {
+                  id: tableDetail.id.toString(),
+                  tableNo: table?.table_no || tableDetail.table_no,
+                  persons: tableDetail.persons || table?.seat_capacity || 4,
+                  floor: table?.floor_name || tableDetail.floor_name
+                };
+              });
+              setReservedTables(reservedTablesFromDB);
+              console.log('Loaded reserved tables from database:', reservedTablesFromDB);
+              
+              // Load the first table as the selected table
+              const firstTable = tableDetails.tables[0];
+              const table = tables.find(t => t.id === firstTable.id);
+              if (table) {
+                console.log('Found table from database:', table);
+                setSelectedFloor(table.floor_name || 'Floor 1');
+                setSelectedTable(table.id.toString());
+                setSelectedPersons(firstTable.persons || table.seat_capacity || 4);
+              }
+              
+              // Skip the UI table field parsing since we have database data
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error loading table details from database:', error);
+        }
+      }
+      
+      // Fallback to UI table field parsing
       const tableMatch = selectedPlacedOrder.table.match(/Table (\d+)/);
       if (tableMatch) {
         const tableNumber = tableMatch[1];
@@ -3369,23 +3539,64 @@ const RunningOrders = () => {
     showSuccess('Order loaded for modification. You can now edit the items.');
   };
 
-  // Handle cancel order
-  const handleCancelOrder = async () => {
+  // Handle cancel order button click - show modal
+  const handleCancelOrder = () => {
+    if (!selectedPlacedOrder) {
+      showError('Please select an order to cancel');
+      return;
+    }
+    
+    setShowCancelOrderModal(true);
+    setCancellationReason('');
+  };
+
+  // Handle actual order cancellation with reason
+  const handleConfirmCancelOrder = async (saveReason = true) => {
     if (!selectedPlacedOrder) {
       showError('Please select an order to cancel');
       return;
     }
 
     try {
+      // Prepare update data
+      const updateData = {
+        order_status: 'canceled'
+      };
+
+      // Add cancellation reason if saving reason
+      if (saveReason && cancellationReason.trim()) {
+        updateData.cancellation_reason = cancellationReason.trim();
+      }
+
       // Update order status to canceled in database
       if (selectedPlacedOrder.databaseId) {
-        const updateResult = await window.myAPI.updateOrder(selectedPlacedOrder.databaseId, {
-          order_status: 'canceled'
-        });
+        const updateResult = await window.myAPI.updateOrder(selectedPlacedOrder.databaseId, updateData);
         
         if (!updateResult.success) {
           showError('Failed to cancel order: ' + updateResult.message);
           return;
+        }
+        
+        // Free the associated tables when order is canceled
+        try {
+          // Get the order details to check for table information
+          const orderResult = await window.myAPI.getOrderById(selectedPlacedOrder.databaseId);
+          if (orderResult.success && orderResult.data.table_details) {
+            const tableDetails = JSON.parse(orderResult.data.table_details);
+            if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
+              const tableIds = tableDetails.tables.map(table => table.id);
+              console.log('Freeing tables due to cancellation:', tableIds);
+              
+              const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
+              if (tableUpdateResult.success) {
+                console.log('Tables freed successfully after cancellation:', tableUpdateResult.message);
+              } else {
+                console.warn('Failed to free tables after cancellation:', tableUpdateResult.message);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error freeing tables after cancellation:', error);
         }
       }
 
@@ -3395,6 +3606,10 @@ const RunningOrders = () => {
           ? { ...order, status: 'Canceled' }
           : order
       ));
+      
+      // Close modal and reset
+      setShowCancelOrderModal(false);
+      setCancellationReason('');
       
       // Remove from selected order since it's now canceled
       setSelectedPlacedOrder(null);
@@ -3416,11 +3631,40 @@ const RunningOrders = () => {
     try {
       // Delete order from database
       if (selectedPlacedOrder.databaseId) {
+        // First, get the order details to check for table information before deletion
+        let tableIdsToFree = [];
+        try {
+          const orderResult = await window.myAPI.getOrderById(selectedPlacedOrder.databaseId);
+          if (orderResult.success && orderResult.data.table_details) {
+            const tableDetails = JSON.parse(orderResult.data.table_details);
+            if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
+              tableIdsToFree = tableDetails.tables.map(table => table.id);
+            }
+          }
+        } catch (error) {
+          console.error('Error getting order details before deletion:', error);
+        }
+        
         const deleteResult = await window.myAPI.deleteOrder(selectedPlacedOrder.databaseId);
         
         if (!deleteResult.success) {
           showError('Failed to delete order: ' + deleteResult.message);
           return;
+        }
+        
+        // Free the associated tables after successful deletion
+        if (tableIdsToFree.length > 0) {
+          try {
+            console.log('Freeing tables due to deletion:', tableIdsToFree);
+            const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIdsToFree, 'Free');
+            if (tableUpdateResult.success) {
+              console.log('Tables freed successfully after deletion:', tableUpdateResult.message);
+            } else {
+              console.warn('Failed to free tables after deletion:', tableUpdateResult.message);
+            }
+          } catch (error) {
+            console.error('Error freeing tables after deletion:', error);
+          }
         }
       }
 
@@ -3723,7 +3967,14 @@ const RunningOrders = () => {
                   ORDER DETAILS
                 </button>
                 <button 
-                  onClick={handleModifyOrder}
+                  onClick={async () => {
+                    try {
+                      await handleModifyOrder();
+                    } catch (error) {
+                      console.error('Error modifying order:', error);
+                      showError('Failed to modify order. Please try again.');
+                    }
+                  }}
                   disabled={!selectedPlacedOrder || (isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)}
                   className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${
                     selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId) 
@@ -3868,7 +4119,13 @@ const RunningOrders = () => {
           <div className="grid grid-cols-5 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
             <button
-              onClick={() => setSelectedOrderType('In Store')}
+              onClick={() => {
+                setSelectedOrderType('In Store');
+                // Clear table selections when switching to non-table order type
+                setSelectedTable('');
+                setSelectedPersons('');
+                setReservedTables([]);
+              }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3889,7 +4146,13 @@ const RunningOrders = () => {
               Table
             </button>
             <button
-              onClick={() => setSelectedOrderType('Collection')}
+              onClick={() => {
+                setSelectedOrderType('Collection');
+                // Clear table selections when switching to non-table order type
+                setSelectedTable('');
+                setSelectedPersons('');
+                setReservedTables([]);
+              }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3898,7 +4161,13 @@ const RunningOrders = () => {
               Collection
             </button>
             <button
-              onClick={() => setSelectedOrderType('Delivery')}
+              onClick={() => {
+                setSelectedOrderType('Delivery');
+                // Clear table selections when switching to non-table order type
+                setSelectedTable('');
+                setSelectedPersons('');
+                setReservedTables([]);
+              }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -4504,9 +4773,11 @@ const RunningOrders = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Size:</label>
                     <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm">
+                      <option value="7">7"</option>
+                      <option value="10">10"</option>
                       <option value="12">12"</option>
                       <option value="14">14"</option>
-                      <option value="16">16"</option>
+
                     </select>
                   </div>
                   <div>
@@ -6431,6 +6702,27 @@ const RunningOrders = () => {
                             showError('Failed to update order payment: ' + updateResult.message);
                             return;
                           }
+                          
+                          // Free the associated tables when order is completed through payment
+                          try {
+                            const orderResult = await window.myAPI.getOrderById(latestOrder.databaseId);
+                            if (orderResult.success && orderResult.data.table_details) {
+                              const tableDetails = JSON.parse(orderResult.data.table_details);
+                              if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
+                                const tableIds = tableDetails.tables.map(table => table.id);
+                                console.log('Freeing tables after payment completion:', tableIds);
+                                
+                                const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
+                                if (tableUpdateResult.success) {
+                                  console.log('Tables freed successfully after payment:', tableUpdateResult.message);
+                                } else {
+                                  console.warn('Failed to free tables after payment:', tableUpdateResult.message);
+                                }
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Error freeing tables after payment:', error);
+                          }
                         }
                       } else if (selectedPlacedOrder && selectedPlacedOrder.databaseId) {
                         // Update existing order with payment information
@@ -6444,6 +6736,27 @@ const RunningOrders = () => {
                         if (!updateResult.success) {
                           showError('Failed to update order payment: ' + updateResult.message);
                           return;
+                        }
+                        
+                        // Free the associated tables when order is completed through payment
+                        try {
+                          const orderResult = await window.myAPI.getOrderById(selectedPlacedOrder.databaseId);
+                          if (orderResult.success && orderResult.data.table_details) {
+                            const tableDetails = JSON.parse(orderResult.data.table_details);
+                            if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
+                              const tableIds = tableDetails.tables.map(table => table.id);
+                              console.log('Freeing tables after payment completion:', tableIds);
+                              
+                              const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
+                              if (tableUpdateResult.success) {
+                                console.log('Tables freed successfully after payment:', tableUpdateResult.message);
+                              } else {
+                                console.warn('Failed to free tables after payment:', tableUpdateResult.message);
+                              }
+                            }
+                          }
+                        } catch (error) {
+                          console.error('Error freeing tables after payment:', error);
                         }
 
                         // Update the order in local state
@@ -6744,6 +7057,80 @@ const RunningOrders = () => {
                 Cancel
               </button>
             </div> */}
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Order Modal */}
+      {showCancelOrderModal && selectedPlacedOrder && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            {/* Header */}
+            <div className="bg-red-600 text-white p-4 flex justify-between items-center rounded-t-xl">
+              <h2 className="text-xl font-bold">Cancel Order</h2>
+              <button
+                onClick={() => {
+                  setShowCancelOrderModal(false);
+                  setCancellationReason('');
+                }}
+                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Cancel Order #{selectedPlacedOrder.orderNumber}?
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  This action will cancel the order. Please provide a reason for cancellation (optional).
+                </p>
+                
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cancellation Reason
+                </label>
+                <textarea
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  placeholder="Enter reason for cancellation..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                  rows="3"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelOrderModal(false);
+                  setCancellationReason('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => handleConfirmCancelOrder(false)}
+                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                Cancel Order
+              </button>
+              <button
+                onClick={() => handleConfirmCancelOrder(true)}
+                disabled={!cancellationReason.trim()}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                  cancellationReason.trim()
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Cancel & Save Reason
+              </button>
+            </div>
           </div>
         </div>
       )}

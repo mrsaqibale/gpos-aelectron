@@ -103,6 +103,8 @@ contextBridge.exposeInMainWorld('myAPI', {
   tableGetAll: () => ipcRenderer.invoke('table:getAll'),
   tableGetByFloor: (floorId) => ipcRenderer.invoke('table:getByFloor', floorId),
   tableGetByFloorWithStatus: (floorId, status) => ipcRenderer.invoke('table:getByFloorWithStatus', floorId, status),
+  tableUpdateStatus: (tableId, status) => ipcRenderer.invoke('table:updateStatus', tableId, status),
+  tableUpdateMultipleStatuses: (tableIds, status) => ipcRenderer.invoke('table:updateMultipleStatuses', tableIds, status),
 
   // Floor
   floorCreate: (data) => ipcRenderer.invoke('floor:create', data),

@@ -55,8 +55,8 @@ export function createOrder(orderData) {
         coupon_created_by, distance, cancellation_note, tax_percentage,
         delivery_instruction, unavailable_item_note, additional_charge,
         partially_paid_amount, order_proof, cash_back_id, extra_packaging_amount,
-        isdeleted, issyncronized, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        table_details, isdeleted, issyncronized
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     // Count the placeholders
@@ -116,10 +116,9 @@ export function createOrder(orderData) {
       orderData.order_proof || null,
       orderData.cash_back_id || null,
       orderData.extra_packaging_amount || 0,
+      orderData.table_details || null,
       (orderData.isdeleted || false) ? 1 : 0,
-      (orderData.issyncronized || false) ? 1 : 0,
-      new Date().toISOString(), // created_at
-      new Date().toISOString() // updated_at
+      (orderData.issyncronized || false) ? 1 : 0
     ];
     
     console.log('Number of values:', values.length);

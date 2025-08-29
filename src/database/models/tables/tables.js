@@ -222,3 +222,68 @@ export function getTablesByFloorWithStatus(floorId, status = 'Free') {
     return errorResponse(err.message);
   }
 } 
+
+// Update table status
+export function updateTableStatus(tableId, status) {
+  try {
+    // Check if status column exists
+    const tableInfo = db.prepare("PRAGMA table_info(restaurant_table)").all();
+    const hasStatus = tableInfo.some(col => col.name === 'status');
+    
+    if (hasStatus) {
+      const stmt = db.prepare(`
+        UPDATE restaurant_table 
+        SET status = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ? AND isdeleted = 0
+      `);
+      const result = stmt.run(status, tableId);
+      
+      if (result.changes === 0) {
+        return errorResponse('No table updated or table not found.');
+      }
+      
+      return { 
+        success: true, 
+        message: `Table status updated to ${status}`,
+        changes: result.changes
+      };
+    } else {
+      return errorResponse('Status column does not exist in restaurant_table.');
+    }
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Update multiple table statuses
+export function updateMultipleTableStatuses(tableIds, status) {
+  try {
+    // Check if status column exists
+    const tableInfo = db.prepare("PRAGMA table_info(restaurant_table)").all();
+    const hasStatus = tableInfo.some(col => col.name === 'status');
+    
+    if (!hasStatus) {
+      return errorResponse('Status column does not exist in restaurant_table.');
+    }
+    
+    const stmt = db.prepare(`
+      UPDATE restaurant_table 
+      SET status = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id IN (${tableIds.map(() => '?').join(',')}) AND isdeleted = 0
+    `);
+    
+    const result = stmt.run(status, ...tableIds);
+    
+    if (result.changes === 0) {
+      return errorResponse('No tables updated.');
+    }
+    
+    return { 
+      success: true, 
+      message: `Updated ${result.changes} table(s) status to ${status}`,
+      changes: result.changes
+    };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+} 
