@@ -413,11 +413,12 @@ const RunningOrders = () => {
       if (result && result.success) {
         console.log('All orders loaded:', result.data);
         
-        // Filter to only show orders that are not completed
+        // Filter to only show orders that are not completed, delivered, or canceled
         const activeOrders = result.data.filter(order => {
           const isActive = order.order_status !== 'completed' && 
                           order.order_status !== 'delivered' && 
-                          order.order_status !== 'canceled';
+                          order.order_status !== 'canceled' &&
+                          order.order_status !== 'Canceled';
           console.log(`Order ${order.id}: status="${order.order_status}", isActive=${isActive}`);
           return isActive;
         });
@@ -3368,6 +3369,43 @@ const RunningOrders = () => {
     showSuccess('Order loaded for modification. You can now edit the items.');
   };
 
+  // Handle cancel order
+  const handleCancelOrder = async () => {
+    if (!selectedPlacedOrder) {
+      showError('Please select an order to cancel');
+      return;
+    }
+
+    try {
+      // Update order status to canceled in database
+      if (selectedPlacedOrder.databaseId) {
+        const updateResult = await window.myAPI.updateOrder(selectedPlacedOrder.databaseId, {
+          order_status: 'canceled'
+        });
+        
+        if (!updateResult.success) {
+          showError('Failed to cancel order: ' + updateResult.message);
+          return;
+        }
+      }
+
+      // Update order status in local state
+      setPlacedOrders(prev => prev.map(order => 
+        order.id === selectedPlacedOrder.id 
+          ? { ...order, status: 'Canceled' }
+          : order
+      ));
+      
+      // Remove from selected order since it's now canceled
+      setSelectedPlacedOrder(null);
+
+      showSuccess('Order canceled successfully!');
+    } catch (error) {
+      console.error('Error canceling order:', error);
+      showError('Failed to cancel order. Please try again.');
+    }
+  };
+
   // Handle delete order
   const handleDeleteOrder = async () => {
     if (!selectedPlacedOrder) {
@@ -3705,7 +3743,11 @@ const RunningOrders = () => {
                 </button>
               </div>
                 <button 
-                  className="w-[70%] bg-[#C42232] text-[13px] text-white mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 "
+                  onClick={handleCancelOrder}
+                  disabled={!selectedPlacedOrder}
+                  className={`w-[70%] text-[13px] mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${
+                    selectedPlacedOrder ? 'bg-[#C42232] text-white cursor-pointer hover:bg-[#b01a28]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  }`}
                 >
                   <X size={14} />
                   CANCEL ORDER
