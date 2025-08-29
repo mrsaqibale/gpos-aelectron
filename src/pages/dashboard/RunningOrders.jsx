@@ -3705,9 +3705,7 @@ const RunningOrders = () => {
                 </button>
               </div>
                 <button 
-                  className={`w-[70%] text-[13px] mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${
-                    isModifyingOrder ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-[#c81118] text-white cursor-pointer hover:bg-[#b01018]'
-                  }`}
+                  className="w-[70%] bg-[#C42232] text-[13px] text-white mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 "
                 >
                   <X size={14} />
                   CANCEL ORDER
