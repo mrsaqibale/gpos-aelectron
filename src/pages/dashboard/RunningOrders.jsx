@@ -3364,8 +3364,62 @@ const RunningOrders = () => {
       event.stopPropagation();
     }
     setSelectedOrderForStatusUpdate(order);
-    setSelectedStatus(order.status || 'Pending');
+    
+    // Get the appropriate default status based on order type
+    const getDefaultStatusForOrderType = (orderType) => {
+      switch (orderType) {
+        case 'In Store':
+          return 'New'; // Set to New (disabled) so Completed starts unselected
+        case 'Table':
+        case 'Dine In':
+        case 'Collection':
+        case 'Delivery':
+          return 'New'; // Default to New for other order types
+        default:
+          return 'New';
+      }
+    };
+    
+    setSelectedStatus(getDefaultStatusForOrderType(order.orderType));
     setShowStatusUpdateModal(true);
+  };
+
+  // Get statuses based on order type
+  const getStatusesForOrderType = (orderType) => {
+    switch (orderType) {
+      case 'In Store':
+        return [
+          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: true },
+          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: true },
+          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: true },
+          { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
+        ];
+      case 'Table':
+      case 'Dine In':
+      case 'Collection':
+        return [
+          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: false },
+          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: false },
+          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: false },
+          { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
+        ];
+      case 'Delivery':
+        return [
+          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: false },
+          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: false },
+          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: false },
+          { key: 'On the way', label: 'On the way', icon: <Truck size={20} />, disabled: false },
+          { key: 'Delivered', label: 'Delivered', icon: <CheckCircle size={20} />, disabled: false },
+          { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
+        ];
+      default:
+        return [
+          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: false },
+          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: false },
+          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: false },
+          { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
+        ];
+    }
   };
 
   // Handle updating order status
@@ -3376,17 +3430,32 @@ const RunningOrders = () => {
       // Map UI status to database status
       let dbStatus = 'pending';
       switch (selectedStatus) {
-        case 'Pending':
-          dbStatus = 'pending';
+        case 'New':
+          dbStatus = 'new';
+          break;
+        case 'In Progress':
+          dbStatus = 'in_progress';
           break;
         case 'Ready':
           dbStatus = 'ready';
+          break;
+        case 'On the way':
+          dbStatus = 'on_the_way';
+          break;
+        case 'Delivered':
+          dbStatus = 'delivered';
+          break;
+        case 'Completed':
+          dbStatus = 'completed';
+          break;
+        case 'Pending':
+          dbStatus = 'pending';
           break;
         case 'Complete':
           dbStatus = 'completed';
           break;
         default:
-          dbStatus = selectedStatus.toLowerCase();
+          dbStatus = selectedStatus.toLowerCase().replace(' ', '_');
       }
 
       // Update order status in database
@@ -3402,8 +3471,8 @@ const RunningOrders = () => {
           return;
         }
         
-        // If order is completed, free the associated tables
-        if (dbStatus === 'completed' && selectedOrderForStatusUpdate.databaseId) {
+        // If order is completed, delivered, or canceled, free the associated tables
+        if ((dbStatus === 'completed' || dbStatus === 'delivered') && selectedOrderForStatusUpdate.databaseId) {
           try {
             // Get the order details to check for table information
             const orderResult = await window.myAPI.getOrderById(selectedOrderForStatusUpdate.databaseId);
@@ -3427,7 +3496,7 @@ const RunningOrders = () => {
         }
       }
 
-      // Update local state - remove order if it's completed or canceled, otherwise update status
+      // Update local state - remove order if it's completed, delivered, or canceled, otherwise update status
       const normalizedStatus = selectedStatus.toLowerCase();
       const shouldRemove = normalizedStatus === 'complete' || 
                           normalizedStatus === 'completed' || 
@@ -4327,7 +4396,7 @@ const RunningOrders = () => {
               <div className="mb-2 text-xs text-gray-600">
                 Found {filteredFoods.length} result{filteredFoods.length !== 1 ? 's' : ''} for "{debouncedSearchQuery}"
               </div>
-            )} */}
+            )}
             <div className="flex items-center justify-between mb-2 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
                 
@@ -7456,48 +7525,36 @@ const RunningOrders = () => {
 
             {/* Status Selection */}
             <div className="p-6">
-              <div className="grid grid-cols-3 gap-3">
-                {/* Pending Status */}
-                <button
-                  onClick={() => setSelectedStatus('Pending')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Pending'
-                      ? 'bg-white border-primary text-primary'
-                      : 'bg-primary text-white border-primary'
-                    }`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Clock size={20} />
-                    <span className="font-medium">Pending</span>
-                  </div>
-                </button>
-
-                {/* Ready Status */}
-                <button
-                  onClick={() => setSelectedStatus('Ready')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Ready'
-                      ? 'bg-white border-primary text-primary'
-                      : 'bg-primary text-white border-primary'
-                    }`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <CheckCircle size={20} />
-                    <span className="font-medium">Ready</span>
-                  </div>
-                </button>
-
-                {/* Complete Status */}
-                <button
-                  onClick={() => setSelectedStatus('Complete')}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${selectedStatus === 'Complete'
-                      ? 'bg-white border-primary text-primary'
-                      : 'bg-primary text-white border-primary'
-                    }`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Star size={20} />
-                    <span className="font-medium">Complete</span>
-                  </div>
-                </button>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {getStatusesForOrderType(selectedOrderForStatusUpdate.orderType).map((status) => {
+                  // For In Store orders, maintain consistent styling for the only enabled button
+                  const isInStoreOrder = selectedOrderForStatusUpdate.orderType === 'In Store';
+                  const isOnlyEnabledButton = isInStoreOrder && !status.disabled;
+                  
+                  return (
+                    <button
+                      key={status.key}
+                      onClick={() => !status.disabled && setSelectedStatus(status.key)}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        status.disabled 
+                          ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed'
+                          : isOnlyEnabledButton
+                            ? selectedStatus === status.key
+                              ? 'bg-primary text-white border-primary cursor-pointer' // Selected state for In Store
+                              : 'bg-white border-primary text-primary cursor-pointer' // Default state for In Store
+                            : selectedStatus === status.key
+                              ? 'bg-white border-primary text-primary'
+                              : 'bg-primary text-white border-primary hover:bg-primary/90 cursor-pointer'
+                      }`}
+                      disabled={status.disabled}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        {status.icon}
+                        <span className="font-medium">{status.label}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
