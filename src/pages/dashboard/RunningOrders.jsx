@@ -2751,7 +2751,7 @@ const RunningOrders = () => {
             items: [...split.items, newItem]
           };
         }
-      }
+      }m
       return split;
     }));
 
@@ -3657,6 +3657,22 @@ const RunningOrders = () => {
           </div>
           {/* Order Action Buttons - Below Running Orders Box */}
           <div className="flex justify-center p-2">
+            {/* Modification Mode Indicator */}
+            {isModifyingOrder && (
+              <div className="mb-2 w-full">
+                <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-2 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Edit size={12} className="text-yellow-600" />
+                    <span className="text-xs font-medium text-yellow-800">
+                      Modification Mode Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    Order #{modifyingOrderId} is being modified
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="flex flex-col gap-2 text-[10px] w-full">
               {/* First Row - Bill and Invoice */}
               <div className="flex gap-2">
@@ -3682,15 +3698,33 @@ const RunningOrders = () => {
                 </button>
                 <button 
                   onClick={handleModifyOrder}
-                  disabled={!selectedPlacedOrder}
-                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#f3be25] text-white hover:bg-[#e6b31e]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  disabled={!selectedPlacedOrder || (isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)}
+                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${
+                    selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId) 
+                      ? 'bg-[#f3be25] text-white hover:bg-[#e6b31e]' 
+                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  }`}
+                  title={
+                    !selectedPlacedOrder 
+                      ? 'Select an order to modify' 
+                      : (isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
+                        ? 'Order is already being modified'
+                        : 'Modify order'
+                  }
+                >
                   <Edit size={14} />
                   MODIFY ORDER
                 </button>
               </div>
-                <button className="w-[70%] text-[13px] mx-auto h-10 bg-[#c81118] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button 
+                  onClick={handleDeleteOrder}
+                  disabled={isModifyingOrder}
+                  className={`w-[70%] text-[13px] mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${
+                    isModifyingOrder ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-[#c81118] text-white cursor-pointer hover:bg-[#b01018]'
+                  }`}
+                >
                   <X size={14} />
-                  CANCEL
+                  DELETE ORDER
                 </button>
             </div>
           </div>
