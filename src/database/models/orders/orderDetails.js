@@ -63,8 +63,8 @@ export function createOrderDetail(orderDetailData) {
       orderDetailData.quantity || 1,
       orderDetailData.tax_amount || 0,
       orderDetailData.total_add_on_price || 0,
-      orderDetailData.issynicronized || false,
-      orderDetailData.isdeleted || false
+      (orderDetailData.issynicronized || false) ? 1 : 0,
+      (orderDetailData.isdeleted || false) ? 1 : 0
     ];
     
     const info = stmt.run(...values);
@@ -112,9 +112,11 @@ export function createMultipleOrderDetails(orderDetailsArray) {
           detail.quantity || 1,
           detail.tax_amount || 0,
           detail.total_add_on_price || 0,
-          detail.issynicronized || false,
-          detail.isdeleted || false
+          (detail.issynicronized || false) ? 1 : 0,
+          (detail.isdeleted || false) ? 1 : 0
         ];
+        
+        console.log('Order detail values:', values);
         
         const info = stmt.run(...values);
         results.push({

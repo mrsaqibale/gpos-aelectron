@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER NOT NULL,
+    customer_id INTEGER,
     order_amount REAL NOT NULL,
     coupon_discount_amount REAL DEFAULT 0,
     coupon_discount_title TEXT,

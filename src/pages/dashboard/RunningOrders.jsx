@@ -380,10 +380,114 @@ const RunningOrders = () => {
     fetchFoodsByCategory(category.id);
   };
 
+  // Fetch existing orders from database
+  const fetchExistingOrders = async () => {
+    try {
+      console.log('Fetching existing orders from database...');
+      
+      if (!window.myAPI) {
+        console.error('myAPI is not available');
+        return;
+      }
+
+      // Get all orders from database
+      const result = await window.myAPI.getAllOrders(100, 0); // Get last 100 orders
+      
+      if (result && result.success) {
+        console.log('Existing orders loaded:', result.data);
+        
+        // Transform database orders to UI format
+        const transformedOrders = result.data.map(dbOrder => {
+          // Get order details for this order
+          return window.myAPI.getOrderDetailsWithFood(dbOrder.id).then(detailsResult => {
+            if (detailsResult && detailsResult.success) {
+              // Transform order details to cart items format
+              const items = detailsResult.data.map(detail => {
+                let foodDetails = {};
+                let variations = {};
+                let adons = [];
+                
+                try {
+                  if (detail.food_details) {
+                    foodDetails = JSON.parse(detail.food_details);
+                  }
+                  if (detail.variation) {
+                    variations = JSON.parse(detail.variation);
+                  }
+                  if (detail.add_ons) {
+                    adons = JSON.parse(detail.add_ons);
+                  }
+                } catch (error) {
+                  console.error('Error parsing JSON data:', error);
+                }
+
+                return {
+                  id: detail.id,
+                  food: {
+                    id: detail.food_id,
+                    name: detail.food_name || foodDetails.food?.name || 'Unknown Food',
+                    description: detail.food_description || foodDetails.food?.description,
+                    price: detail.price,
+                    image: detail.food_image || foodDetails.food?.image
+                  },
+                  variations: variations,
+                  adons: adons,
+                  quantity: detail.quantity,
+                  totalPrice: detail.price * detail.quantity,
+                  addedAt: detail.created_at
+                };
+              });
+
+              return {
+                id: dbOrder.id,
+                orderNumber: `ORD-${String(dbOrder.id).padStart(3, '0')}`,
+                items: items,
+                customer: { 
+                  id: dbOrder.customer_id,
+                  name: dbOrder.customer_id ? 'Customer ' + dbOrder.customer_id : 'Walk-in Customer'
+                },
+                total: dbOrder.order_amount,
+                coupon: dbOrder.coupon_code ? {
+                  code: dbOrder.coupon_code,
+                  title: dbOrder.coupon_discount_title,
+                  discount: dbOrder.coupon_discount_amount
+                } : null,
+                orderType: dbOrder.order_type === 'dine_in' ? 'Dine In' : 
+                          dbOrder.order_type === 'takeaway' ? 'Collection' :
+                          dbOrder.order_type === 'delivery' ? 'Delivery' : 'In Store',
+                table: dbOrder.delivery_address_id ? 'Table ' + dbOrder.delivery_address_id : 'None',
+                waiter: 'Ds Waiter',
+                status: dbOrder.order_status === 'pending' ? 'New' :
+                       dbOrder.order_status === 'completed' ? 'Completed' :
+                       dbOrder.order_status === 'processing' ? 'In Progress' :
+                       dbOrder.order_status === 'ready' ? 'Ready' : dbOrder.order_status,
+                placedAt: dbOrder.created_at,
+                databaseId: dbOrder.id
+              };
+            }
+            return null;
+          });
+        });
+
+        // Wait for all order details to be fetched
+        const resolvedOrders = await Promise.all(transformedOrders);
+        const validOrders = resolvedOrders.filter(order => order !== null);
+        
+        setPlacedOrders(validOrders);
+        console.log('Transformed orders loaded:', validOrders);
+      } else {
+        console.error('Failed to fetch existing orders:', result?.message);
+      }
+    } catch (error) {
+      console.error('Error fetching existing orders:', error);
+    }
+  };
+
   // Fetch categories on component mount
   useEffect(() => {
     fetchCategories();
     fetchFloors(); // Add this line to fetch floors on component mount
+    fetchExistingOrders(); // Load existing orders from database
   }, []);
 
   // Debug floors state
@@ -1808,46 +1912,153 @@ const RunningOrders = () => {
   };
 
   // Handle place order
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
       showError('Please add items to cart before placing order');
       return;
     }
 
-    // Map order type based on selection
-    let orderType = 'In Store'; // default
-    if (selectedOrderType === 'Table') {
-      orderType = 'Dine In';
-    } else if (selectedOrderType === 'Collection') {
-      orderType = 'Collection';
-    } else if (selectedOrderType === 'Delivery') {
-      orderType = 'Delivery';
+    try {
+      // Map order type based on selection
+      let orderType = 'dine_in'; // default for database
+      if (selectedOrderType === 'Table') {
+        orderType = 'dine_in';
+      } else if (selectedOrderType === 'Collection') {
+        orderType = 'takeaway';
+      } else if (selectedOrderType === 'Delivery') {
+        orderType = 'delivery';
+      } else if (selectedOrderType === 'In Store') {
+        orderType = 'dine_in';
+      }
+
+      // Calculate totals
+      const subtotal = calculateCartSubtotal();
+      const tax = calculateCartTax();
+      const discount = calculateCartDiscount();
+      const total = calculateCartTotal();
+
+      // Prepare order data for database
+      const orderData = {
+        customer_id: selectedCustomer?.id || null, // Allow null for walk-in customers
+        order_amount: total,
+        coupon_discount_amount: discount,
+        coupon_discount_title: appliedCoupon?.title || null,
+        payment_status: 'pending',
+        order_status: 'pending',
+        total_tax_amount: tax,
+        payment_method: null, // Will be set when payment is made
+        delivery_address_id: null, // Will be set for delivery orders
+        coupon_code: appliedCoupon?.code || null,
+        order_note: null, // Can be added later
+        order_type: orderType,
+        restaurant_id: 1, // Default restaurant ID
+        delivery_charge: 0, // Can be calculated for delivery
+        additional_charge: cartCharge,
+        discount_amount: discount,
+        tax_percentage: 13.5, // 13.5% tax rate
+        scheduled: false,
+        failed: false,
+        refunded: false,
+        isdeleted: false,
+        issyncronized: false
+      };
+
+      // Create order in database
+      const orderResult = await window.myAPI.createOrder(orderData);
+      
+      if (!orderResult.success) {
+        showError('Failed to create order: ' + orderResult.message);
+        return;
+      }
+
+      const orderId = orderResult.id;
+
+      // Prepare order details data
+      const orderDetailsArray = cartItems.map(item => {
+        // Calculate item-specific totals
+        const itemSubtotal = item.totalPrice;
+        const itemTax = itemSubtotal * 0.135; // 13.5% tax
+        const itemDiscount = 0; // Individual item discount if any
+
+        // Prepare variations and addons as JSON
+        const variations = Object.keys(item.variations).length > 0 ? JSON.stringify(item.variations) : null;
+        const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
+        
+        // Prepare food details as JSON (including food info, variations, addons)
+        const foodDetails = JSON.stringify({
+          food: {
+            id: item.food.id,
+            name: item.food.name,
+            description: item.food.description,
+            price: item.food.price,
+            image: item.food.image
+          },
+          variations: item.variations,
+          addons: item.adons,
+          quantity: item.quantity,
+          totalPrice: item.totalPrice
+        });
+
+        // Prepare ingredients as JSON (if available)
+        const ingredients = item.food.ingredients ? JSON.stringify(item.food.ingredients) : null;
+
+        return {
+          food_id: item.food.id,
+          order_id: orderId,
+          price: item.food.price,
+          food_details: foodDetails,
+          item_note: null, // Can be added later
+          variation: variations,
+          add_ons: addons,
+          ingredients: ingredients,
+          discount_on_food: itemDiscount,
+          discount_type: null,
+          quantity: item.quantity,
+          tax_amount: itemTax,
+          total_add_on_price: 0, // Calculate if needed
+          issynicronized: false,
+          isdeleted: false
+        };
+      });
+
+      // Create order details in database
+      const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
+      
+      if (!orderDetailsResult.success) {
+        showError('Failed to create order details: ' + orderDetailsResult.message);
+        return;
+      }
+
+      // Create order object for UI display
+      const newOrder = {
+        id: orderId,
+        orderNumber: `ORD-${String(orderId).padStart(3, '0')}`,
+        items: [...cartItems],
+        customer: selectedCustomer || { name: 'Walk-in Customer' },
+        total: total,
+        coupon: appliedCoupon,
+        orderType: selectedOrderType,
+        table: selectedTable ? selectedTable : 'None',
+        waiter: 'Ds Waiter',
+        status: 'New',
+        placedAt: new Date().toISOString(),
+        databaseId: orderId // Store database ID for reference
+      };
+
+      // Add to placed orders
+      setPlacedOrders(prev => [newOrder, ...prev]);
+
+      showSuccess('Order placed successfully!', 'success');
+      clearCart();
+
+    } catch (error) {
+      console.error('Error placing order:', error);
+      showError('Failed to place order. Please try again.');
     }
-
-    // Create a new order
-    const newOrder = {
-      id: Date.now(),
-      orderNumber: `ORD-${String(placedOrders.length + 1).padStart(3, '0')}`,
-      items: [...cartItems],
-      customer: selectedCustomer || { name: 'Walk-in Customer' },
-      total: calculateCartTotal(),
-      coupon: appliedCoupon,
-      orderType: orderType,
-      table: selectedTable ? selectedTable : 'None',
-      waiter: 'Ds Waiter',
-      status: 'New',
-      placedAt: new Date().toISOString()
-    };
-
-    // Add to placed orders
-    setPlacedOrders(prev => [newOrder, ...prev]);
-
-    showSuccess('Order placed successfully!', 'success');
-    clearCart();
   };
 
   // Handle payment
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (cartItems.length === 0) {
       showError('Please add items to cart before proceeding to payment');
       return;
@@ -2626,19 +2837,58 @@ const RunningOrders = () => {
   };
 
   // Handle updating order status
-  const handleUpdateOrderStatus = () => {
+  const handleUpdateOrderStatus = async () => {
     if (!selectedOrderForStatusUpdate) return;
 
-    setPlacedOrders(prev => prev.map(order =>
-      order.id === selectedOrderForStatusUpdate.id
-        ? { ...order, status: selectedStatus }
-        : order
-    ));
+    try {
+      // Map UI status to database status
+      let dbStatus = 'pending';
+      switch (selectedStatus) {
+        case 'New':
+          dbStatus = 'pending';
+          break;
+        case 'In Progress':
+          dbStatus = 'processing';
+          break;
+        case 'Ready':
+          dbStatus = 'ready';
+          break;
+        case 'Completed':
+          dbStatus = 'completed';
+          break;
+        default:
+          dbStatus = selectedStatus.toLowerCase();
+      }
 
-    showSuccess(`Order status updated to ${selectedStatus}!`);
-    setShowStatusUpdateModal(false);
-    setSelectedOrderForStatusUpdate(null);
-    setSelectedStatus('New');
+      // Update order status in database
+      if (selectedOrderForStatusUpdate.databaseId) {
+        const updateResult = await window.myAPI.updateOrderStatus(
+          selectedOrderForStatusUpdate.databaseId, 
+          dbStatus, 
+          null // updatedBy - can be set to current employee ID
+        );
+        
+        if (!updateResult.success) {
+          showError('Failed to update order status: ' + updateResult.message);
+          return;
+        }
+      }
+
+      // Update local state
+      setPlacedOrders(prev => prev.map(order =>
+        order.id === selectedOrderForStatusUpdate.id
+          ? { ...order, status: selectedStatus }
+          : order
+      ));
+
+      showSuccess(`Order status updated to ${selectedStatus}!`);
+      setShowStatusUpdateModal(false);
+      setSelectedOrderForStatusUpdate(null);
+      setSelectedStatus('New');
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      showError('Failed to update order status. Please try again.');
+    }
   };
 
   // Handle modify order - load order details back into cart
@@ -2708,6 +2958,35 @@ const RunningOrders = () => {
     showSuccess('Order loaded for modification. You can now edit the items.');
   };
 
+  // Handle delete order
+  const handleDeleteOrder = async () => {
+    if (!selectedPlacedOrder) {
+      showError('Please select an order to delete');
+      return;
+    }
+
+    try {
+      // Delete order from database
+      if (selectedPlacedOrder.databaseId) {
+        const deleteResult = await window.myAPI.deleteOrder(selectedPlacedOrder.databaseId);
+        
+        if (!deleteResult.success) {
+          showError('Failed to delete order: ' + deleteResult.message);
+          return;
+        }
+      }
+
+      // Remove from local state
+      setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
+      setSelectedPlacedOrder(null);
+
+      showSuccess('Order deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      showError('Failed to delete order. Please try again.');
+    }
+  };
+
   // Get status badge styling
   const getStatusBadgeStyle = (status) => {
     switch (status) {
@@ -2733,7 +3012,10 @@ const RunningOrders = () => {
           <div className="flex-1 flex flex-col overflow-y-auto p-3">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-gray-800">Running Orders</h2>
-              <button className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+              <button 
+                onClick={fetchExistingOrders}
+                className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
+              >
                 <RefreshCw size={12} />
                 Refresh
               </button>
@@ -5494,13 +5776,65 @@ const RunningOrders = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    // Handle payment submission
-                    showSuccess('Payment processed successfully!');
-                    setShowFinalizeSaleModal(false);
-                    setIsSinglePayMode(false);
-                    clearCart();
-                    resetFinalizeSaleModal();
+                  onClick={async () => {
+                    try {
+                      // Handle payment submission
+                      const paymentAmountValue = parseFloat(paymentAmount) || 0;
+                      const givenAmountValue = parseFloat(givenAmount) || 0;
+                      const changeAmountValue = parseFloat(changeAmount) || 0;
+
+                      // If this is a single pay mode (direct payment without placing order first)
+                      if (isSinglePayMode) {
+                        // Create order first, then update with payment
+                        await handlePlaceOrder();
+                        
+                        // Get the latest placed order (should be the one we just created)
+                        const latestOrder = placedOrders[0];
+                        if (latestOrder && latestOrder.databaseId) {
+                          // Update order with payment information
+                          const paymentUpdates = {
+                            payment_status: 'paid',
+                            payment_method: selectedPaymentMethod,
+                            order_status: 'completed'
+                          };
+                          
+                          const updateResult = await window.myAPI.updateOrder(latestOrder.databaseId, paymentUpdates);
+                          if (!updateResult.success) {
+                            showError('Failed to update order payment: ' + updateResult.message);
+                            return;
+                          }
+                        }
+                      } else if (selectedPlacedOrder && selectedPlacedOrder.databaseId) {
+                        // Update existing order with payment information
+                        const paymentUpdates = {
+                          payment_status: 'paid',
+                          payment_method: selectedPaymentMethod,
+                          order_status: 'completed'
+                        };
+                        
+                        const updateResult = await window.myAPI.updateOrder(selectedPlacedOrder.databaseId, paymentUpdates);
+                        if (!updateResult.success) {
+                          showError('Failed to update order payment: ' + updateResult.message);
+                          return;
+                        }
+
+                        // Update the order in local state
+                        setPlacedOrders(prev => prev.map(order => 
+                          order.id === selectedPlacedOrder.id 
+                            ? { ...order, status: 'Completed', paymentMethod: selectedPaymentMethod }
+                            : order
+                        ));
+                      }
+
+                      showSuccess('Payment processed successfully!');
+                      setShowFinalizeSaleModal(false);
+                      setIsSinglePayMode(false);
+                      clearCart();
+                      resetFinalizeSaleModal();
+                    } catch (error) {
+                      console.error('Error processing payment:', error);
+                      showError('Failed to process payment. Please try again.');
+                    }
                   }}
                   className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                 >

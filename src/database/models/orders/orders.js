@@ -41,7 +41,7 @@ export function createOrder(orderData) {
   try {
     console.log('Creating order with data:', orderData);
     
-    const stmt = db.prepare(`
+    const sql = `
       INSERT INTO orders (
         customer_id, order_amount, coupon_discount_amount, coupon_discount_title,
         payment_status, order_status, total_tax_amount, payment_method,
@@ -55,9 +55,15 @@ export function createOrder(orderData) {
         coupon_created_by, distance, cancellation_note, tax_percentage,
         delivery_instruction, unavailable_item_note, additional_charge,
         partially_paid_amount, order_proof, cash_back_id, extra_packaging_amount,
-        isdeleted, issyncronized
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+        isdeleted, issyncronized, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    // Count the placeholders
+    const placeholderCount = (sql.match(/\?/g) || []).length;
+    console.log('Number of placeholders:', placeholderCount);
+    
+    const stmt = db.prepare(sql);
     
     const values = [
       orderData.customer_id || null,
@@ -88,14 +94,14 @@ export function createOrder(orderData) {
       orderData.cooked_date || null,
       orderData.done_date || null,
       orderData.refund_requested_date || null,
-      orderData.refunded || false,
+      (orderData.refunded || false) ? 1 : 0,
       orderData.delivery_address || null,
       orderData.delivery_ecode || null,
-      orderData.scheduled || false,
+      (orderData.scheduled || false) ? 1 : 0,
       orderData.discount_amount || 0,
       orderData.original_delivery_charge || 0,
-      orderData.failed || false,
-      orderData.refund_request_canceled || false,
+      (orderData.failed || false) ? 1 : 0,
+      (orderData.refund_request_canceled || false) ? 1 : 0,
       orderData.cancellation_reason || null,
       orderData.canceled_by || null,
       orderData.tax_status || 'pending',
@@ -110,9 +116,14 @@ export function createOrder(orderData) {
       orderData.order_proof || null,
       orderData.cash_back_id || null,
       orderData.extra_packaging_amount || 0,
-      orderData.isdeleted || false,
-      orderData.issyncronized || false
+      (orderData.isdeleted || false) ? 1 : 0,
+      (orderData.issyncronized || false) ? 1 : 0,
+      new Date().toISOString(), // created_at
+      new Date().toISOString() // updated_at
     ];
+    
+    console.log('Number of values:', values.length);
+    console.log('Values array:', values);
     
     const info = stmt.run(...values);
     const orderId = info.lastInsertRowid;
