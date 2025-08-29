@@ -1714,12 +1714,54 @@ const RunningOrders = () => {
   };
 
   // Handle editing cart item
-  const handleEditCartItem = (cartItem) => {
+  const handleEditCartItem = async (cartItem) => {
+    console.log('Editing cart item:', cartItem);
     setEditingCartItem(cartItem);
     setSelectedFood(cartItem.food);
-    setSelectedVariations(cartItem.variations || {});
-    setSelectedAdons(cartItem.adons || []);
+    
+    // Parse variations and addons if they're strings
+    let variations = {};
+    let adons = [];
+    
+    try {
+      if (typeof cartItem.variations === 'string') {
+        variations = JSON.parse(cartItem.variations);
+      } else {
+        variations = cartItem.variations || {};
+      }
+      
+      if (typeof cartItem.adons === 'string') {
+        adons = JSON.parse(cartItem.adons);
+      } else {
+        adons = cartItem.adons || [];
+      }
+    } catch (error) {
+      console.error('Error parsing variations/addons for editing:', error);
+      variations = cartItem.variations || {};
+      adons = cartItem.adons || [];
+    }
+    
+    console.log('Setting variations for editing:', variations);
+    console.log('Setting addons for editing:', adons);
+    
+    setSelectedVariations(variations);
+    setSelectedAdons(adons);
     setFoodQuantity(cartItem.quantity);
+    
+    // Load food details to get proper variation and addon names
+    try {
+      setFoodDetailsLoading(true);
+      const result = await window.myAPI.getFoodById(cartItem.food.id);
+      if (result && result.success) {
+        setFoodDetails(result.data);
+        console.log('Food details loaded for editing:', result.data);
+      }
+    } catch (error) {
+      console.error('Error loading food details for editing:', error);
+    } finally {
+      setFoodDetailsLoading(false);
+    }
+    
     setShowFoodModal(true);
   };
 
@@ -3251,10 +3293,33 @@ const RunningOrders = () => {
       setSelectedCustomer(selectedPlacedOrder.customer);
     }
 
-    // Load order type
+    // Load order type - map database values to UI values
     if (selectedPlacedOrder.orderType) {
-      console.log('Loading order type:', selectedPlacedOrder.orderType);
-      setSelectedOrderType(selectedPlacedOrder.orderType);
+      console.log('Loading order type from database:', selectedPlacedOrder.orderType);
+      
+      // Map database order type to UI order type
+      let uiOrderType = 'In Store'; // default
+      switch (selectedPlacedOrder.orderType) {
+        case 'dine_in':
+          // Check if it's a table order by looking at the table field
+          if (selectedPlacedOrder.table && selectedPlacedOrder.table !== 'None') {
+            uiOrderType = 'Table';
+          } else {
+            uiOrderType = 'In Store';
+          }
+          break;
+        case 'takeaway':
+          uiOrderType = 'Collection';
+          break;
+        case 'delivery':
+          uiOrderType = 'Delivery';
+          break;
+        default:
+          uiOrderType = 'In Store';
+      }
+      
+      console.log('Mapped to UI order type:', uiOrderType);
+      setSelectedOrderType(uiOrderType);
     }
 
     // Load table information if it's a table order
@@ -3487,10 +3552,59 @@ const RunningOrders = () => {
                           <div className="space-y-2 mb-4">
                             <h4 className="text-sm font-semibold text-gray-800 mb-2">Order Items:</h4>
                             {order.items.map((item, index) => (
-                              <div key={index} className="flex justify-between items-center text-sm">
+                              <div key={index} className="flex justify-between items-start text-sm">
                                 <div className="flex-1">
-                                  <span className="font-medium text-gray-800">{item.food.name}</span>
-                                  <span className="text-blue-600 ml-2">x{item.quantity}</span>
+                                  <div className="flex items-center">
+                                    <span className="font-medium text-gray-800">{item.food.name}</span>
+                                    <span className="text-blue-600 ml-2">x{item.quantity}</span>
+                                  </div>
+                                  
+                                  {/* Show variations if any */}
+                                  {item.variations && Object.keys(item.variations).length > 0 && (
+                                    <div className="text-xs text-gray-600 mt-1">
+                                      {Object.entries(item.variations).map(([variationId, selectedOption]) => {
+                                        const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
+                                        const variationName = variation?.name || variationId;
+                                        const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
+                                        
+                                        return (
+                                          <div key={variationId} className="flex items-center gap-1">
+                                            <span className="text-gray-500">• {variationName}:</span>
+                                            <span className="text-gray-700">
+                                              {selections.map((optionId, idx) => {
+                                                const option = variation?.options?.find(o => o.id === parseInt(optionId));
+                                                return (
+                                                  <span key={optionId}>
+                                                    {option?.option_name || optionId}
+                                                    {idx < selections.length - 1 ? ', ' : ''}
+                                                  </span>
+                                                );
+                                              })}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Show addons if any */}
+                                  {item.adons && item.adons.length > 0 && (
+                                    <div className="text-xs text-gray-600 mt-1">
+                                      {item.adons.map((addonId, idx) => {
+                                        const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
+                                        const addonName = addon?.name || addonId;
+                                        const addonPrice = addon?.price;
+                                        
+                                        return (
+                                          <div key={idx} className="flex items-center gap-1">
+                                            <span className="text-gray-500">• Addon:</span>
+                                            <span className="text-gray-700">{addonName}</span>
+                                            {addonPrice && <span className="text-gray-500">(+€{addonPrice.toFixed(2)})</span>}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
                                 <span className="font-medium text-gray-800">€{item.totalPrice.toFixed(2)}</span>
                               </div>
@@ -3819,25 +3933,51 @@ const RunningOrders = () => {
                             {/* Show variations if any */}
                             {item.variations && Object.keys(item.variations).length > 0 && (
                               <div className="text-xs text-gray-600 mt-1">
-                                {Object.entries(item.variations).map(([variationName, selectedOption]) => (
-                                  <div key={variationName} className="flex items-center gap-1">
-                                    <span className="text-gray-500">• {variationName}:</span>
-                                    <span className="text-gray-700">{selectedOption}</span>
-                                  </div>
-                                ))}
+                                {Object.entries(item.variations).map(([variationId, selectedOption]) => {
+                                  // Try to get variation name from food details if available
+                                  const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
+                                  const variationName = variation?.name || variationId;
+                                  
+                                  // Handle both single and multiple selections
+                                  const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
+                                  
+                                  return (
+                                    <div key={variationId} className="flex items-center gap-1">
+                                      <span className="text-gray-500">• {variationName}:</span>
+                                      <span className="text-gray-700">
+                                        {selections.map((optionId, index) => {
+                                          const option = variation?.options?.find(o => o.id === parseInt(optionId));
+                                          return (
+                                            <span key={optionId}>
+                                              {option?.option_name || optionId}
+                                              {index < selections.length - 1 ? ', ' : ''}
+                                            </span>
+                                          );
+                                        })}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                             
                             {/* Show addons if any */}
                             {item.adons && item.adons.length > 0 && (
                               <div className="text-xs text-gray-600 mt-1">
-                                {item.adons.map((addon, index) => (
-                                  <div key={index} className="flex items-center gap-1">
-                                    <span className="text-gray-500">• Addon:</span>
-                                    <span className="text-gray-700">{addon.name || addon}</span>
-                                    {addon.price && <span className="text-gray-500">(+€{addon.price})</span>}
-                                  </div>
-                                ))}
+                                {item.adons.map((addonId, index) => {
+                                  // Try to get addon name from food details if available
+                                  const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
+                                  const addonName = addon?.name || addonId;
+                                  const addonPrice = addon?.price;
+                                  
+                                  return (
+                                    <div key={index} className="flex items-center gap-1">
+                                      <span className="text-gray-500">• Addon:</span>
+                                      <span className="text-gray-700">{addonName}</span>
+                                      {addonPrice && <span className="text-gray-500">(+€{addonPrice.toFixed(2)})</span>}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
@@ -4917,9 +5057,16 @@ const RunningOrders = () => {
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
-                <h2 className="text-xl font-bold">
-                  {editingCartItem ? 'Edit Food Item' : 'Food Details'}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold">
+                    {editingCartItem ? 'Edit Food Item' : 'Food Details'}
+                  </h2>
+                  {isModifyingOrder && (
+                    <span className="bg-yellow-500 text-yellow-900 px-2 py-1 rounded-full text-xs font-medium">
+                      Modifying Order
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setShowFoodModal(false);
@@ -4944,6 +5091,39 @@ const RunningOrders = () => {
                       <p className="text-sm text-blue-700 font-medium">
                         ✏️ Editing item: {editingCartItem.food.name}
                       </p>
+                      {/* Show current selections when editing */}
+                      {(Object.keys(selectedVariations).length > 0 || selectedAdons.length > 0) && (
+                        <div className="mt-2 text-xs text-blue-600">
+                          <p className="font-medium mb-1">Current selections:</p>
+                          {Object.keys(selectedVariations).length > 0 && (
+                            <div className="mb-1">
+                              <span className="font-medium">Variations:</span>
+                              {Object.entries(selectedVariations).map(([variationId, selection]) => {
+                                const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
+                                const option = variation?.options?.find(o => o.id === parseInt(selection));
+                                return (
+                                  <span key={variationId} className="ml-1 text-blue-500">
+                                    {variation?.name}: {option?.option_name || selection}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {selectedAdons.length > 0 && (
+                            <div>
+                              <span className="font-medium">Addons:</span>
+                              {selectedAdons.map((adonId, index) => {
+                                const adon = foodDetails?.adons?.find(a => a.id === parseInt(adonId));
+                                return (
+                                  <span key={adonId} className="ml-1 text-blue-500">
+                                    {adon?.name || adonId}{index < selectedAdons.length - 1 ? ', ' : ''}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="flex items-center justify-between gap-4">
@@ -5871,10 +6051,59 @@ const RunningOrders = () => {
                       <h4 className="text-sm font-semibold text-gray-800 mb-3">Order Items:</h4>
                       <div className="space-y-2">
                         {selectedPlacedOrder.items.map((item, index) => (
-                          <div key={index} className="flex justify-between items-center text-sm">
+                          <div key={index} className="flex justify-between items-start text-sm">
                             <div className="flex-1">
-                              <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
-                              <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
+                              <div className="flex items-center">
+                                <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
+                                <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
+                              </div>
+                              
+                              {/* Show variations if any */}
+                              {item.variations && Object.keys(item.variations).length > 0 && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  {Object.entries(item.variations).map(([variationId, selectedOption]) => {
+                                    const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
+                                    const variationName = variation?.name || variationId;
+                                    const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
+                                    
+                                    return (
+                                      <div key={variationId} className="flex items-center gap-1">
+                                        <span className="text-gray-500">• {variationName}:</span>
+                                        <span className="text-gray-700">
+                                          {selections.map((optionId, idx) => {
+                                            const option = variation?.options?.find(o => o.id === parseInt(optionId));
+                                            return (
+                                              <span key={optionId}>
+                                                {option?.option_name || optionId}
+                                                {idx < selections.length - 1 ? ', ' : ''}
+                                              </span>
+                                            );
+                                          })}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              
+                              {/* Show addons if any */}
+                              {item.adons && item.adons.length > 0 && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  {item.adons.map((addonId, idx) => {
+                                    const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
+                                    const addonName = addon?.name || addonId;
+                                    const addonPrice = addon?.price;
+                                    
+                                    return (
+                                      <div key={idx} className="flex items-center gap-1">
+                                        <span className="text-gray-500">• Addon:</span>
+                                        <span className="text-gray-700">{addonName}</span>
+                                        {addonPrice && <span className="text-gray-500">(+€{addonPrice.toFixed(2)})</span>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                             <span className="text-gray-800 font-medium">€{(parseFloat(item.totalPrice) || 0).toFixed(2)}</span>
                           </div>
@@ -6353,10 +6582,59 @@ const RunningOrders = () => {
                     <h3 className="text-sm font-semibold text-gray-800 mb-2">Order Items:</h3>
                     <div className="space-y-2">
                       {selectedPlacedOrder.items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm">
+                        <div key={index} className="flex justify-between items-start text-sm">
                           <div className="flex-1">
-                            <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
-                            <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
+                            <div className="flex items-center">
+                              <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
+                              <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
+                            </div>
+                            
+                            {/* Show variations if any */}
+                            {item.variations && Object.keys(item.variations).length > 0 && (
+                              <div className="text-xs text-gray-600 mt-1">
+                                {Object.entries(item.variations).map(([variationId, selectedOption]) => {
+                                  const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
+                                  const variationName = variation?.name || variationId;
+                                  const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
+                                  
+                                  return (
+                                    <div key={variationId} className="flex items-center gap-1">
+                                      <span className="text-gray-500">• {variationName}:</span>
+                                      <span className="text-gray-700">
+                                        {selections.map((optionId, idx) => {
+                                          const option = variation?.options?.find(o => o.id === parseInt(optionId));
+                                          return (
+                                            <span key={optionId}>
+                                              {option?.option_name || optionId}
+                                              {idx < selections.length - 1 ? ', ' : ''}
+                                            </span>
+                                          );
+                                        })}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            
+                            {/* Show addons if any */}
+                            {item.adons && item.adons.length > 0 && (
+                              <div className="text-xs text-gray-600 mt-1">
+                                {item.adons.map((addonId, idx) => {
+                                  const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
+                                  const addonName = addon?.name || addonId;
+                                  const addonPrice = addon?.price;
+                                  
+                                  return (
+                                    <div key={idx} className="flex items-center gap-1">
+                                      <span className="text-gray-500">• Addon:</span>
+                                      <span className="text-gray-700">{addonName}</span>
+                                      {addonPrice && <span className="text-gray-500">(+€{addonPrice.toFixed(2)})</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                           <span className="text-gray-800 font-medium">€{(parseFloat(item.totalPrice) || 0).toFixed(2)}</span>
                         </div>
