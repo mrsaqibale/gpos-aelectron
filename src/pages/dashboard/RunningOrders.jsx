@@ -160,6 +160,8 @@ const RunningOrders = () => {
   const [selectedScheduleDateTime, setSelectedScheduleDateTime] = useState('');
   const [availableTimeSlots, setAvailableTimeSlots] = useState([]);
   const [hotelInfo, setHotelInfo] = useState(null);
+  const [customTime, setCustomTime] = useState('');
+  const [useCustomTime, setUseCustomTime] = useState(false);
 
   // Flavor to ingredients mapping
   const flavorIngredients = {
@@ -3884,29 +3886,74 @@ const RunningOrders = () => {
 
   const handleScheduleTimeSelect = (time) => {
     setSelectedScheduleTime(time);
+    setUseCustomTime(false);
+    setCustomTime('');
+  };
+
+  const handleCustomTimeChange = (time) => {
+    setCustomTime(time);
+    setUseCustomTime(true);
+    setSelectedScheduleTime('');
   };
 
   const handleScheduleConfirm = () => {
-    if (!selectedScheduleTime) {
+    const finalTime = useCustomTime ? customTime : selectedScheduleTime;
+    
+    if (!finalTime) {
       showError('Please select a time');
       return;
     }
 
+    // Validate custom time if used
+    if (useCustomTime) {
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(customTime)) {
+        showError('Please enter a valid time in HH:MM format');
+        return;
+      }
+
+      // Check if custom time is within hotel hours
+      if (hotelInfo) {
+        const openingTime = hotelInfo.opening_time.split(':').slice(0, 2).join(':');
+        const closingTime = hotelInfo.closeing_time.split(':').slice(0, 2).join(':');
+        
+        if (customTime < openingTime || customTime > closingTime) {
+          showError(`Time must be between ${openingTime} and ${closingTime}`);
+          return;
+        }
+
+        // Check if it's today and the time is in the past
+        const now = new Date();
+        const selectedDateObj = new Date(selectedScheduleDate);
+        const isToday = selectedDateObj.toDateString() === now.toDateString();
+        
+        if (isToday) {
+          const currentTime = now.toTimeString().slice(0, 5);
+          if (customTime <= currentTime) {
+            showError('Custom time must be in the future for today');
+            return;
+          }
+        }
+      }
+    }
+
     // Combine date and time
-    const scheduledDateTime = `${selectedScheduleDate}T${selectedScheduleTime}:00`;
+    const scheduledDateTime = `${selectedScheduleDate}T${finalTime}:00`;
     
     // Store the scheduled time in the order data
     // This will be used when placing the order
     setSelectedScheduleDateTime(scheduledDateTime);
     
     setShowScheduleModal(false);
-    showSuccess(`Order scheduled for ${selectedScheduleDate} at ${selectedScheduleTime}`);
+    showSuccess(`Order scheduled for ${selectedScheduleDate} at ${finalTime}`);
   };
 
   const handleScheduleCancel = () => {
     setShowScheduleModal(false);
     setSelectedScheduleTime('');
     setSelectedScheduleDate('');
+    setCustomTime('');
+    setUseCustomTime(false);
   };
 
   return (
@@ -7520,37 +7567,81 @@ const RunningOrders = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Time
                 </label>
-                {availableTimeSlots.length > 0 ? (
-                  <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto">
-                    {availableTimeSlots.map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => handleScheduleTimeSelect(time)}
-                        className={`p-3 text-sm rounded-lg border transition-all cursor-pointer ${
-                          selectedScheduleTime === time
-                            ? 'bg-primary text-white border-primary'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:bg-gray-50'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
+                
+                {/* Custom Time Input */}
+                <div className="mb-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <input
+                      type="checkbox"
+                      id="useCustomTime"
+                      checked={useCustomTime}
+                      onChange={(e) => {
+                        setUseCustomTime(e.target.checked);
+                        if (e.target.checked) {
+                          setSelectedScheduleTime('');
+                        } else {
+                          setCustomTime('');
+                        }
+                      }}
+                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <label htmlFor="useCustomTime" className="text-sm font-medium text-gray-700">
+                      Use Custom Time
+                    </label>
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock size={24} className="mx-auto mb-2" />
-                    <p>No available time slots for selected date</p>
-                  </div>
+                  
+                  {useCustomTime && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={customTime}
+                        onChange={(e) => handleCustomTimeChange(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="HH:MM"
+                      />
+                      <span className="text-sm text-gray-500">
+                        Format: HH:MM (24-hour)
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Predefined Time Slots */}
+                {!useCustomTime && (
+                  <>
+                    {availableTimeSlots.length > 0 ? (
+                      <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto">
+                        {availableTimeSlots.map((time) => (
+                          <button
+                            key={time}
+                            onClick={() => handleScheduleTimeSelect(time)}
+                            className={`p-3 text-sm rounded-lg border transition-all cursor-pointer ${
+                              selectedScheduleTime === time
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:bg-gray-50'
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Clock size={24} className="mx-auto mb-2" />
+                        <p>No available time slots for selected date</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Selected Schedule Display */}
-              {selectedScheduleTime && (
+              {(selectedScheduleTime || (useCustomTime && customTime)) && (
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="text-center">
                     <p className="text-sm text-gray-600">Order scheduled for:</p>
                     <p className="text-lg font-semibold text-blue-800">
-                      {selectedScheduleDate} at {selectedScheduleTime}
+                      {selectedScheduleDate} at {useCustomTime ? customTime : selectedScheduleTime}
                     </p>
                   </div>
                 </div>
@@ -7567,9 +7658,9 @@ const RunningOrders = () => {
               </button>
               <button
                 onClick={handleScheduleConfirm}
-                disabled={!selectedScheduleTime}
+                disabled={!selectedScheduleTime && !(useCustomTime && customTime)}
                 className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-                  selectedScheduleTime
+                  (selectedScheduleTime || (useCustomTime && customTime))
                     ? 'bg-primary text-white hover:bg-primary/90'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
