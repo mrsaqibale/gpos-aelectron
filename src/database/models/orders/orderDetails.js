@@ -281,12 +281,13 @@ export function deleteOrderDetail(id) {
 // Get order details with food information
 export function getOrderDetailsWithFood(orderId) {
   try {
+    console.log(`Getting order details for order ${orderId}...`);
     const stmt = db.prepare(`
       SELECT 
         od.*,
         f.name as food_name,
         f.description as food_description,
-        f.imgurl as food_image,
+        f.image as food_image,
         c.name as category_name
       FROM order_details od
       LEFT JOIN food f ON od.food_id = f.id
@@ -295,6 +296,7 @@ export function getOrderDetailsWithFood(orderId) {
       ORDER BY od.created_at ASC
     `);
     const orderDetails = stmt.all(orderId);
+    console.log(`Found ${orderDetails.length} order details for order ${orderId}:`, orderDetails.map(d => ({ id: d.id, food_id: d.food_id, food_name: d.food_name })));
     
     return { success: true, data: orderDetails };
   } catch (err) {
@@ -372,6 +374,23 @@ export function getTopSellingFoods(limit = 10, startDate = null, endDate = null)
     return { success: true, data: topFoods };
   } catch (err) {
     console.error('Error getting top selling foods:', err.message);
+    return errorResponse(err.message);
+  }
+}
+
+// Delete order details by order ID
+export function deleteOrderDetailsByOrderId(orderId) {
+  try {
+    const stmt = db.prepare(`
+      DELETE FROM order_details 
+      WHERE order_id = ? AND isdeleted = 0
+    `);
+    const result = stmt.run(orderId);
+    
+    console.log(`Deleted ${result.changes} order details for order ${orderId}`);
+    return { success: true, message: `Deleted ${result.changes} order details` };
+  } catch (err) {
+    console.error('Error deleting order details:', err.message);
     return errorResponse(err.message);
   }
 }

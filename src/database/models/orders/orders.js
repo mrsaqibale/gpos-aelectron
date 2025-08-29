@@ -205,6 +205,7 @@ export function getOrderById(id) {
 // Get all orders
 export function getAllOrders(limit = 100, offset = 0) {
   try {
+    console.log(`Getting all orders with limit=${limit}, offset=${offset}`);
     const stmt = db.prepare(`
       SELECT * FROM orders 
       WHERE isdeleted = 0 
@@ -212,6 +213,7 @@ export function getAllOrders(limit = 100, offset = 0) {
       LIMIT ? OFFSET ?
     `);
     const orders = stmt.all(limit, offset);
+    console.log(`Found ${orders.length} orders:`, orders.map(o => ({ id: o.id, status: o.order_status })));
     
     return { success: true, data: orders };
   } catch (err) {

@@ -8,6 +8,7 @@ const {
   getOrderDetailsByFoodId, 
   getAllOrderDetails, 
   deleteOrderDetail, 
+  deleteOrderDetailsByOrderId,
   getOrderDetailsWithFood,
   getOrderDetailsStatistics,
   getTopSellingFoods,
@@ -99,6 +100,17 @@ function registerOrderDetailsIpcHandlers() {
       return result;
     } catch (error) {
       console.error('Error in orderDetail:delete handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // Handle delete order details by order ID
+  ipcMain.handle('orderDetail:deleteByOrderId', async (event, orderId) => {
+    try {
+      const result = deleteOrderDetailsByOrderId(orderId);
+      return result;
+    } catch (error) {
+      console.error('Error in orderDetail:deleteByOrderId handler:', error);
       return { success: false, message: error.message };
     }
   });

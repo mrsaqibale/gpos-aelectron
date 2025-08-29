@@ -225,6 +225,8 @@ const RunningOrders = () => {
   // Order Type State
   const [selectedOrderType, setSelectedOrderType] = useState('In Store');
   const [isSinglePayMode, setIsSinglePayMode] = useState(false);
+  const [isModifyingOrder, setIsModifyingOrder] = useState(false);
+  const [modifyingOrderId, setModifyingOrderId] = useState(null);
 
   // Use the custom hook for keyboard functionality
   const {
@@ -380,10 +382,25 @@ const RunningOrders = () => {
     fetchFoodsByCategory(category.id);
   };
 
-  // Fetch existing orders from database
+  // Get customer name by ID
+  const getCustomerName = async (customerId) => {
+    try {
+      if (!customerId) return 'Walk-in Customer';
+      const result = await window.myAPI.getCustomerById(customerId);
+      if (result && result.success && result.data) {
+        return result.data.name || `Customer ${customerId}`;
+      }
+      return `Customer ${customerId}`;
+    } catch (error) {
+      console.error('Error fetching customer name:', error);
+      return `Customer ${customerId}`;
+    }
+  };
+
+  // Fetch active orders from database (not completed/delivered/canceled)
   const fetchExistingOrders = async () => {
     try {
-      console.log('Fetching existing orders from database...');
+      console.log('Fetching active orders from database...');
       
       if (!window.myAPI) {
         console.error('myAPI is not available');
@@ -394,19 +411,34 @@ const RunningOrders = () => {
       const result = await window.myAPI.getAllOrders(100, 0); // Get last 100 orders
       
       if (result && result.success) {
-        console.log('Existing orders loaded:', result.data);
+        console.log('All orders loaded:', result.data);
         
-        // Transform database orders to UI format
-        const transformedOrders = result.data.map(dbOrder => {
-          // Get order details for this order
-          return window.myAPI.getOrderDetailsWithFood(dbOrder.id).then(detailsResult => {
+        // Filter to only show orders that are not completed
+        const activeOrders = result.data.filter(order => {
+          const isActive = order.order_status !== 'completed' && 
+                          order.order_status !== 'delivered' && 
+                          order.order_status !== 'canceled';
+          console.log(`Order ${order.id}: status="${order.order_status}", isActive=${isActive}`);
+          return isActive;
+        });
+        
+        console.log('Active orders (not completed):', activeOrders);
+      
+                      // Transform database orders to UI format
+        const transformedOrders = activeOrders.map(async dbOrder => {
+          try {
+            // Get order details for this order
+            console.log(`Fetching order details for order ${dbOrder.id}...`);
+            const detailsResult = await window.myAPI.getOrderDetailsWithFood(dbOrder.id);
+            
+            let items = [];
             if (detailsResult && detailsResult.success) {
+              console.log(`Order ${dbOrder.id} details:`, detailsResult.data);
               // Transform order details to cart items format
-              const items = detailsResult.data.map(detail => {
+              items = detailsResult.data.map(detail => {
                 let foodDetails = {};
                 let variations = {};
                 let adons = [];
-                
                 try {
                   if (detail.food_details) {
                     foodDetails = JSON.parse(detail.food_details);
@@ -420,7 +452,6 @@ const RunningOrders = () => {
                 } catch (error) {
                   console.error('Error parsing JSON data:', error);
                 }
-
                 return {
                   id: detail.id,
                   food: {
@@ -437,44 +468,92 @@ const RunningOrders = () => {
                   addedAt: detail.created_at
                 };
               });
-
-              return {
-                id: dbOrder.id,
-                orderNumber: `ORD-${String(dbOrder.id).padStart(3, '0')}`,
-                items: items,
-                customer: { 
-                  id: dbOrder.customer_id,
-                  name: dbOrder.customer_id ? 'Customer ' + dbOrder.customer_id : 'Walk-in Customer'
-                },
-                total: dbOrder.order_amount,
-                coupon: dbOrder.coupon_code ? {
-                  code: dbOrder.coupon_code,
-                  title: dbOrder.coupon_discount_title,
-                  discount: dbOrder.coupon_discount_amount
-                } : null,
-                orderType: dbOrder.order_type === 'dine_in' ? 'Dine In' : 
-                          dbOrder.order_type === 'takeaway' ? 'Collection' :
-                          dbOrder.order_type === 'delivery' ? 'Delivery' : 'In Store',
-                table: dbOrder.delivery_address_id ? 'Table ' + dbOrder.delivery_address_id : 'None',
-                waiter: 'Ds Waiter',
-                status: dbOrder.order_status === 'pending' ? 'New' :
-                       dbOrder.order_status === 'completed' ? 'Completed' :
-                       dbOrder.order_status === 'processing' ? 'In Progress' :
-                       dbOrder.order_status === 'ready' ? 'Ready' : dbOrder.order_status,
-                placedAt: dbOrder.created_at,
-                databaseId: dbOrder.id
-              };
+            } else {
+              console.warn(`No order details found for order ${dbOrder.id}. Including order with empty items.`);
             }
-            return null;
-          });
+            
+            // Get customer name
+            const customerName = dbOrder.customer_id ? await getCustomerName(dbOrder.customer_id) : 'Walk-in Customer';
+            
+            return {
+              id: dbOrder.id,
+              orderNumber: `ORD-${String(dbOrder.id).padStart(3, '0')}`,
+              items: items,
+              customer: {
+                id: dbOrder.customer_id,
+                name: customerName
+              },
+              total: dbOrder.order_amount,
+              coupon: dbOrder.coupon_code
+                ? {
+                    code: dbOrder.coupon_code,
+                    title: dbOrder.coupon_discount_title,
+                    discount: dbOrder.coupon_discount_amount
+                  }
+                : null,
+              orderType:
+                dbOrder.order_type === 'dine_in'
+                  ? 'Dine In'
+                  : dbOrder.order_type === 'takeaway'
+                  ? 'Collection'
+                  : dbOrder.order_type === 'delivery'
+                  ? 'Delivery'
+                  : 'In Store',
+              table: dbOrder.delivery_address_id ? 'Table ' + dbOrder.delivery_address_id : 'None',
+              waiter: 'Ds Waiter',
+              status:
+                dbOrder.order_status === 'pending'
+                  ? 'New'
+                  : dbOrder.order_status === 'completed'
+                  ? 'Completed'
+                  : dbOrder.order_status === 'processing'
+                  ? 'In Progress'
+                  : dbOrder.order_status === 'ready'
+                  ? 'Ready'
+                  : dbOrder.order_status,
+              placedAt: dbOrder.created_at,
+              databaseId: dbOrder.id
+            };
+          } catch (error) {
+            console.error(`Error processing order ${dbOrder.id}:`, error);
+            // Return a basic order object on error
+            return {
+              id: dbOrder.id,
+              orderNumber: `ORD-${String(dbOrder.id).padStart(3, '0')}`,
+              items: [],
+              customer: {
+                id: dbOrder.customer_id,
+                name: dbOrder.customer_id ? `Customer ${dbOrder.customer_id}` : 'Walk-in Customer'
+              },
+              total: dbOrder.order_amount,
+              coupon: null,
+              orderType: 'In Store',
+              table: 'None',
+              waiter: 'Ds Waiter',
+              status: dbOrder.order_status,
+              placedAt: dbOrder.created_at,
+              databaseId: dbOrder.id
+            };
+          }
         });
 
         // Wait for all order details to be fetched
         const resolvedOrders = await Promise.all(transformedOrders);
-        const validOrders = resolvedOrders.filter(order => order !== null);
-        
-        setPlacedOrders(validOrders);
-        console.log('Transformed orders loaded:', validOrders);
+        const validOrders = resolvedOrders.filter(order => !!order);
+
+        // Merge with existing orders to avoid flicker/duplication
+        setPlacedOrders(prev => {
+          const byId = new Map();
+          [...prev, ...validOrders].forEach(order => {
+            if (order) {
+              byId.set(order.id, order);
+            }
+          });
+          const merged = Array.from(byId.values());
+          console.log('Merged active orders:', merged);
+          return merged;
+        });
+        console.log('Transformed active orders loaded:', validOrders);
       } else {
         console.error('Failed to fetch existing orders:', result?.message);
       }
@@ -487,7 +566,16 @@ const RunningOrders = () => {
   useEffect(() => {
     fetchCategories();
     fetchFloors(); // Add this line to fetch floors on component mount
-    fetchExistingOrders(); // Load existing orders from database
+    fetchExistingOrders(); // Load active orders from database
+    // Poll every 10s for new/updated active orders
+    const interval = setInterval(() => {
+      try {
+        fetchExistingOrders();
+      } catch (e) {
+        console.error('Auto-refresh active orders failed:', e);
+      }
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   // Debug floors state
@@ -1919,13 +2007,13 @@ const RunningOrders = () => {
     }
 
     try {
-      // Map order type based on selection
+    // Map order type based on selection
       let orderType = 'dine_in'; // default for database
-      if (selectedOrderType === 'Table') {
+    if (selectedOrderType === 'Table') {
         orderType = 'dine_in';
-      } else if (selectedOrderType === 'Collection') {
+    } else if (selectedOrderType === 'Collection') {
         orderType = 'takeaway';
-      } else if (selectedOrderType === 'Delivery') {
+    } else if (selectedOrderType === 'Delivery') {
         orderType = 'delivery';
       } else if (selectedOrderType === 'In Store') {
         orderType = 'dine_in';
@@ -1963,15 +2051,33 @@ const RunningOrders = () => {
         issyncronized: false
       };
 
-      // Create order in database
-      const orderResult = await window.myAPI.createOrder(orderData);
-      
-      if (!orderResult.success) {
-        showError('Failed to create order: ' + orderResult.message);
-        return;
-      }
+      let orderId;
 
-      const orderId = orderResult.id;
+      if (isModifyingOrder && modifyingOrderId) {
+        // Update existing order
+        console.log('Updating existing order:', modifyingOrderId);
+        const updateResult = await window.myAPI.updateOrder(modifyingOrderId, orderData);
+        
+        if (!updateResult.success) {
+          showError('Failed to update order: ' + updateResult.message);
+          return;
+        }
+        
+        orderId = modifyingOrderId;
+        console.log('Order updated successfully');
+      } else {
+        // Create new order
+        console.log('Creating new order');
+        const orderResult = await window.myAPI.createOrder(orderData);
+        
+        if (!orderResult.success) {
+          showError('Failed to create order: ' + orderResult.message);
+          return;
+        }
+        
+        orderId = orderResult.id;
+        console.log('Order created successfully');
+      }
 
       // Prepare order details data
       const orderDetailsArray = cartItems.map(item => {
@@ -2021,6 +2127,15 @@ const RunningOrders = () => {
         };
       });
 
+      if (isModifyingOrder && modifyingOrderId) {
+        // Delete existing order details first
+        console.log('Deleting existing order details for order:', modifyingOrderId);
+        const deleteResult = await window.myAPI.deleteOrderDetailsByOrderId(modifyingOrderId);
+        if (!deleteResult.success) {
+          console.warn('Failed to delete existing order details:', deleteResult.message);
+        }
+      }
+
       // Create order details in database
       const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
       
@@ -2030,26 +2145,41 @@ const RunningOrders = () => {
       }
 
       // Create order object for UI display
-      const newOrder = {
+    const newOrder = {
         id: orderId,
         orderNumber: `ORD-${String(orderId).padStart(3, '0')}`,
-        items: [...cartItems],
-        customer: selectedCustomer || { name: 'Walk-in Customer' },
+      items: [...cartItems],
+      customer: selectedCustomer || { name: 'Walk-in Customer' },
         total: total,
-        coupon: appliedCoupon,
+      coupon: appliedCoupon,
         orderType: selectedOrderType,
-        table: selectedTable ? selectedTable : 'None',
-        waiter: 'Ds Waiter',
-        status: 'New',
+      table: selectedTable ? selectedTable : 'None',
+      waiter: 'Ds Waiter',
+      status: 'New',
         placedAt: new Date().toISOString(),
         databaseId: orderId // Store database ID for reference
-      };
+    };
 
-      // Add to placed orders
+    if (isModifyingOrder && modifyingOrderId) {
+      // Update existing order in the list
+      setPlacedOrders(prev => prev.map(order => 
+        order.databaseId === modifyingOrderId 
+          ? { ...newOrder, databaseId: modifyingOrderId }
+          : order
+      ));
+      
+      // Clear modification flags
+      setIsModifyingOrder(false);
+      setModifyingOrderId(null);
+      
+      showSuccess('Order updated successfully!', 'success');
+    } else {
+      // Add new order to the list
       setPlacedOrders(prev => [newOrder, ...prev]);
-
       showSuccess('Order placed successfully!', 'success');
-      clearCart();
+    }
+    
+    clearCart();
 
     } catch (error) {
       console.error('Error placing order:', error);
@@ -2875,16 +3005,16 @@ const RunningOrders = () => {
       }
 
       // Update local state
-      setPlacedOrders(prev => prev.map(order =>
-        order.id === selectedOrderForStatusUpdate.id
-          ? { ...order, status: selectedStatus }
-          : order
-      ));
+    setPlacedOrders(prev => prev.map(order =>
+      order.id === selectedOrderForStatusUpdate.id
+        ? { ...order, status: selectedStatus }
+        : order
+    ));
 
-      showSuccess(`Order status updated to ${selectedStatus}!`);
-      setShowStatusUpdateModal(false);
-      setSelectedOrderForStatusUpdate(null);
-      setSelectedStatus('New');
+    showSuccess(`Order status updated to ${selectedStatus}!`);
+    setShowStatusUpdateModal(false);
+    setSelectedOrderForStatusUpdate(null);
+    setSelectedStatus('New');
     } catch (error) {
       console.error('Error updating order status:', error);
       showError('Failed to update order status. Please try again.');
@@ -2914,45 +3044,106 @@ const RunningOrders = () => {
     setSelectedAdons([]);
     setSelectedOrderType('');
 
-    // Load order details back into cart
+    // Load order details back into cart with full details
     if (selectedPlacedOrder.items && selectedPlacedOrder.items.length > 0) {
-      // Convert order items back to cart items
-      const cartItemsFromOrder = selectedPlacedOrder.items.map((item, index) => ({
-        id: Date.now() + index, // Generate unique IDs
-        food: item.food,
-        variations: item.variations || {},
-        adons: item.adons || [],
-        quantity: item.quantity,
-        totalPrice: item.totalPrice,
-        addedAt: new Date().toISOString()
-      }));
+      console.log('Loading order items:', selectedPlacedOrder.items);
+      
+      // Convert order items back to cart items with all details
+      const cartItemsFromOrder = selectedPlacedOrder.items.map((item, index) => {
+        console.log('Processing item:', item);
+        
+        // Parse variations and addons from JSON if they're strings
+        let variations = {};
+        let adons = [];
+        
+        try {
+          if (typeof item.variations === 'string') {
+            variations = JSON.parse(item.variations);
+          } else {
+            variations = item.variations || {};
+          }
+          
+          if (typeof item.adons === 'string') {
+            adons = JSON.parse(item.adons);
+          } else {
+            adons = item.adons || [];
+          }
+        } catch (error) {
+          console.error('Error parsing variations/addons for item:', item, error);
+        }
+        
+        console.log('Parsed variations:', variations);
+        console.log('Parsed addons:', adons);
+        
+        return {
+          id: Date.now() + index, // Generate unique IDs
+          food: item.food,
+          variations: variations,
+          adons: adons,
+          quantity: item.quantity,
+          totalPrice: item.totalPrice,
+          addedAt: new Date().toISOString()
+        };
+      });
 
+      console.log('Cart items from order:', cartItemsFromOrder);
       setCartItems(cartItemsFromOrder);
       setCartItemId(Date.now() + cartItemsFromOrder.length + 1);
     }
 
     // Load customer information
     if (selectedPlacedOrder.customer) {
+      console.log('Loading customer:', selectedPlacedOrder.customer);
       setSelectedCustomer(selectedPlacedOrder.customer);
     }
 
     // Load order type
     if (selectedPlacedOrder.orderType) {
+      console.log('Loading order type:', selectedPlacedOrder.orderType);
       setSelectedOrderType(selectedPlacedOrder.orderType);
     }
 
     // Load table information if it's a table order
     if (selectedPlacedOrder.table && selectedPlacedOrder.table !== 'None') {
-      setSelectedTable(selectedPlacedOrder.table);
+      console.log('Loading table:', selectedPlacedOrder.table);
+      // Extract table number from "Table X" format
+      const tableMatch = selectedPlacedOrder.table.match(/Table (\d+)/);
+      if (tableMatch) {
+        const tableNumber = tableMatch[1];
+        // Find the table by table number
+        const table = tables.find(t => t.table_no.toString() === tableNumber);
+        if (table) {
+          console.log('Found table:', table);
+          // Set the floor first, then the table
+          setSelectedFloor(table.floor_name || 'Floor 1');
+          setSelectedTable(table.id.toString());
+        } else {
+          console.log('Table not found, setting table name as is');
+          setSelectedTable(selectedPlacedOrder.table);
+        }
+      } else {
+        setSelectedTable(selectedPlacedOrder.table);
+      }
     }
 
     // Load applied coupon if any
     if (selectedPlacedOrder.coupon) {
+      console.log('Loading coupon:', selectedPlacedOrder.coupon);
       setAppliedCoupon(selectedPlacedOrder.coupon);
     }
 
-    // Remove the order from placed orders since we're modifying it
-    setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
+    // Load waiter information if available
+    if (selectedPlacedOrder.waiter) {
+      console.log('Loading waiter:', selectedPlacedOrder.waiter);
+      // You can add a waiter state if needed
+    }
+
+    // Set modification flags
+    setIsModifyingOrder(true);
+    setModifyingOrderId(selectedPlacedOrder.databaseId);
+    
+    // Don't remove the order from placed orders - keep it there
+    // setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
     setSelectedPlacedOrder(null);
 
     showSuccess('Order loaded for modification. You can now edit the items.');
@@ -3011,13 +3202,13 @@ const RunningOrders = () => {
           {/* Running Orders */}
           <div className="flex-1 flex flex-col overflow-y-auto p-3">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-gray-800">Running Orders</h2>
+              <h2 className="font-bold text-gray-800">Active Orders</h2>
               <button 
                 onClick={fetchExistingOrders}
                 className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
               >
                 <RefreshCw size={12} />
-                Refresh
+                Refresh Active
               </button>
             </div>
 
@@ -3027,7 +3218,7 @@ const RunningOrders = () => {
                 <input
                   type="text"
                   name="runningOrdersSearchQuery"
-                  placeholder="Search Orders"
+                  placeholder="Search Active Orders"
                   value={runningOrdersSearchQuery}
                   onChange={(e) => setRunningOrdersSearchQuery(e.target.value)}
                   onFocus={(e) => handleAnyInputFocus(e, 'runningOrdersSearchQuery')}
@@ -3190,8 +3381,8 @@ const RunningOrders = () => {
                 })
               ) : (
                 <div className="text-center py-8">
-                  <div className="text-gray-500 text-sm">No orders placed</div>
-                  <div className="text-gray-400 text-xs mt-2">Place orders to see them here</div>
+                  <div className="text-gray-500 text-sm">No active orders</div>
+                  <div className="text-gray-400 text-xs mt-2">Place orders to see active orders here</div>
                 </div>
               )}
             </div>
@@ -3342,6 +3533,18 @@ const RunningOrders = () => {
 
         {/* Order Summary */}
         <div className="w-[40%] bg-white rounded-lg flex flex-col">
+          {/* Modification indicator */}
+          {isModifyingOrder && (
+            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 mb-2">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="font-medium">Modifying Order</span>
+              </div>
+              <p className="text-sm mt-1">You are currently modifying an existing order. Use "Place Order" to save your changes.</p>
+            </div>
+          )}
           <div className="grid grid-cols-5 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
             <button
@@ -3455,8 +3658,35 @@ const RunningOrders = () => {
                     cartItems.map((item) => (
                       <tr key={item.id} className="grid grid-cols-[auto_100px_100px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
                         
-                        <td className="text-gray-800 text-sm truncate">
-                          <span>{item.food.name}</span>
+                        <td className="text-gray-800 text-sm">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{item.food.name}</span>
+                            
+                            {/* Show variations if any */}
+                            {item.variations && Object.keys(item.variations).length > 0 && (
+                              <div className="text-xs text-gray-600 mt-1">
+                                {Object.entries(item.variations).map(([variationName, selectedOption]) => (
+                                  <div key={variationName} className="flex items-center gap-1">
+                                    <span className="text-gray-500">• {variationName}:</span>
+                                    <span className="text-gray-700">{selectedOption}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Show addons if any */}
+                            {item.adons && item.adons.length > 0 && (
+                              <div className="text-xs text-gray-600 mt-1">
+                                {item.adons.map((addon, index) => (
+                                  <div key={index} className="flex items-center gap-1">
+                                    <span className="text-gray-500">• Addon:</span>
+                                    <span className="text-gray-700">{addon.name || addon}</span>
+                                    {addon.price && <span className="text-gray-500">(+€{addon.price})</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         {/* <td className="text-gray-800 text-center">€{(item.totalPrice / item.quantity).toFixed(2)}</td> */}
                         <td className="flex items-center justify-center">
@@ -5778,7 +6008,7 @@ const RunningOrders = () => {
                 <button
                   onClick={async () => {
                     try {
-                      // Handle payment submission
+                    // Handle payment submission
                       const paymentAmountValue = parseFloat(paymentAmount) || 0;
                       const givenAmountValue = parseFloat(givenAmount) || 0;
                       const changeAmountValue = parseFloat(changeAmount) || 0;
@@ -5826,11 +6056,11 @@ const RunningOrders = () => {
                         ));
                       }
 
-                      showSuccess('Payment processed successfully!');
-                      setShowFinalizeSaleModal(false);
-                      setIsSinglePayMode(false);
-                      clearCart();
-                      resetFinalizeSaleModal();
+                    showSuccess('Payment processed successfully!');
+                    setShowFinalizeSaleModal(false);
+                    setIsSinglePayMode(false);
+                    clearCart();
+                    resetFinalizeSaleModal();
                     } catch (error) {
                       console.error('Error processing payment:', error);
                       showError('Failed to process payment. Please try again.');
