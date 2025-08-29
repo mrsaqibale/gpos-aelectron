@@ -3659,19 +3659,7 @@ const RunningOrders = () => {
           <div className="flex justify-center p-2">
             {/* Modification Mode Indicator */}
             {isModifyingOrder && (
-              <div className="mb-2 w-full">
-                <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-2 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <Edit size={12} className="text-yellow-600" />
-                    <span className="text-xs font-medium text-yellow-800">
-                      Modification Mode Active
-                    </span>
-                  </div>
-                  <p className="text-xs text-yellow-700 mt-1">
-                    Order #{modifyingOrderId} is being modified
-                  </p>
-                </div>
-              </div>
+              <></>
             )}
             <div className="flex flex-col gap-2 text-[10px] w-full">
               {/* First Row - Bill and Invoice */}
@@ -3717,14 +3705,12 @@ const RunningOrders = () => {
                 </button>
               </div>
                 <button 
-                  onClick={handleDeleteOrder}
-                  disabled={isModifyingOrder}
                   className={`w-[70%] text-[13px] mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${
                     isModifyingOrder ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-[#c81118] text-white cursor-pointer hover:bg-[#b01018]'
                   }`}
                 >
                   <X size={14} />
-                  DELETE ORDER
+                  CANCEL ORDER
                 </button>
             </div>
           </div>
@@ -3837,15 +3823,7 @@ const RunningOrders = () => {
         <div className="w-[40%] bg-white rounded-lg flex flex-col">
           {/* Modification indicator */}
           {isModifyingOrder && (
-            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 mb-2">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">Modifying Order</span>
-              </div>
-              <p className="text-sm mt-1">You are currently modifying an existing order. Use "Place Order" to save your changes.</p>
-            </div>
+            <></>
           )}
           <div className="grid grid-cols-5 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
@@ -5121,44 +5099,7 @@ const RunningOrders = () => {
                 {/* Food Header Section */}
                 <div className="mb-6">
                   {editingCartItem && (
-                    <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-700 font-medium">
-                        ✏️ Editing item: {editingCartItem.food.name}
-                      </p>
-                      {/* Show current selections when editing */}
-                      {(Object.keys(selectedVariations).length > 0 || selectedAdons.length > 0) && (
-                        <div className="mt-2 text-xs text-blue-600">
-                          <p className="font-medium mb-1">Current selections:</p>
-                          {Object.keys(selectedVariations).length > 0 && (
-                            <div className="mb-1">
-                              <span className="font-medium">Variations:</span>
-                              {Object.entries(selectedVariations).map(([variationId, selection]) => {
-                                const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
-                                const option = variation?.options?.find(o => o.id === parseInt(selection));
-                                return (
-                                  <span key={variationId} className="ml-1 text-blue-500">
-                                    {variation?.name}: {option?.option_name || selection}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          )}
-                          {selectedAdons.length > 0 && (
-                            <div>
-                              <span className="font-medium">Addons:</span>
-                              {selectedAdons.map((adonId, index) => {
-                                const adon = foodDetails?.adons?.find(a => a.id === parseInt(adonId));
-                                return (
-                                  <span key={adonId} className="ml-1 text-blue-500">
-                                    {adon?.name || adonId}{index < selectedAdons.length - 1 ? ', ' : ''}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <></>
                   )}
                   <div className="flex items-center justify-between gap-4">
                     {/* Food Image and Info */}
