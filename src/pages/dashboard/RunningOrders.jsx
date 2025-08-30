@@ -68,6 +68,7 @@ import FloorPlan3D from '../../components/FloorPlan3D';
 import CustomAlert from '../../components/CustomAlert';
 import useCustomAlert from '../../hooks/useCustomAlert';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
+import Invoice from '../../components/Invoice';
 
 const RunningOrders = () => {
   // Custom Alert Hook
@@ -2110,6 +2111,9 @@ const RunningOrders = () => {
 
   // Order Details Modal State
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  
+  // Invoice Modal State
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   // Update ingredients whenever flavors change
   useEffect(() => {
@@ -3773,8 +3777,16 @@ const RunningOrders = () => {
 
   // Handle creating invoice
   const handleCreateInvoice = () => {
-    showSuccess('Invoice created successfully!');
     setShowOrderDetailsModal(false);
+    setShowInvoiceModal(true);
+  };
+
+  // Handle printing invoice
+  const handlePrintInvoice = () => {
+    // This will trigger the browser's print dialog
+    window.print();
+    showSuccess('Invoice printed successfully!');
+    setShowInvoiceModal(false);
   };
 
   // Handle opening status update modal
@@ -4931,7 +4943,7 @@ const RunningOrders = () => {
                 onClick={(e) => handleAnyInputClick(e, 'searchQuery')}
                 onBlur={(e) => handleCustomInputBlur(e, 'searchQuery')}
                 className="w-full pl-10 pr-4 py-2 text-sm bg-white placeholder:text-primary font-semibold border border-gray-300 rounded-xl z-10
-      focus:outline-none focus:ring-2 focus:ring-blue-400"
+      focus:outline-none focus:ring-2 focus:ring-primary"
               />
               {searchQuery && (
                 <button
@@ -8663,6 +8675,15 @@ const RunningOrders = () => {
         onClose={() => setShowOrderDetailsModal(false)}
         order={selectedPlacedOrder}
         onCreateInvoice={handleCreateInvoice}
+        foodDetails={foodDetails}
+      />
+
+      {/* Invoice Modal */}
+      <Invoice
+        isOpen={showInvoiceModal}
+        onClose={() => setShowInvoiceModal(false)}
+        order={selectedPlacedOrder}
+        onPrint={handlePrintInvoice}
         foodDetails={foodDetails}
       />
 
