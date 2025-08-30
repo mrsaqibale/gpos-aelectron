@@ -3638,10 +3638,11 @@ const RunningOrders = () => {
   const handleCashGivenAmountChange = (value) => {
     setGivenAmount(value);
     setPaymentAmount(value);
-    // Calculate change based on the split bill total
+    // Calculate change based on the correct total
     if (value) {
-      const splitBillTotal = calculateSplitBillTotal();
-      const change = parseFloat(value) - splitBillTotal;
+      const total = isSinglePayMode ? calculateSinglePayTotals().total :
+                   selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+      const change = parseFloat(value) - total;
       setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
     } else {
       setChangeAmount('0.00');
