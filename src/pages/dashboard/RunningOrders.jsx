@@ -4973,12 +4973,24 @@ const RunningOrders = () => {
         <div className="w-[40%] bg-white rounded-lg flex flex-col">
           {/* Modification indicator */}
           {isModifyingOrder && (
-            <></>
+            <div className="px-2 py-1 bg-yellow-100 border-b border-yellow-200">
+              <div className="flex items-center justify-center gap-2 text-yellow-800 text-xs font-medium">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                Modifying Order - Order Type Locked
+              </div>
+            </div>
           )}
           <div className="grid grid-cols-5 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
             <button
               onClick={() => {
+                // Prevent order type change when modifying an existing order
+                if (isModifyingOrder) {
+                  showWarning('Cannot change order type while modifying an existing order');
+                  return;
+                }
                 setSelectedOrderType('In Store');
                 // Clear table selections when switching to non-table order type
                 setSelectedTable('');
@@ -4987,8 +4999,15 @@ const RunningOrders = () => {
                 // Clear schedule when switching away from Collection
                 setSelectedScheduleDateTime('');
               }}
+              disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
+                       btn-lifted transition-colors cursor-pointer ${
+                         isModifyingOrder 
+                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                           : selectedOrderType === 'In Store' 
+                           ? 'bg-primary text-white' 
+                           : 'bg-white hover:border-primary hover:border-2'
+                       }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               </svg>
@@ -4996,10 +5015,9 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => {
-                // If in modification mode and current order type is already Table, don't show table modal
-                if (isModifyingOrder && selectedOrderType === 'Table') {
-                  console.log('In modification mode with Table order type - preventing table modal');
-                  showWarning('Cannot change table selection while modifying a table order');
+                // Prevent order type change when modifying an existing order
+                if (isModifyingOrder) {
+                  showWarning('Cannot change order type while modifying an existing order');
                   return;
                 }
                 setSelectedOrderType('Table');
@@ -5007,10 +5025,11 @@ const RunningOrders = () => {
                 setSelectedScheduleDateTime('');
                 setShowTableModal(true);
               }}
+              disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${
-                         isModifyingOrder && selectedOrderType === 'Table'
-                           ? 'bg-primary text-white cursor-not-allowed'
+                         isModifyingOrder 
+                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                            : selectedOrderType === 'Table' 
                            ? 'bg-primary text-white' 
                            : 'bg-white hover:border-primary hover:border-2'
@@ -5022,6 +5041,11 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={async () => {
+                // Prevent order type change when modifying an existing order
+                if (isModifyingOrder) {
+                  showWarning('Cannot change order type while modifying an existing order');
+                  return;
+                }
                 setSelectedOrderType('Collection');
                 // Clear table selections when switching to non-table order type
                 setSelectedTable('');
@@ -5030,8 +5054,15 @@ const RunningOrders = () => {
                 // Automatically open schedule modal for collection orders
                 await handleOpenScheduleModal();
               }}
+              disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
+                       btn-lifted transition-colors cursor-pointer ${
+                         isModifyingOrder 
+                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                           : selectedOrderType === 'Collection' 
+                           ? 'bg-primary text-white' 
+                           : 'bg-white hover:border-primary hover:border-2'
+                       }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"></circle>
               </svg>
@@ -5039,6 +5070,11 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => {
+                // Prevent order type change when modifying an existing order
+                if (isModifyingOrder) {
+                  showWarning('Cannot change order type while modifying an existing order');
+                  return;
+                }
                 setSelectedOrderType('Delivery');
                 // Clear table selections when switching to non-table order type
                 setSelectedTable('');
@@ -5047,8 +5083,15 @@ const RunningOrders = () => {
                 // Clear schedule when switching away from Collection
                 setSelectedScheduleDateTime('');
               }}
+              disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
+                       btn-lifted transition-colors cursor-pointer ${
+                         isModifyingOrder 
+                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                           : selectedOrderType === 'Delivery' 
+                           ? 'bg-primary text-white' 
+                           : 'bg-white hover:border-primary hover:border-2'
+                       }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
@@ -8028,7 +8071,7 @@ const RunningOrders = () => {
                     : 'bg-primary text-white cursor-not-allowed'
                 }`}
               >
-                Cancel & Save Reason
+                Cancel Order
               </button>
             </div>
           </div>
