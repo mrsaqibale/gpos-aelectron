@@ -5101,6 +5101,18 @@ const RunningOrders = () => {
             </button>
 
             <button
+              onClick={() => setShowCustomerModal(true)}
+              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+                     btn-lifted transition-colors cursor-pointer ${
+                       showCustomerModal 
+                         ? 'bg-primary text-white border-2 border-primary' 
+                         : 'bg-white text-black'
+                     }`}>
+              <Plus size={12} />
+              New Customer
+            </button>
+
+            <button
               onClick={() => setSelectedCustomer(null)}
               className="h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
@@ -8008,17 +8020,11 @@ const RunningOrders = () => {
                 Close
               </button>
               <button
-                onClick={() => handleConfirmCancelOrder(false)}
-                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg transition-colors"
-              >
-                Cancel Order
-              </button>
-              <button
                 onClick={() => handleConfirmCancelOrder(true)}
                 disabled={!cancellationReason.trim()}
                 className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
                   cancellationReason.trim()
-                    ? 'bg-primary text-white hover:bg-red-700'
+                    ? 'bg-primary text-white'
                     : 'bg-primary text-white cursor-not-allowed'
                 }`}
               >
