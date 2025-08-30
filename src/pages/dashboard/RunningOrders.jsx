@@ -248,6 +248,7 @@ const RunningOrders = () => {
   const [isSinglePayMode, setIsSinglePayMode] = useState(false);
   const [isModifyingOrder, setIsModifyingOrder] = useState(false);
   const [modifyingOrderId, setModifyingOrderId] = useState(null);
+  const [selectedNewOrderStatus, setSelectedNewOrderStatus] = useState('New'); // Track status for new orders
 
   // Use the custom hook for keyboard functionality
   const {
@@ -2225,6 +2226,37 @@ const RunningOrders = () => {
         }
       }
 
+      // Map selected status to database status
+      let dbStatus = 'pending';
+      switch (selectedNewOrderStatus) {
+        case 'New':
+          dbStatus = 'new';
+          break;
+        case 'In Progress':
+          dbStatus = 'in_progress';
+          break;
+        case 'Ready':
+          dbStatus = 'ready';
+          break;
+        case 'On the way':
+          dbStatus = 'on_the_way';
+          break;
+        case 'Delivered':
+          dbStatus = 'delivered';
+          break;
+        case 'Completed':
+          dbStatus = 'completed';
+          break;
+        case 'Pending':
+          dbStatus = 'pending';
+          break;
+        case 'Complete':
+          dbStatus = 'completed';
+          break;
+        default:
+          dbStatus = selectedNewOrderStatus.toLowerCase().replace(' ', '_');
+      }
+
       // Prepare order data for database
       const orderData = {
         customer_id: selectedCustomer?.id || null, // Allow null for walk-in customers
@@ -2232,7 +2264,7 @@ const RunningOrders = () => {
         coupon_discount_amount: discount,
         coupon_discount_title: appliedCoupon?.title || null,
         payment_status: 'pending',
-        order_status: 'pending',
+        order_status: dbStatus, // Use the mapped status instead of hardcoded 'pending'
         total_tax_amount: tax,
         payment_method: null, // Will be set when payment is made
         delivery_address_id: null, // Will be set for delivery orders
@@ -2536,7 +2568,7 @@ const RunningOrders = () => {
         return 'None';
       })(),
       waiter: 'Ds Waiter',
-      status: 'Pending',
+      status: selectedNewOrderStatus, // Use the selected status for new orders
         placedAt: new Date().toISOString(),
         databaseId: orderId // Store database ID for reference
     };
@@ -3550,41 +3582,49 @@ const RunningOrders = () => {
           dbStatus = selectedStatus.toLowerCase().replace(' ', '_');
       }
 
+      // Check if this is a new order (no databaseId) - just setting status for future orders
+      if (!selectedOrderForStatusUpdate.databaseId) {
+        setSelectedNewOrderStatus(selectedStatus);
+        showSuccess(`Order status set to ${selectedStatus} for new orders!`);
+        setShowStatusUpdateModal(false);
+        setSelectedOrderForStatusUpdate(null);
+        setSelectedStatus('New');
+        return;
+      }
+
       // Update order status in database
-      if (selectedOrderForStatusUpdate.databaseId) {
-        const updateResult = await window.myAPI.updateOrderStatus(
-          selectedOrderForStatusUpdate.databaseId, 
-          dbStatus, 
-          null // updatedBy - can be set to current employee ID
-        );
-        
-        if (!updateResult.success) {
-          showError('Failed to update order status: ' + updateResult.message);
-          return;
-        }
-        
-        // If order is completed, delivered, or canceled, free the associated tables
-        if ((dbStatus === 'completed' || dbStatus === 'delivered') && selectedOrderForStatusUpdate.databaseId) {
-          try {
-            // Get the order details to check for table information
-            const orderResult = await window.myAPI.getOrderById(selectedOrderForStatusUpdate.databaseId);
-            if (orderResult.success && orderResult.data.table_details) {
-              const tableDetails = JSON.parse(orderResult.data.table_details);
-              if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
-                const tableIds = tableDetails.tables.map(table => table.id);
-                console.log('Freeing tables:', tableIds);
-                
-                const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
-                if (tableUpdateResult.success) {
-                  console.log('Tables freed successfully:', tableUpdateResult.message);
-                } else {
-                  console.warn('Failed to free tables:', tableUpdateResult.message);
-                }
+      const updateResult = await window.myAPI.updateOrderStatus(
+        selectedOrderForStatusUpdate.databaseId, 
+        dbStatus, 
+        null // updatedBy - can be set to current employee ID
+      );
+      
+      if (!updateResult.success) {
+        showError('Failed to update order status: ' + updateResult.message);
+        return;
+      }
+      
+      // If order is completed, delivered, or canceled, free the associated tables
+      if ((dbStatus === 'completed' || dbStatus === 'delivered') && selectedOrderForStatusUpdate.databaseId) {
+        try {
+          // Get the order details to check for table information
+          const orderResult = await window.myAPI.getOrderById(selectedOrderForStatusUpdate.databaseId);
+          if (orderResult.success && orderResult.data.table_details) {
+            const tableDetails = JSON.parse(orderResult.data.table_details);
+            if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
+              const tableIds = tableDetails.tables.map(table => table.id);
+              console.log('Freeing tables:', tableIds);
+              
+              const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
+              if (tableUpdateResult.success) {
+                console.log('Tables freed successfully:', tableUpdateResult.message);
+              } else {
+                console.warn('Failed to free tables:', tableUpdateResult.message);
               }
             }
-          } catch (error) {
-            console.error('Error freeing tables:', error);
           }
+        } catch (error) {
+          console.error('Error freeing tables:', error);
         }
       }
 
@@ -4618,20 +4658,21 @@ const RunningOrders = () => {
             </button>
             <button 
               onClick={() => {
-                if (!selectedPlacedOrder) {
-                  showWarning('Please select an order to update its status');
-                  return;
-                }
-                handleOpenStatusUpdateModal(selectedPlacedOrder, null);
+                // Create a mock order object with the current selected order type
+                const mockOrder = {
+                  orderType: selectedOrderType || 'In Store',
+                  orderNumber: 'NEW-ORDER',
+                  status: 'New'
+                };
+                
+                // Open status update modal with the current order type
+                setSelectedOrderForStatusUpdate(mockOrder);
+                setSelectedStatus('New');
+                setShowStatusUpdateModal(true);
               }}
-              disabled={!selectedPlacedOrder}
-              title={!selectedPlacedOrder ? 'Select an order to update its status' : 'Update order status'}
-              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${
-                         selectedPlacedOrder 
-                           ? 'text-black hover:border-primary hover:border-2' 
-                           : 'text-gray-400 cursor-not-allowed'
-                       }`}>
+              title="Update order status"
+              className="h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+                       btn-lifted transition-colors cursor-pointer text-black hover:border-primary hover:border-2">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
@@ -4650,7 +4691,7 @@ const RunningOrders = () => {
               <Clock size={14} />
               Due to
               {selectedScheduleDateTime && (
-                <div className="w-2 h-2 bg-white rounded-full ml-1"></div>
+                <div></div>
               )}
             </button>
             <button
