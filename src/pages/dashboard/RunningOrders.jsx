@@ -3813,6 +3813,11 @@ const RunningOrders = () => {
     // setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
     setSelectedPlacedOrder(null);
 
+    // Automatically open schedule modal if the order type is Collection
+    if (selectedPlacedOrder.orderType === 'Collection') {
+      await handleOpenScheduleModal();
+    }
+
     showSuccess('Order loaded for modification. You can now edit the items.');
   };
 
@@ -4580,12 +4585,14 @@ const RunningOrders = () => {
               Table
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 setSelectedOrderType('Collection');
                 // Clear table selections when switching to non-table order type
                 setSelectedTable('');
                 setSelectedPersons('');
                 setReservedTables([]);
+                // Automatically open schedule modal for collection orders
+                await handleOpenScheduleModal();
               }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Collection' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
