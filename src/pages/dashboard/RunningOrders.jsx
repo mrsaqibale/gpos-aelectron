@@ -3769,7 +3769,7 @@ const RunningOrders = () => {
     const getDefaultStatusForOrderType = (orderType) => {
       switch (orderType) {
         case 'In Store':
-          return 'Completed'; // Set to Completed (disabled) so Completed starts unselected
+          return 'New'; // Default to New for In Store orders (now that all statuses are enabled)
         case 'Table':
         case 'Dine In':
         case 'Collection':
@@ -3871,9 +3871,9 @@ const RunningOrders = () => {
     switch (orderType) {
       case 'In Store':
         return [
-          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: true },
-          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: true },
-          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: true },
+          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: false },
+          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: false },
+          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: false },
           { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
         ];
       case 'Table':
