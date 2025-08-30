@@ -158,7 +158,7 @@ const Invoice = ({
                             const addonName = addon?.name || addonId;
                             const addonPrice = addon?.price;
                             
-                            return (
+  return (
                               <div key={idx} className="flex items-center gap-1">
                                 <span>• Addon: {addonName}</span>
                                 {addonPrice && <span>(+€{addonPrice.toFixed(2)})</span>}
