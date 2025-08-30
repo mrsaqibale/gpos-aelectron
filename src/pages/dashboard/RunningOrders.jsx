@@ -509,9 +509,20 @@ const RunningOrders = () => {
             // Get customer name
             const customerName = dbOrder.customer_id ? await getCustomerName(dbOrder.customer_id) : 'Walk-in Customer';
             
+            // Debug logging for draft orders
+            if (dbOrder.order_type === 'draft') {
+              console.log('Processing draft order from database:', {
+                id: dbOrder.id,
+                order_type: dbOrder.order_type,
+                order_status: dbOrder.order_status
+              });
+            }
+            
             return {
               id: dbOrder.id,
-              orderNumber: `ORD-${String(dbOrder.id).padStart(3, '0')}`,
+              orderNumber: dbOrder.order_type === 'draft' 
+                ? `DRAFT-${String(dbOrder.id).padStart(3, '0')}`
+                : `ORD-${String(dbOrder.id).padStart(3, '0')}`,
               items: items,
               customer: {
                 id: dbOrder.customer_id,
@@ -526,7 +537,9 @@ const RunningOrders = () => {
                   }
                 : null,
               orderType:
-                dbOrder.order_type === 'instore'
+                dbOrder.order_type === 'draft'
+                  ? 'Draft'
+                  : dbOrder.order_type === 'instore'
                   ? 'In Store'
                   : dbOrder.order_type === 'table'
                   ? 'Table'
@@ -554,7 +567,9 @@ const RunningOrders = () => {
             // Return a basic order object on error
             return {
               id: dbOrder.id,
-              orderNumber: `ORD-${String(dbOrder.id).padStart(3, '0')}`,
+              orderNumber: dbOrder.order_type === 'draft' 
+                ? `DRAFT-${String(dbOrder.id).padStart(3, '0')}`
+                : `ORD-${String(dbOrder.id).padStart(3, '0')}`,
               items: [],
               customer: {
                 id: dbOrder.customer_id,
@@ -562,7 +577,7 @@ const RunningOrders = () => {
               },
               total: dbOrder.order_amount,
               coupon: null,
-              orderType: 'In Store',
+              orderType: dbOrder.order_type === 'draft' ? 'Draft' : 'In Store',
               table: 'None',
               waiter: 'Ds Waiter',
               status: dbOrder.order_status === 'pending' ? 'Pending' : 
@@ -583,13 +598,31 @@ const RunningOrders = () => {
         // Merge with existing orders to avoid flicker/duplication
         setPlacedOrders(prev => {
           const byId = new Map();
+          
+          // Debug: Log existing orders before merge
+          console.log('Existing orders before merge:', prev.map(o => ({ id: o.id, databaseId: o.databaseId, orderType: o.orderType, isDraft: o.isDraft })));
+          console.log('New orders from database:', validOrders.map(o => ({ id: o.id, databaseId: o.databaseId, orderType: o.orderType, isDraft: o.isDraft })));
+          
           [...prev, ...validOrders].forEach(order => {
             if (order) {
-              byId.set(order.id, order);
+              // Use databaseId for merging to avoid conflicts between UI and database IDs
+              const key = order.databaseId || order.id;
+              
+              // Debug: Log merge conflicts
+              if (byId.has(key)) {
+                const existing = byId.get(key);
+                console.log('Merge conflict detected:', {
+                  key,
+                  existing: { id: existing.id, databaseId: existing.databaseId, orderType: existing.orderType, isDraft: existing.isDraft },
+                  new: { id: order.id, databaseId: order.databaseId, orderType: order.orderType, isDraft: order.isDraft }
+                });
+              }
+              
+              byId.set(key, order);
             }
           });
           const merged = Array.from(byId.values());
-          console.log('Merged active orders:', merged);
+          console.log('Merged active orders:', merged.map(o => ({ id: o.id, databaseId: o.databaseId, orderType: o.orderType, isDraft: o.isDraft })));
           return merged;
         });
         console.log('Transformed active orders loaded:', validOrders);
@@ -1952,6 +1985,7 @@ const RunningOrders = () => {
     setSelectedVariations({});
     setSelectedAdons([]);
     setSelectedOrderType('');
+    setSelectedScheduleDateTime(''); // Clear schedule when clearing cart
     
     // Clear modification flags when starting fresh
     setIsModifyingOrder(false);
@@ -2200,17 +2234,17 @@ const RunningOrders = () => {
       if (conversionOrderType === 'Table' && conversionTable) {
         // Handle single table selection for conversion
         const table = tables.find(t => t.id.toString() === conversionTable);
-        if (table) {
-          tableDetails = JSON.stringify({
-            tables: [{
-              id: table.id,
-              table_no: table.table_no,
-              floor_name: table.floor_name,
+          if (table) {
+            tableDetails = JSON.stringify({
+              tables: [{
+                id: table.id,
+                table_no: table.table_no,
+                floor_name: table.floor_name,
               persons: conversionPersons || table.seat_capacity || 4
-            }],
+              }],
             total_persons: conversionPersons || table.seat_capacity || 4
-          });
-          tableIdsToReserve.push(table.id);
+            });
+            tableIdsToReserve.push(table.id);
         }
       }
 
@@ -4563,7 +4597,7 @@ const RunningOrders = () => {
                             bgColor: 'bg-yellow-100',
                             textColor: 'text-yellow-700',
                             icon: <FileText size={12} />
-                          };
+                        };
                       default:
                         return {
                           bgColor: 'bg-gray-100',
@@ -4727,26 +4761,26 @@ const RunningOrders = () => {
                             ) : (
                               // Regular order actions
                               <>
-                                <button
-                                  className="flex-1 bg-gray-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-gray-700 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Handle view details
-                                    setSelectedPlacedOrder(order);
-                                  }}
-                                >
-                                  View Details
-                                </button>
-                                <button
-                                  className="flex-1 bg-blue-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-blue-700 transition-colors"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Handle mark as action
-                                    handleOpenStatusUpdateModal(order, e);
-                                  }}
-                                >
-                                  Mark As
-                                </button>
+                            <button
+                              className="flex-1 bg-gray-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-gray-700 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Handle view details
+                                setSelectedPlacedOrder(order);
+                              }}
+                            >
+                              View Details
+                            </button>
+                            <button
+                              className="flex-1 bg-blue-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-blue-700 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Handle mark as action
+                                handleOpenStatusUpdateModal(order, e);
+                              }}
+                            >
+                              Mark As
+                            </button>
                               </>
                             )}
                           </div>
@@ -4875,7 +4909,6 @@ const RunningOrders = () => {
                 onClick={(e) => handleAnyInputClick(e, 'searchQuery')}
                 onBlur={(e) => handleCustomInputBlur(e, 'searchQuery')}
                 className="w-full pl-10 pr-4 py-2 text-sm bg-white placeholder:text-primary font-semibold border border-gray-300 rounded-xl z-10
-      shadow-[0_6px_12px_-2px_rgba(50,50,93,0.25),0_3px_7px_-3px_rgba(0,0,0,0.3)]
       focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
               {searchQuery && (
@@ -4951,6 +4984,8 @@ const RunningOrders = () => {
                 setSelectedTable('');
                 setSelectedPersons('');
                 setReservedTables([]);
+                // Clear schedule when switching away from Collection
+                setSelectedScheduleDateTime('');
               }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'In Store' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
@@ -4968,6 +5003,8 @@ const RunningOrders = () => {
                   return;
                 }
                 setSelectedOrderType('Table');
+                // Clear schedule when switching away from Collection
+                setSelectedScheduleDateTime('');
                 setShowTableModal(true);
               }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
@@ -5007,6 +5044,8 @@ const RunningOrders = () => {
                 setSelectedTable('');
                 setSelectedPersons('');
                 setReservedTables([]);
+                // Clear schedule when switching away from Collection
+                setSelectedScheduleDateTime('');
               }}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedOrderType === 'Delivery' ? 'bg-primary text-white' : 'bg-white hover:border-primary hover:border-2'}`}>
@@ -8029,7 +8068,20 @@ const RunningOrders = () => {
                   </label>
                   <select
                     value={conversionOrderType}
-                    onChange={(e) => setConversionOrderType(e.target.value)}
+                    onChange={async (e) => {
+                      const selectedOrderType = e.target.value;
+                      setConversionOrderType(selectedOrderType);
+                      
+                      // If Collection is selected, automatically open the schedule modal
+                      if (selectedOrderType === 'Collection') {
+                        try {
+                          console.log('Collection selected, opening schedule modal...');
+                          await handleOpenScheduleModal();
+                        } catch (error) {
+                          console.error('Error opening schedule modal:', error);
+                        }
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     <option value="In Store">In Store</option>
@@ -8048,9 +8100,20 @@ const RunningOrders = () => {
                       </label>
                       <select
                         value={conversionFloor}
-                        onChange={(e) => {
-                          setConversionFloor(e.target.value);
+                        onChange={async (e) => {
+                          const selectedFloorId = e.target.value;
+                          setConversionFloor(selectedFloorId);
                           setConversionTable('');
+                          
+                          // Fetch tables for the selected floor
+                          if (selectedFloorId) {
+                            try {
+                              console.log('Fetching tables for floor ID:', selectedFloorId);
+                              await fetchTablesByFloor(selectedFloorId);
+                            } catch (error) {
+                              console.error('Error fetching tables for floor:', error);
+                            }
+                          }
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       >
@@ -8074,14 +8137,30 @@ const RunningOrders = () => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="">Select Table</option>
-                          {tables
-                            .filter(table => table.floor_id.toString() === conversionFloor)
-                            .filter(table => table.status === 'Free')
-                            .map((table) => (
+                          {(() => {
+                            // Debug logging
+                            console.log('Debug table filtering:', {
+                              conversionFloor,
+                              conversionFloorType: typeof conversionFloor,
+                              tablesCount: tables.length,
+                              tables: tables.map(t => ({ id: t.id, floor_id: t.floor_id, floor_id_type: typeof t.floor_id, status: t.status, table_no: t.table_no }))
+                            });
+                            
+                            const filteredTables = tables
+                              .filter(table => {
+                                const matchesFloor = table.floor_id.toString() === conversionFloor.toString();
+                                const isFree = table.status === 'Free';
+                                console.log(`Table ${table.table_no}: floor_id=${table.floor_id} (${typeof table.floor_id}), conversionFloor=${conversionFloor} (${typeof conversionFloor}), matchesFloor=${matchesFloor}, isFree=${isFree}`);
+                                return matchesFloor && isFree;
+                              });
+                            
+                            console.log('Filtered tables:', filteredTables);
+                            return filteredTables.map((table) => (
                               <option key={table.id} value={table.id}>
                                 Table {table.table_no} ({table.seat_capacity} seats)
                               </option>
-                            ))}
+                            ));
+                          })()}
                         </select>
                       </div>
                     )}
