@@ -38,7 +38,7 @@ const DraftNumberModal = ({ isOpen, onClose, onSubmit }) => {
               value={draftNumber}
               onChange={(e) => setDraftNumber(e.target.value)}
               placeholder="Enter draft number"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
               autoFocus
             />
           </div>
@@ -51,8 +51,8 @@ const DraftNumberModal = ({ isOpen, onClose, onSubmit }) => {
             disabled={!draftNumber.trim()}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
               draftNumber.trim()
-                ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                ? 'bg-primary text-white'
+                : 'bg-primary text-white cursor-not-allowed'
             }`}
           >
             Submit
