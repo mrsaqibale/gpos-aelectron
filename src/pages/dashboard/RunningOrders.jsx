@@ -4574,7 +4574,7 @@ const RunningOrders = () => {
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${
                          isModifyingOrder && selectedOrderType === 'Table'
-                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                           ? 'bg-primary text-white cursor-not-allowed'
                            : selectedOrderType === 'Table' 
                            ? 'bg-primary text-white' 
                            : 'bg-white hover:border-primary hover:border-2'
@@ -7516,7 +7516,7 @@ const RunningOrders = () => {
         <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
             {/* Header */}
-            <div className="bg-red-600 text-white p-4 flex justify-between items-center rounded-t-xl">
+            <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
               <h2 className="text-xl font-bold">Cancel Order</h2>
               <button
                 onClick={() => {
@@ -7546,7 +7546,7 @@ const RunningOrders = () => {
                   value={cancellationReason}
                   onChange={(e) => setCancellationReason(e.target.value)}
                   placeholder="Enter reason for cancellation..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none resize-none"
                   rows="3"
                 />
               </div>
@@ -7565,7 +7565,7 @@ const RunningOrders = () => {
               </button>
               <button
                 onClick={() => handleConfirmCancelOrder(false)}
-                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg transition-colors"
               >
                 Cancel Order
               </button>
@@ -7574,8 +7574,8 @@ const RunningOrders = () => {
                 disabled={!cancellationReason.trim()}
                 className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
                   cancellationReason.trim()
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    ? 'bg-primary text-white hover:bg-red-700'
+                    : 'bg-primary text-white cursor-not-allowed'
                 }`}
               >
                 Cancel & Save Reason
