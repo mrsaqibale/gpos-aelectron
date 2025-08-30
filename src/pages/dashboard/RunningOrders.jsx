@@ -133,6 +133,7 @@ const RunningOrders = () => {
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
   const [cartCharge, setCartCharge] = useState(0); // Cart charge amount
   const [cartTips, setCartTips] = useState(0); // Cart tips amount
+  const [orderNote, setOrderNote] = useState(''); // Order note field
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
@@ -6688,6 +6689,19 @@ const RunningOrders = () => {
                     </div>
                   </div>
                 ) : null}
+                
+
+                {/* Note Field */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Note:</label>
+                  <textarea
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                    placeholder="Add any special instructions or notes for this order..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                    rows="3"
+                  />
+                </div>
 
                 {/* Total Price Display */}
                 <div className="border-t border-gray-200 pt-4 mb-4">
