@@ -984,6 +984,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       isloyal: false
     });
     setErrors({});
+    onClose(); // Close the modal when Cancel is clicked
   };
 
   if (!isOpen) return null;
@@ -1299,7 +1300,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                   onClick={handleReset}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 >
-                  Reset
+                  Cancel
                 </button>
                 <button
                   type="submit"
