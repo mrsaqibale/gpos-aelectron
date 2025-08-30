@@ -4973,14 +4973,7 @@ const RunningOrders = () => {
         <div className="w-[40%] bg-white rounded-lg flex flex-col">
           {/* Modification indicator */}
           {isModifyingOrder && (
-            <div className="px-2 py-1 bg-yellow-100 border-b border-yellow-200">
-              <div className="flex items-center justify-center gap-2 text-yellow-800 text-xs font-medium">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                </svg>
-                Modifying Order - Order Type Locked
-              </div>
-            </div>
+            <></>
           )}
           <div className="grid grid-cols-5 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
@@ -5372,7 +5365,7 @@ const RunningOrders = () => {
                   onClick={handlePlaceOrder}
                   className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-2 px-1 text-[13px] font-bold rounded  cursor-pointer"
                 >
-                  PLACE ORDER
+                  {isModifyingOrder ? 'UPDATE ORDER' : 'PLACE ORDER'}
                 </button>
                 <button
                   onClick={handlePayment}
