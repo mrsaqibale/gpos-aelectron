@@ -49,6 +49,11 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
     
     setLoading(true);
     setHasSearched(true);
+    
+    // Hide keyboard when searching
+    setShowKeyboard(false);
+    setActiveInput('');
+    
     try {
       let allCustomers = [];
       
@@ -140,6 +145,7 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
     setTimeout(() => {
       setShowKeyboard(false);
       setActiveInput('');
+      setKeyboardInput('');
     }, 300);
   };
 
@@ -163,6 +169,24 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
       setSearchName(input);
     } else if (inputName === 'searchPhone') {
       setSearchPhone(input);
+    }
+  };
+
+  // Handle regular input changes (when typing directly)
+  const handleInputChange = (e, fieldName) => {
+    const value = e.target.value;
+    if (fieldName === 'searchName') {
+      setSearchName(value);
+      // Update keyboard input if keyboard is active for this field
+      if (activeInput === 'searchName') {
+        setKeyboardInput(value);
+      }
+    } else if (fieldName === 'searchPhone') {
+      setSearchPhone(value);
+      // Update keyboard input if keyboard is active for this field
+      if (activeInput === 'searchPhone') {
+        setKeyboardInput(value);
+      }
     }
   };
 
@@ -208,7 +232,7 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
                 type="text"
                 name="searchName"
                 value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
+                onChange={(e) => handleInputChange(e, 'searchName')}
                 onFocus={(e) => handleAnyInputFocus(e, 'searchName')}
                 onBlur={handleInputBlur}
                 onClick={(e) => handleAnyInputClick(e, 'searchName')}
@@ -224,7 +248,7 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
                 type="text"
                 name="searchPhone"
                 value={searchPhone}
-                onChange={(e) => setSearchPhone(e.target.value)}
+                onChange={(e) => handleInputChange(e, 'searchPhone')}
                 onFocus={(e) => handleAnyInputFocus(e, 'searchPhone')}
                 onBlur={handleInputBlur}
                 onClick={(e) => handleAnyInputClick(e, 'searchPhone')}
