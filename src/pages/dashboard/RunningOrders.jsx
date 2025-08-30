@@ -67,6 +67,7 @@ import CustomerSearchModal from '../../components/dashboard/CustomerSearchModal'
 import FloorPlan3D from '../../components/FloorPlan3D';
 import CustomAlert from '../../components/CustomAlert';
 import useCustomAlert from '../../hooks/useCustomAlert';
+import OrderDetailsModal from '../../components/OrderDetailsModal';
 
 const RunningOrders = () => {
   // Custom Alert Hook
@@ -431,7 +432,7 @@ const RunningOrders = () => {
   const fetchExistingOrders = async () => {
     try {
       console.log('Fetching active orders from database...');
-      
+
       if (!window.myAPI) {
         console.error('myAPI is not available');
         return;
@@ -439,32 +440,32 @@ const RunningOrders = () => {
 
       // Get all orders from database
       const result = await window.myAPI.getAllOrders(100, 0); // Get last 100 orders
-      
+
       if (result && result.success) {
         console.log('All orders loaded:', result.data);
-        
+
         // Filter to only show orders that are not completed, delivered, or canceled
         const activeOrders = result.data.filter(order => {
           const status = order.order_status?.toLowerCase();
-          const isActive = status !== 'completed' && 
-                          status !== 'delivered' && 
-                          status !== 'canceled' &&
-                          status !== 'done' &&
-                          status !== 'finished' &&
-                          status !== 'closed';
+          const isActive = status !== 'completed' &&
+            status !== 'delivered' &&
+            status !== 'canceled' &&
+            status !== 'done' &&
+            status !== 'finished' &&
+            status !== 'closed';
           console.log(`Order ${order.id}: status="${order.order_status}" (normalized: "${status}"), isActive=${isActive}`);
           return isActive;
         });
-        
+
         console.log('Active orders (not completed):', activeOrders);
-      
-                      // Transform database orders to UI format
+
+        // Transform database orders to UI format
         const transformedOrders = activeOrders.map(async dbOrder => {
           try {
             // Get order details for this order
             console.log(`Fetching order details for order ${dbOrder.id}...`);
             const detailsResult = await window.myAPI.getOrderDetailsWithFood(dbOrder.id);
-            
+
             let items = [];
             if (detailsResult && detailsResult.success) {
               console.log(`Order ${dbOrder.id} details:`, detailsResult.data);
@@ -505,10 +506,10 @@ const RunningOrders = () => {
             } else {
               console.warn(`No order details found for order ${dbOrder.id}. Including order with empty items.`);
             }
-            
+
             // Get customer name
             const customerName = dbOrder.customer_id ? await getCustomerName(dbOrder.customer_id) : 'Walk-in Customer';
-            
+
             // Debug logging for draft orders
             if (dbOrder.order_type === 'draft') {
               console.log('Processing draft order from database:', {
@@ -517,10 +518,10 @@ const RunningOrders = () => {
                 order_status: dbOrder.order_status
               });
             }
-            
+
             return {
               id: dbOrder.id,
-              orderNumber: dbOrder.order_type === 'draft' 
+              orderNumber: dbOrder.order_type === 'draft'
                 ? `DRAFT-${String(dbOrder.id).padStart(3, '0')}`
                 : `ORD-${String(dbOrder.id).padStart(3, '0')}`,
               items: items,
@@ -531,33 +532,33 @@ const RunningOrders = () => {
               total: dbOrder.order_amount,
               coupon: dbOrder.coupon_code
                 ? {
-                    code: dbOrder.coupon_code,
-                    title: dbOrder.coupon_discount_title,
-                    discount: dbOrder.coupon_discount_amount
-                  }
+                  code: dbOrder.coupon_code,
+                  title: dbOrder.coupon_discount_title,
+                  discount: dbOrder.coupon_discount_amount
+                }
                 : null,
               orderType:
                 dbOrder.order_type === 'draft'
                   ? 'Draft'
                   : dbOrder.order_type === 'instore'
-                  ? 'In Store'
-                  : dbOrder.order_type === 'table'
-                  ? 'Table'
-                  : dbOrder.order_type === 'collection'
-                  ? 'Collection'
-                  : dbOrder.order_type === 'delivery'
-                  ? 'Delivery'
-                  : 'In Store',
+                    ? 'In Store'
+                    : dbOrder.order_type === 'table'
+                      ? 'Table'
+                      : dbOrder.order_type === 'collection'
+                        ? 'Collection'
+                        : dbOrder.order_type === 'delivery'
+                          ? 'Delivery'
+                          : 'In Store',
               table: dbOrder.delivery_address_id ? 'Table ' + dbOrder.delivery_address_id : 'None',
               waiter: 'Ds Waiter',
               status:
                 dbOrder.order_status === 'pending'
                   ? 'Pending'
                   : dbOrder.order_status === 'completed'
-                  ? 'Complete'
-                  : dbOrder.order_status === 'ready'
-                  ? 'Ready'
-                  : dbOrder.order_status,
+                    ? 'Complete'
+                    : dbOrder.order_status === 'ready'
+                      ? 'Ready'
+                      : dbOrder.order_status,
               placedAt: dbOrder.created_at,
               databaseId: dbOrder.id,
               isDraft: dbOrder.order_type === 'draft'
@@ -567,7 +568,7 @@ const RunningOrders = () => {
             // Return a basic order object on error
             return {
               id: dbOrder.id,
-              orderNumber: dbOrder.order_type === 'draft' 
+              orderNumber: dbOrder.order_type === 'draft'
                 ? `DRAFT-${String(dbOrder.id).padStart(3, '0')}`
                 : `ORD-${String(dbOrder.id).padStart(3, '0')}`,
               items: [],
@@ -580,10 +581,10 @@ const RunningOrders = () => {
               orderType: dbOrder.order_type === 'draft' ? 'Draft' : 'In Store',
               table: 'None',
               waiter: 'Ds Waiter',
-              status: dbOrder.order_status === 'pending' ? 'Pending' : 
-                      dbOrder.order_status === 'completed' ? 'Complete' : 
-                      dbOrder.order_status === 'ready' ? 'Ready' : 
-                      dbOrder.order_status,
+              status: dbOrder.order_status === 'pending' ? 'Pending' :
+                dbOrder.order_status === 'completed' ? 'Complete' :
+                  dbOrder.order_status === 'ready' ? 'Ready' :
+                    dbOrder.order_status,
               placedAt: dbOrder.created_at,
               databaseId: dbOrder.id,
               isDraft: dbOrder.order_type === 'draft'
@@ -598,16 +599,16 @@ const RunningOrders = () => {
         // Merge with existing orders to avoid flicker/duplication
         setPlacedOrders(prev => {
           const byId = new Map();
-          
+
           // Debug: Log existing orders before merge
           console.log('Existing orders before merge:', prev.map(o => ({ id: o.id, databaseId: o.databaseId, orderType: o.orderType, isDraft: o.isDraft })));
           console.log('New orders from database:', validOrders.map(o => ({ id: o.id, databaseId: o.databaseId, orderType: o.orderType, isDraft: o.isDraft })));
-          
+
           [...prev, ...validOrders].forEach(order => {
             if (order) {
               // Use databaseId for merging to avoid conflicts between UI and database IDs
               const key = order.databaseId || order.id;
-              
+
               // Debug: Log merge conflicts
               if (byId.has(key)) {
                 const existing = byId.get(key);
@@ -617,7 +618,7 @@ const RunningOrders = () => {
                   new: { id: order.id, databaseId: order.databaseId, orderType: order.orderType, isDraft: order.isDraft }
                 });
               }
-              
+
               byId.set(key, order);
             }
           });
@@ -1672,33 +1673,33 @@ const RunningOrders = () => {
     setNumericKeyboardInput(input);
     if (numericActiveInput === 'discountAmount') {
       setDiscountAmount(input);
-          } else if (numericActiveInput === 'paymentAmount') {
-        setPaymentAmount(input);
-        if (selectedPaymentMethod === 'Cash') {
-          setGivenAmount(input);
-          // Calculate change based on the total
-          if (input) {
-            const total = isSinglePayMode ? calculateSinglePayTotals().total : 
-                         selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
-            const change = parseFloat(input) - total;
-            setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
-          } else {
-            setChangeAmount('0.00');
-          }
-        }
-      } else if (numericActiveInput === 'givenAmount') {
+    } else if (numericActiveInput === 'paymentAmount') {
+      setPaymentAmount(input);
+      if (selectedPaymentMethod === 'Cash') {
         setGivenAmount(input);
-        setPaymentAmount(input);
         // Calculate change based on the total
         if (input) {
-          const total = isSinglePayMode ? calculateSinglePayTotals().total : 
-                       selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+          const total = isSinglePayMode ? calculateSinglePayTotals().total :
+            selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
           const change = parseFloat(input) - total;
           setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
         } else {
           setChangeAmount('0.00');
         }
       }
+    } else if (numericActiveInput === 'givenAmount') {
+      setGivenAmount(input);
+      setPaymentAmount(input);
+      // Calculate change based on the total
+      if (input) {
+        const total = isSinglePayMode ? calculateSinglePayTotals().total :
+          selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+        const change = parseFloat(input) - total;
+        setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+      } else {
+        setChangeAmount('0.00');
+      }
+    }
   };
 
   // Custom handler for numeric keyboard key presses
@@ -1861,18 +1862,18 @@ const RunningOrders = () => {
     console.log('Editing cart item:', cartItem);
     setEditingCartItem(cartItem);
     setSelectedFood(cartItem.food);
-    
+
     // Parse variations and addons if they're strings
     let variations = {};
     let adons = [];
-    
+
     try {
       if (typeof cartItem.variations === 'string') {
         variations = JSON.parse(cartItem.variations);
       } else {
         variations = cartItem.variations || {};
       }
-      
+
       if (typeof cartItem.adons === 'string') {
         adons = JSON.parse(cartItem.adons);
       } else {
@@ -1883,14 +1884,14 @@ const RunningOrders = () => {
       variations = cartItem.variations || {};
       adons = cartItem.adons || [];
     }
-    
+
     console.log('Setting variations for editing:', variations);
     console.log('Setting addons for editing:', adons);
-    
+
     setSelectedVariations(variations);
     setSelectedAdons(adons);
     setFoodQuantity(cartItem.quantity);
-    
+
     // Load food details to get proper variation and addon names
     try {
       setFoodDetailsLoading(true);
@@ -1904,7 +1905,7 @@ const RunningOrders = () => {
     } finally {
       setFoodDetailsLoading(false);
     }
-    
+
     setShowFoodModal(true);
   };
 
@@ -1986,7 +1987,7 @@ const RunningOrders = () => {
     setSelectedAdons([]);
     setSelectedOrderType('');
     setSelectedScheduleDateTime(''); // Clear schedule when clearing cart
-    
+
     // Clear modification flags when starting fresh
     setIsModifyingOrder(false);
     setModifyingOrderId(null);
@@ -2107,6 +2108,9 @@ const RunningOrders = () => {
   // State to track current ingredients for better reactivity
   const [currentIngredients, setCurrentIngredients] = useState([]);
 
+  // Order Details Modal State
+  const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+
   // Update ingredients whenever flavors change
   useEffect(() => {
     const ingredients = getAllSelectedIngredients();
@@ -2148,7 +2152,7 @@ const RunningOrders = () => {
       // Determine fill color based on state
       let fillColor = "#FFD700"; // Default gold
       const hasFlavorSelected = selectedFlavors[i]; // Check if flavor is selected for this slice
-      
+
       if (isCompleted) {
         fillColor = "#22C55E"; // Green for completed
       } else if (isSelected) {
@@ -2176,7 +2180,7 @@ const RunningOrders = () => {
             fill={fillColor}
             stroke="#FF8C00"
             strokeWidth="2"
-            style={{ 
+            style={{
               cursor: isCompleted ? 'default' : 'pointer',
               transition: 'fill 0.3s ease-in-out'
             }}
@@ -2200,13 +2204,13 @@ const RunningOrders = () => {
       console.log('Starting order placement process...');
       console.log('Is modifying order:', isModifyingOrder);
       console.log('Modifying order ID:', modifyingOrderId);
-      
+
       // Check if API is available
       if (!window.myAPI) {
         showError('API not available. Please refresh the page.');
         return;
       }
-      
+
       // Map order type based on selection
       console.log('Mapping order type. selectedOrderType:', selectedOrderType);
       let orderType = 'instore'; // default for database
@@ -2230,21 +2234,21 @@ const RunningOrders = () => {
       // Prepare table details for database
       let tableDetails = null;
       let tableIdsToReserve = [];
-      
+
       if (conversionOrderType === 'Table' && conversionTable) {
         // Handle single table selection for conversion
         const table = tables.find(t => t.id.toString() === conversionTable);
-          if (table) {
-            tableDetails = JSON.stringify({
-              tables: [{
-                id: table.id,
-                table_no: table.table_no,
-                floor_name: table.floor_name,
+        if (table) {
+          tableDetails = JSON.stringify({
+            tables: [{
+              id: table.id,
+              table_no: table.table_no,
+              floor_name: table.floor_name,
               persons: conversionPersons || table.seat_capacity || 4
-              }],
+            }],
             total_persons: conversionPersons || table.seat_capacity || 4
-            });
-            tableIdsToReserve.push(table.id);
+          });
+          tableIdsToReserve.push(table.id);
         }
       }
 
@@ -2315,15 +2319,15 @@ const RunningOrders = () => {
         console.log('Order data to update:', orderData);
         const updateResult = await window.myAPI.updateOrder(modifyingOrderId, orderData);
         console.log('Update result:', updateResult);
-        
+
         if (!updateResult.success) {
           showError('Failed to update order: ' + updateResult.message);
           return;
         }
-        
+
         orderId = modifyingOrderId;
         console.log('Order updated successfully');
-        
+
         // Update table status to Reserved if this is a table order modification
         if (tableIdsToReserve.length > 0) {
           try {
@@ -2342,15 +2346,15 @@ const RunningOrders = () => {
         // Create new order
         console.log('Creating new order');
         const orderResult = await window.myAPI.createOrder(orderData);
-        
+
         if (!orderResult.success) {
           showError('Failed to create order: ' + orderResult.message);
           return;
         }
-        
+
         orderId = orderResult.id;
         console.log('Order created successfully');
-        
+
         // Update table status to Reserved if this is a table order
         if (tableIdsToReserve.length > 0) {
           try {
@@ -2377,7 +2381,7 @@ const RunningOrders = () => {
         // Prepare variations and addons as JSON
         const variations = Object.keys(item.variations).length > 0 ? JSON.stringify(item.variations) : null;
         const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
-        
+
         // Prepare food details as JSON (including food info, variations, addons)
         const foodDetails = JSON.stringify({
           food: {
@@ -2418,7 +2422,7 @@ const RunningOrders = () => {
       if (isModifyingOrder && modifyingOrderId) {
         // Smart update: Get existing order details and compare with new items
         console.log('Smart updating order details for order:', modifyingOrderId);
-        
+
         try {
           // Get existing order details
           const existingDetailsResult = await window.myAPI.getOrderDetailsWithFood(modifyingOrderId);
@@ -2427,17 +2431,17 @@ const RunningOrders = () => {
             showError('Failed to get existing order details');
             return;
           }
-          
+
           const existingDetails = existingDetailsResult.data || [];
           console.log('Existing order details:', existingDetails);
-          
+
           // Process each new cart item
           for (const newItem of orderDetailsArray) {
             // Find matching existing item by food_id, variations, and addons
             const existingItem = existingDetails.find(existing => {
               // Match by food_id first
               if (existing.food_id !== newItem.food_id) return false;
-              
+
               // Match by variations (if both have variations)
               if (newItem.variation && existing.variation) {
                 try {
@@ -2452,7 +2456,7 @@ const RunningOrders = () => {
               } else if (newItem.variation !== existing.variation) {
                 return false;
               }
-              
+
               // Match by addons (if both have addons)
               if (newItem.add_ons && existing.add_ons) {
                 try {
@@ -2467,10 +2471,10 @@ const RunningOrders = () => {
               } else if (newItem.add_ons !== existing.add_ons) {
                 return false;
               }
-              
+
               return true;
             });
-            
+
             if (existingItem) {
               // Update existing item
               console.log('Updating existing item:', existingItem.id);
@@ -2485,7 +2489,7 @@ const RunningOrders = () => {
                 tax_amount: newItem.tax_amount,
                 total_add_on_price: newItem.total_add_on_price
               });
-              
+
               if (!updateResult.success) {
                 console.error('Failed to update order detail:', updateResult.message);
               }
@@ -2493,19 +2497,19 @@ const RunningOrders = () => {
               // Add new item
               console.log('Adding new item:', newItem.food_id);
               const createResult = await window.myAPI.createOrderDetail(newItem);
-              
+
               if (!createResult.success) {
                 console.error('Failed to create new order detail:', createResult.message);
               }
             }
           }
-          
+
           // Remove items that are no longer in the cart
           for (const existingItem of existingDetails) {
             const stillExists = orderDetailsArray.find(newItem => {
               // Match by food_id first
               if (existingItem.food_id !== newItem.food_id) return false;
-              
+
               // Match by variations (if both have variations)
               if (newItem.variation && existingItem.variation) {
                 try {
@@ -2520,7 +2524,7 @@ const RunningOrders = () => {
               } else if (newItem.variation !== existingItem.variation) {
                 return false;
               }
-              
+
               // Match by addons (if both have addons)
               if (newItem.add_ons && existingItem.add_ons) {
                 try {
@@ -2535,34 +2539,34 @@ const RunningOrders = () => {
               } else if (newItem.add_ons !== existingItem.add_ons) {
                 return false;
               }
-              
+
               return true;
             });
-            
+
             if (!stillExists) {
               console.log('Removing item:', existingItem.id);
               const deleteResult = await window.myAPI.deleteOrderDetail(existingItem.id);
-              
+
               if (!deleteResult.success) {
                 console.error('Failed to delete order detail:', deleteResult.message);
               }
             }
           }
-          
+
           console.log('Smart update completed');
-          
+
         } catch (error) {
           console.error('Error in smart update:', error);
           showError('Failed to update order details: ' + error.message);
           return;
         }
-        
+
       } else {
         // Create new order details
         console.log('Creating new order details:', orderDetailsArray);
         const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
         console.log('Order details result:', orderDetailsResult);
-        
+
         if (!orderDetailsResult.success) {
           showError('Failed to create order details: ' + orderDetailsResult.message);
           return;
@@ -2570,79 +2574,79 @@ const RunningOrders = () => {
       }
 
       // Create order object for UI display
-    const newOrder = {
+      const newOrder = {
         id: orderId,
         orderNumber: `ORD-${String(orderId).padStart(3, '0')}`,
-      items: [...cartItems],
-      customer: selectedCustomer || { name: 'Walk-in Customer' },
+        items: [...cartItems],
+        customer: selectedCustomer || { name: 'Walk-in Customer' },
         total: total,
-      coupon: appliedCoupon,
+        coupon: appliedCoupon,
         orderType: selectedOrderType,
-      table: (() => {
-        if (selectedOrderType === 'Table') {
-          if (selectedTable) {
-            const table = tables.find(t => t.id.toString() === selectedTable);
-            return table ? `Table ${table.table_no}` : selectedTable;
-          } else if (reservedTables.length > 0) {
-            return reservedTables.map(rt => `Table ${rt.tableNo}`).join(', ');
+        table: (() => {
+          if (selectedOrderType === 'Table') {
+            if (selectedTable) {
+              const table = tables.find(t => t.id.toString() === selectedTable);
+              return table ? `Table ${table.table_no}` : selectedTable;
+            } else if (reservedTables.length > 0) {
+              return reservedTables.map(rt => `Table ${rt.tableNo}`).join(', ');
+            }
           }
-        }
-        return 'None';
-      })(),
-      waiter: 'Ds Waiter',
-      status: selectedNewOrderStatus, // Use the selected status for new orders
+          return 'None';
+        })(),
+        waiter: 'Ds Waiter',
+        status: selectedNewOrderStatus, // Use the selected status for new orders
         placedAt: new Date().toISOString(),
         databaseId: orderId // Store database ID for reference
-    };
+      };
 
-    if (isModifyingOrder && modifyingOrderId) {
-      console.log('Modifying order. Original order type:', selectedPlacedOrder?.orderType);
-      console.log('Current selectedOrderType:', selectedOrderType);
-      
-      // Update existing order in the list
-      setPlacedOrders(prev => prev.map(order => 
-        order.databaseId === modifyingOrderId 
-          ? { ...newOrder, databaseId: modifyingOrderId }
-          : order
-      ));
-      
-      // Clear modification flags
-      setIsModifyingOrder(false);
-      setModifyingOrderId(null);
-      
-      // Clear cart but preserve order type for potential future modifications
-      setCartItems([]);
-      setAppliedCoupon(null);
-      setSelectedTable('');
-      setSelectedPersons('');
-      setSelectedFloor('');
-      setSelectedCustomer(null);
-      setMergeTable1('');
-      setMergeTable2('');
-      setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
-      setReservedTables([]);
-      setEditingCartItem(null);
-      setFoodQuantity(1);
-      setSelectedVariations({});
-      setSelectedAdons([]);
-      // Don't clear selectedOrderType - preserve it for potential future use
-      console.log('Order type preserved after modification:', selectedOrderType);
-      
-      showSuccess('Order updated successfully!', 'success');
-    } else {
-      // Add new order to the list
-      setPlacedOrders(prev => [newOrder, ...prev]);
-      showSuccess('Order placed successfully!', 'success');
-      
-      // Clear cart completely for new orders
-      clearCart();
-      
-      // Automatically set order type to 'In Store' for new orders
-      setSelectedOrderType('In Store');
-    }
+      if (isModifyingOrder && modifyingOrderId) {
+        console.log('Modifying order. Original order type:', selectedPlacedOrder?.orderType);
+        console.log('Current selectedOrderType:', selectedOrderType);
 
-    // Clear scheduled time after successful order placement
-    setSelectedScheduleDateTime('');
+        // Update existing order in the list
+        setPlacedOrders(prev => prev.map(order =>
+          order.databaseId === modifyingOrderId
+            ? { ...newOrder, databaseId: modifyingOrderId }
+            : order
+        ));
+
+        // Clear modification flags
+        setIsModifyingOrder(false);
+        setModifyingOrderId(null);
+
+        // Clear cart but preserve order type for potential future modifications
+        setCartItems([]);
+        setAppliedCoupon(null);
+        setSelectedTable('');
+        setSelectedPersons('');
+        setSelectedFloor('');
+        setSelectedCustomer(null);
+        setMergeTable1('');
+        setMergeTable2('');
+        setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+        setReservedTables([]);
+        setEditingCartItem(null);
+        setFoodQuantity(1);
+        setSelectedVariations({});
+        setSelectedAdons([]);
+        // Don't clear selectedOrderType - preserve it for potential future use
+        console.log('Order type preserved after modification:', selectedOrderType);
+
+        showSuccess('Order updated successfully!', 'success');
+      } else {
+        // Add new order to the list
+        setPlacedOrders(prev => [newOrder, ...prev]);
+        showSuccess('Order placed successfully!', 'success');
+
+        // Clear cart completely for new orders
+        clearCart();
+
+        // Automatically set order type to 'In Store' for new orders
+        setSelectedOrderType('In Store');
+      }
+
+      // Clear scheduled time after successful order placement
+      setSelectedScheduleDateTime('');
 
     } catch (error) {
       console.error('Error placing order:', error);
@@ -2660,7 +2664,7 @@ const RunningOrders = () => {
 
     try {
       console.log('Starting draft order creation...');
-      
+
       // Check if API is available
       if (!window.myAPI) {
         showError('API not available. Please refresh the page.');
@@ -2704,12 +2708,12 @@ const RunningOrders = () => {
       // Create new draft order
       console.log('Creating draft order');
       const orderResult = await window.myAPI.createOrder(orderData);
-      
+
       if (!orderResult.success) {
         showError('Failed to create draft order: ' + orderResult.message);
         return;
       }
-      
+
       const orderId = orderResult.id;
       console.log('Draft order created successfully with ID:', orderId);
 
@@ -2723,7 +2727,7 @@ const RunningOrders = () => {
         // Prepare variations and addons as JSON
         const variations = Object.keys(item.variations).length > 0 ? JSON.stringify(item.variations) : null;
         const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
-        
+
         // Prepare food details as JSON
         const foodDetails = JSON.stringify({
           food: {
@@ -2765,7 +2769,7 @@ const RunningOrders = () => {
       console.log('Creating draft order details:', orderDetailsArray);
       const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
       console.log('Draft order details result:', orderDetailsResult);
-      
+
       if (!orderDetailsResult.success) {
         showError('Failed to create draft order details: ' + orderDetailsResult.message);
         return;
@@ -2791,10 +2795,10 @@ const RunningOrders = () => {
       // Add draft order to the list
       setPlacedOrders(prev => [newDraftOrder, ...prev]);
       showSuccess('Draft order created successfully!', 'success');
-      
+
       // Clear cart completely for new draft orders
       clearCart();
-      
+
       // Automatically set order type to 'In Store' for new orders
       setSelectedOrderType('In Store');
 
@@ -2821,7 +2825,7 @@ const RunningOrders = () => {
 
     try {
       console.log('Converting draft order to regular order:', draftToConvert);
-      
+
       // Check if API is available
       if (!window.myAPI) {
         showError('API not available. Please refresh the page.');
@@ -2843,7 +2847,7 @@ const RunningOrders = () => {
       // Prepare table details for database
       let tableDetails = null;
       let tableIdsToReserve = [];
-      
+
       if (conversionOrderType === 'Table' && (conversionTable || reservedTables.length > 0)) {
         // Handle single table selection
         if (conversionTable) {
@@ -2861,7 +2865,7 @@ const RunningOrders = () => {
             tableIdsToReserve.push(table.id);
           }
         }
-        
+
         // Handle merged tables (reserved tables)
         if (reservedTables.length > 0) {
           const reservedTableDetails = reservedTables.map(reservedTable => {
@@ -2873,12 +2877,12 @@ const RunningOrders = () => {
               persons: reservedTable.persons || table?.seat_capacity || 4
             };
           });
-          
+
           tableDetails = JSON.stringify({
             tables: reservedTableDetails,
             total_persons: reservedTableDetails.reduce((sum, table) => sum + (table.persons || 0), 0)
           });
-          
+
           tableIdsToReserve = reservedTableDetails.map(table => table.id);
         }
       }
@@ -2923,7 +2927,7 @@ const RunningOrders = () => {
 
       console.log('Updating draft order with data:', updateData);
       const updateResult = await window.myAPI.updateOrder(draftToConvert.databaseId, updateData);
-      
+
       if (!updateResult.success) {
         showError('Failed to convert draft order: ' + updateResult.message);
         return;
@@ -2964,8 +2968,8 @@ const RunningOrders = () => {
       };
 
       // Update the order in the list
-      setPlacedOrders(prev => prev.map(order => 
-        order.databaseId === draftToConvert.databaseId 
+      setPlacedOrders(prev => prev.map(order =>
+        order.databaseId === draftToConvert.databaseId
           ? updatedOrder
           : order
       ));
@@ -3091,7 +3095,7 @@ const RunningOrders = () => {
     return (
       <div
         className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all overflow-hidden transform hover:-translate-y-1 cursor-pointer"
-        
+
       >
         <div className="h-[88px] relative">
           {imageLoading ? (
@@ -3111,26 +3115,26 @@ const RunningOrders = () => {
             </div>
           )}
         </div>
-          <h3 className="font-semibold text-gray-800 text-md mt-2 mb-1 text-center">{item.name}</h3>
+        <h3 className="font-semibold text-gray-800 text-md mt-2 mb-1 text-center">{item.name}</h3>
         <div className="flex justify-between p-2 items-center">
           <p className="text-gray-600 font-semibold text-md mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
-        <button
-          className="mt-1 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
-          title="Add"
-          onClick={() => handleFoodItemClick(item)}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="w-3 h-3"
+          <button
+            className="mt-1 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
+            title="Add"
+            onClick={() => handleFoodItemClick(item)}
           >
-            <path d="M10 4v12M4 10h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="w-3 h-3"
+            >
+              <path d="M10 4v12M4 10h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
       </div>
     );
@@ -3639,13 +3643,13 @@ const RunningOrders = () => {
   // Calculate totals for single pay mode
   const calculateSinglePayTotals = () => {
     if (!selectedPlacedOrder || !isSinglePayMode) return { subtotal: 0, tax: 0, total: 0 };
-    
+
     const subtotal = selectedPlacedOrder.items?.reduce((sum, item) => {
       return sum + (parseFloat(item.totalPrice) || 0);
     }, 0) || 0;
-    
+
     const tax = subtotal * 0.1; // 10% tax
-    
+
     // Calculate discount
     let discount = 0;
     if (appliedCoupon) {
@@ -3658,14 +3662,14 @@ const RunningOrders = () => {
         discount = appliedCoupon.discount;
       }
     }
-    
+
     // Add manual discount
     if (finalizeDiscountAmount) {
       discount += parseFloat(finalizeDiscountAmount) || 0;
     }
-    
+
     const total = subtotal + tax - discount;
-    
+
     return { subtotal, tax, discount, total };
   };
 
@@ -3697,10 +3701,10 @@ const RunningOrders = () => {
 
   const calculateSplitBillDiscount = () => {
     if (!selectedSplitBill) return 0;
-    
+
     // Get the split bill's own discount
     const splitBillDiscount = selectedSplitBill.discount || 0;
-    
+
     // Calculate discount from applied coupon (manual discount)
     let couponDiscount = 0;
     if (appliedCoupon) {
@@ -3714,7 +3718,7 @@ const RunningOrders = () => {
         couponDiscount = appliedCoupon.discount;
       }
     }
-    
+
     // Return the total discount (split bill discount + coupon discount)
     return splitBillDiscount + couponDiscount;
   };
@@ -3732,13 +3736,13 @@ const RunningOrders = () => {
   const calculateSplitBillTotal = () => {
     console.log('calculateSplitBillTotal - selectedSplitBill:', selectedSplitBill);
     if (!selectedSplitBill) return 0;
-    
+
     const subtotal = selectedSplitBill.subtotal || 0;
     const tax = selectedSplitBill.tax || 0;
     const charge = selectedSplitBill.charge || 0;
     const tips = selectedSplitBill.tips || 0;
     const discount = calculateSplitBillDiscount(); // Use the updated discount calculation
-    
+
     const total = subtotal + tax + charge + tips - discount;
     console.log('calculateSplitBillTotal - returning:', total);
     return total;
@@ -3758,13 +3762,28 @@ const RunningOrders = () => {
     });
   };
 
+  // Handle opening order details modal
+  const handleOpenOrderDetailsModal = () => {
+    if (!selectedPlacedOrder) {
+      showError('Please select an order to view details');
+      return;
+    }
+    setShowOrderDetailsModal(true);
+  };
+
+  // Handle creating invoice
+  const handleCreateInvoice = () => {
+    showSuccess('Invoice created successfully!');
+    setShowOrderDetailsModal(false);
+  };
+
   // Handle opening status update modal
   const handleOpenStatusUpdateModal = (order, event) => {
     if (event) {
       event.stopPropagation();
     }
     setSelectedOrderForStatusUpdate(order);
-    
+
     // Get the appropriate default status based on order type
     const getDefaultStatusForOrderType = (orderType) => {
       switch (orderType) {
@@ -3779,7 +3798,7 @@ const RunningOrders = () => {
           return 'New';
       }
     };
-    
+
     setSelectedStatus(getDefaultStatusForOrderType(order.orderType));
     setShowStatusUpdateModal(true);
   };
@@ -3851,10 +3870,10 @@ const RunningOrders = () => {
       // Here you would typically update the order with the assigned rider
       // For now, we'll just show a success message
       showSuccess(`Rider ${selectedRider.name} assigned to order successfully!`);
-      
+
       // Set the status to "On the way" since rider is assigned
       setSelectedStatus('On the way');
-      
+
       // Close the rider assignment modal and return to status update modal
       setShowRiderAssignmentModal(false);
       setShowStatusUpdateModal(true);
@@ -3952,16 +3971,16 @@ const RunningOrders = () => {
 
       // Update order status in database
       const updateResult = await window.myAPI.updateOrderStatus(
-        selectedOrderForStatusUpdate.databaseId, 
-        dbStatus, 
+        selectedOrderForStatusUpdate.databaseId,
+        dbStatus,
         null // updatedBy - can be set to current employee ID
       );
-      
+
       if (!updateResult.success) {
         showError('Failed to update order status: ' + updateResult.message);
         return;
       }
-      
+
       // If order is completed, delivered, or canceled, free the associated tables
       if ((dbStatus === 'completed' || dbStatus === 'delivered') && selectedOrderForStatusUpdate.databaseId) {
         try {
@@ -3972,7 +3991,7 @@ const RunningOrders = () => {
             if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
               const tableIds = tableDetails.tables.map(table => table.id);
               console.log('Freeing tables:', tableIds);
-              
+
               const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
               if (tableUpdateResult.success) {
                 console.log('Tables freed successfully:', tableUpdateResult.message);
@@ -3988,13 +4007,13 @@ const RunningOrders = () => {
 
       // Update local state - remove order if it's completed, delivered, or canceled, otherwise update status
       const normalizedStatus = selectedStatus.toLowerCase();
-      const shouldRemove = normalizedStatus === 'complete' || 
-                          normalizedStatus === 'completed' || 
-                          normalizedStatus === 'delivered' || 
-                          normalizedStatus === 'canceled' ||
-                          normalizedStatus === 'done' ||
-                          normalizedStatus === 'finished' ||
-                          normalizedStatus === 'closed';
+      const shouldRemove = normalizedStatus === 'complete' ||
+        normalizedStatus === 'completed' ||
+        normalizedStatus === 'delivered' ||
+        normalizedStatus === 'canceled' ||
+        normalizedStatus === 'done' ||
+        normalizedStatus === 'finished' ||
+        normalizedStatus === 'closed';
 
       console.log('Status update debug:', {
         selectedStatus,
@@ -4009,8 +4028,8 @@ const RunningOrders = () => {
         console.log('Current orders before removal:', placedOrders.length);
         setPlacedOrders(prev => {
           console.log('Previous orders:', prev.map(o => ({ id: o.id, databaseId: o.databaseId, status: o.status })));
-          const filtered = prev.filter(order => 
-            order.id !== selectedOrderForStatusUpdate.id && 
+          const filtered = prev.filter(order =>
+            order.id !== selectedOrderForStatusUpdate.id &&
             order.databaseId !== selectedOrderForStatusUpdate.databaseId
           );
           console.log('Orders after removal:', filtered.length);
@@ -4032,9 +4051,9 @@ const RunningOrders = () => {
         showSuccess(`Order status updated to ${selectedStatus}!`);
       }
 
-    setShowStatusUpdateModal(false);
-    setSelectedOrderForStatusUpdate(null);
-    setSelectedStatus('New');
+      setShowStatusUpdateModal(false);
+      setSelectedOrderForStatusUpdate(null);
+      setSelectedStatus('New');
     } catch (error) {
       console.error('Error updating order status:', error);
       showError('Failed to update order status. Please try again.');
@@ -4067,22 +4086,22 @@ const RunningOrders = () => {
     // Load order details back into cart with full details
     if (selectedPlacedOrder.items && selectedPlacedOrder.items.length > 0) {
       console.log('Loading order items:', selectedPlacedOrder.items);
-      
+
       // Convert order items back to cart items with all details
       const cartItemsFromOrder = selectedPlacedOrder.items.map((item, index) => {
         console.log('Processing item:', item);
-        
+
         // Parse variations and addons from JSON if they're strings
         let variations = {};
         let adons = [];
-        
+
         try {
           if (typeof item.variations === 'string') {
             variations = JSON.parse(item.variations);
           } else {
             variations = item.variations || {};
           }
-          
+
           if (typeof item.adons === 'string') {
             adons = JSON.parse(item.adons);
           } else {
@@ -4091,10 +4110,10 @@ const RunningOrders = () => {
         } catch (error) {
           console.error('Error parsing variations/addons for item:', item, error);
         }
-        
+
         console.log('Parsed variations:', variations);
         console.log('Parsed addons:', adons);
-        
+
         return {
           id: Date.now() + index, // Generate unique IDs
           food: item.food,
@@ -4129,7 +4148,7 @@ const RunningOrders = () => {
     // Load table information if it's a table order
     if (selectedPlacedOrder.table && selectedPlacedOrder.table !== 'None') {
       console.log('Loading table:', selectedPlacedOrder.table);
-      
+
       // First, try to get table details from database if we have the database ID
       if (selectedPlacedOrder.databaseId) {
         try {
@@ -4138,7 +4157,7 @@ const RunningOrders = () => {
             const tableDetails = JSON.parse(orderResult.data.table_details);
             if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
               console.log('Loading table details from database:', tableDetails);
-              
+
               // Load all tables from database into reserved tables
               const reservedTablesFromDB = tableDetails.tables.map(tableDetail => {
                 const table = tables.find(t => t.id === tableDetail.id);
@@ -4151,7 +4170,7 @@ const RunningOrders = () => {
               });
               setReservedTables(reservedTablesFromDB);
               console.log('Loaded reserved tables from database:', reservedTablesFromDB);
-              
+
               // Load the first table as the selected table
               const firstTable = tableDetails.tables[0];
               const table = tables.find(t => t.id === firstTable.id);
@@ -4161,7 +4180,7 @@ const RunningOrders = () => {
                 setSelectedTable(table.id.toString());
                 setSelectedPersons(firstTable.persons || table.seat_capacity || 4);
               }
-              
+
               // Skip the UI table field parsing since we have database data
               return;
             }
@@ -4170,7 +4189,7 @@ const RunningOrders = () => {
           console.error('Error loading table details from database:', error);
         }
       }
-      
+
       // Fallback to UI table field parsing
       const tableMatch = selectedPlacedOrder.table.match(/Table (\d+)/);
       if (tableMatch) {
@@ -4206,7 +4225,7 @@ const RunningOrders = () => {
     // Set modification flags
     setIsModifyingOrder(true);
     setModifyingOrderId(selectedPlacedOrder.databaseId);
-    
+
     // Don't remove the order from placed orders - keep it there
     // setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
     setSelectedPlacedOrder(null);
@@ -4225,7 +4244,7 @@ const RunningOrders = () => {
       showError('Please select an order to cancel');
       return;
     }
-    
+
     setShowCancelOrderModal(true);
     setCancellationReason('');
   };
@@ -4251,12 +4270,12 @@ const RunningOrders = () => {
       // Update order status to canceled in database
       if (selectedPlacedOrder.databaseId) {
         const updateResult = await window.myAPI.updateOrder(selectedPlacedOrder.databaseId, updateData);
-        
+
         if (!updateResult.success) {
           showError('Failed to cancel order: ' + updateResult.message);
           return;
         }
-        
+
         // Free the associated tables when order is canceled
         try {
           // Get the order details to check for table information
@@ -4266,7 +4285,7 @@ const RunningOrders = () => {
             if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
               const tableIds = tableDetails.tables.map(table => table.id);
               console.log('Freeing tables due to cancellation:', tableIds);
-              
+
               const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
               if (tableUpdateResult.success) {
                 console.log('Tables freed successfully after cancellation:', tableUpdateResult.message);
@@ -4282,11 +4301,11 @@ const RunningOrders = () => {
 
       // Remove the order from running orders since it's canceled
       setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
-      
+
       // Close modal and reset
       setShowCancelOrderModal(false);
       setCancellationReason('');
-      
+
       // Remove from selected order since it's now canceled
       setSelectedPlacedOrder(null);
 
@@ -4320,14 +4339,14 @@ const RunningOrders = () => {
         } catch (error) {
           console.error('Error getting order details before deletion:', error);
         }
-        
+
         const deleteResult = await window.myAPI.deleteOrder(selectedPlacedOrder.databaseId);
-        
+
         if (!deleteResult.success) {
           showError('Failed to delete order: ' + deleteResult.message);
           return;
         }
-        
+
         // Free the associated tables after successful deletion
         if (tableIdsToFree.length > 0) {
           try {
@@ -4385,15 +4404,15 @@ const RunningOrders = () => {
       }
 
       setHotelInfo(hotelResult.data);
-      
+
       // Set today's date as default
       const today = new Date();
       const todayString = today.toISOString().split('T')[0];
       setSelectedScheduleDate(todayString);
-      
+
       // Generate time slots based on hotel opening and closing times
       generateTimeSlots(hotelResult.data, todayString);
-      
+
       setShowScheduleModal(true);
     } catch (error) {
       console.error('Error opening schedule modal:', error);
@@ -4426,13 +4445,13 @@ const RunningOrders = () => {
       for (let minute = 0; minute < 60; minute += 30) {
         // Skip if this time is after closing time
         if (hour === endHour && minute >= endMinute) break;
-        
+
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const slotDateTime = new Date(selectedDate + 'T' + timeString);
-        
+
         // If it's today, only show future times
         if (isToday && slotDateTime <= now) continue;
-        
+
         slots.push(timeString);
       }
     }
@@ -4462,7 +4481,7 @@ const RunningOrders = () => {
 
   const handleScheduleConfirm = () => {
     const finalTime = useCustomTime ? customTime : selectedScheduleTime;
-    
+
     if (!finalTime) {
       showError('Please select a time');
       return;
@@ -4480,7 +4499,7 @@ const RunningOrders = () => {
       if (hotelInfo) {
         const openingTime = hotelInfo.opening_time.split(':').slice(0, 2).join(':');
         const closingTime = hotelInfo.closeing_time.split(':').slice(0, 2).join(':');
-        
+
         if (customTime < openingTime || customTime > closingTime) {
           showError(`Time must be between ${openingTime} and ${closingTime}`);
           return;
@@ -4490,7 +4509,7 @@ const RunningOrders = () => {
         const now = new Date();
         const selectedDateObj = new Date(selectedScheduleDate);
         const isToday = selectedDateObj.toDateString() === now.toDateString();
-        
+
         if (isToday) {
           const currentTime = now.toTimeString().slice(0, 5);
           if (customTime <= currentTime) {
@@ -4503,11 +4522,11 @@ const RunningOrders = () => {
 
     // Combine date and time
     const scheduledDateTime = `${selectedScheduleDate}T${finalTime}:00`;
-    
+
     // Store the scheduled time in the order data
     // This will be used when placing the order
     setSelectedScheduleDateTime(scheduledDateTime);
-    
+
     setShowScheduleModal(false);
     showSuccess(`Order scheduled for ${selectedScheduleDate} at ${finalTime}`);
   };
@@ -4529,7 +4548,7 @@ const RunningOrders = () => {
           <div className="flex-1 flex flex-col overflow-y-auto p-3">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-gray-800">Active Orders</h2>
-              <button 
+              <button
                 onClick={fetchExistingOrders}
                 className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
               >
@@ -4592,11 +4611,11 @@ const RunningOrders = () => {
                           textColor: 'text-purple-700',
                           icon: <Printer size={12} />
                         };
-                                              case 'Draft':
-                          return {
-                            bgColor: 'bg-yellow-100',
-                            textColor: 'text-yellow-700',
-                            icon: <FileText size={12} />
+                      case 'Draft':
+                        return {
+                          bgColor: 'bg-yellow-100',
+                          textColor: 'text-yellow-700',
+                          icon: <FileText size={12} />
                         };
                       default:
                         return {
@@ -4612,8 +4631,8 @@ const RunningOrders = () => {
                   return (
                     <div
                       key={order.id}
-                      className={`relative bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md rounded-lg p-4 cursor-pointer transition-all duration-200 ${selectedPlacedOrder?.id === order.id
-                        ? 'border-blue-400 bg-blue-50 shadow-md'
+                      className={`relative bg-white border border-gray-200 hover:border-primary hover:shadow-md rounded-lg p-4 cursor-pointer transition-all duration-200 ${selectedPlacedOrder?.id === order.id
+                        ? 'border-primary b-2 bg-primaryExtraLight shadow-md'
                         : 'hover:bg-gray-50'
                         }`}
                       onClick={() => setSelectedPlacedOrder(order)}
@@ -4649,9 +4668,9 @@ const RunningOrders = () => {
                               </p>
                               <p className="text-xs text-gray-500">{timeAgo}</p>
                             </div>
-                                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeStyle(order.status || 'Pending')}`}>
-                  {order.status || 'PENDING'}
-                </span>
+                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeStyle(order.status || 'Pending')}`}>
+                              {order.status || 'PENDING'}
+                            </span>
                           </div>
 
                         </div>
@@ -4671,7 +4690,7 @@ const RunningOrders = () => {
                                     <span className="font-medium text-gray-800">{item.food.name}</span>
                                     <span className="text-blue-600 ml-2">x{item.quantity}</span>
                                   </div>
-                                  
+
                                   {/* Show variations if any */}
                                   {item.variations && Object.keys(item.variations).length > 0 && (
                                     <div className="text-xs text-gray-600 mt-1">
@@ -4679,7 +4698,7 @@ const RunningOrders = () => {
                                         const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
                                         const variationName = variation?.name || variationId;
                                         const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
-                                        
+
                                         return (
                                           <div key={variationId} className="flex items-center gap-1">
                                             <span className="text-gray-500">• {variationName}:</span>
@@ -4699,7 +4718,7 @@ const RunningOrders = () => {
                                       })}
                                     </div>
                                   )}
-                                  
+
                                   {/* Show addons if any */}
                                   {item.adons && item.adons.length > 0 && (
                                     <div className="text-xs text-gray-600 mt-1">
@@ -4707,7 +4726,7 @@ const RunningOrders = () => {
                                         const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
                                         const addonName = addon?.name || addonId;
                                         const addonPrice = addon?.price;
-                                        
+
                                         return (
                                           <div key={idx} className="flex items-center gap-1">
                                             <span className="text-gray-500">• Addon:</span>
@@ -4761,26 +4780,26 @@ const RunningOrders = () => {
                             ) : (
                               // Regular order actions
                               <>
-                            <button
-                              className="flex-1 bg-gray-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-gray-700 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle view details
-                                setSelectedPlacedOrder(order);
-                              }}
-                            >
-                              View Details
-                            </button>
-                            <button
-                              className="flex-1 bg-blue-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-blue-700 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle mark as action
-                                handleOpenStatusUpdateModal(order, e);
-                              }}
-                            >
-                              Mark As
-                            </button>
+                                <button
+                                  className="flex-1 bg-gray-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-gray-700 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle view details
+                                    setSelectedPlacedOrder(order);
+                                  }}
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  className="flex-1 bg-blue-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle mark as action
+                                    handleOpenStatusUpdateModal(order, e);
+                                  }}
+                                >
+                                  Mark As
+                                </button>
                               </>
                             )}
                           </div>
@@ -4822,11 +4841,16 @@ const RunningOrders = () => {
 
               {/* Second Row - Order Details, Modify Order, Cancel */}
               <div className="flex gap-2">
-                <button className="flex-1 text-[13px] h-10 bg-[#4d36eb] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button
+                  onClick={handleOpenOrderDetailsModal}
+                  disabled={!selectedPlacedOrder}
+                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    }`}
+                >
                   <Eye size={14} />
                   ORDER DETAILS
                 </button>
-                <button 
+                <button
                   onClick={async () => {
                     try {
                       await handleModifyOrder();
@@ -4836,14 +4860,13 @@ const RunningOrders = () => {
                     }
                   }}
                   disabled={!selectedPlacedOrder || (isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)}
-                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${
-                    selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId) 
-                      ? 'bg-[#f3be25] text-white hover:bg-[#e6b31e]' 
+                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
+                      ? 'bg-[#f3be25] text-white hover:bg-[#e6b31e]'
                       : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  }`}
+                    }`}
                   title={
-                    !selectedPlacedOrder 
-                      ? 'Select an order to modify' 
+                    !selectedPlacedOrder
+                      ? 'Select an order to modify'
                       : (isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
                         ? 'Order is already being modified'
                         : 'Modify order'
@@ -4853,16 +4876,15 @@ const RunningOrders = () => {
                   MODIFY ORDER
                 </button>
               </div>
-                <button 
-                  onClick={handleCancelOrder}
-                  disabled={!selectedPlacedOrder}
-                  className={`w-[70%] text-[13px] mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${
-                    selectedPlacedOrder ? 'bg-[#C42232] text-white cursor-pointer hover:bg-[#b01a28]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              <button
+                onClick={handleCancelOrder}
+                disabled={!selectedPlacedOrder}
+                className={`w-[70%] text-[13px] mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#C42232] text-white cursor-pointer hover:bg-[#b01a28]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                   }`}
-                >
-                  <X size={14} />
-                  CANCEL ORDER
-                </button>
+              >
+                <X size={14} />
+                CANCEL ORDER
+              </button>
             </div>
           </div>
 
@@ -4895,7 +4917,7 @@ const RunningOrders = () => {
           {/* Search and categories section */}
           <div className="py-3 px-2 border-b border-gray-200">
             {/* Search bar */}
-             <div className="relative mb-4 w-full">
+            <div className="relative mb-4 w-full">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <Search className="w-4 h-4 text-primary" />
               </div>
@@ -4928,7 +4950,7 @@ const RunningOrders = () => {
             )}
             <div className="flex items-center justify-between mb-2 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
-                
+
                 <span className="font-semibold text-gray-800 text-[16px]">🍽 Food &amp; Categories</span>
               </div>
               <button
@@ -4947,11 +4969,10 @@ const RunningOrders = () => {
                   <button
                     key={category.id}
                     className={`h-9 px-3 text-[14px] flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${
-                         selectedCategory?.id === category.id 
-                           ? 'bg-white text-black border-2 border-primary' 
-                           : 'bg-primary text-white hover:bg-primary/90'
-                       }`}
+                       btn-lifted transition-colors cursor-pointer ${selectedCategory?.id === category.id
+                        ? 'bg-white text-black border-2 border-primary'
+                        : 'bg-primary text-white hover:bg-primary/90'
+                      }`}
                     onClick={() => handleCategorySelect(category)}
                   >
                     {category.name}
@@ -4994,13 +5015,12 @@ const RunningOrders = () => {
               }}
               disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${
-                         isModifyingOrder 
-                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                           : selectedOrderType === 'In Store' 
-                           ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2'
-                       }`}>
+                       btn-lifted transition-colors cursor-pointer ${isModifyingOrder
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : selectedOrderType === 'In Store'
+                    ? 'bg-primary text-white'
+                    : 'bg-white hover:border-primary hover:border-2'
+                }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               </svg>
@@ -5020,13 +5040,12 @@ const RunningOrders = () => {
               }}
               disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${
-                         isModifyingOrder 
-                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                           : selectedOrderType === 'Table' 
-                           ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2'
-                       }`}>
+                       btn-lifted transition-colors cursor-pointer ${isModifyingOrder
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : selectedOrderType === 'Table'
+                    ? 'bg-primary text-white'
+                    : 'bg-white hover:border-primary hover:border-2'
+                }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"></rect>
               </svg>
@@ -5049,13 +5068,12 @@ const RunningOrders = () => {
               }}
               disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${
-                         isModifyingOrder 
-                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                           : selectedOrderType === 'Collection' 
-                           ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2'
-                       }`}>
+                       btn-lifted transition-colors cursor-pointer ${isModifyingOrder
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : selectedOrderType === 'Collection'
+                    ? 'bg-primary text-white'
+                    : 'bg-white hover:border-primary hover:border-2'
+                }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"></circle>
               </svg>
@@ -5078,19 +5096,18 @@ const RunningOrders = () => {
               }}
               disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${
-                         isModifyingOrder 
-                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                           : selectedOrderType === 'Delivery' 
-                           ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2'
-                       }`}>
+                       btn-lifted transition-colors cursor-pointer ${isModifyingOrder
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : selectedOrderType === 'Delivery'
+                    ? 'bg-primary text-white'
+                    : 'bg-white hover:border-primary hover:border-2'
+                }`}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
               </svg>
               Delivery
             </button>
-            <button 
+            <button
               onClick={() => {
                 // Create a mock order object with the current selected order type
                 const mockOrder = {
@@ -5098,7 +5115,7 @@ const RunningOrders = () => {
                   orderNumber: 'NEW-ORDER',
                   status: 'New'
                 };
-                
+
                 // Open status update modal with the current order type
                 setSelectedOrderForStatusUpdate(mockOrder);
                 setSelectedStatus('New');
@@ -5114,14 +5131,13 @@ const RunningOrders = () => {
             </button>
             {/* Status section */}
 
-            <button 
+            <button
               onClick={handleOpenScheduleModal}
               className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2 ${
-                         selectedScheduleDateTime 
-                           ? 'bg-primary text-white border-primary' 
-                           : 'text-black hover:border-primary hover:border-2'
-                       }`}>
+                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2 ${selectedScheduleDateTime
+                  ? 'bg-primary text-white border-primary'
+                  : 'text-black hover:border-primary hover:border-2'
+                }`}>
               <Clock size={14} />
               Due to
               {selectedScheduleDateTime && (
@@ -5139,11 +5155,10 @@ const RunningOrders = () => {
             <button
               onClick={() => setShowCustomerModal(true)}
               className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
-                     btn-lifted transition-colors cursor-pointer ${
-                       showCustomerModal 
-                         ? 'bg-primary text-white border-2 border-primary' 
-                         : 'bg-white text-black'
-                     }`}>
+                     btn-lifted transition-colors cursor-pointer ${showCustomerModal
+                  ? 'bg-primary text-white border-2 border-primary'
+                  : 'bg-white text-black'
+                }`}>
               <Plus size={12} />
               New Customer
             </button>
@@ -5187,11 +5202,11 @@ const RunningOrders = () => {
                   {cartItems.length > 0 ? (
                     cartItems.map((item) => (
                       <tr key={item.id} className="grid grid-cols-[auto_100px_100px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
-                        
+
                         <td className="text-gray-800 text-sm">
                           <div className="flex flex-col">
                             <span className="font-medium">{item.food.name}</span>
-                            
+
                             {/* Show variations if any */}
                             {item.variations && Object.keys(item.variations).length > 0 && (
                               <div className="text-xs text-gray-600 mt-1">
@@ -5199,10 +5214,10 @@ const RunningOrders = () => {
                                   // Try to get variation name from food details if available
                                   const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
                                   const variationName = variation?.name || variationId;
-                                  
+
                                   // Handle both single and multiple selections
                                   const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
-                                  
+
                                   return (
                                     <div key={variationId} className="flex items-center gap-1">
                                       <span className="text-gray-500">• {variationName}:</span>
@@ -5222,7 +5237,7 @@ const RunningOrders = () => {
                                 })}
                               </div>
                             )}
-                            
+
                             {/* Show addons if any */}
                             {item.adons && item.adons.length > 0 && (
                               <div className="text-xs text-gray-600 mt-1">
@@ -5231,7 +5246,7 @@ const RunningOrders = () => {
                                   const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
                                   const addonName = addon?.name || addonId;
                                   const addonPrice = addon?.price;
-                                  
+
                                   return (
                                     <div key={index} className="flex items-center gap-1">
                                       <span className="text-gray-500">• Addon:</span>
@@ -5344,17 +5359,17 @@ const RunningOrders = () => {
                   }}
                   disabled={cartItems.length === 0 || isModifyingOrder}
                   className={`bg-red-700 text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
-                      ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
-                      : 'bg-gray-400 cursor-not-allowed'
+                    ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
+                    : 'bg-gray-400 cursor-not-allowed'
                     }`}>
                   {/* <Trash2 size={17} /> */}
                   Delete
                 </button>
-                <button 
+                <button
                   onClick={handleDraftOrder}
                   className={`bg-[#5A32A3] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded ${cartItems.length > 0 && !isModifyingOrder
-                      ? 'hover:bg-[#4A2A93] cursor-pointer'
-                      : 'bg-gray-400 cursor-not-allowed'
+                    ? 'hover:bg-[#4A2A93] cursor-pointer'
+                    : 'bg-gray-400 cursor-not-allowed'
                     }`}>
                   DRAFT
                 </button>
@@ -5710,7 +5725,7 @@ const RunningOrders = () => {
               <div className="p-6 flex-1 overflow-y-auto">
                 {/* Top Section - Order Details */}
                 <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Food Type:</label>
                     <div className="bg-gray-100 rounded-lg px-3 py-2 text-center">
                       <span className="text-sm font-medium text-gray-800">Pizza</span>
@@ -5728,9 +5743,9 @@ const RunningOrders = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">No. of Splits:</label>
-                    <select 
-                        value={pizzaSlices}
-                        onChange={handlePizzaSlicesChange}
+                    <select
+                      value={pizzaSlices}
+                      onChange={handlePizzaSlicesChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                     >
                       <option value="2">2</option>
@@ -5741,8 +5756,8 @@ const RunningOrders = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Price:</label>
                     <div className="flex items-center">
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={pizzaPrice}
                         onChange={(e) => setPizzaPrice(e.target.value)}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
@@ -5751,7 +5766,7 @@ const RunningOrders = () => {
                       <span className="ml-2 text-sm font-medium text-gray-800">€</span>
                     </div>
                   </div>
-                    </div>
+                </div>
 
                 {/* Middle Section - Pizza Visualization & Flavor Selection */}
                 <div className="grid grid-cols-[30%_70%] gap-8 mb-6">
@@ -5775,16 +5790,16 @@ const RunningOrders = () => {
                       {Array.from({ length: pizzaSlices }, (_, index) => (
                         <div key={index}>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {index === 0 ? 'First' : index === 1 ? 'Second' : index === 2 ? 'Third' : index === 3 ? 'Fourth' : 
-                             index === 4 ? 'Fifth' : index === 5 ? 'Sixth' : index === 6 ? 'Seventh' : index === 7 ? 'Eighth' :
-                             index === 8 ? 'Ninth' : index === 9 ? 'Tenth' : index === 10 ? 'Eleventh' : index === 11 ? 'Twelfth' :
-                             index === 12 ? 'Thirteenth' : index === 13 ? 'Fourteenth' : index === 14 ? 'Fifteenth' : 'Sixteenth'} Half:
-                      </label>
-                          <select 
+                            {index === 0 ? 'First' : index === 1 ? 'Second' : index === 2 ? 'Third' : index === 3 ? 'Fourth' :
+                              index === 4 ? 'Fifth' : index === 5 ? 'Sixth' : index === 6 ? 'Seventh' : index === 7 ? 'Eighth' :
+                                index === 8 ? 'Ninth' : index === 9 ? 'Tenth' : index === 10 ? 'Eleventh' : index === 11 ? 'Twelfth' :
+                                  index === 12 ? 'Thirteenth' : index === 13 ? 'Fourteenth' : index === 14 ? 'Fifteenth' : 'Sixteenth'} Half:
+                          </label>
+                          <select
                             value={selectedFlavors[index] || ''}
                             onChange={(e) => handleFlavorChange(index, e.target.value)}
                             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ${index === 1 ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' : 'border-gray-300'
-                            }`}
+                              }`}
                           >
                             <option value="">Select flavor...</option>
                             <option value="margherita">Margherita</option>
@@ -5796,15 +5811,15 @@ const RunningOrders = () => {
                             <option value="supreme">Supreme</option>
                             <option value="buffalo-chicken">Buffalo Chicken</option>
                           </select>
-                      </div>
+                        </div>
                       ))}
                     </div>
                     <div className='mt-4'>
-                  <div className="flex flex-wrap gap-2">
-                    {currentIngredients.length > 0 ? (
-                      currentIngredients.map((ingredient) => (
-                        <button
-                          key={ingredient}
+                      <div className="flex flex-wrap gap-2">
+                        {currentIngredients.length > 0 ? (
+                          currentIngredients.map((ingredient) => (
+                            <button
+                              key={ingredient}
                               className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 hover:bg-primary/90"
                             >
                               <span>{ingredient}</span>
@@ -5818,61 +5833,60 @@ const RunningOrders = () => {
                               >
                                 <X size={12} className="text-white" />
                               </button>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="text-gray-500 text-sm italic">
-                        Select flavors from the dropdowns above to see available ingredients
+                            </button>
+                          ))
+                        ) : (
+                          <div className="text-gray-500 text-sm italic">
+                            Select flavors from the dropdowns above to see available ingredients
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  {currentIngredients.length > 0 && (
-                    <div className="mt-3 text-xs text-gray-600">
-                      Showing ingredients from {Object.values(selectedFlavors).filter(f => f).length} selected flavor(s)
-                    </div>
-                  )}
+                      {currentIngredients.length > 0 && (
+                        <div className="mt-3 text-xs text-gray-600">
+                          Showing ingredients from {Object.values(selectedFlavors).filter(f => f).length} selected flavor(s)
+                        </div>
+                      )}
                     </div>
                     <div className="mt-2">
-                  <label htmlFor="customPizzaNote" className="block text-sm font-medium text-gray-700 mb-1">
-                    Add a custom note (optional)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      id="customPizzaNote"
-                      name="customPizzaNote"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="E.g. No onions, extra cheese..."
-                      value={pizzaNote || ''}
-                      onChange={e => setPizzaNote(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddCustomNote();
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={handleAddCustomNote}
-                      disabled={!pizzaNote.trim()}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        pizzaNote.trim() 
-                          ? 'bg-primary text-white hover:bg-primary/90' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
+                      <label htmlFor="customPizzaNote" className="block text-sm font-medium text-gray-700 mb-1">
+                        Add a custom note (optional)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          id="customPizzaNote"
+                          name="customPizzaNote"
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                          placeholder="E.g. No onions, extra cheese..."
+                          value={pizzaNote || ''}
+                          onChange={e => setPizzaNote(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleAddCustomNote();
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={handleAddCustomNote}
+                          disabled={!pizzaNote.trim()}
+                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${pizzaNote.trim()
+                              ? 'bg-primary text-white hover:bg-primary/90'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                
+
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 justify-end mt-6 pt-4 border-t border-gray-200">
-                          <button
-                            onClick={handleCloseSplitPizzaModal}
+                  <button
+                    onClick={handleCloseSplitPizzaModal}
                     className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
                   >
                     Cancel
@@ -5882,7 +5896,7 @@ const RunningOrders = () => {
                     className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Add to Order
-                          </button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -5966,8 +5980,8 @@ const RunningOrders = () => {
                           <option value="" disabled>Loading tables...</option>
                         ) : tables.length > 0 ? (
                           tables.map((table) => (
-                            <option 
-                              key={table.id} 
+                            <option
+                              key={table.id}
                               value={table.id}
                               disabled={isTableReserved(table.id.toString())}
                             >
@@ -6174,8 +6188,8 @@ const RunningOrders = () => {
                                 <option value="" disabled>Loading tables...</option>
                               ) : tables.length > 0 ? (
                                 getAvailableTablesForSelection(selection.id).map((table) => (
-                                  <option 
-                                    key={table.id} 
+                                  <option
+                                    key={table.id}
                                     value={table.id}
                                     disabled={isTableReserved(table.id.toString())}
                                   >
@@ -6258,7 +6272,7 @@ const RunningOrders = () => {
 
                       // Close the modal
                       setShowMergeTableModal(false);
-                      
+
                       // Reset merge table selections
                       setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
                     }}
@@ -6901,8 +6915,8 @@ const RunningOrders = () => {
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
                 <h2 className="text-xl font-bold">
-                  {isSinglePayMode ? 'Finalize Sale - Single Pay' : 
-                   selectedSplitBill ? `Finalize Sale - Split Bill ${selectedSplitBill.id}` : 'Finalize Sale'}
+                  {isSinglePayMode ? 'Finalize Sale - Single Pay' :
+                    selectedSplitBill ? `Finalize Sale - Split Bill ${selectedSplitBill.id}` : 'Finalize Sale'}
                 </h2>
                 <button
                   onClick={() => setShowFinalizeSaleModal(false)}
@@ -6961,8 +6975,8 @@ const RunningOrders = () => {
                                 setGivenAmount(numericKeyboardInput);
                                 setPaymentAmount(numericKeyboardInput);
                                 if (numericKeyboardInput) {
-                                  const total = isSinglePayMode ? calculateSinglePayTotals().total : 
-                                               selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                                  const total = isSinglePayMode ? calculateSinglePayTotals().total :
+                                    selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
                                   const change = parseFloat(numericKeyboardInput) - total;
                                   setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
                                 } else {
@@ -6979,8 +6993,8 @@ const RunningOrders = () => {
                                 setNumericKeyboardInput(value);
                               }
                               if (value) {
-                                const total = isSinglePayMode ? calculateSinglePayTotals().total : 
-                                             selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                                const total = isSinglePayMode ? calculateSinglePayTotals().total :
+                                  selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
                                 const change = parseFloat(value) - total;
                                 setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
                               } else {
@@ -7016,8 +7030,8 @@ const RunningOrders = () => {
                                 if (selectedPaymentMethod === 'Cash') {
                                   setGivenAmount(numericKeyboardInput);
                                   if (numericKeyboardInput) {
-                                    const total = isSinglePayMode ? calculateSinglePayTotals().total : 
-                                                 selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                                    const total = isSinglePayMode ? calculateSinglePayTotals().total :
+                                      selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
                                     const change = parseFloat(numericKeyboardInput) - total;
                                     setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
                                   } else {
@@ -7036,8 +7050,8 @@ const RunningOrders = () => {
                               if (selectedPaymentMethod === 'Cash') {
                                 setGivenAmount(value);
                                 if (value) {
-                                  const total = isSinglePayMode ? calculateSinglePayTotals().total : 
-                                               selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                                  const total = isSinglePayMode ? calculateSinglePayTotals().total :
+                                    selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
                                   const change = parseFloat(value) - total;
                                   setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
                                 } else {
@@ -7175,7 +7189,7 @@ const RunningOrders = () => {
                           <span className="text-sm font-medium text-gray-700">
                             {getCurrencySymbol()}{
                               isSinglePayMode ? calculateSinglePayTotals().subtotal.toFixed(2) :
-                              selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)
+                                selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)
                             }
                           </span>
                         </div>
@@ -7184,7 +7198,7 @@ const RunningOrders = () => {
                           <span className="text-sm font-medium text-gray-700">
                             {getCurrencySymbol()}{
                               isSinglePayMode ? calculateSinglePayTotals().tax.toFixed(2) :
-                              selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)
+                                selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)
                             }
                           </span>
                         </div>
@@ -7194,7 +7208,7 @@ const RunningOrders = () => {
                             <span className="text-sm font-medium text-green-600">
                               -{getCurrencySymbol()}{
                                 isSinglePayMode ? calculateSinglePayTotals().discount.toFixed(2) :
-                                selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
+                                  selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
                               }
                             </span>
                           </div>
@@ -7227,7 +7241,7 @@ const RunningOrders = () => {
                             <span className="text-sm font-medium text-green-600">
                               -{getCurrencySymbol()}{
                                 isSinglePayMode ? calculateSinglePayTotals().discount.toFixed(2) :
-                                selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
+                                  selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
                               }
                             </span>
                           </div>
@@ -7239,7 +7253,7 @@ const RunningOrders = () => {
                         <span className="text-xl font-bold text-gray-800">
                           {getCurrencySymbol()}{
                             isSinglePayMode ? calculateSinglePayTotals().total.toFixed(2) :
-                            selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)
+                              selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)
                           }
                         </span>
                       </div>
@@ -7252,7 +7266,7 @@ const RunningOrders = () => {
                         <span className="text-xl font-bold text-gray-800">
                           {getCurrencySymbol()}{Math.max(0, (
                             isSinglePayMode ? calculateSinglePayTotals().total :
-                            selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal()
+                              selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal()
                           ) - addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0)).toFixed(2)}
                         </span>
                       </div>
@@ -7289,7 +7303,7 @@ const RunningOrders = () => {
                                 <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
                                 <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
                               </div>
-                              
+
                               {/* Show variations if any */}
                               {item.variations && Object.keys(item.variations).length > 0 && (
                                 <div className="text-xs text-gray-600 mt-1">
@@ -7297,7 +7311,7 @@ const RunningOrders = () => {
                                     const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
                                     const variationName = variation?.name || variationId;
                                     const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
-                                    
+
                                     return (
                                       <div key={variationId} className="flex items-center gap-1">
                                         <span className="text-gray-500">• {variationName}:</span>
@@ -7317,7 +7331,7 @@ const RunningOrders = () => {
                                   })}
                                 </div>
                               )}
-                              
+
                               {/* Show addons if any */}
                               {item.adons && item.adons.length > 0 && (
                                 <div className="text-xs text-gray-600 mt-1">
@@ -7325,7 +7339,7 @@ const RunningOrders = () => {
                                     const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
                                     const addonName = addon?.name || addonId;
                                     const addonPrice = addon?.price;
-                                    
+
                                     return (
                                       <div key={idx} className="flex items-center gap-1">
                                         <span className="text-gray-500">• Addon:</span>
@@ -7359,8 +7373,8 @@ const RunningOrders = () => {
                       onClick={() => setShowCartDetailsModal(true)}
                       className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
                     >
-                      {isSinglePayMode ? 'Order Details' : 
-                       selectedSplitBill ? 'Split Bill Details' : 'Cart Details'}
+                      {isSinglePayMode ? 'Order Details' :
+                        selectedSplitBill ? 'Split Bill Details' : 'Cart Details'}
                     </button>
                   </div>
                 </div>
@@ -7623,7 +7637,7 @@ const RunningOrders = () => {
                 <button
                   onClick={async () => {
                     try {
-                    // Handle payment submission
+                      // Handle payment submission
                       const paymentAmountValue = parseFloat(paymentAmount) || 0;
                       const givenAmountValue = parseFloat(givenAmount) || 0;
                       const changeAmountValue = parseFloat(changeAmount) || 0;
@@ -7632,7 +7646,7 @@ const RunningOrders = () => {
                       if (isSinglePayMode) {
                         // Create order first, then update with payment
                         await handlePlaceOrder();
-                        
+
                         // Get the latest placed order (should be the one we just created)
                         const latestOrder = placedOrders[0];
                         if (latestOrder && latestOrder.databaseId) {
@@ -7642,13 +7656,13 @@ const RunningOrders = () => {
                             payment_method: selectedPaymentMethod,
                             order_status: 'completed'
                           };
-                          
+
                           const updateResult = await window.myAPI.updateOrder(latestOrder.databaseId, paymentUpdates);
                           if (!updateResult.success) {
                             showError('Failed to update order payment: ' + updateResult.message);
                             return;
                           }
-                          
+
                           // Free the associated tables when order is completed through payment
                           try {
                             const orderResult = await window.myAPI.getOrderById(latestOrder.databaseId);
@@ -7657,7 +7671,7 @@ const RunningOrders = () => {
                               if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
                                 const tableIds = tableDetails.tables.map(table => table.id);
                                 console.log('Freeing tables after payment completion:', tableIds);
-                                
+
                                 const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
                                 if (tableUpdateResult.success) {
                                   console.log('Tables freed successfully after payment:', tableUpdateResult.message);
@@ -7677,13 +7691,13 @@ const RunningOrders = () => {
                           payment_method: selectedPaymentMethod,
                           order_status: 'completed'
                         };
-                        
+
                         const updateResult = await window.myAPI.updateOrder(selectedPlacedOrder.databaseId, paymentUpdates);
                         if (!updateResult.success) {
                           showError('Failed to update order payment: ' + updateResult.message);
                           return;
                         }
-                        
+
                         // Free the associated tables when order is completed through payment
                         try {
                           const orderResult = await window.myAPI.getOrderById(selectedPlacedOrder.databaseId);
@@ -7692,7 +7706,7 @@ const RunningOrders = () => {
                             if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
                               const tableIds = tableDetails.tables.map(table => table.id);
                               console.log('Freeing tables after payment completion:', tableIds);
-                              
+
                               const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
                               if (tableUpdateResult.success) {
                                 console.log('Tables freed successfully after payment:', tableUpdateResult.message);
@@ -7709,11 +7723,11 @@ const RunningOrders = () => {
                         setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
                       }
 
-                    showSuccess('Payment processed successfully!');
-                    setShowFinalizeSaleModal(false);
-                    setIsSinglePayMode(false);
-                    clearCart();
-                    resetFinalizeSaleModal();
+                      showSuccess('Payment processed successfully!');
+                      setShowFinalizeSaleModal(false);
+                      setIsSinglePayMode(false);
+                      clearCart();
+                      resetFinalizeSaleModal();
                     } catch (error) {
                       console.error('Error processing payment:', error);
                       showError('Failed to process payment. Please try again.');
@@ -7858,7 +7872,7 @@ const RunningOrders = () => {
                               <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Item'}</span>
                               <span className="text-gray-500 ml-2">x{item.quantity || 0}</span>
                             </div>
-                            
+
                             {/* Show variations if any */}
                             {item.variations && Object.keys(item.variations).length > 0 && (
                               <div className="text-xs text-gray-600 mt-1">
@@ -7866,7 +7880,7 @@ const RunningOrders = () => {
                                   const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
                                   const variationName = variation?.name || variationId;
                                   const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
-                                  
+
                                   return (
                                     <div key={variationId} className="flex items-center gap-1">
                                       <span className="text-gray-500">• {variationName}:</span>
@@ -7886,7 +7900,7 @@ const RunningOrders = () => {
                                 })}
                               </div>
                             )}
-                            
+
                             {/* Show addons if any */}
                             {item.adons && item.adons.length > 0 && (
                               <div className="text-xs text-gray-600 mt-1">
@@ -7894,7 +7908,7 @@ const RunningOrders = () => {
                                   const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
                                   const addonName = addon?.name || addonId;
                                   const addonPrice = addon?.price;
-                                  
+
                                   return (
                                     <div key={idx} className="flex items-center gap-1">
                                       <span className="text-gray-500">• Addon:</span>
@@ -7916,9 +7930,9 @@ const RunningOrders = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Item:</span>
                   <span className="font-semibold">
-                    {isSinglePayMode && selectedPlacedOrder 
+                    {isSinglePayMode && selectedPlacedOrder
                       ? selectedPlacedOrder.items.reduce((total, item) => total + (parseInt(item.quantity) || 0), 0)
-                      : selectedSplitBill 
+                      : selectedSplitBill
                         ? selectedSplitBill.items.reduce((total, item) => total + (item.quantity || 0), 0)
                         : cartItems.reduce((total, item) => total + (item.quantity || 0), 0)
                     }
@@ -7929,7 +7943,7 @@ const RunningOrders = () => {
                   <span className="font-semibold">
                     {getCurrencySymbol()}{
                       isSinglePayMode ? calculateSinglePayTotals().subtotal.toFixed(2) :
-                      selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)
+                        selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)
                     }
                   </span>
                 </div>
@@ -7938,7 +7952,7 @@ const RunningOrders = () => {
                   <span className="font-semibold">
                     {getCurrencySymbol()}{
                       isSinglePayMode ? calculateSinglePayTotals().discount.toFixed(2) :
-                      selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
+                        selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
                     }
                   </span>
                 </div>
@@ -7947,7 +7961,7 @@ const RunningOrders = () => {
                   <span className="font-semibold">
                     {getCurrencySymbol()}{
                       isSinglePayMode ? calculateSinglePayTotals().discount.toFixed(2) :
-                      selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
+                        selectedSplitBill ? calculateSplitBillDiscount().toFixed(2) : calculateCartDiscount().toFixed(2)
                     }
                   </span>
                 </div>
@@ -7956,7 +7970,7 @@ const RunningOrders = () => {
                   <span className="font-semibold">
                     {getCurrencySymbol()}{
                       isSinglePayMode ? calculateSinglePayTotals().tax.toFixed(2) :
-                      selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)
+                        selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)
                     }
                   </span>
                 </div>
@@ -7965,7 +7979,7 @@ const RunningOrders = () => {
                   <span className="font-semibold">
                     {getCurrencySymbol()}{
                       isSinglePayMode ? '0.00' :
-                      selectedSplitBill ? calculateSplitBillCharge().toFixed(2) : cartCharge.toFixed(2)
+                        selectedSplitBill ? calculateSplitBillCharge().toFixed(2) : cartCharge.toFixed(2)
                     }
                   </span>
                 </div>
@@ -7974,7 +7988,7 @@ const RunningOrders = () => {
                   <span className="font-semibold">
                     {getCurrencySymbol()}{
                       isSinglePayMode ? '0.00' :
-                      selectedSplitBill ? calculateSplitBillTips().toFixed(2) : cartTips.toFixed(2)
+                        selectedSplitBill ? calculateSplitBillTips().toFixed(2) : cartTips.toFixed(2)
                     }
                   </span>
                 </div>
@@ -7983,7 +7997,7 @@ const RunningOrders = () => {
                   <span className="font-bold text-lg">
                     {getCurrencySymbol()}{
                       isSinglePayMode ? calculateSinglePayTotals().total.toFixed(2) :
-                      selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)
+                        selectedSplitBill ? calculateSplitBillTotal().toFixed(2) : calculateCartTotal().toFixed(2)
                     }
                   </span>
                 </div>
@@ -8030,7 +8044,7 @@ const RunningOrders = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   This action will cancel the order. Please provide a reason for cancellation (optional).
                 </p>
-                
+
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cancellation Reason
                 </label>
@@ -8058,11 +8072,10 @@ const RunningOrders = () => {
               <button
                 onClick={() => handleConfirmCancelOrder(true)}
                 disabled={!cancellationReason.trim()}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                  cancellationReason.trim()
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${cancellationReason.trim()
                     ? 'bg-primary text-white'
                     : 'bg-primary text-white cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Cancel Order
               </button>
@@ -8102,7 +8115,7 @@ const RunningOrders = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Select the order type and details to convert this draft to a regular order.
                 </p>
-                
+
                 {/* Order Type Selection */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -8113,7 +8126,7 @@ const RunningOrders = () => {
                     onChange={async (e) => {
                       const selectedOrderType = e.target.value;
                       setConversionOrderType(selectedOrderType);
-                      
+
                       // If Collection is selected, automatically open the schedule modal
                       if (selectedOrderType === 'Collection') {
                         try {
@@ -8146,7 +8159,7 @@ const RunningOrders = () => {
                           const selectedFloorId = e.target.value;
                           setConversionFloor(selectedFloorId);
                           setConversionTable('');
-                          
+
                           // Fetch tables for the selected floor
                           if (selectedFloorId) {
                             try {
@@ -8187,7 +8200,7 @@ const RunningOrders = () => {
                               tablesCount: tables.length,
                               tables: tables.map(t => ({ id: t.id, floor_id: t.floor_id, floor_id_type: typeof t.floor_id, status: t.status, table_no: t.table_no }))
                             });
-                            
+
                             const filteredTables = tables
                               .filter(table => {
                                 const matchesFloor = table.floor_id.toString() === conversionFloor.toString();
@@ -8195,7 +8208,7 @@ const RunningOrders = () => {
                                 console.log(`Table ${table.table_no}: floor_id=${table.floor_id} (${typeof table.floor_id}), conversionFloor=${conversionFloor} (${typeof conversionFloor}), matchesFloor=${matchesFloor}, isFree=${isFree}`);
                                 return matchesFloor && isFree;
                               });
-                            
+
                             console.log('Filtered tables:', filteredTables);
                             return filteredTables.map((table) => (
                               <option key={table.id} value={table.id}>
@@ -8246,11 +8259,10 @@ const RunningOrders = () => {
               <button
                 onClick={handleConfirmDraftConversion}
                 disabled={conversionOrderType === 'Table' && (!conversionFloor || !conversionTable || !conversionPersons)}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                  conversionOrderType === 'Table' && (!conversionFloor || !conversionTable || !conversionPersons)
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${conversionOrderType === 'Table' && (!conversionFloor || !conversionTable || !conversionPersons)
                     ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     : 'bg-primary text-white hover:bg-primary-dark'
-                }`}
+                  }`}
               >
                 Convert to Order
               </button>
@@ -8293,7 +8305,7 @@ const RunningOrders = () => {
                   // For In Store orders, maintain consistent styling for the only enabled button
                   const isInStoreOrder = selectedOrderForStatusUpdate.orderType === 'In Store';
                   const isOnlyEnabledButton = isInStoreOrder && !status.disabled;
-                  
+
                   return (
                     <button
                       key={status.key}
@@ -8310,8 +8322,7 @@ const RunningOrders = () => {
                           }
                         }
                       }}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        status.disabled 
+                      className={`p-4 rounded-lg border-2 transition-all ${status.disabled
                           ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed'
                           : isOnlyEnabledButton
                             ? selectedStatus === status.key
@@ -8320,7 +8331,7 @@ const RunningOrders = () => {
                             : selectedStatus === status.key
                               ? 'bg-white border-primary text-primary'
                               : 'bg-primary text-white border-primary hover:bg-primary/90 cursor-pointer'
-                      }`}
+                        }`}
                       disabled={status.disabled}
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -8417,7 +8428,7 @@ const RunningOrders = () => {
               ) : availableRiders.length > 0 ? (
                 <div className="space-y-3">
                   {availableRiders
-                    .filter(rider => 
+                    .filter(rider =>
                       rider.name.toLowerCase().includes(riderSearchQuery.toLowerCase()) ||
                       rider.vehicle.toLowerCase().includes(riderSearchQuery.toLowerCase())
                     )
@@ -8425,11 +8436,10 @@ const RunningOrders = () => {
                       <div
                         key={rider.id}
                         onClick={() => handleRiderSelect(rider)}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                          selectedRider?.id === rider.id
+                        className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedRider?.id === rider.id
                             ? 'border-primary bg-primary/5'
                             : 'border-gray-200 hover:border-primary/50 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -8448,11 +8458,10 @@ const RunningOrders = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              rider.status === 'Available'
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${rider.status === 'Available'
                                 ? 'bg-green-100 text-green-700'
                                 : 'bg-red-100 text-red-700'
-                            }`}>
+                              }`}>
                               {rider.status}
                             </span>
                             {selectedRider?.id === rider.id && (
@@ -8486,11 +8495,10 @@ const RunningOrders = () => {
               <button
                 onClick={handleAssignRider}
                 disabled={!selectedRider}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-                  selectedRider
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${selectedRider
                     ? 'bg-primary text-white hover:bg-primary/90'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Assign Rider
               </button>
@@ -8546,7 +8554,7 @@ const RunningOrders = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Time
                 </label>
-                
+
                 {/* Custom Time Input */}
                 <div className="mb-3">
                   <div className="flex items-center gap-2 mb-2">
@@ -8568,7 +8576,7 @@ const RunningOrders = () => {
                       Use Custom Time
                     </label>
                   </div>
-                  
+
                   {useCustomTime && (
                     <div className="flex items-center gap-2">
                       <input
@@ -8594,11 +8602,10 @@ const RunningOrders = () => {
                           <button
                             key={time}
                             onClick={() => handleScheduleTimeSelect(time)}
-                            className={`p-3 text-sm rounded-lg border transition-all cursor-pointer ${
-                              selectedScheduleTime === time
+                            className={`p-3 text-sm rounded-lg border transition-all cursor-pointer ${selectedScheduleTime === time
                                 ? 'bg-primary text-white border-primary'
                                 : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:bg-gray-50'
-                            }`}
+                              }`}
                           >
                             {time}
                           </button>
@@ -8638,11 +8645,10 @@ const RunningOrders = () => {
               <button
                 onClick={handleScheduleConfirm}
                 disabled={!selectedScheduleTime && !(useCustomTime && customTime)}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-                  (selectedScheduleTime || (useCustomTime && customTime))
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${(selectedScheduleTime || (useCustomTime && customTime))
                     ? 'bg-primary text-white hover:bg-primary/90'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Confirm Schedule
               </button>
@@ -8650,6 +8656,15 @@ const RunningOrders = () => {
           </div>
         </div>
       )}
+
+      {/* Order Details Modal */}
+      <OrderDetailsModal
+        isOpen={showOrderDetailsModal}
+        onClose={() => setShowOrderDetailsModal(false)}
+        order={selectedPlacedOrder}
+        onCreateInvoice={handleCreateInvoice}
+        foodDetails={foodDetails}
+      />
 
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard
