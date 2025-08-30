@@ -4848,8 +4848,8 @@ const RunningOrders = () => {
 
                     setShowDeleteCartModal(true);
                   }}
-                  disabled={cartItems.length === 0}
-                  className={`bg-red-700 text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0
+                  disabled={cartItems.length === 0 || isModifyingOrder}
+                  className={`bg-red-700 text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
                       ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                     }`}>
@@ -4860,7 +4860,7 @@ const RunningOrders = () => {
                   DRAFT
                 </button>
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded cursor-pointer">
-                  KOT
+                  PRINT
                 </button>
                 <button
                   onClick={handlePlaceOrder}
