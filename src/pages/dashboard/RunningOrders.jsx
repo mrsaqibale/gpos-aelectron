@@ -4694,7 +4694,13 @@ const RunningOrders = () => {
             {/* Placed Orders List */}
             <div className="flex-1 space-y-3 overflow-y-auto">
               {placedOrders.length > 0 ? (
-                placedOrders.map((order) => {
+                placedOrders
+                  .filter(order => {
+                    if (!runningOrdersSearchQuery.trim()) return true;
+                    const searchTerm = runningOrdersSearchQuery.toLowerCase().trim();
+                    return order.orderNumber.toString().toLowerCase().includes(searchTerm);
+                  })
+                  .map((order) => {
                   // Calculate time elapsed
                   const orderTime = new Date(order.placedAt);
                   const now = new Date();
@@ -5263,8 +5269,8 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => setShowCustomerSearchModal(true)}
-              className="h-9 px-2 bg-primary text-white text-[13px] rounded flex items-center justify-center gap-1 
-                     btn-lifted hover:bg-primary/90 transition-colors cursor-pointer">
+              className="h-9 px-2 bg-[#007BFF] text-white text-[13px] rounded flex items-center justify-center gap-1 
+                     btn-lifted transition-colors cursor-pointer">
               <Users2 size={12} />
               Customer
             </button>
@@ -5290,7 +5296,7 @@ const RunningOrders = () => {
             <button
               onClick={handleOpenEditModal}
               disabled={!selectedCustomer}
-              className={`h-9 px-2 btn-lifted flex items-center justify-center gap-1 bg-primary text-white text-[13px] rounded transition-colors cursor-pointer ${selectedCustomer
+              className={`h-9 px-2 btn-lifted flex items-center justify-center gap-1 bg-[#007BFF] text-white text-[13px] rounded transition-colors cursor-pointer ${selectedCustomer
                 ? 'hover:text-green-800 cursor-pointer'
                 : 'cursor-not-allowed'
                 }`}>
