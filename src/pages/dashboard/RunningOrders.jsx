@@ -243,6 +243,14 @@ const RunningOrders = () => {
   const [showCancelOrderModal, setShowCancelOrderModal] = useState(false);
   const [cancellationReason, setCancellationReason] = useState('');
 
+  // Draft Conversion Modal State
+  const [showDraftConversionModal, setShowDraftConversionModal] = useState(false);
+  const [draftToConvert, setDraftToConvert] = useState(null);
+  const [conversionOrderType, setConversionOrderType] = useState('In Store');
+  const [conversionTable, setConversionTable] = useState('');
+  const [conversionPersons, setConversionPersons] = useState('');
+  const [conversionFloor, setConversionFloor] = useState('');
+
   // Order Type State
   const [selectedOrderType, setSelectedOrderType] = useState('In Store');
   const [isSinglePayMode, setIsSinglePayMode] = useState(false);
@@ -538,7 +546,8 @@ const RunningOrders = () => {
                   ? 'Ready'
                   : dbOrder.order_status,
               placedAt: dbOrder.created_at,
-              databaseId: dbOrder.id
+              databaseId: dbOrder.id,
+              isDraft: dbOrder.order_type === 'draft'
             };
           } catch (error) {
             console.error(`Error processing order ${dbOrder.id}:`, error);
@@ -561,7 +570,8 @@ const RunningOrders = () => {
                       dbOrder.order_status === 'ready' ? 'Ready' : 
                       dbOrder.order_status,
               placedAt: dbOrder.created_at,
-              databaseId: dbOrder.id
+              databaseId: dbOrder.id,
+              isDraft: dbOrder.order_type === 'draft'
             };
           }
         });
@@ -2187,42 +2197,20 @@ const RunningOrders = () => {
       let tableDetails = null;
       let tableIdsToReserve = [];
       
-      if (selectedOrderType === 'Table' && (selectedTable || reservedTables.length > 0)) {
-        // Handle single table selection
-        if (selectedTable) {
-          const table = tables.find(t => t.id.toString() === selectedTable);
-          if (table) {
-            tableDetails = JSON.stringify({
-              tables: [{
-                id: table.id,
-                table_no: table.table_no,
-                floor_name: table.floor_name,
-                persons: selectedPersons || table.seat_capacity || 4
-              }],
-              total_persons: selectedPersons || table.seat_capacity || 4
-            });
-            tableIdsToReserve.push(table.id);
-          }
-        }
-        
-        // Handle merged tables (reserved tables)
-        if (reservedTables.length > 0) {
-          const reservedTableDetails = reservedTables.map(reservedTable => {
-            const table = tables.find(t => t.id.toString() === reservedTable.id);
-            return {
-              id: table?.id || reservedTable.id,
-              table_no: table?.table_no || reservedTable.tableNo,
-              floor_name: table?.floor_name || reservedTable.floor,
-              persons: reservedTable.persons || table?.seat_capacity || 4
-            };
-          });
-          
+      if (conversionOrderType === 'Table' && conversionTable) {
+        // Handle single table selection for conversion
+        const table = tables.find(t => t.id.toString() === conversionTable);
+        if (table) {
           tableDetails = JSON.stringify({
-            tables: reservedTableDetails,
-            total_persons: reservedTableDetails.reduce((sum, table) => sum + (table.persons || 0), 0)
+            tables: [{
+              id: table.id,
+              table_no: table.table_no,
+              floor_name: table.floor_name,
+              persons: conversionPersons || table.seat_capacity || 4
+            }],
+            total_persons: conversionPersons || table.seat_capacity || 4
           });
-          
-          tableIdsToReserve = reservedTableDetails.map(table => table.id);
+          tableIdsToReserve.push(table.id);
         }
       }
 
@@ -2626,6 +2614,342 @@ const RunningOrders = () => {
       console.error('Error placing order:', error);
       console.error('Error details:', error.message, error.stack);
       showError('Failed to place order: ' + error.message);
+    }
+  };
+
+  // Handle draft order
+  const handleDraftOrder = async () => {
+    if (cartItems.length === 0) {
+      showError('Please add items to cart before creating draft');
+      return;
+    }
+
+    try {
+      console.log('Starting draft order creation...');
+      
+      // Check if API is available
+      if (!window.myAPI) {
+        showError('API not available. Please refresh the page.');
+        return;
+      }
+
+      // Calculate totals
+      const subtotal = calculateCartSubtotal();
+      const tax = calculateCartTax();
+      const discount = calculateCartDiscount();
+      const total = calculateCartTotal();
+
+      // Prepare order data for database with order_type as 'draft'
+      const orderData = {
+        customer_id: selectedCustomer?.id || null, // Allow null for walk-in customers
+        order_amount: total,
+        coupon_discount_amount: discount,
+        coupon_discount_title: appliedCoupon?.title || null,
+        payment_status: 'pending',
+        order_status: 'draft', // Set status as draft
+        total_tax_amount: tax,
+        payment_method: null,
+        delivery_address_id: null,
+        coupon_code: appliedCoupon?.code || null,
+        order_note: null,
+        order_type: 'draft', // Set order_type as draft
+        restaurant_id: 1, // Default restaurant ID
+        delivery_charge: 0,
+        additional_charge: 0,
+        discount_amount: discount,
+        tax_percentage: 13.5, // 13.5% tax rate
+        scheduled: 0,
+        schedule_at: null,
+        failed: 0,
+        refunded: 0,
+        isdeleted: 0,
+        issyncronized: 0,
+        table_details: null // No table details for draft orders
+      };
+
+      // Create new draft order
+      console.log('Creating draft order');
+      const orderResult = await window.myAPI.createOrder(orderData);
+      
+      if (!orderResult.success) {
+        showError('Failed to create draft order: ' + orderResult.message);
+        return;
+      }
+      
+      const orderId = orderResult.id;
+      console.log('Draft order created successfully with ID:', orderId);
+
+      // Prepare order details data
+      const orderDetailsArray = cartItems.map(item => {
+        // Calculate item-specific totals
+        const itemSubtotal = item.totalPrice;
+        const itemTax = itemSubtotal * 0.135; // 13.5% tax
+        const itemDiscount = 0; // Individual item discount if any
+
+        // Prepare variations and addons as JSON
+        const variations = Object.keys(item.variations).length > 0 ? JSON.stringify(item.variations) : null;
+        const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
+        
+        // Prepare food details as JSON
+        const foodDetails = JSON.stringify({
+          food: {
+            id: item.food.id,
+            name: item.food.name,
+            description: item.food.description,
+            price: item.food.price,
+            image: item.food.image
+          },
+          variations: item.variations,
+          addons: item.adons,
+          quantity: item.quantity,
+          totalPrice: item.totalPrice
+        });
+
+        // Prepare ingredients as JSON (if available)
+        const ingredients = item.food.ingredients ? JSON.stringify(item.food.ingredients) : null;
+
+        return {
+          food_id: item.food.id,
+          order_id: orderId,
+          price: item.food.price,
+          food_details: foodDetails,
+          item_note: null,
+          variation: variations,
+          add_ons: addons,
+          ingredients: ingredients,
+          discount_on_food: itemDiscount,
+          discount_type: null,
+          quantity: item.quantity,
+          tax_amount: itemTax,
+          total_add_on_price: 0,
+          issynicronized: false,
+          isdeleted: false
+        };
+      });
+
+      // Create order details
+      console.log('Creating draft order details:', orderDetailsArray);
+      const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
+      console.log('Draft order details result:', orderDetailsResult);
+      
+      if (!orderDetailsResult.success) {
+        showError('Failed to create draft order details: ' + orderDetailsResult.message);
+        return;
+      }
+
+      // Create draft order object for UI display
+      const newDraftOrder = {
+        id: orderId,
+        orderNumber: `DRAFT-${String(orderId).padStart(3, '0')}`,
+        items: [...cartItems],
+        customer: selectedCustomer || { name: 'Walk-in Customer' },
+        total: total,
+        coupon: appliedCoupon,
+        orderType: 'Draft',
+        table: 'None',
+        waiter: 'Ds Waiter',
+        status: 'Draft',
+        placedAt: new Date().toISOString(),
+        databaseId: orderId,
+        isDraft: true // Flag to identify draft orders
+      };
+
+      // Add draft order to the list
+      setPlacedOrders(prev => [newDraftOrder, ...prev]);
+      showSuccess('Draft order created successfully!', 'success');
+      
+      // Clear cart completely for new draft orders
+      clearCart();
+      
+      // Automatically set order type to 'In Store' for new orders
+      setSelectedOrderType('In Store');
+
+    } catch (error) {
+      console.error('Error creating draft order:', error);
+      console.error('Error details:', error.message, error.stack);
+      showError('Failed to create draft order: ' + error.message);
+    }
+  };
+
+  // Handle converting draft to regular order
+  const handleConvertDraftToOrder = async (draftOrder) => {
+    // Set the draft order to convert and show the modal
+    setDraftToConvert(draftOrder);
+    setShowDraftConversionModal(true);
+  };
+
+  // Handle the actual conversion after user selects order type
+  const handleConfirmDraftConversion = async () => {
+    if (!draftToConvert) {
+      showError('No draft order selected for conversion');
+      return;
+    }
+
+    try {
+      console.log('Converting draft order to regular order:', draftToConvert);
+      
+      // Check if API is available
+      if (!window.myAPI) {
+        showError('API not available. Please refresh the page.');
+        return;
+      }
+
+      // Map order type based on conversion selection
+      let orderType = 'instore'; // default for database
+      if (conversionOrderType === 'Table') {
+        orderType = 'table';
+      } else if (conversionOrderType === 'Collection') {
+        orderType = 'collection';
+      } else if (conversionOrderType === 'Delivery') {
+        orderType = 'delivery';
+      } else if (conversionOrderType === 'In Store') {
+        orderType = 'instore';
+      }
+
+      // Prepare table details for database
+      let tableDetails = null;
+      let tableIdsToReserve = [];
+      
+      if (conversionOrderType === 'Table' && (conversionTable || reservedTables.length > 0)) {
+        // Handle single table selection
+        if (conversionTable) {
+          const table = tables.find(t => t.id.toString() === conversionTable);
+          if (table) {
+            tableDetails = JSON.stringify({
+              tables: [{
+                id: table.id,
+                table_no: table.table_no,
+                floor_name: table.floor_name,
+                persons: conversionPersons || table.seat_capacity || 4
+              }],
+              total_persons: conversionPersons || table.seat_capacity || 4
+            });
+            tableIdsToReserve.push(table.id);
+          }
+        }
+        
+        // Handle merged tables (reserved tables)
+        if (reservedTables.length > 0) {
+          const reservedTableDetails = reservedTables.map(reservedTable => {
+            const table = tables.find(t => t.id.toString() === reservedTable.id);
+            return {
+              id: table?.id || reservedTable.id,
+              table_no: table?.table_no || reservedTable.tableNo,
+              floor_name: table?.floor_name || reservedTable.floor,
+              persons: reservedTable.persons || table?.seat_capacity || 4
+            };
+          });
+          
+          tableDetails = JSON.stringify({
+            tables: reservedTableDetails,
+            total_persons: reservedTableDetails.reduce((sum, table) => sum + (table.persons || 0), 0)
+          });
+          
+          tableIdsToReserve = reservedTableDetails.map(table => table.id);
+        }
+      }
+
+      // Map selected status to database status
+      let dbStatus = 'pending';
+      switch (selectedNewOrderStatus) {
+        case 'New':
+          dbStatus = 'new';
+          break;
+        case 'In Progress':
+          dbStatus = 'in_progress';
+          break;
+        case 'Ready':
+          dbStatus = 'ready';
+          break;
+        case 'On the way':
+          dbStatus = 'on_the_way';
+          break;
+        case 'Delivered':
+          dbStatus = 'delivered';
+          break;
+        case 'Completed':
+          dbStatus = 'completed';
+          break;
+        case 'Pending':
+          dbStatus = 'pending';
+          break;
+        case 'Complete':
+          dbStatus = 'completed';
+          break;
+        default:
+          dbStatus = selectedNewOrderStatus.toLowerCase().replace(' ', '_');
+      }
+
+      // Update the order in database
+      const updateData = {
+        order_type: orderType,
+        order_status: dbStatus,
+        table_details: tableDetails
+      };
+
+      console.log('Updating draft order with data:', updateData);
+      const updateResult = await window.myAPI.updateOrder(draftToConvert.databaseId, updateData);
+      
+      if (!updateResult.success) {
+        showError('Failed to convert draft order: ' + updateResult.message);
+        return;
+      }
+
+      // Update table status to Reserved if this is a table order
+      if (tableIdsToReserve.length > 0) {
+        try {
+          console.log('Reserving tables for converted order:', tableIdsToReserve);
+          const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIdsToReserve, 'Reserved');
+          if (tableUpdateResult.success) {
+            console.log('Tables reserved successfully for converted order:', tableUpdateResult.message);
+          } else {
+            console.warn('Failed to reserve tables for converted order:', tableUpdateResult.message);
+          }
+        } catch (error) {
+          console.error('Error reserving tables for converted order:', error);
+        }
+      }
+
+      // Update the order in the UI
+      const updatedOrder = {
+        ...draftToConvert,
+        orderType: conversionOrderType,
+        status: 'Pending', // Set to pending for new regular orders
+        table: (() => {
+          if (conversionOrderType === 'Table') {
+            if (conversionTable) {
+              const table = tables.find(t => t.id.toString() === conversionTable);
+              return table ? `Table ${table.table_no}` : conversionTable;
+            } else if (reservedTables.length > 0) {
+              return reservedTables.map(rt => `Table ${rt.tableNo}`).join(', ');
+            }
+          }
+          return 'None';
+        })(),
+        isDraft: false // Remove draft flag
+      };
+
+      // Update the order in the list
+      setPlacedOrders(prev => prev.map(order => 
+        order.databaseId === draftToConvert.databaseId 
+          ? updatedOrder
+          : order
+      ));
+
+      // Close the modal and reset state
+      setShowDraftConversionModal(false);
+      setDraftToConvert(null);
+      setConversionOrderType('In Store');
+      setConversionTable('');
+      setConversionPersons('');
+      setConversionFloor('');
+
+      showSuccess('Draft order converted to regular order successfully!', 'success');
+
+    } catch (error) {
+      console.error('Error converting draft order:', error);
+      console.error('Error details:', error.message, error.stack);
+      showError('Failed to convert draft order: ' + error.message);
     }
   };
 
@@ -4234,6 +4558,12 @@ const RunningOrders = () => {
                           textColor: 'text-purple-700',
                           icon: <Printer size={12} />
                         };
+                                              case 'Draft':
+                          return {
+                            bgColor: 'bg-yellow-100',
+                            textColor: 'text-yellow-700',
+                            icon: <FileText size={12} />
+                          };
                       default:
                         return {
                           bgColor: 'bg-gray-100',
@@ -4370,26 +4700,55 @@ const RunningOrders = () => {
 
                           {/* Action Buttons */}
                           <div className="flex gap-3">
-                            <button
-                              className="flex-1 bg-gray-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-gray-700 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle view details
-                                setSelectedPlacedOrder(order);
-                              }}
-                            >
-                              View Details
-                            </button>
-                            <button
-                              className="flex-1 bg-blue-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-blue-700 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle mark as action
-                                handleOpenStatusUpdateModal(order, e);
-                              }}
-                            >
-                              Mark As
-                            </button>
+                            {order.isDraft ? (
+                              // Draft order actions
+                              <>
+                                <button
+                                  className="flex-1 bg-gray-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-gray-700 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle view details
+                                    setSelectedPlacedOrder(order);
+                                  }}
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  className="flex-1 bg-green-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-green-700 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle convert to order
+                                    handleConvertDraftToOrder(order);
+                                  }}
+                                >
+                                  Convert to Order
+                                </button>
+                              </>
+                            ) : (
+                              // Regular order actions
+                              <>
+                                <button
+                                  className="flex-1 bg-gray-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-gray-700 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle view details
+                                    setSelectedPlacedOrder(order);
+                                  }}
+                                >
+                                  View Details
+                                </button>
+                                <button
+                                  className="flex-1 bg-blue-600 text-white text-sm font-medium py-1.5 px-2 rounded-lg hover:bg-blue-700 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Handle mark as action
+                                    handleOpenStatusUpdateModal(order, e);
+                                  }}
+                                >
+                                  Mark As
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       )}
@@ -4904,7 +5263,12 @@ const RunningOrders = () => {
                   {/* <Trash2 size={17} /> */}
                   Delete
                 </button>
-                <button className="bg-[#5A32A3] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded">
+                <button 
+                  onClick={handleDraftOrder}
+                  className={`bg-[#5A32A3] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded ${cartItems.length > 0 && !isModifyingOrder
+                      ? 'hover:bg-[#4A2A93] cursor-pointer'
+                      : 'bg-gray-400 cursor-not-allowed'
+                    }`}>
                   DRAFT
                 </button>
                 <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded cursor-pointer">
@@ -7620,6 +7984,154 @@ const RunningOrders = () => {
                 }`}
               >
                 Cancel & Save Reason
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Draft Conversion Modal */}
+      {showDraftConversionModal && draftToConvert && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            {/* Header */}
+            <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+              <h2 className="text-xl font-bold">Convert Draft to Order</h2>
+              <button
+                onClick={() => {
+                  setShowDraftConversionModal(false);
+                  setDraftToConvert(null);
+                  setConversionOrderType('In Store');
+                  setConversionTable('');
+                  setConversionPersons('');
+                  setConversionFloor('');
+                }}
+                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  Convert Draft #{draftToConvert.orderNumber}?
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Select the order type and details to convert this draft to a regular order.
+                </p>
+                
+                {/* Order Type Selection */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Order Type
+                  </label>
+                  <select
+                    value={conversionOrderType}
+                    onChange={(e) => setConversionOrderType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="In Store">In Store</option>
+                    <option value="Collection">Collection</option>
+                    <option value="Delivery">Delivery</option>
+                    <option value="Table">Table</option>
+                  </select>
+                </div>
+
+                {/* Table Selection (only show if Table is selected) */}
+                {conversionOrderType === 'Table' && (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Floor
+                      </label>
+                      <select
+                        value={conversionFloor}
+                        onChange={(e) => {
+                          setConversionFloor(e.target.value);
+                          setConversionTable('');
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Select Floor</option>
+                        {floors.map((floor) => (
+                          <option key={floor.id} value={floor.id}>
+                            {floor.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {conversionFloor && (
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Table
+                        </label>
+                        <select
+                          value={conversionTable}
+                          onChange={(e) => setConversionTable(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">Select Table</option>
+                          {tables
+                            .filter(table => table.floor_id.toString() === conversionFloor)
+                            .filter(table => table.status === 'Free')
+                            .map((table) => (
+                              <option key={table.id} value={table.id}>
+                                Table {table.table_no} ({table.seat_capacity} seats)
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {conversionTable && (
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Number of Persons
+                        </label>
+                        <input
+                          type="number"
+                          value={conversionPersons}
+                          onChange={(e) => setConversionPersons(e.target.value)}
+                          min="1"
+                          max="20"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                          placeholder="Enter number of persons"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDraftConversionModal(false);
+                  setDraftToConvert(null);
+                  setConversionOrderType('In Store');
+                  setConversionTable('');
+                  setConversionPersons('');
+                  setConversionFloor('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDraftConversion}
+                disabled={conversionOrderType === 'Table' && (!conversionFloor || !conversionTable || !conversionPersons)}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                  conversionOrderType === 'Table' && (!conversionFloor || !conversionTable || !conversionPersons)
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-primary text-white hover:bg-primary-dark'
+                }`}
+              >
+                Convert to Order
               </button>
             </div>
           </div>
