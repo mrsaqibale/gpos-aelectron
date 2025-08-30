@@ -4895,7 +4895,7 @@ const RunningOrders = () => {
           {/* Search and categories section */}
           <div className="py-3 px-2 border-b border-gray-200">
             {/* Search bar */}
-            {/* <div className="relative mb-4 w-full">
+             <div className="relative mb-4 w-full">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <Search className="w-4 h-4 text-primary" />
               </div>
