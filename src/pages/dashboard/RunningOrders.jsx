@@ -3004,7 +3004,7 @@ const RunningOrders = () => {
     }
 
     // Reset modal state and open the Finalize Sale Modal
-    resetFinalizeSaleModal();
+    resetFinalizeSaleModalForSinglePay();
     setShowFinalizeSaleModal(true);
   };
 
