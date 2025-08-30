@@ -201,6 +201,7 @@ const RunningOrders = () => {
   const [splitTips, setSplitTips] = useState(0);
   const [splitBills, setSplitBills] = useState([]);
   const [selectedSplitBill, setSelectedSplitBill] = useState(null);
+  const [splitBillToRemove, setSplitBillToRemove] = useState(null);
 
   // Calculate maximum splits based on total quantity
   const calculateMaxSplits = () => {
@@ -3421,21 +3422,28 @@ const RunningOrders = () => {
     const item = splitItems.find(item => item.id === itemId);
     if (!item) return 0;
 
-    // Calculate total quantity used across all splits
+    // Calculate total quantity used across all active splits (not paid ones)
     const totalUsed = splitBills.reduce((total, split) => {
+      // Skip paid splits as their items are no longer available
+      if (split.paid) return total;
+      
       const existingItem = split.items.find(i => i.food?.id === item.food?.id);
       return total + (existingItem ? (existingItem.quantity || 0) : 0);
     }, 0);
 
-    // Return remaining quantity
+    // Return remaining quantity based on updated splitItems state
     return Math.max(0, (item.quantity || 0) - totalUsed);
   };
 
   const areAllItemsDistributed = () => {
     if (!splitItems || splitItems.length === 0) return false;
 
-    // Check if all items have been fully distributed (remaining quantity = 0)
-    return splitItems.every(item => getRemainingQuantity(item.id) === 0);
+    // Check if all remaining items have been fully distributed (remaining quantity = 0)
+    // Only consider items that still have quantity > 0
+    const itemsWithQuantity = splitItems.filter(item => item.quantity > 0);
+    if (itemsWithQuantity.length === 0) return true; // All items have been paid for
+    
+    return itemsWithQuantity.every(item => getRemainingQuantity(item.id) === 0);
   };
 
   const updateSplitBillTotals = (splitBillId) => {
@@ -3463,10 +3471,48 @@ const RunningOrders = () => {
   };
 
   const handleRemoveSplitBill = (splitBillId) => {
+    // Get the split bill being removed to return its items to the pool
+    const splitToRemove = splitBills.find(split => split.id === splitBillId);
+    
     setSplitBills(prev => prev.filter(split => split.id !== splitBillId));
+    
+    // Update selected split bill if the removed one was selected
     if (selectedSplitBill?.id === splitBillId) {
-      setSelectedSplitBill(splitBills[0] || null);
+      const remainingSplits = splitBills.filter(split => split.id !== splitBillId);
+      setSelectedSplitBill(remainingSplits[0] || null);
     }
+    
+    // If this was a paid split (not manually removed), don't return items to pool
+    // Items from paid splits should stay with the payment
+    if (!splitToRemove?.paid) {
+      // Return items to the available pool by updating splitItems
+      // This is handled by the getRemainingQuantity function which calculates
+      // remaining quantity based on current splitBills state
+    }
+  };
+
+  // Function to recalculate split bill totals after a split is removed
+  const recalculateSplitBillTotals = () => {
+    setSplitBills(prev => prev.map(split => {
+      const subtotal = split.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+      const tax = subtotal * 0.135; // 13.5% tax
+      const total = subtotal + tax + (split.charge || 0) + (split.tips || 0) - (split.discount || 0);
+
+      return {
+        ...split,
+        subtotal,
+        tax,
+        total
+      };
+    }));
+  };
+
+  // Function to calculate the due amount
+  const calculateDueAmount = () => {
+    const totalAmount = isSinglePayMode ? calculateSinglePayTotals().total :
+                       selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+    const paidAmount = addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+    return Math.max(0, totalAmount - paidAmount);
   };
 
   const handleAddDiscountToSplit = () => {
@@ -3627,6 +3673,7 @@ const RunningOrders = () => {
     setSelectedCurrency('EUR');
     setCurrencyAmount('');
     // Don't clear selectedSplitBill - we want to keep it for split bill finalization
+    // Don't clear splitBillToRemove - we need it for removal after payment
   };
 
   const resetFinalizeSaleModalForSinglePay = () => {
@@ -3787,6 +3834,56 @@ const RunningOrders = () => {
     window.print();
     showSuccess('Payment processed successfully! Invoice printed successfully!');
     setShowInvoiceModal(false);
+    
+    // Remove the split bill if it was a split bill payment
+    if (splitBillToRemove) {
+      // Get the split bill being removed to know which items were paid
+      const paidSplit = splitBills.find(split => split.id === splitBillToRemove);
+      
+      // Mark the split bill as paid before removing
+      setSplitBills(prev => prev.map(split => 
+        split.id === splitBillToRemove 
+          ? { ...split, paid: true }
+          : split
+      ));
+      
+      // Remove the split bill after a short delay to show the PAID status
+      setTimeout(() => {
+        setSplitBills(prev => {
+          const updatedSplits = prev.filter(split => split.id !== splitBillToRemove);
+          
+          // If no more split bills, close the split bill modal
+          if (updatedSplits.length === 0) {
+            setShowSplitBillModal(false);
+            setSelectedSplitBill(null);
+          } else {
+            // Select the first remaining split bill
+            setSelectedSplitBill(updatedSplits[0]);
+            // Recalculate totals for remaining splits
+            setTimeout(() => recalculateSplitBillTotals(), 100);
+          }
+          
+          return updatedSplits;
+        });
+        
+        // Update splitItems to remove the paid items from the available pool
+        if (paidSplit && paidSplit.items.length > 0) {
+          setSplitItems(prev => prev.map(item => {
+            const paidItem = paidSplit.items.find(paid => paid.food?.id === item.food?.id);
+            if (paidItem) {
+              const newQuantity = Math.max(0, item.quantity - paidItem.quantity);
+              return {
+                ...item,
+                quantity: newQuantity
+              };
+            }
+            return item;
+          }));
+        }
+        
+        setSplitBillToRemove(null);
+      }, 1000); // Show PAID status for 1 second before removing
+    }
   };
 
   // Handle opening status update modal
@@ -5614,6 +5711,11 @@ const RunningOrders = () => {
                                 {selectedSplitBill?.id === splitBill.id && (
                                   <CheckCircle size={16} className="text-green-600" />
                                 )}
+                                {splitBill.paid && (
+                                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                                    PAID
+                                  </span>
+                                )}
                               </div>
                               <button
                                 onClick={(e) => {
@@ -5694,6 +5796,8 @@ const RunningOrders = () => {
                                   // Set the current split bill for finalization
                                   console.log('Setting selectedSplitBill:', splitBill);
                                   setSelectedSplitBill(splitBill);
+                                  // Store the split bill ID to remove it after payment
+                                  setSplitBillToRemove(splitBill.id);
                                   // Reset modal state and open the Finalize Sale Modal
                                   resetFinalizeSaleModalForSplitBill();
                                   setShowFinalizeSaleModal(true);
@@ -7286,6 +7390,32 @@ const RunningOrders = () => {
                     </div>
                   </div>
 
+                  {/* Payment Status Message */}
+                  {addedPayments.length > 0 && calculateDueAmount() > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle size={16} className="text-yellow-600" />
+                        <span className="text-sm text-yellow-800 font-medium">
+                          Payment incomplete. Due amount: {getCurrencySymbol()}{calculateDueAmount().toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        Add more payments to complete the transaction.
+                      </p>
+                    </div>
+                  )}
+
+                  {addedPayments.length > 0 && calculateDueAmount() === 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={16} className="text-green-600" />
+                        <span className="text-sm text-green-800 font-medium">
+                          Payment complete! Ready to submit.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Split Bill Items */}
                   {selectedSplitBill && selectedSplitBill.items && selectedSplitBill.items.length > 0 && (
                     <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
@@ -7648,7 +7778,7 @@ const RunningOrders = () => {
                   Cancel
                 </button>
                 <button
-                  disabled={addedPayments.length === 0}
+                  disabled={addedPayments.length === 0 || calculateDueAmount() > 0}
                   onClick={async () => {
                     try {
                     // Handle payment submission
@@ -7755,7 +7885,7 @@ const RunningOrders = () => {
                     }
                   }}
                   className={`flex-1 px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                    addedPayments.length === 0
+                    addedPayments.length === 0 || calculateDueAmount() > 0
                       ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                       : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
