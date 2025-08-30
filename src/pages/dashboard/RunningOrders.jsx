@@ -5532,13 +5532,18 @@ const RunningOrders = () => {
         {/* Split Bill Modal */}
         {showSplitBillModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-8xl h-[95vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">Split Bill</h2>
                 <button
                   onClick={handleCloseSplitBillModal}
-                  className="text-red-500 hover:text-red-300 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                  disabled={areAllItemsDistributed()}
+                  className={`p-1 rounded-full transition-colors ${
+                    areAllItemsDistributed()
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-red-500 hover:text-red-300 hover:bg-white hover:bg-opacity-20'
+                  }`}
                 >
                   X Cancel
                 </button>
@@ -7042,7 +7047,7 @@ const RunningOrders = () => {
         {/* Finalize Sale Modal */}
         {showFinalizeSaleModal && (
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-8xl h-[95vh] flex flex-col">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
                 <h2 className="text-xl font-bold">
