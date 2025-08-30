@@ -13,6 +13,8 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
     { address: '', eircode: '' }
   ]);
   const [selectedAddresses, setSelectedAddresses] = useState([]);
+  // Store selected address index per customer to persist across modal reopens
+  const [selectedAddressIndex, setSelectedAddressIndex] = useState(0);
   const [errors, setErrors] = useState({});
 
   // Keyboard state
@@ -84,10 +86,14 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
             id: addr.id, // Keep the ID for existing addresses
             address: addr.address || '',
             eircode: addr.code || ''
-          }));
+                    }));
           setAddresses(addressList);
-          // Select all existing addresses by default
-          setSelectedAddresses(addressList.map((_, index) => index));
+          // Select the previously selected address or first address by default
+          // Use the customer's selectedAddressIndex if available, otherwise default to 0
+          const customerSelectedIndex = editingCustomer.selectedAddressIndex || 0;
+          const addressToSelect = Math.min(customerSelectedIndex, addressList.length - 1);
+          setSelectedAddresses([addressToSelect]);
+          setSelectedAddressIndex(addressToSelect);
         } else {
           setAddresses([{ address: '', eircode: '' }]);
           setSelectedAddresses([0]);
@@ -100,8 +106,9 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
           email: '',
           isloyal: false
         });
-        setAddresses([{ address: '', eircode: '' }]);
-        setSelectedAddresses([0]);
+                 setAddresses([{ address: '', eircode: '' }]);
+         setSelectedAddresses([0]);
+         setSelectedAddressIndex(0);
       }
       setErrors({});
       setShowKeyboard(false);
@@ -132,6 +139,11 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
     console.log('Selected addresses state updated:', selectedAddresses);
   }, [selectedAddresses]);
 
+  // Debug selectedAddressIndex state
+  useEffect(() => {
+    console.log('Selected address index updated:', selectedAddressIndex);
+  }, [selectedAddressIndex]);
+
   // Address autocomplete functions
   const searchAddress = async (address, addressIndex) => {
     console.log('Searching address:', address, 'for address index:', addressIndex);
@@ -154,7 +166,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
 
     try {
       // Use the Postcoder API for address search
-      const url = `${POSTCODER_BASE_URL}/autocomplete/find?apikey=${POSTCODER_API_KEY}&country=IE&query=${encodeURIComponent(address)}&maximumresults=10`;
+      const url = `${POSTCODER_BASE_URL}/${POSTCODER_API_KEY}/address/IE/${encodeURIComponent(address)}`;
       console.log('Making address API request to:', url);
       
       const response = await fetch(url);
@@ -419,7 +431,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
     try {
       // Use the correct Postcoder API endpoint structure for Irish Eircodes
       // Try the autocomplete endpoint first, then fallback to direct lookup
-      const url = `${POSTCODER_BASE_URL}/autocomplete/find?apikey=${POSTCODER_API_KEY}&country=IE&query=${encodeURIComponent(eircode)}&maximumresults=10`;
+      const url = `${POSTCODER_BASE_URL}/${POSTCODER_API_KEY}/address/IE/${encodeURIComponent(eircode)}`;
       console.log('Making API request to:', url);
       
       const response = await fetch(url);
@@ -773,12 +785,10 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
 
   const addAddress = () => {
     setAddresses(prev => [...prev, { address: '', eircode: '' }]);
-    // Select the newly added address
-    setSelectedAddresses(prev => {
-      const newSelected = [...prev];
-      newSelected.push(addresses.length);
-      return newSelected;
-    });
+         // Select the newly added address (single selection)
+     const newAddressIndex = addresses.length;
+     setSelectedAddresses([newAddressIndex]);
+     setSelectedAddressIndex(newAddressIndex);
   };
 
   const removeAddress = (index) => {
@@ -787,6 +797,12 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       // Update selected addresses after removal
       setSelectedAddresses(prev => {
         const newSelected = prev.filter(selectedIndex => selectedIndex !== index);
+                 // If we removed the currently selected address, select the first remaining address
+         if (newSelected.length === 0) {
+           const firstRemainingIndex = Math.min(selectedAddressIndex, addresses.length - 2);
+           setSelectedAddressIndex(firstRemainingIndex);
+           return [firstRemainingIndex];
+         }
         return newSelected;
       });
     }
@@ -796,14 +812,18 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
     console.log('Address selection changed for index:', index);
     setSelectedAddresses(prev => {
       if (prev.includes(index)) {
+        // If clicking on already selected address, deselect it
         const newSelected = prev.filter(selectedIndex => selectedIndex !== index);
         console.log('Removed index', index, 'from selection');
         console.log('New selection:', newSelected);
         return newSelected;
       } else {
-        const newSelected = [...prev, index];
-        console.log('Added index', index, 'to selection');
+        // If clicking on unselected address, select only this one (single selection)
+        const newSelected = [index];
+        console.log('Selected only index', index, 'for single selection');
         console.log('New selection:', newSelected);
+                 // Remember the selected address index
+         setSelectedAddressIndex(index);
         return newSelected;
       }
     });
@@ -819,7 +839,14 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
         setAddresses(prev => prev.filter(addr => addr.id !== addressId));
         // Update selected addresses after deletion
         setSelectedAddresses(prev => {
-          const newSelected = prev.filter(selectedIndex => selectedIndex !== addresses.findIndex(addr => addr.id === addressId));
+          const deletedIndex = addresses.findIndex(addr => addr.id === addressId);
+          const newSelected = prev.filter(selectedIndex => selectedIndex !== deletedIndex);
+                     // If we deleted the currently selected address, select the first remaining address
+           if (newSelected.length === 0) {
+             const firstRemainingIndex = Math.min(selectedAddressIndex, addresses.length - 2);
+             setSelectedAddressIndex(firstRemainingIndex);
+             return [firstRemainingIndex];
+           }
           return newSelected;
         });
       } else {
@@ -919,7 +946,8 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
             onCustomerSelect({
               id: editingCustomer.id,
               ...customerData,
-              isloyal: newCustomer.isloyal
+              isloyal: newCustomer.isloyal,
+              selectedAddressIndex: selectedAddressIndex // Save the selected address index
             });
           }
           onClose();
@@ -960,7 +988,8 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
               phone: customerData.phone,
               email: customerData.email,
               isloyal: newCustomer.isloyal,
-              addresses: validAddresses
+              addresses: validAddresses,
+              selectedAddressIndex: selectedAddressIndex // Save the selected address index
             });
           }
           onClose();
@@ -1102,17 +1131,17 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                 )}
                 
                 {addresses.map((address, index) => (
-                  <div key={index} className={`mb-4 p-3 border rounded-lg transition-colors ${
-                    editingCustomer && addresses.length >= 2 
-                      ? selectedAddresses.includes(index)
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 bg-gray-50 opacity-60'
-                      : 'border-gray-200'
-                  }`}>
+                                     <div key={index} className={`mb-4 p-3 border rounded-lg transition-colors ${
+                     editingCustomer 
+                       ? selectedAddresses.includes(index)
+                         ? 'border-primary bg-primary/5'
+                         : 'border-gray-200 bg-gray-50 opacity-60'
+                       : 'border-gray-200'
+                   }`}>
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center gap-2">
-                        {/* Show checkbox only when editing and there are 2+ addresses */}
-                        {editingCustomer && addresses.length >= 2 && (
+                        {/* Show checkbox when editing (for single selection) */}
+                        {editingCustomer && (
                           <input
                             type="checkbox"
                             checked={selectedAddresses.includes(index)}
