@@ -277,6 +277,10 @@ const DashboardLayout = () => {
                 <OrdersHeader 
                   isOrdersRoute={isOrdersRoute} 
                   onMenuClick={() => setShowDashboardSlider(true)}
+                  onDraftsClick={() => {
+                    // This will be handled by the RunningOrders component
+                    window.dispatchEvent(new CustomEvent('openDraftsModal'));
+                  }}
                 />
               ) : isKDSRoute ? (
                 // Show KDS-specific Header for KDS route

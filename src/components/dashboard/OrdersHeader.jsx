@@ -25,7 +25,7 @@ import {
   Menu
 } from 'lucide-react';
 
-const OrdersHeader = ({ onMenuClick }) => {
+const OrdersHeader = ({ onMenuClick, onDraftsClick }) => {
   const location = useLocation();
   const isOrdersRoute = location.pathname === '/dashboard/sales';
   const navigate = useNavigate();
@@ -125,6 +125,7 @@ const OrdersHeader = ({ onMenuClick }) => {
               key={index}
               onClick={() => {
                 if (index === 0) navigate('/dashboard'); // Go back when Home icon is clicked
+                if (index === 3 && onDraftsClick) onDraftsClick(); // Handle Drafts button click
                 if (item.onClick) item.onClick(); // Handle custom onClick functions
               }}
               className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-4 py-2 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}

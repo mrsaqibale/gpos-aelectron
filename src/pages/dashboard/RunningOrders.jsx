@@ -69,6 +69,8 @@ import CustomAlert from '../../components/CustomAlert';
 import useCustomAlert from '../../hooks/useCustomAlert';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
 import Invoice from '../../components/Invoice';
+import Drafts from '../../components/Drafts';
+import DraftNumberModal from '../../components/DraftNumberModal';
 
 const RunningOrders = () => {
   // Custom Alert Hook
@@ -196,6 +198,11 @@ const RunningOrders = () => {
   // Split Bill Modal State
   const [showSplitBillModal, setShowSplitBillModal] = useState(false);
   const [totalSplit, setTotalSplit] = useState('');
+
+  // Drafts Modal State
+  const [showDraftsModal, setShowDraftsModal] = useState(false);
+  const [currentDraftOrders, setCurrentDraftOrders] = useState([]);
+  const [showDraftNumberModal, setShowDraftNumberModal] = useState(false);
   const [splitItems, setSplitItems] = useState([]);
   const [splitDiscount, setSplitDiscount] = useState(0);
   const [splitCharge, setSplitCharge] = useState(0);
@@ -328,7 +335,17 @@ const RunningOrders = () => {
     };
   }, [showInvoiceOptions]);
 
+  // Drafts modal event listener
+  useEffect(() => {
+    const handleOpenDraftsModal = () => {
+      setShowDraftsModal(true);
+    };
 
+    window.addEventListener('openDraftsModal', handleOpenDraftsModal);
+    return () => {
+      window.removeEventListener('openDraftsModal', handleOpenDraftsModal);
+    };
+  }, []);
 
   // Auto-cleanup duplicates when cart changes - REMOVED to prevent infinite loops
 
@@ -447,16 +464,19 @@ const RunningOrders = () => {
       if (result && result.success) {
         console.log('All orders loaded:', result.data);
         
-        // Filter to only show orders that are not completed, delivered, or canceled
+        // Filter to only show orders that are not completed, delivered, canceled, or drafts
         const activeOrders = result.data.filter(order => {
           const status = order.order_status?.toLowerCase();
+          const orderType = order.order_type?.toLowerCase();
           const isActive = status !== 'completed' && 
                           status !== 'delivered' && 
                           status !== 'canceled' &&
                           status !== 'done' &&
                           status !== 'finished' &&
-                          status !== 'closed';
-          console.log(`Order ${order.id}: status="${order.order_status}" (normalized: "${status}"), isActive=${isActive}`);
+                          status !== 'closed' &&
+                          status !== 'draft' &&
+                          orderType !== 'draft';
+          console.log(`Order ${order.id}: status="${order.order_status}", order_type="${order.order_type}" (normalized: "${status}"), isActive=${isActive}`);
           return isActive;
         });
         
@@ -2662,144 +2682,47 @@ const RunningOrders = () => {
   };
 
   // Handle draft order
-  const handleDraftOrder = async () => {
+  const handleDraftOrder = (draftNumber) => {
     if (cartItems.length === 0) {
       showError('Please add items to cart before creating draft');
       return;
     }
 
     try {
-      console.log('Starting draft order creation...');
+      console.log('Creating local draft order with number:', draftNumber);
       
-      // Check if API is available
-      if (!window.myAPI) {
-        showError('API not available. Please refresh the page.');
-        return;
-      }
-
       // Calculate totals
       const subtotal = calculateCartSubtotal();
       const tax = calculateCartTax();
       const discount = calculateCartDiscount();
       const total = calculateCartTotal();
 
-      // Prepare order data for database with order_type as 'draft'
-      const orderData = {
-        customer_id: selectedCustomer?.id || null, // Allow null for walk-in customers
-        order_amount: total,
-        coupon_discount_amount: discount,
-        coupon_discount_title: appliedCoupon?.title || null,
-        payment_status: 'pending',
-        order_status: 'draft', // Set status as draft
-        total_tax_amount: tax,
-        payment_method: null,
-        delivery_address_id: null,
-        coupon_code: appliedCoupon?.code || null,
-        order_note: null,
-        order_type: 'draft', // Set order_type as draft
-        restaurant_id: 1, // Default restaurant ID
-        delivery_charge: 0,
-        additional_charge: 0,
-        discount_amount: discount,
-        tax_percentage: 13.5, // 13.5% tax rate
-        scheduled: 0,
-        schedule_at: null,
-        failed: 0,
-        refunded: 0,
-        isdeleted: 0,
-        issyncronized: 0,
-        table_details: null // No table details for draft orders
-      };
-
-      // Create new draft order
-      console.log('Creating draft order');
-      const orderResult = await window.myAPI.createOrder(orderData);
-      
-      if (!orderResult.success) {
-        showError('Failed to create draft order: ' + orderResult.message);
-        return;
-      }
-      
-      const orderId = orderResult.id;
-      console.log('Draft order created successfully with ID:', orderId);
-
-      // Prepare order details data
-      const orderDetailsArray = cartItems.map(item => {
-        // Calculate item-specific totals
-        const itemSubtotal = item.totalPrice;
-        const itemTax = itemSubtotal * 0.135; // 13.5% tax
-        const itemDiscount = 0; // Individual item discount if any
-
-        // Prepare variations and addons as JSON
-        const variations = Object.keys(item.variations).length > 0 ? JSON.stringify(item.variations) : null;
-        const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
-        
-        // Prepare food details as JSON
-        const foodDetails = JSON.stringify({
-          food: {
-            id: item.food.id,
-            name: item.food.name,
-            description: item.food.description,
-            price: item.food.price,
-            image: item.food.image
-          },
-          variations: item.variations,
-          addons: item.adons,
-          quantity: item.quantity,
-          totalPrice: item.totalPrice
-        });
-
-        // Prepare ingredients as JSON (if available)
-        const ingredients = item.food.ingredients ? JSON.stringify(item.food.ingredients) : null;
-
-        return {
-          food_id: item.food.id,
-          order_id: orderId,
-          price: item.food.price,
-          food_details: foodDetails,
-          item_note: null,
-          variation: variations,
-          add_ons: addons,
-          ingredients: ingredients,
-          discount_on_food: itemDiscount,
-          discount_type: null,
-          quantity: item.quantity,
-          tax_amount: itemTax,
-          total_add_on_price: 0,
-          issynicronized: false,
-          isdeleted: false
-        };
-      });
-
-      // Create order details
-      console.log('Creating draft order details:', orderDetailsArray);
-      const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
-      console.log('Draft order details result:', orderDetailsResult);
-      
-      if (!orderDetailsResult.success) {
-        showError('Failed to create draft order details: ' + orderDetailsResult.message);
-        return;
-      }
-
-      // Create draft order object for UI display
+      // Create draft order object for local storage
       const newDraftOrder = {
-        id: orderId,
-        orderNumber: `DRAFT-${String(orderId).padStart(3, '0')}`,
+        id: Date.now(), // Use timestamp as unique ID
+        number: parseInt(draftNumber) || currentDraftOrders.length + 1,
+        orderNumber: `DRAFT-${String(draftNumber).padStart(3, '0')}`,
         items: [...cartItems],
-        customer: selectedCustomer || { name: 'Walk-in Customer' },
+        customer: selectedCustomer || { name: 'Walk-in Customer', phone: 'N/A' },
         total: total,
         coupon: appliedCoupon,
         orderType: 'Draft',
         table: 'None',
-        waiter: 'Ds Waiter',
+        waiter: 'N/A',
         status: 'Draft',
         placedAt: new Date().toISOString(),
-        databaseId: orderId,
-        isDraft: true // Flag to identify draft orders
+        totalItems: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+        subTotal: subtotal,
+        discount: discount,
+        totalDiscount: discount,
+        tax: tax,
+        charge: 0,
+        tips: 0,
+        totalPayable: total
       };
 
-      // Add draft order to the list
-      setPlacedOrders(prev => [newDraftOrder, ...prev]);
+      // Add draft order to local state
+      setCurrentDraftOrders(prev => [newDraftOrder, ...prev]);
       showSuccess('Draft order created successfully!', 'success');
       
       // Clear cart completely for new draft orders
@@ -5489,7 +5412,11 @@ const RunningOrders = () => {
                   Delete
                 </button>
                 <button 
-                  onClick={handleDraftOrder}
+                  onClick={() => {
+                    if (cartItems.length > 0 && !isModifyingOrder) {
+                      setShowDraftNumberModal(true);
+                    }
+                  }}
                   className={`bg-[#5A32A3] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded ${cartItems.length > 0 && !isModifyingOrder
                       ? 'hover:bg-[#4A2A93] cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
@@ -8712,6 +8639,39 @@ const RunningOrders = () => {
         order={selectedPlacedOrder}
         onPrint={handlePrintInvoice}
         foodDetails={foodDetails}
+      />
+
+      {/* Draft Number Modal */}
+      <DraftNumberModal
+        isOpen={showDraftNumberModal}
+        onClose={() => setShowDraftNumberModal(false)}
+        onSubmit={(draftNumber) => {
+          handleDraftOrder(draftNumber);
+        }}
+      />
+
+      {/* Drafts Modal */}
+      <Drafts
+        isOpen={showDraftsModal}
+        onClose={() => setShowDraftsModal(false)}
+        currentDraftOrders={currentDraftOrders}
+        onEditDraft={(draft) => {
+          // Handle editing draft in cart
+          console.log('Editing draft:', draft);
+          // Load the draft into the cart
+          if (draft.items && draft.items.length > 0) {
+            setCartItems(draft.items);
+          }
+          if (draft.customer) {
+            setSelectedCustomer(draft.customer);
+          }
+          if (draft.orderType) {
+            setSelectedOrderType(draft.orderType);
+          }
+          // Remove the draft from currentDraftOrders since it's now in the cart
+          setCurrentDraftOrders(prev => prev.filter(d => d.id !== draft.id));
+          setShowDraftsModal(false);
+        }}
       />
 
       {/* Virtual Keyboard Component */}
