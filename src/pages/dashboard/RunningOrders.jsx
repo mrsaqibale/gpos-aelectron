@@ -4368,15 +4368,15 @@ const RunningOrders = () => {
             <div className="flex flex-col gap-2 text-[10px] w-full">
               {/* First Row - Bill and Invoice */}
               <div className="flex gap-2">
-                <button className="flex-1 h-10 bg-[#010101] text-[13px] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
-                  <Receipt size={14} />
-                  BILL
-                </button>
                 <button
                   data-invoice-button
                   onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 h-10 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  className={`flex-1 h-10 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#010101] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  <Receipt size={14} />
+                  BILL
+                </button>
+                <button className="flex-1 h-10 bg-[#4d36eb] text-[13px] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
                   <FileText size={14} />
                   INVOICE
                 </button>
@@ -4430,7 +4430,7 @@ const RunningOrders = () => {
 
           {/* Invoice Options Dropdown */}
           {showInvoiceOptions && selectedPlacedOrder && (
-            <div data-invoice-options className="absolute bottom-37 left-40 transform -translate-x-7 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
+            <div data-invoice-options className="absolute bottom-37 left-10 transform -translate-x-7 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => {
