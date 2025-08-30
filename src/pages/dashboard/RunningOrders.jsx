@@ -3662,6 +3662,8 @@ const RunningOrders = () => {
     setCurrencyAmount('');
     // Clear selectedSplitBill when not coming from split bill flow
     setSelectedSplitBill(null);
+    // Fetch available coupons
+    fetchAvailableCoupons();
   };
 
   const resetFinalizeSaleModalForSplitBill = () => {
@@ -3676,6 +3678,8 @@ const RunningOrders = () => {
     setCurrencyAmount('');
     // Don't clear selectedSplitBill - we want to keep it for split bill finalization
     // Don't clear splitBillToRemove - we need it for removal after payment
+    // Fetch available coupons
+    fetchAvailableCoupons();
   };
 
   const resetFinalizeSaleModalForSinglePay = () => {
@@ -3691,6 +3695,8 @@ const RunningOrders = () => {
     setIsSinglePayMode(true);
     setSelectedSplitBill(null);
     setAppliedCoupon(null); // Clear any applied coupon
+    // Fetch available coupons
+    fetchAvailableCoupons();
   };
 
   // Calculate totals for single pay mode
