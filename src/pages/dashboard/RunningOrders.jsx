@@ -2529,9 +2529,6 @@ const RunningOrders = () => {
           totalPrice: item.totalPrice
         });
 
-        // Prepare ingredients as JSON (if available)
-        const ingredients = item.food.ingredients ? JSON.stringify(item.food.ingredients) : null;
-
         return {
           food_id: item.food.id,
           order_id: orderId,
@@ -2540,7 +2537,6 @@ const RunningOrders = () => {
           item_note: null, // Can be added later
           variation: variations,
           add_ons: addons,
-          ingredients: ingredients,
           discount_on_food: itemDiscount,
           discount_type: null,
           quantity: item.quantity,
@@ -2616,7 +2612,6 @@ const RunningOrders = () => {
                 food_details: newItem.food_details,
                 variation: newItem.variation,
                 add_ons: newItem.add_ons,
-                ingredients: newItem.ingredients,
                 discount_on_food: newItem.discount_on_food,
                 tax_amount: newItem.tax_amount,
                 total_add_on_price: newItem.total_add_on_price
@@ -4111,35 +4106,95 @@ const RunningOrders = () => {
     if (!selectedOrderForStatusUpdate) return;
 
     try {
-      // Map UI status to database status
+      // Map UI status to database status and corresponding date field
       let dbStatus = 'pending';
+      let dateField = null;
+      
       switch (selectedStatus) {
         case 'New':
           dbStatus = 'new';
+          dateField = 'pending_date';
           break;
         case 'In Progress':
           dbStatus = 'in_progress';
+          dateField = 'accepted_date';
           break;
         case 'Ready':
           dbStatus = 'ready';
+          dateField = 'ready_date';
           break;
         case 'On the way':
           dbStatus = 'on_the_way';
+          dateField = 'ontheway';
           break;
         case 'Delivered':
           dbStatus = 'delivered';
+          dateField = 'delivered_date';
           break;
         case 'Completed':
           dbStatus = 'completed';
+          dateField = 'done_date';
           break;
         case 'Pending':
           dbStatus = 'pending';
+          dateField = 'pending_date';
           break;
         case 'Complete':
           dbStatus = 'completed';
+          dateField = 'done_date';
+          break;
+        case 'Confirmed':
+          dbStatus = 'confirmed';
+          dateField = 'confirmed_date';
+          break;
+        case 'Processing':
+          dbStatus = 'processing';
+          dateField = 'processing_date';
+          break;
+        case 'Handover':
+          dbStatus = 'handover';
+          dateField = 'handover_date';
+          break;
+        case 'Picked Up':
+          dbStatus = 'picked_up';
+          dateField = 'picked_up_date';
+          break;
+        case 'Cooked':
+          dbStatus = 'cooked';
+          dateField = 'cooked_date';
+          break;
+        case 'Canceled':
+          dbStatus = 'canceled';
+          dateField = 'canceled_date';
           break;
         default:
           dbStatus = selectedStatus.toLowerCase().replace(' ', '_');
+          // Map common status patterns to date fields
+          if (selectedStatus.toLowerCase().includes('pending')) {
+            dateField = 'pending_date';
+          } else if (selectedStatus.toLowerCase().includes('accepted')) {
+            dateField = 'accepted_date';
+          } else if (selectedStatus.toLowerCase().includes('confirmed')) {
+            dateField = 'confirmed_date';
+          } else if (selectedStatus.toLowerCase().includes('processing')) {
+            dateField = 'processing_date';
+          } else if (selectedStatus.toLowerCase().includes('handover')) {
+            dateField = 'handover_date';
+          } else if (selectedStatus.toLowerCase().includes('picked')) {
+            dateField = 'picked_up_date';
+          } else if (selectedStatus.toLowerCase().includes('delivered')) {
+            dateField = 'delivered_date';
+          } else if (selectedStatus.toLowerCase().includes('canceled')) {
+            dateField = 'canceled_date';
+          } else if (selectedStatus.toLowerCase().includes('cooked')) {
+            dateField = 'cooked_date';
+          } else if (selectedStatus.toLowerCase().includes('done') || selectedStatus.toLowerCase().includes('completed')) {
+            dateField = 'done_date';
+          } else if (selectedStatus.toLowerCase().includes('ready')) {
+            dateField = 'ready_date';
+          } else if (selectedStatus.toLowerCase().includes('way')) {
+            dateField = 'ontheway';
+          }
       }
 
       // Check if this is a new order (no databaseId) - just setting status for future orders
@@ -4152,11 +4207,20 @@ const RunningOrders = () => {
         return;
       }
 
-      // Update order status in database
-      const updateResult = await window.myAPI.updateOrderStatus(
+      // Prepare update data with status and date
+      const updateData = {
+        order_status: dbStatus
+      };
+      
+      // Add the corresponding date field if mapped
+      if (dateField) {
+        updateData[dateField] = new Date().toISOString();
+      }
+      
+      // Update order status and date in database
+      const updateResult = await window.myAPI.updateOrder(
         selectedOrderForStatusUpdate.databaseId, 
-        dbStatus, 
-        null // updatedBy - can be set to current employee ID
+        updateData
       );
       
       if (!updateResult.success) {

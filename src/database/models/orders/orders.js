@@ -55,8 +55,9 @@ export function createOrder(orderData) {
         coupon_created_by, distance, cancellation_note, tax_percentage,
         delivery_instruction, unavailable_item_note, additional_charge,
         partially_paid_amount, order_proof, cash_back_id, extra_packaging_amount,
-        table_details, isdeleted, issyncronized
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        table_details, isdeleted, issyncronized, ready_date, draft_name, isreported,
+        ontheway, waiter, order_number, placed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     // Count the placeholders
@@ -118,7 +119,14 @@ export function createOrder(orderData) {
       orderData.extra_packaging_amount || 0,
       orderData.table_details || null,
       (orderData.isdeleted || false) ? 1 : 0,
-      (orderData.issyncronized || false) ? 1 : 0
+      (orderData.issyncronized || false) ? 1 : 0,
+      orderData.ready_date || null,
+      orderData.draft_name || null,
+      (orderData.isreported || false) ? 1 : 0,
+      orderData.ontheway || null,
+      orderData.waiter || null,
+      orderData.order_number || null,
+      orderData.placed_at || null
     ];
     
     console.log('Number of values:', values.length);

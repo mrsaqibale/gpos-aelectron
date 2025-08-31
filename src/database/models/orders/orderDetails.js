@@ -44,9 +44,9 @@ export function createOrderDetail(orderDetailData) {
     const stmt = db.prepare(`
       INSERT INTO order_details (
         food_id, order_id, price, food_details, item_note, variation,
-        add_ons, ingredients, discount_on_food, discount_type, quantity,
+        add_ons, discount_on_food, discount_type, quantity,
         tax_amount, total_add_on_price, issynicronized, isdeleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const values = [
@@ -57,7 +57,6 @@ export function createOrderDetail(orderDetailData) {
       orderDetailData.item_note || null,
       orderDetailData.variation || null,
       orderDetailData.add_ons || null,
-      orderDetailData.ingredients || null,
       orderDetailData.discount_on_food || 0,
       orderDetailData.discount_type || null,
       orderDetailData.quantity || 1,
@@ -90,9 +89,9 @@ export function createMultipleOrderDetails(orderDetailsArray) {
     const stmt = db.prepare(`
       INSERT INTO order_details (
         food_id, order_id, price, food_details, item_note, variation,
-        add_ons, ingredients, discount_on_food, discount_type, quantity,
+        add_ons, discount_on_food, discount_type, quantity,
         tax_amount, total_add_on_price, issynicronized, isdeleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const insertMany = db.transaction((details) => {
@@ -106,7 +105,6 @@ export function createMultipleOrderDetails(orderDetailsArray) {
           detail.item_note || null,
           detail.variation || null,
           detail.add_ons || null,
-          detail.ingredients || null,
           detail.discount_on_food || 0,
           detail.discount_type || null,
           detail.quantity || 1,
