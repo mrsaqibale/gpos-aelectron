@@ -7923,11 +7923,11 @@ const RunningOrders = () => {
                           }
                         }
                       } else if (selectedPlacedOrder && selectedPlacedOrder.databaseId) {
-                        // Update existing order with payment information
+                        // Update existing order with payment information (but don't complete the order)
                         const paymentUpdates = {
                           payment_status: 'paid',
-                          payment_method: selectedPaymentMethod,
-                          order_status: 'completed'
+                          payment_method: selectedPaymentMethod
+                          // Note: order_status is not updated to 'completed' - this should be done manually
                         };
                         
                         const updateResult = await window.myAPI.updateOrder(selectedPlacedOrder.databaseId, paymentUpdates);
@@ -7936,29 +7936,8 @@ const RunningOrders = () => {
                           return;
                         }
                         
-                        // Free the associated tables when order is completed through payment
-                        try {
-                          const orderResult = await window.myAPI.getOrderById(selectedPlacedOrder.databaseId);
-                          if (orderResult.success && orderResult.data.table_details) {
-                            const tableDetails = JSON.parse(orderResult.data.table_details);
-                            if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
-                              const tableIds = tableDetails.tables.map(table => table.id);
-                              console.log('Freeing tables after payment completion:', tableIds);
-                              
-                              const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
-                              if (tableUpdateResult.success) {
-                                console.log('Tables freed successfully after payment:', tableUpdateResult.message);
-                              } else {
-                                console.warn('Failed to free tables after payment:', tableUpdateResult.message);
-                              }
-                            }
-                          }
-                        } catch (error) {
-                          console.error('Error freeing tables after payment:', error);
-                        }
-
-                        // Remove the order from running orders since it's completed
-                        setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
+                        // Note: Tables are not freed automatically - this should be done when order is manually completed
+                        // Note: Order is not removed from active orders - this should be done when order is manually completed
                       }
 
                     setShowFinalizeSaleModal(false);
