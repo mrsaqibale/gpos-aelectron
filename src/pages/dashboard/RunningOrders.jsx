@@ -5101,6 +5101,55 @@ const RunningOrders = () => {
                   onClick={() => {
                     resetFinalizeSaleModalForSinglePay();
                     setIsSinglePayMode(false); // Don't set to true for existing orders
+                    // Load the selected order's data into the cart for payment processing
+                    if (selectedPlacedOrder && selectedPlacedOrder.items) {
+                      // Convert order items back to cart items format
+                      const cartItemsFromOrder = selectedPlacedOrder.items.map((item, index) => {
+                        // Parse variations and addons from JSON if they're strings
+                        let variations = {};
+                        let adons = [];
+                        
+                        try {
+                          if (typeof item.variations === 'string') {
+                            variations = JSON.parse(item.variations);
+                          } else {
+                            variations = item.variations || {};
+                          }
+                          
+                          if (typeof item.adons === 'string') {
+                            adons = JSON.parse(item.adons);
+                          } else {
+                            adons = item.adons || [];
+                          }
+                        } catch (error) {
+                          console.error('Error parsing variations/addons for item:', item, error);
+                        }
+                        
+                        return {
+                          id: Date.now() + index, // Generate unique IDs
+                          food: item.food,
+                          variations: variations,
+                          adons: adons,
+                          quantity: item.quantity,
+                          totalPrice: item.totalPrice,
+                          addedAt: new Date().toISOString()
+                        };
+                      });
+
+                      // Load order data into cart for payment processing
+                      setCartItems(cartItemsFromOrder);
+                      setCartItemId(Date.now() + cartItemsFromOrder.length + 1);
+                      
+                      // Load customer information
+                      if (selectedPlacedOrder.customer) {
+                        setSelectedCustomer(selectedPlacedOrder.customer);
+                      }
+                      
+                      // Load applied coupon if any
+                      if (selectedPlacedOrder.coupon) {
+                        setAppliedCoupon(selectedPlacedOrder.coupon);
+                      }
+                    }
                     setShowFinalizeSaleModal(true);
                     setShowInvoiceOptions(false);
                   }}
@@ -8052,6 +8101,10 @@ const RunningOrders = () => {
                     
                     // Reset single pay mode after successful payment
                     setIsSinglePayMode(false);
+                    
+                    // Reset invoice flags to ensure kitchen and employee invoices show for new orders
+                    setIsInvoiceAfterPayment(false);
+                    setCurrentOrderForInvoice(null);
                     } catch (error) {
                       console.error('Error processing payment:', error);
                       showError('Failed to process payment. Please try again.');
@@ -8856,7 +8909,7 @@ const RunningOrders = () => {
         order={selectedPlacedOrder}
         onPrint={handlePrintInvoice}
         foodDetails={foodDetails}
-        paymentStatus={isInvoiceAfterPayment ? "PAID" : "UNPAID"}
+        paymentStatus="PAID"
       />
 
       {/* Kitchen Invoice Modal */}
