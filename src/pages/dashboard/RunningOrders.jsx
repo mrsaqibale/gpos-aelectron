@@ -3068,6 +3068,7 @@ const RunningOrders = () => {
 
     // Reset modal state and open the Finalize Sale Modal
     resetFinalizeSaleModalForSinglePay();
+    setIsSinglePayMode(true); // Set to true for new orders from PAY button
     setShowFinalizeSaleModal(true);
   };
 
@@ -3754,7 +3755,7 @@ const RunningOrders = () => {
     setSendSMS(false);
     setSelectedCurrency('EUR');
     setCurrencyAmount('');
-    setIsSinglePayMode(true);
+    // Don't set isSinglePayMode here - it should be set explicitly by the calling function
     setSelectedSplitBill(null);
     setAppliedCoupon(null); // Clear any applied coupon
     // Fetch available coupons
@@ -5099,7 +5100,7 @@ const RunningOrders = () => {
                 <button
                   onClick={() => {
                     resetFinalizeSaleModalForSinglePay();
-                    setIsSinglePayMode(true);
+                    setIsSinglePayMode(false); // Don't set to true for existing orders
                     setShowFinalizeSaleModal(true);
                     setShowInvoiceOptions(false);
                   }}
@@ -5902,6 +5903,7 @@ const RunningOrders = () => {
                                   setSplitBillToRemove(splitBill.id);
                                   // Reset modal state and open the Finalize Sale Modal
                                   resetFinalizeSaleModalForSplitBill();
+                                  setIsSinglePayMode(false); // Ensure it's false for split bill checkout
                                   setShowFinalizeSaleModal(true);
                                 }
                               }}
@@ -7995,6 +7997,38 @@ const RunningOrders = () => {
                         
                         // Note: Tables are not freed automatically - this should be done when order is manually completed
                         // Note: Order is not removed from active orders - this should be done when order is manually completed
+                      } else if (selectedSplitBill) {
+                        // Handle split bill payment
+                        setIsInvoiceAfterPayment(true);
+                        
+                        // For split bills, we don't update the main order in the database
+                        // Instead, we just process the payment for this specific split
+                        // The split bill is already calculated and ready for invoice
+                        
+                        // Create a temporary order object for invoice display from the split bill
+                        const splitOrderForInvoice = {
+                          id: selectedSplitBill.id,
+                          orderNumber: `${selectedPlacedOrder?.orderNumber || 'ORD-000'}-SPLIT-${selectedSplitBill.id}`,
+                          items: selectedSplitBill.items,
+                          customer: selectedSplitBill.customer || selectedPlacedOrder?.customer || { name: 'Walk-in Customer' },
+                          total: selectedSplitBill.total,
+                          coupon: appliedCoupon,
+                          orderType: selectedPlacedOrder?.orderType || 'In Store',
+                          table: selectedPlacedOrder?.table || 'None',
+                          waiter: selectedPlacedOrder?.waiter || 'Ds Waiter',
+                          status: 'Split Payment',
+                          placedAt: new Date().toISOString(),
+                          databaseId: selectedPlacedOrder?.databaseId
+                        };
+                        
+                        // Set the split order for invoice display
+                        setSelectedPlacedOrder(splitOrderForInvoice);
+                        
+                        // Remove the processed split bill from the list
+                        if (splitBillToRemove) {
+                          setSplitBills(prev => prev.filter(split => split.id !== splitBillToRemove));
+                          setSplitBillToRemove(null);
+                        }
                       }
 
                     setShowFinalizeSaleModal(false);
