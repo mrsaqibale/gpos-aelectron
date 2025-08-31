@@ -229,6 +229,12 @@ const RunningOrders = () => {
   const [selectedOrderForStatusUpdate, setSelectedOrderForStatusUpdate] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState('New');
 
+  // Invoice Modal States
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showKitchenInvoiceModal, setShowKitchenInvoiceModal] = useState(false);
+  const [showEmployeeInvoiceModal, setShowEmployeeInvoiceModal] = useState(false);
+  const [currentOrderForInvoice, setCurrentOrderForInvoice] = useState(null);
+
   // Rider Assignment Modal State
   const [showRiderAssignmentModal, setShowRiderAssignmentModal] = useState(false);
   const [selectedRider, setSelectedRider] = useState(null);
@@ -250,6 +256,9 @@ const RunningOrders = () => {
 
   // Cart Details Modal State
   const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
+
+  // Real-time timer for order time display
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Cancel Order Modal State
   const [showCancelOrderModal, setShowCancelOrderModal] = useState(false);
@@ -346,6 +355,15 @@ const RunningOrders = () => {
     return () => {
       window.removeEventListener('openDraftsModal', handleOpenDraftsModal);
     };
+  }, []);
+
+  // Real-time timer for order time display
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000); // Update every second
+
+    return () => clearInterval(timer);
   }, []);
 
   // Auto-cleanup duplicates when cart changes - REMOVED to prevent infinite loops
@@ -2171,9 +2189,6 @@ const RunningOrders = () => {
 
   // Order Details Modal State
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
-  
-  // Invoice Modal State
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   // Update ingredients whenever flavors change
   useEffect(() => {
@@ -2767,6 +2782,20 @@ const RunningOrders = () => {
 
     // Clear scheduled time after successful order placement
     setSelectedScheduleDateTime('');
+
+    // Show invoice modals for kitchen and employee
+    if (!isModifyingOrder) {
+      // Set the current order for invoice display
+      setCurrentOrderForInvoice(newOrder);
+      
+      // Show kitchen invoice first
+      setShowKitchenInvoiceModal(true);
+      
+      // Show employee invoice after a short delay
+      setTimeout(() => {
+        setShowEmployeeInvoiceModal(true);
+      }, 500);
+    }
 
     } catch (error) {
       console.error('Error placing order:', error);
@@ -4717,11 +4746,19 @@ const RunningOrders = () => {
                     return order.orderNumber.toString().toLowerCase().includes(searchTerm);
                   })
                   .map((order) => {
-                  // Calculate time elapsed
+                  // Calculate time elapsed using real-time currentTime
                   const orderTime = new Date(order.placedAt);
-                  const now = new Date();
-                  const timeDiff = Math.floor((now - orderTime) / (1000 * 60)); // minutes
-                  const timeAgo = timeDiff === 0 ? 'Just now' : `${timeDiff} min ago`;
+                  const diffMs = currentTime - orderTime;
+                  const diffMins = Math.floor(diffMs / (1000 * 60));
+                  const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+                  let timeAgo;
+                  if (diffMins > 0) {
+                    timeAgo = `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                  } else if (diffSecs > 0) {
+                    timeAgo = `${diffSecs} sec${diffSecs > 1 ? 's' : ''} ago`;
+                  } else {
+                    timeAgo = 'Just now';
+                  }
 
                   // Get order type styling
                   const getOrderTypeStyle = (type) => {
@@ -8737,6 +8774,34 @@ const RunningOrders = () => {
         order={selectedPlacedOrder}
         onPrint={handlePrintInvoice}
         foodDetails={foodDetails}
+      />
+
+      {/* Kitchen Invoice Modal */}
+      <Invoice
+        isOpen={showKitchenInvoiceModal}
+        onClose={() => setShowKitchenInvoiceModal(false)}
+        order={currentOrderForInvoice}
+        onPrint={() => {
+          window.print();
+          setShowKitchenInvoiceModal(false);
+        }}
+        foodDetails={foodDetails}
+        isKitchen={true}
+        paymentStatus="UNPAID"
+      />
+
+      {/* Employee Invoice Modal */}
+      <Invoice
+        isOpen={showEmployeeInvoiceModal}
+        onClose={() => setShowEmployeeInvoiceModal(false)}
+        order={currentOrderForInvoice}
+        onPrint={() => {
+          window.print();
+          setShowEmployeeInvoiceModal(false);
+        }}
+        foodDetails={foodDetails}
+        isEmployee={true}
+        paymentStatus="UNPAID"
       />
 
       {/* Draft Number Modal */}

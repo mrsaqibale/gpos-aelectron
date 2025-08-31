@@ -6,7 +6,10 @@ const Invoice = ({
   isOpen, 
   onClose, 
   onPrint,
-  foodDetails = null 
+  foodDetails = null,
+  isKitchen = false,
+  isEmployee = false,
+  paymentStatus = "PAID"
 }) => {
   const { themeColors } = useTheme();
 
@@ -65,7 +68,9 @@ const Invoice = ({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-800">Print Invoice</h2>
+          <h2 className="text-lg font-bold text-gray-800">
+            {isKitchen ? 'Kitchen Order' : isEmployee ? 'Employee Copy' : 'Print Invoice'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
@@ -214,7 +219,9 @@ const Invoice = ({
 
             {/* Payment Status */}
             <div className="text-center mb-4">
-              <div className="text-lg font-bold text-green-600">***** PAID *****</div>
+              <div className={`text-lg font-bold ${paymentStatus === "PAID" ? "text-green-600" : "text-red-600"}`}>
+                ***** {paymentStatus} *****
+              </div>
             </div>
 
             <div className="border-t border-gray-300 my-4"></div>
@@ -304,7 +311,7 @@ const Invoice = ({
             onClick={handlePrint}
             className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
           >
-            Print Invoice
+            {isKitchen ? 'Print Kitchen Order' : isEmployee ? 'Print Employee Copy' : 'Print Invoice'}
           </button>
           <button
             onClick={onClose}
