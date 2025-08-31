@@ -533,6 +533,46 @@ const RunningOrders = () => {
             // Get customer name
             const customerName = dbOrder.customer_id ? await getCustomerName(dbOrder.customer_id) : 'Walk-in Customer';
             
+            // Get complete customer data if customer_id exists
+            let customerData = {
+              id: dbOrder.customer_id,
+              name: customerName
+            };
+            
+            if (dbOrder.customer_id) {
+              try {
+                // Fetch complete customer data
+                const customerResult = await window.myAPI.getCustomerById(dbOrder.customer_id);
+                if (customerResult && customerResult.success && customerResult.data) {
+                  customerData = {
+                    id: customerResult.data.id,
+                    name: customerResult.data.name,
+                    phone: customerResult.data.phone,
+                    email: customerResult.data.email
+                  };
+                  
+                  // Fetch customer addresses
+                  const addressResult = await window.myAPI.getCustomerAddresses(dbOrder.customer_id);
+                  if (addressResult && addressResult.success && addressResult.data) {
+                    customerData.addresses = addressResult.data;
+                  }
+                  
+                  // Debug logging for delivery orders
+                  if (dbOrder.order_type === 'delivery') {
+                    console.log('Delivery order customer data:', {
+                      orderId: dbOrder.id,
+                      customerId: dbOrder.customer_id,
+                      customerData: customerData,
+                      addresses: customerData.addresses
+                    });
+                  }
+                }
+              } catch (error) {
+                console.error(`Error fetching customer data for order ${dbOrder.id}:`, error);
+                // Keep the basic customer data if fetching fails
+              }
+            }
+            
             // Debug logging for draft orders
             if (dbOrder.order_type === 'draft') {
               console.log('Processing draft order from database:', {
@@ -548,10 +588,7 @@ const RunningOrders = () => {
                 ? `DRAFT-${String(dbOrder.id).padStart(3, '0')}`
                 : `ORD-${String(dbOrder.id).padStart(3, '0')}`,
               items: items,
-              customer: {
-                id: dbOrder.customer_id,
-                name: customerName
-              },
+              customer: customerData,
               total: dbOrder.order_amount,
               coupon: dbOrder.coupon_code
                 ? {
@@ -2226,6 +2263,46 @@ const RunningOrders = () => {
       return;
     }
 
+    // Check if customer is selected for delivery orders
+    if (selectedOrderType === 'Delivery' && !selectedCustomer) {
+      showError('Select customer first');
+      return;
+    }
+
+    // Check if customer has address for delivery orders
+    if (selectedOrderType === 'Delivery' && selectedCustomer) {
+      console.log('Delivery order validation - Customer data:', selectedCustomer);
+      console.log('Customer addresses:', selectedCustomer.addresses);
+      
+      // Check if customer has addresses array with at least one address
+      if (!selectedCustomer.addresses || selectedCustomer.addresses.length === 0) {
+        console.log('No addresses found for customer');
+        showError('Customer must have a delivery address');
+        return;
+      }
+      
+      // Additional check: ensure at least one address has a valid address field
+      const hasValidAddress = selectedCustomer.addresses.some(addr => 
+        addr && addr.address && addr.address.trim().length > 0
+      );
+      
+      console.log('Has valid address:', hasValidAddress);
+      console.log('Address details:', selectedCustomer.addresses.map(addr => ({
+        id: addr.id,
+        address: addr.address,
+        code: addr.code,
+        hasAddress: addr && addr.address && addr.address.trim().length > 0
+      })));
+      
+      if (!hasValidAddress) {
+        showError('Customer must have a valid delivery address');
+        return;
+      }
+      
+      // If we reach here, customer has valid addresses for delivery
+      console.log('Customer validation passed - ready for delivery order');
+    }
+
     try {
       console.log('Starting order placement process...');
       console.log('Is modifying order:', isModifyingOrder);
@@ -2309,6 +2386,13 @@ const RunningOrders = () => {
           dbStatus = selectedNewOrderStatus.toLowerCase().replace(' ', '_');
       }
 
+      // Prepare delivery address for delivery orders
+      let deliveryAddressId = null;
+      if (orderType === 'delivery' && selectedCustomer && selectedCustomer.addresses && selectedCustomer.addresses.length > 0) {
+        // Use the first address as delivery address (you can modify this logic to let user choose)
+        deliveryAddressId = selectedCustomer.addresses[0].id;
+      }
+
       // Prepare order data for database
       const orderData = {
         customer_id: selectedCustomer?.id || null, // Allow null for walk-in customers
@@ -2319,7 +2403,7 @@ const RunningOrders = () => {
         order_status: dbStatus, // Use the mapped status instead of hardcoded 'pending'
         total_tax_amount: tax,
         payment_method: null, // Will be set when payment is made
-        delivery_address_id: null, // Will be set for delivery orders
+        delivery_address_id: deliveryAddressId, // Set delivery address for delivery orders
         coupon_code: appliedCoupon?.code || null,
         order_note: null, // Can be added later
         order_type: orderType,
@@ -2604,7 +2688,14 @@ const RunningOrders = () => {
         id: orderId,
         orderNumber: `ORD-${String(orderId).padStart(3, '0')}`,
       items: [...cartItems],
-      customer: selectedCustomer || { name: 'Walk-in Customer' },
+      customer: selectedCustomer ? {
+        ...selectedCustomer, // Include all customer properties
+        id: selectedCustomer.id,
+        name: selectedCustomer.name,
+        phone: selectedCustomer.phone || null,
+        email: selectedCustomer.email || null,
+        addresses: selectedCustomer.addresses || []
+      } : { name: 'Walk-in Customer' },
         total: total,
       coupon: appliedCoupon,
         orderType: selectedOrderType,
@@ -2624,6 +2715,8 @@ const RunningOrders = () => {
         placedAt: new Date().toISOString(),
         databaseId: orderId // Store database ID for reference
     };
+
+
 
     if (isModifyingOrder && modifyingOrderId) {
       console.log('Modifying order. Original order type:', selectedPlacedOrder?.orderType);

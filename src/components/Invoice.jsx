@@ -103,7 +103,7 @@ const Invoice = ({
                 {order.orderType}
               </h2>
               <p className="text-sm text-gray-600">
-                Due: {formatDate(order.createdAt)}, ASAP ({formatTime(order.createdAt)})
+                Due: {formatDate(order.placedAt || order.createdAt)}, ASAP ({formatTime(order.placedAt || order.createdAt)})
               </p>
               <p className="text-sm font-medium text-gray-800">
                 # {order.orderNumber}
@@ -222,15 +222,54 @@ const Invoice = ({
             {/* Customer Info */}
             <div className="mb-4">
               <h3 className="font-bold text-gray-800 mb-2">Customer Info:</h3>
+
               <div className="text-sm space-y-1">
                 <div><span className="font-medium">Name:</span> {order.customer?.name || 'Walk-in Customer'}</div>
-                {order.customer?.phone && (
-                  <div><span className="font-medium">Phone:</span> {order.customer.phone}</div>
+                
+                {/* Phone number - show for delivery orders or if available */}
+                {(order.orderType === 'Delivery' || order.customer?.phone) && (
+                  <div>
+                    <span className="font-medium">Phone:</span> 
+                    {order.customer?.phone || 'N/A'}
+                  </div>
                 )}
-                {order.customer?.address && (
-                  <div><span className="font-medium">Address:</span> {order.customer.address}</div>
+                
+                {/* Email - show if available */}
+                {order.customer?.email && (
+                  <div>
+                    <span className="font-medium">Email:</span> {order.customer.email}
+                  </div>
                 )}
-                {order.table && (
+                
+                {/* Delivery address for delivery orders */}
+                {order.orderType === 'Delivery' && (
+                  <div>
+                    <span className="font-medium">Delivery Address:</span> 
+                    {(() => {
+                      // Check if customer has addresses array
+                      if (order.customer?.addresses && order.customer.addresses.length > 0) {
+                        // Get the first address
+                        const firstAddress = order.customer.addresses[0];
+                        // Check if it's a string or object
+                        if (typeof firstAddress === 'string') {
+                          return firstAddress;
+                        } else if (firstAddress.address) {
+                          return firstAddress.address;
+                        } else {
+                          return 'Address format error';
+                        }
+                      } else if (order.customer?.address) {
+                        // Fallback to direct address field
+                        return order.customer.address;
+                      } else {
+                        return 'No address available';
+                      }
+                    })()}
+                  </div>
+                )}
+                
+                {/* Table for non-delivery orders */}
+                {order.orderType !== 'Delivery' && order.table && order.table !== 'None' && (
                   <div><span className="font-medium">Table:</span> {order.table}</div>
                 )}
               </div>

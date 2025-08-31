@@ -14,7 +14,7 @@ const OrderDetailsModal = ({
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-white text-gray-800 p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
+        <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl border-b border-gray-200">
           <h2 className="text-xl font-bold">Order Details</h2>
           <button
             onClick={onClose}
