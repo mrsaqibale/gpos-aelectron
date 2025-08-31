@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS order_details (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    food_id INTEGER NOT NULL,
+    food_id INTEGER,
     order_id INTEGER NOT NULL,
     price REAL NOT NULL,
     food_details TEXT,
