@@ -4972,7 +4972,14 @@ const RunningOrders = () => {
                   <Receipt size={14} />
                   BILL
                 </button>
-                <button className="flex-1 h-10 bg-[#4d36eb] text-[13px] text-white font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150">
+                <button 
+                  onClick={() => {
+                    if (selectedPlacedOrder) {
+                      setShowInvoiceModal(true);
+                    }
+                  }}
+                  disabled={!selectedPlacedOrder}
+                  className={`flex-1 h-10 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <FileText size={14} />
                   INVOICE
                 </button>
