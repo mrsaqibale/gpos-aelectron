@@ -71,6 +71,7 @@ import OrderDetailsModal from '../../components/OrderDetailsModal';
 import Invoice from '../../components/Invoice';
 import Drafts from '../../components/Drafts';
 import DraftNumberModal from '../../components/DraftNumberModal';
+import DueTo from '../../components/DueTo';
 
 const RunningOrders = () => {
   // Custom Alert Hook
@@ -5190,7 +5191,7 @@ const RunningOrders = () => {
               Table
             </button>
             <button
-              onClick={async () => {
+              onClick={() => {
                 // Prevent order type change when modifying an existing order
                 if (isModifyingOrder) {
                   showWarning('Cannot change order type while modifying an existing order');
@@ -5201,8 +5202,6 @@ const RunningOrders = () => {
                 setSelectedTable('');
                 setSelectedPersons('');
                 setReservedTables([]);
-                // Automatically open schedule modal for collection orders
-                await handleOpenScheduleModal();
               }}
               disabled={isModifyingOrder}
               className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
@@ -8764,6 +8763,31 @@ const RunningOrders = () => {
           setCurrentDraftOrders(prev => prev.filter(d => d.id !== draft.id));
           setShowDraftsModal(false);
         }}
+      />
+
+      {/* Schedule Modal */}
+      <DueTo
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        hotelInfo={hotelInfo}
+        selectedScheduleDate={selectedScheduleDate}
+        selectedScheduleTime={selectedScheduleTime}
+        availableTimeSlots={availableTimeSlots}
+        useCustomTime={useCustomTime}
+        customTime={customTime}
+        onDateChange={handleScheduleDateChange}
+        onTimeSelect={handleScheduleTimeSelect}
+        onCustomTimeChange={handleCustomTimeChange}
+        onUseCustomTimeChange={(checked) => {
+          setUseCustomTime(checked);
+          if (checked) {
+            setSelectedScheduleTime('');
+          } else {
+            setCustomTime('');
+          }
+        }}
+        onConfirm={handleScheduleConfirm}
+        onCancel={handleScheduleCancel}
       />
 
       {/* Virtual Keyboard Component */}
