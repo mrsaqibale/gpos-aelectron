@@ -2,18 +2,18 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
 const DraftNumberModal = ({ isOpen, onClose, onSubmit }) => {
-  const [draftNumber, setDraftNumber] = useState('');
+  const [userName, setUserName] = useState('');
 
   const handleSubmit = () => {
-    if (draftNumber.trim()) {
-      onSubmit(draftNumber.trim());
-      setDraftNumber('');
+    if (userName.trim()) {
+      onSubmit(userName.trim());
+      setUserName('');
       onClose();
     }
   };
 
   const handleCancel = () => {
-    setDraftNumber('');
+    setUserName('');
     onClose();
   };
 
@@ -31,13 +31,13 @@ const DraftNumberModal = ({ isOpen, onClose, onSubmit }) => {
         <div className="p-6">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Number *
+              Customer Name *
             </label>
             <input
               type="text"
-              value={draftNumber}
-              onChange={(e) => setDraftNumber(e.target.value)}
-              placeholder="Enter draft number"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="Enter customer name"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
               autoFocus
             />
@@ -48,9 +48,9 @@ const DraftNumberModal = ({ isOpen, onClose, onSubmit }) => {
         <div className="p-6 border-t border-gray-200 flex gap-3">
           <button
             onClick={handleSubmit}
-            disabled={!draftNumber.trim()}
+            disabled={!userName.trim()}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-              draftNumber.trim()
+              userName.trim()
                 ? 'bg-primary text-white'
                 : 'bg-primary text-white cursor-not-allowed'
             }`}

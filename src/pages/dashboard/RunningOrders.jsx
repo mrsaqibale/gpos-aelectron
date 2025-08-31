@@ -2775,14 +2775,14 @@ const RunningOrders = () => {
   };
 
   // Handle draft order
-  const handleDraftOrder = (draftNumber) => {
+  const handleDraftOrder = (userName) => {
     if (cartItems.length === 0) {
       showError('Please add items to cart before creating draft');
       return;
     }
 
     try {
-      console.log('Creating local draft order with number:', draftNumber);
+      console.log('Creating local draft order for customer:', userName);
       
       // Calculate totals
       const subtotal = calculateCartSubtotal();
@@ -2793,10 +2793,9 @@ const RunningOrders = () => {
       // Create draft order object for local storage
       const newDraftOrder = {
         id: Date.now(), // Use timestamp as unique ID
-        number: parseInt(draftNumber) || currentDraftOrders.length + 1,
-        orderNumber: `DRAFT-${String(draftNumber).padStart(3, '0')}`,
+        orderNumber: `DRAFT-${Date.now()}`,
         items: [...cartItems],
-        customer: selectedCustomer || { name: 'Walk-in Customer', phone: 'N/A' },
+        customer: selectedCustomer || { name: userName, phone: 'N/A' },
         total: total,
         coupon: appliedCoupon,
         orderType: 'Draft',
@@ -8738,8 +8737,8 @@ const RunningOrders = () => {
       <DraftNumberModal
         isOpen={showDraftNumberModal}
         onClose={() => setShowDraftNumberModal(false)}
-        onSubmit={(draftNumber) => {
-          handleDraftOrder(draftNumber);
+        onSubmit={(userName) => {
+          handleDraftOrder(userName);
         }}
       />
 

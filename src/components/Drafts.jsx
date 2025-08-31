@@ -17,7 +17,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
     return (
       draft.customer.name.toLowerCase().includes(query) ||
       draft.customer.phone.toLowerCase().includes(query) ||
-      draft.number.toString().includes(query)
+      draft.id.toString().includes(query)
     );
   });
 
@@ -80,7 +80,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search Customer Name or Mobile Number or Token Number"
+                placeholder="Search Customer Name"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -90,20 +90,19 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
 
           {/* Draft Orders Table */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-4">
+            <div className="px-4 py-2">
               <div className="bg-gray-50 rounded-lg overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Number</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">ID</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer (Phone)</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Table</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDrafts.length === 0 ? (
                       <tr>
-                        <td colSpan="3" className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan="3" className="p-4 text-center text-gray-500">
                           No draft orders found
                         </td>
                       </tr>
@@ -116,14 +115,11 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
                             selectedDraft?.id === draft.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
                           }`}
                         >
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                            {draft.number}
+                          <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                            {draft.id}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-700">
+                          <td className="px-4 py-2 text-sm text-gray-700">
                             {draft.customer.name}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-700">
-                            {draft.table}
                           </td>
                         </tr>
                       ))
@@ -146,7 +142,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
         </div>
 
         {/* Right Section - Order Details */}
-        <div className="w-1/2 flex flex-col">
+        <div className="w-1/2 flex flex-col overflow-y-auto">
           {/* Header */}
           <div className="p-6 border-b border-gray-200 flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-800">Order Details</h2>
@@ -161,24 +157,32 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
           {selectedDraft ? (
             <>
               {/* Order Information */}
-              <div className="p-6 border-b border-gray-200">
+              <div className="px-6 py-2 border-b border-gray-200">
                 <div className="space-y-3">
                   <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-700">Draft ID:</span>
+                    <span className="text-sm text-gray-900">{selectedDraft.id}</span>
+                  </div>
+                  {/* <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Order Type:</span>
                     <span className="text-sm text-gray-900">{selectedDraft.orderType}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Waiter:</span>
                     <span className="text-sm text-gray-900">{selectedDraft.waiter}</span>
-                  </div>
+                  </div> */}
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Customer:</span>
                     <span className="text-sm text-gray-900">{selectedDraft.customer.name}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-700">Phone:</span>
+                    <span className="text-sm text-gray-900">{selectedDraft.customer.phone}</span>
+                  </div>
+                  {/* <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Table:</span>
                     <span className="text-sm text-gray-900">{selectedDraft.table}</span>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
@@ -206,9 +210,9 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
                           selectedDraft.items.map((item, index) => (
                             <tr key={index} className="border-b border-gray-200">
                               <td className="px-4 py-3 text-sm text-gray-900">{item.name || item.food?.name || 'Unknown Item'}</td>
-                              <td className="px-4 py-3 text-sm text-gray-900 text-right">€{(item.price || 0).toFixed(2)}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900 text-right">€{((item.totalPrice || 0) / (item.quantity || 1)).toFixed(2)}</td>
                               <td className="px-4 py-3 text-sm text-gray-900 text-right">{item.qty || item.quantity || 0}</td>
-                              <td className="px-4 py-3 text-sm text-gray-900 text-right">€{(item.total || 0).toFixed(2)}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900 text-right">€{(item.totalPrice || 0).toFixed(2)}</td>
                             </tr>
                           ))
                         )}
@@ -219,7 +223,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
               </div>
 
               {/* Financial Summary */}
-              <div className="p-6 border-t border-gray-200">
+              <div className="px-6 py-2 border-t border-gray-200">
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-700">Total Item:</span>
@@ -229,10 +233,10 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
                     <span className="text-sm text-gray-700">Sub Total:</span>
                     <span className="text-sm font-medium text-gray-900">€{(selectedDraft.subTotal || 0).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span className="text-sm text-gray-700">Discount:</span>
                     <span className="text-sm font-medium text-gray-900">€{(selectedDraft.discount || 0).toFixed(2)}</span>
-                  </div>
+                  </div> */}
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-700">Total Discount:</span>
                     <span className="text-sm font-medium text-gray-900">€{(selectedDraft.totalDiscount || 0).toFixed(2)}</span>
@@ -257,7 +261,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
               </div>
 
               {/* Action Buttons */}
-              <div className="p-6 border-t border-gray-200">
+              <div className="px-6 py-2 border-t border-gray-200">
                 <div className="flex gap-3">
                   <button
                     onClick={handleEditDraft}
