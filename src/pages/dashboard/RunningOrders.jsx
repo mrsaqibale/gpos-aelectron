@@ -234,6 +234,7 @@ const RunningOrders = () => {
   const [showKitchenInvoiceModal, setShowKitchenInvoiceModal] = useState(false);
   const [showEmployeeInvoiceModal, setShowEmployeeInvoiceModal] = useState(false);
   const [currentOrderForInvoice, setCurrentOrderForInvoice] = useState(null);
+  const [isInvoiceAfterPayment, setIsInvoiceAfterPayment] = useState(false);
 
   // Rider Assignment Modal State
   const [showRiderAssignmentModal, setShowRiderAssignmentModal] = useState(false);
@@ -2279,6 +2280,11 @@ const RunningOrders = () => {
       return;
     }
 
+    // Reset single pay mode when placing order normally (not from PAY button)
+    // This ensures kitchen and employee invoices show for PLACE ORDER button
+    setIsSinglePayMode(false);
+
+
     // Check if customer is selected for delivery orders
     if (selectedOrderType === 'Delivery' && !selectedCustomer) {
       showError('Select customer first');
@@ -2769,22 +2775,29 @@ const RunningOrders = () => {
       
       showSuccess('Order updated successfully!', 'success');
     } else {
-      // Add new order to the list
-      setPlacedOrders(prev => [newOrder, ...prev]);
-      showSuccess('Order placed successfully!', 'success');
-      
-      // Clear cart completely for new orders
-      clearCart();
-      
-      // Automatically set order type to 'In Store' for new orders
-      setSelectedOrderType('In Store');
+      // Add new order to the list (only if not from PAY button)
+      if (!isSinglePayMode) {
+        setPlacedOrders(prev => [newOrder, ...prev]);
+        showSuccess('Order placed successfully!', 'success');
+        
+        // Clear cart completely for new orders
+        clearCart();
+        
+        // Automatically set order type to 'In Store' for new orders
+        setSelectedOrderType('In Store');
+      } else {
+        // For PAY button, don't add to active orders, just show success
+        showSuccess('Order created for payment!', 'success');
+      }
     }
 
     // Clear scheduled time after successful order placement
     setSelectedScheduleDateTime('');
 
-    // Show invoice modals for kitchen and employee
-    if (!isModifyingOrder) {
+    // Show invoice modals for kitchen and employee (only if not after payment and not from PAY button)
+    // For PLACE ORDER button, always show kitchen and employee invoices
+    // For PAY button (isSinglePayMode), don't show kitchen and employee invoices
+    if (!isModifyingOrder && !isInvoiceAfterPayment && !isSinglePayMode) {
       // Set the current order for invoice display
       setCurrentOrderForInvoice(newOrder);
       
@@ -2797,10 +2810,14 @@ const RunningOrders = () => {
       }, 500);
     }
 
+    // Return the order ID for external use (like payment processing)
+    return orderId;
+
     } catch (error) {
       console.error('Error placing order:', error);
       console.error('Error details:', error.message, error.stack);
       showError('Failed to place order: ' + error.message);
+      return null;
     }
   };
 
@@ -3746,11 +3763,14 @@ const RunningOrders = () => {
 
   // Calculate totals for single pay mode
   const calculateSinglePayTotals = () => {
-    if (!selectedPlacedOrder || !isSinglePayMode) return { subtotal: 0, tax: 0, total: 0 };
+    if (!isSinglePayMode) return { subtotal: 0, tax: 0, total: 0 };
     
-    const subtotal = selectedPlacedOrder.items?.reduce((sum, item) => {
+    // Use cartItems for single pay mode (PAY button) or selectedPlacedOrder.items for existing orders
+    const items = cartItems.length > 0 ? cartItems : (selectedPlacedOrder?.items || []);
+    
+    const subtotal = items.reduce((sum, item) => {
       return sum + (parseFloat(item.totalPrice) || 0);
-    }, 0) || 0;
+    }, 0);
     
     const tax = subtotal * 0.1; // 10% tax
     
@@ -5012,6 +5032,7 @@ const RunningOrders = () => {
                 <button 
                   onClick={() => {
                     if (selectedPlacedOrder) {
+                      setIsInvoiceAfterPayment(false); // This is NOT after payment
                       setShowInvoiceModal(true);
                     }
                   }}
@@ -7529,11 +7550,11 @@ const RunningOrders = () => {
                   )}
 
                   {/* Single Pay Items */}
-                  {isSinglePayMode && selectedPlacedOrder && selectedPlacedOrder.items && selectedPlacedOrder.items.length > 0 && (
+                  {isSinglePayMode && ((cartItems.length > 0) || (selectedPlacedOrder && selectedPlacedOrder.items && selectedPlacedOrder.items.length > 0)) && (
                     <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
                       <h4 className="text-sm font-semibold text-gray-800 mb-3">Order Items:</h4>
                       <div className="space-y-2">
-                        {selectedPlacedOrder.items.map((item, index) => (
+                        {(cartItems.length > 0 ? cartItems : selectedPlacedOrder.items).map((item, index) => (
                           <div key={index} className="flex justify-between items-start text-sm">
                             <div className="flex-1">
                               <div className="flex items-center">
@@ -7882,47 +7903,83 @@ const RunningOrders = () => {
 
                       // If this is a single pay mode (direct payment without placing order first)
                       if (isSinglePayMode) {
-                        // Create order first, then update with payment
-                        await handlePlaceOrder();
+                        // Set flag to indicate this invoice is after payment
+                        setIsInvoiceAfterPayment(true);
                         
-                        // Get the latest placed order (should be the one we just created)
-                        const latestOrder = placedOrders[0];
-                        if (latestOrder && latestOrder.databaseId) {
-                          // Update order with payment information
-                          const paymentUpdates = {
-                            payment_status: 'paid',
-                            payment_method: selectedPaymentMethod,
-                            order_status: 'completed'
-                          };
-                          
-                          const updateResult = await window.myAPI.updateOrder(latestOrder.databaseId, paymentUpdates);
-                          if (!updateResult.success) {
-                            showError('Failed to update order payment: ' + updateResult.message);
-                            return;
-                          }
-                          
-                          // Free the associated tables when order is completed through payment
-                          try {
-                            const orderResult = await window.myAPI.getOrderById(latestOrder.databaseId);
-                            if (orderResult.success && orderResult.data.table_details) {
-                              const tableDetails = JSON.parse(orderResult.data.table_details);
-                              if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
-                                const tableIds = tableDetails.tables.map(table => table.id);
-                                console.log('Freeing tables after payment completion:', tableIds);
-                                
-                                const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
-                                if (tableUpdateResult.success) {
-                                  console.log('Tables freed successfully after payment:', tableUpdateResult.message);
-                                } else {
-                                  console.warn('Failed to free tables after payment:', tableUpdateResult.message);
+                        // Create order first, then update with payment
+                        const createdOrderId = await handlePlaceOrder();
+                        
+                        // Check if order was created successfully
+                        if (!createdOrderId) {
+                          showError('Failed to create order for payment');
+                          return;
+                        }
+                        
+                        // For single pay mode, we now have the order ID directly
+                        try {
+                            
+                            // Update order with payment information
+                            const paymentUpdates = {
+                              payment_status: 'paid',
+                              payment_method: selectedPaymentMethod,
+                              order_status: 'completed'
+                            };
+                            
+                            const updateResult = await window.myAPI.updateOrder(createdOrderId, paymentUpdates);
+                            if (!updateResult.success) {
+                              showError('Failed to update order payment: ' + updateResult.message);
+                              return;
+                            }
+                            
+                            // Free the associated tables when order is completed through payment
+                            try {
+                              const orderResult = await window.myAPI.getOrderById(createdOrderId);
+                              if (orderResult.success && orderResult.data.table_details) {
+                                const tableDetails = JSON.parse(orderResult.data.table_details);
+                                if (tableDetails && tableDetails.tables && tableDetails.tables.length > 0) {
+                                  const tableIds = tableDetails.tables.map(table => table.id);
+                                  console.log('Freeing tables after payment completion:', tableIds);
+                                  
+                                  const tableUpdateResult = await window.myAPI.tableUpdateMultipleStatuses(tableIds, 'Free');
+                                  if (tableUpdateResult.success) {
+                                    console.log('Tables freed successfully after payment:', tableUpdateResult.message);
+                                  } else {
+                                    console.warn('Failed to free tables after payment:', tableUpdateResult.message);
+                                  }
                                 }
                               }
+                            } catch (error) {
+                              console.error('Error freeing tables after payment:', error);
                             }
-                          } catch (error) {
-                            console.error('Error freeing tables after payment:', error);
-                          }
+                            
+                            // Create order object for invoice display
+                            const orderForInvoice = {
+                              id: createdOrderId,
+                              orderNumber: `ORD-${String(createdOrderId).padStart(3, '0')}`,
+                              items: cartItems,
+                              customer: selectedCustomer || { name: 'Walk-in Customer' },
+                              total: calculateCartTotal(),
+                              coupon: appliedCoupon,
+                              orderType: selectedOrderType,
+                              table: selectedTable ? `Table ${selectedTable}` : 'None',
+                              waiter: 'Ds Waiter',
+                              status: 'Completed',
+                              placedAt: new Date().toISOString(),
+                              databaseId: createdOrderId
+                            };
+                            
+                            // Set the order for invoice display
+                            setSelectedPlacedOrder(orderForInvoice);
+                        } catch (error) {
+                          console.error('Error processing single pay order:', error);
+                          showError('Failed to process payment for new order');
+                          return;
                         }
+
                       } else if (selectedPlacedOrder && selectedPlacedOrder.databaseId) {
+                        // Set flag to indicate this invoice is after payment
+                        setIsInvoiceAfterPayment(true);
+                        
                         // Update existing order with payment information (but don't complete the order)
                         const paymentUpdates = {
                           payment_status: 'paid',
@@ -7946,12 +8003,21 @@ const RunningOrders = () => {
                     resetFinalizeSaleModal();
                     
                     // Show invoice modal after successful payment
-                    if (isSinglePayMode && placedOrders[0]) {
+                    if (isSinglePayMode && selectedPlacedOrder) {
+                      // For single pay mode, we already set selectedPlacedOrder above
+                      setIsInvoiceAfterPayment(true); // This IS after payment
+                      setShowInvoiceModal(true);
+                    } else if (placedOrders[0]) {
                       setSelectedPlacedOrder(placedOrders[0]);
+                      setIsInvoiceAfterPayment(true); // This IS after payment
                       setShowInvoiceModal(true);
                     } else if (selectedPlacedOrder) {
+                      setIsInvoiceAfterPayment(true); // This IS after payment
                       setShowInvoiceModal(true);
                     }
+                    
+                    // Reset single pay mode after successful payment
+                    setIsSinglePayMode(false);
                     } catch (error) {
                       console.error('Error processing payment:', error);
                       showError('Failed to process payment. Please try again.');
@@ -8158,8 +8224,8 @@ const RunningOrders = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Item:</span>
                   <span className="font-semibold">
-                    {isSinglePayMode && selectedPlacedOrder 
-                      ? selectedPlacedOrder.items.reduce((total, item) => total + (parseInt(item.quantity) || 0), 0)
+                    {isSinglePayMode 
+                      ? (cartItems.length > 0 ? cartItems : selectedPlacedOrder?.items || []).reduce((total, item) => total + (parseInt(item.quantity) || 0), 0)
                       : selectedSplitBill 
                         ? selectedSplitBill.items.reduce((total, item) => total + (item.quantity || 0), 0)
                         : cartItems.reduce((total, item) => total + (item.quantity || 0), 0)
@@ -8749,10 +8815,14 @@ const RunningOrders = () => {
       {/* Invoice Modal */}
       <Invoice
         isOpen={showInvoiceModal}
-        onClose={() => setShowInvoiceModal(false)}
+        onClose={() => {
+          setShowInvoiceModal(false);
+          setIsInvoiceAfterPayment(false); // Reset the flag when modal is closed
+        }}
         order={selectedPlacedOrder}
         onPrint={handlePrintInvoice}
         foodDetails={foodDetails}
+        paymentStatus={isInvoiceAfterPayment ? "PAID" : "UNPAID"}
       />
 
       {/* Kitchen Invoice Modal */}
