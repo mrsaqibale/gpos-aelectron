@@ -52,6 +52,22 @@ export const themes = {
     // Dashboard background color
     dashboardBackground: '#f0fff4',
   },
+  black: {
+    background: '#1a1a1a',
+    logo: '#1a1a1a',
+    logo_border: '#0d0d0d',
+    keypad: '#1a1a1a',
+    keypad_end: '#333333',
+    keypadBorder: '#333333',
+    buttonHover: '#333333',
+    loginBg: '#333333',
+    // Primary color mapping for dashboard
+    primary: '#1a1a1a',
+    primaryLight: '#333333',
+    primaryExtraLight: '#3333331b',
+    // Dashboard background color
+    dashboardBackground: '#f5f5f5',
+  },
 };
 
 export const ThemeProvider = ({ children }) => {

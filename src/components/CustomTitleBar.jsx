@@ -195,6 +195,12 @@ const CustomTitleBar = () => {
             style={{ background: "linear-gradient(to bottom right, #25A18E, #34A0A4)" }}
             title="Green Theme"
           />
+          <button
+            onClick={() => changeTheme("black")}
+            className="w-4 h-4 rounded-full border border-white cursor-pointer transform active:scale-95"
+            style={{ background: "linear-gradient(to bottom right, #1a1a1a, #333333)" }}
+            title="Black Theme"
+          />
         </div>
 
         {/* Window controls */}
