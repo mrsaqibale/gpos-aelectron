@@ -7345,8 +7345,8 @@ const RunningOrders = () => {
                       {isSinglePayMode && selectedPlacedOrder && (
                         <div className="border-b border-gray-200 pb-2 mb-2">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-700">Order #{selectedPlacedOrder.id || selectedPlacedOrder.orderNumber}:</span>
-                            <span className="text-sm font-medium text-gray-700">{selectedPlacedOrder.customer?.name || selectedPlacedOrder.customer || 'Walk-in Customer'}</span>
+                            <span className="text-md font-medium text-gray-700">Order #{selectedPlacedOrder.id || selectedPlacedOrder.orderNumber}:</span>
+                            <span className="text-md font-medium text-gray-700">{selectedPlacedOrder.customer?.name || selectedPlacedOrder.customer || 'Walk-in Customer'}</span>
                           </div>
                         </div>
                       )}
@@ -7354,8 +7354,8 @@ const RunningOrders = () => {
                       {/* Bill Breakdown */}
                       <div className="border-b border-gray-200 pb-2 mb-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-700">Subtotal:</span>
-                          <span className="text-sm font-medium text-gray-700">
+                          <span className="text-md font-medium text-gray-700">Subtotal:</span>
+                          <span className="text-md font-medium text-gray-700">
                             {getCurrencySymbol()}{
                               isSinglePayMode ? calculateSinglePayTotals().subtotal.toFixed(2) :
                               selectedSplitBill ? calculateSplitBillSubtotal().toFixed(2) : calculateCartSubtotal().toFixed(2)
@@ -7363,8 +7363,8 @@ const RunningOrders = () => {
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-700">Tax:</span>
-                          <span className="text-sm font-medium text-gray-700">
+                          <span className="text-md font-medium text-gray-700">Tax:</span>
+                          <span className="text-md font-medium text-gray-700">
                             {getCurrencySymbol()}{
                               isSinglePayMode ? calculateSinglePayTotals().tax.toFixed(2) :
                               selectedSplitBill ? calculateSplitBillTax().toFixed(2) : calculateCartTax().toFixed(2)
