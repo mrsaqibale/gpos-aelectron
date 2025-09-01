@@ -2440,7 +2440,8 @@ const RunningOrders = () => {
         refunded: 0, // Convert boolean to integer for SQLite
         isdeleted: 0, // Convert boolean to integer for SQLite
         issyncronized: 0, // Convert boolean to integer for SQLite
-        table_details: tableDetails // Add table details
+        table_details: tableDetails, // Add table details
+        placed_at: dbStatus === 'new' ? new Date().toISOString() : null // Set placed_at when status is new
       };
 
       let orderId;
@@ -4113,87 +4114,79 @@ const RunningOrders = () => {
       switch (selectedStatus) {
         case 'New':
           dbStatus = 'new';
-          dateField = 'pending_date';
+          dateField = 'placed_at'; // Set placed_at when status is new
           break;
         case 'In Progress':
           dbStatus = 'in_progress';
-          dateField = 'accepted_date';
+          dateField = 'processing_date'; // Set processing_date when status is in_progress
           break;
         case 'Ready':
           dbStatus = 'ready';
-          dateField = 'ready_date';
+          dateField = 'ready_date'; // Set ready_date when status is ready
           break;
         case 'On the way':
           dbStatus = 'on_the_way';
-          dateField = 'ontheway';
+          dateField = 'ontheway'; // Set ontheway when status is on_the_way
           break;
         case 'Delivered':
           dbStatus = 'delivered';
-          dateField = 'delivered_date';
+          dateField = 'delivered_date'; // Set delivered_date when status is delivered
           break;
         case 'Completed':
           dbStatus = 'completed';
-          dateField = 'done_date';
+          dateField = 'confirmed_date'; // Set confirmed_date when status is completed
           break;
         case 'Pending':
           dbStatus = 'pending';
-          dateField = 'pending_date';
+          dateField = null; // No need to set pending_date now
           break;
         case 'Complete':
           dbStatus = 'completed';
-          dateField = 'done_date';
+          dateField = 'done_date'; // Set done_date when status is completed
           break;
         case 'Confirmed':
           dbStatus = 'confirmed';
-          dateField = 'confirmed_date';
+          dateField = 'confirmed_date'; // Set confirmed_date when status is confirmed
           break;
         case 'Processing':
           dbStatus = 'processing';
-          dateField = 'processing_date';
+          dateField = 'processing_date'; // Set processing_date when status is processing
           break;
         case 'Handover':
           dbStatus = 'handover';
-          dateField = 'handover_date';
+          dateField = null; // No need to set handover_date now
           break;
         case 'Picked Up':
           dbStatus = 'picked_up';
-          dateField = 'picked_up_date';
+          dateField = null; // No need to set picked_up_date now
           break;
         case 'Cooked':
           dbStatus = 'cooked';
-          dateField = 'cooked_date';
+          dateField = null; // No need to set cooked_date now
           break;
         case 'Canceled':
           dbStatus = 'canceled';
-          dateField = 'canceled_date';
+          dateField = 'canceled_date'; // Set canceled_date when status is canceled
           break;
         default:
           dbStatus = selectedStatus.toLowerCase().replace(' ', '_');
           // Map common status patterns to date fields
-          if (selectedStatus.toLowerCase().includes('pending')) {
-            dateField = 'pending_date';
-          } else if (selectedStatus.toLowerCase().includes('accepted')) {
-            dateField = 'accepted_date';
+          if (selectedStatus.toLowerCase().includes('new')) {
+            dateField = 'placed_at';
           } else if (selectedStatus.toLowerCase().includes('confirmed')) {
             dateField = 'confirmed_date';
-          } else if (selectedStatus.toLowerCase().includes('processing')) {
+          } else if (selectedStatus.toLowerCase().includes('processing') || selectedStatus.toLowerCase().includes('in_progress')) {
             dateField = 'processing_date';
-          } else if (selectedStatus.toLowerCase().includes('handover')) {
-            dateField = 'handover_date';
-          } else if (selectedStatus.toLowerCase().includes('picked')) {
-            dateField = 'picked_up_date';
+          } else if (selectedStatus.toLowerCase().includes('ready')) {
+            dateField = 'ready_date';
+          } else if (selectedStatus.toLowerCase().includes('on_the_way')) {
+            dateField = 'ontheway';
           } else if (selectedStatus.toLowerCase().includes('delivered')) {
             dateField = 'delivered_date';
           } else if (selectedStatus.toLowerCase().includes('canceled')) {
             dateField = 'canceled_date';
-          } else if (selectedStatus.toLowerCase().includes('cooked')) {
-            dateField = 'cooked_date';
           } else if (selectedStatus.toLowerCase().includes('done') || selectedStatus.toLowerCase().includes('completed')) {
             dateField = 'done_date';
-          } else if (selectedStatus.toLowerCase().includes('ready')) {
-            dateField = 'ready_date';
-          } else if (selectedStatus.toLowerCase().includes('way')) {
-            dateField = 'ontheway';
           }
       }
 

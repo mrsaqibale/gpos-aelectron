@@ -46,7 +46,7 @@ export function createOrder(orderData) {
         customer_id, order_amount, coupon_discount_amount, coupon_discount_title,
         payment_status, order_status, total_tax_amount, payment_method,
         delivery_address_id, coupon_code, order_note, order_type, restaurant_id,
-        delivery_charge, schedule_at, callback, otp, pending_date, accepted_date,
+        created_at, updated_at, delivery_charge, schedule_at, callback, otp, pending_date, accepted_date,
         confirmed_date, processing_date, handover_date, picked_up_date,
         delivered_date, canceled_date, cooked_date, done_date,
         refund_requested_date, refunded, delivery_address, delivery_ecode,
@@ -57,7 +57,7 @@ export function createOrder(orderData) {
         partially_paid_amount, order_proof, cash_back_id, extra_packaging_amount,
         table_details, isdeleted, issyncronized, ready_date, draft_name, isreported,
         ontheway, waiter, order_number, placed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     // Count the placeholders
@@ -66,13 +66,14 @@ export function createOrder(orderData) {
     
     const stmt = db.prepare(sql);
     
+    const now = new Date().toISOString();
     const values = [
       orderData.customer_id || null,
       orderData.order_amount || 0,
       orderData.coupon_discount_amount || 0,
       orderData.coupon_discount_title || null,
       orderData.payment_status || 'pending',
-      orderData.order_status || 'pending',
+      orderData.order_status || 'new',
       orderData.total_tax_amount || 0,
       orderData.payment_method || null,
       orderData.delivery_address_id || null,
@@ -80,6 +81,8 @@ export function createOrder(orderData) {
       orderData.order_note || null,
       orderData.order_type || 'dine_in',
       orderData.restaurant_id || 1, // Default to first restaurant
+      now, // created_at
+      now, // updated_at
       orderData.delivery_charge || 0,
       orderData.schedule_at || null,
       orderData.callback || null,
