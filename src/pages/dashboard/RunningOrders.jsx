@@ -72,10 +72,12 @@ import Invoice from '../../components/Invoice';
 import Drafts from '../../components/Drafts';
 import DraftNumberModal from '../../components/DraftNumberModal';
 import DueTo from '../../components/DueTo';
+import { useDraftCount } from '../../contexts/DraftContext';
 
 const RunningOrders = () => {
   // Custom Alert Hook
   const { alertState, showSuccess, showError, showWarning, showInfo, hideAlert } = useCustomAlert();
+  const { updateDraftCount } = useDraftCount();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -364,6 +366,11 @@ const RunningOrders = () => {
       fetchDraftOrders();
     }
   }, [showDraftsModal]);
+
+  // Update draft count whenever currentDraftOrders changes
+  useEffect(() => {
+    updateDraftCount(currentDraftOrders.length);
+  }, [currentDraftOrders, updateDraftCount]);
 
   // Real-time timer for order time display
   useEffect(() => {
@@ -3206,6 +3213,90 @@ const RunningOrders = () => {
     // Set the draft order to convert and show the modal
     setDraftToConvert(draftOrder);
     setShowDraftConversionModal(true);
+  };
+
+  // Handle delete draft order
+  const handleDeleteDraft = async (draftId) => {
+    try {
+      console.log('Deleting draft order:', draftId);
+      
+      if (!window.myAPI) {
+        showError('API not available. Please refresh the page.');
+        return;
+      }
+
+      // Delete the draft order from database
+      const deleteResult = await window.myAPI.deleteOrder(draftId);
+      
+      if (!deleteResult.success) {
+        showError('Failed to delete draft order: ' + deleteResult.message);
+        return;
+      }
+
+      // Remove from local state
+      setCurrentDraftOrders(prev => prev.filter(draft => draft.databaseId !== draftId));
+      
+      showSuccess('Draft order deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting draft order:', error);
+      showError('Failed to delete draft order: ' + error.message);
+    }
+  };
+
+  // Handle delete all draft orders
+  const handleDeleteAllDrafts = async () => {
+    try {
+      console.log('Deleting all draft orders');
+      
+      if (!window.myAPI) {
+        showError('API not available. Please refresh the page.');
+        return;
+      }
+
+      // Get all draft orders
+      const result = await window.myAPI.getOrdersByStatus('draft');
+      if (!result.success) {
+        showError('Failed to fetch draft orders: ' + result.message);
+        return;
+      }
+
+      const draftOrders = result.data || [];
+      if (draftOrders.length === 0) {
+        showError('No draft orders to delete');
+        return;
+      }
+
+      // Delete each draft order
+      let deletedCount = 0;
+      let failedCount = 0;
+
+      for (const draft of draftOrders) {
+        try {
+          const deleteResult = await window.myAPI.deleteOrder(draft.id);
+          if (deleteResult.success) {
+            deletedCount++;
+          } else {
+            failedCount++;
+            console.error(`Failed to delete draft ${draft.id}:`, deleteResult.message);
+          }
+        } catch (error) {
+          failedCount++;
+          console.error(`Error deleting draft ${draft.id}:`, error);
+        }
+      }
+
+      // Clear local state
+      setCurrentDraftOrders([]);
+
+      if (failedCount === 0) {
+        showSuccess(`Successfully deleted ${deletedCount} draft orders!`);
+      } else {
+        showError(`Deleted ${deletedCount} draft orders, but failed to delete ${failedCount} orders.`);
+      }
+    } catch (error) {
+      console.error('Error deleting all draft orders:', error);
+      showError('Failed to delete all draft orders: ' + error.message);
+    }
   };
 
   // Handle the actual conversion after user selects order type
@@ -9356,6 +9447,8 @@ const RunningOrders = () => {
           setCurrentDraftOrders(prev => prev.filter(d => d.id !== draft.id));
           setShowDraftsModal(false);
         }}
+        onDeleteDraft={handleDeleteDraft}
+        onDeleteAllDrafts={handleDeleteAllDrafts}
       />
 
       {/* Schedule Modal */}

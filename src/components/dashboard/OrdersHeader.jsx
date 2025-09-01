@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useDraftCount } from '../../contexts/DraftContext';
 
 import {
   Home,
@@ -30,6 +31,7 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick }) => {
   const isOrdersRoute = location.pathname === '/dashboard/sales';
   const navigate = useNavigate();
   const { themeColors } = useTheme();
+  const { draftCount } = useDraftCount();
 
   if (!isOrdersRoute) return null;
 
@@ -63,7 +65,7 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick }) => {
       // icon: <Bell size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: 'Drafts'
+      label: `Drafts${draftCount > 0 ? ` (${draftCount})` : ''}`
     },
     {
       //  icon: <Monitor size={16} />,

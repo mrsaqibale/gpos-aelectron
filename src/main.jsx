@@ -20,6 +20,7 @@ import CustomerManagement from './pages/dashboard/CustomerManagement.jsx'
 import AdminPanel from './pages/dashboard/AdminPanel.jsx'
 import ApplicationSettings from './pages/dashboard/ApplicationSettings.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
+import { DraftProvider } from './contexts/DraftContext.jsx'
 
 console.log('main.jsx loading...');
 
@@ -41,7 +42,7 @@ const ErrorBoundary = ({ children }) => {
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <ErrorBoundary><ThemeProvider><App /></ThemeProvider></ErrorBoundary>,
+    element: <ErrorBoundary><ThemeProvider><DraftProvider><App /></DraftProvider></ThemeProvider></ErrorBoundary>,
     children: [
       { index: true, element: <ErrorBoundary><WelcomeScreen /></ErrorBoundary> },
       {
