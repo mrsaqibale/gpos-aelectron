@@ -358,6 +358,13 @@ const RunningOrders = () => {
     };
   }, []);
 
+  // Fetch draft orders when drafts modal is opened
+  useEffect(() => {
+    if (showDraftsModal) {
+      fetchDraftOrders();
+    }
+  }, [showDraftsModal]);
+
   // Real-time timer for order time display
   useEffect(() => {
     const timer = setInterval(() => {
@@ -720,10 +727,12 @@ const RunningOrders = () => {
     fetchCategories();
     fetchFloors(); // Add this line to fetch floors on component mount
     fetchExistingOrders(); // Load active orders from database
+    fetchDraftOrders(); // Load draft orders from database
     // Poll every 10s for new/updated active orders
     const interval = setInterval(() => {
       try {
         fetchExistingOrders();
+        fetchDraftOrders(); // Also refresh draft orders
       } catch (e) {
         console.error('Auto-refresh active orders failed:', e);
       }
@@ -1100,6 +1109,11 @@ const RunningOrders = () => {
 
   // Handle food item click - either increase quantity or show modal
   const handleFoodItemClick = async (foodItem) => {
+    if (!foodItem) {
+      console.error('Food item is undefined or null');
+      return;
+    }
+    
     console.log('Food item clicked:', foodItem);
 
     // Check if order type is selected
@@ -1120,7 +1134,7 @@ const RunningOrders = () => {
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
       // If food is not in cart, fetch detailed food data to check for variations
-      console.log('Fetching detailed food data for:', foodItem.name);
+      console.log('Fetching detailed food data for:', foodItem?.name || 'Unknown Food');
       setFoodDetailsLoading(true);
 
       try {
@@ -1189,10 +1203,10 @@ const RunningOrders = () => {
             return newCart;
           });
           setCartItemId(prev => prev + 1);
-          console.log('Added food without variations directly to cart (fallback):', foodItem.name);
+          console.log('Added food without variations directly to cart (fallback):', foodItem?.name || 'Unknown Food');
 
           // Show success alert
-          showSuccess(`${foodItem.name} added to cart!`);
+          showSuccess(`${foodItem?.name || 'Unknown Food'} added to cart!`);
         }
       } catch (error) {
         console.error('Error fetching food details:', error);
@@ -1215,10 +1229,10 @@ const RunningOrders = () => {
           return newCart;
         });
         setCartItemId(prev => prev + 1);
-        console.log('Added food without variations directly to cart (error fallback):', foodItem.name);
+                  console.log('Added food without variations directly to cart (error fallback):', foodItem?.name || 'Unknown Food');
 
-        // Show success alert
-        showSuccess(`${foodItem.name} added to cart!`);
+          // Show success alert
+          showSuccess(`${foodItem?.name || 'Unknown Food'} added to cart!`);
       } finally {
         setFoodDetailsLoading(false);
       }
@@ -2817,15 +2831,178 @@ const RunningOrders = () => {
     }
   };
 
+  // Get next draft ID in format draft_id001, draft_id002, etc.
+  const getNextDraftId = async () => {
+    try {
+      if (!window.myAPI) {
+        return `draft_id${Date.now()}`;
+      }
+      
+      // Get all draft orders to find the highest number
+      const result = await window.myAPI.getOrdersByStatus('draft');
+      if (result && result.success) {
+        const draftOrders = result.data || [];
+        let maxNumber = 0;
+        
+        // Find the highest draft number
+        draftOrders.forEach(order => {
+          if (order.order_number && order.order_number.startsWith('draft_id')) {
+            const number = parseInt(order.order_number.replace('draft_id', ''));
+            if (!isNaN(number) && number > maxNumber) {
+              maxNumber = number;
+            }
+          }
+        });
+        
+        // Return next draft ID
+        const nextNumber = maxNumber + 1;
+        return `draft_id${nextNumber.toString().padStart(3, '0')}`;
+      }
+      
+      // If no drafts found, start with 001
+      return 'draft_id001';
+    } catch (error) {
+      console.error('Error getting next draft ID:', error);
+      return `draft_id${Date.now()}`;
+    }
+  };
+
+  // Fetch draft orders from database
+  const fetchDraftOrders = async () => {
+    try {
+      if (!window.myAPI) {
+        console.warn('API not available for fetching draft orders');
+        return;
+      }
+      
+      const result = await window.myAPI.getOrdersByStatus('draft');
+      if (result && result.success) {
+        const draftOrders = result.data || [];
+        
+        // Transform database orders to UI format
+        const transformedDrafts = await Promise.all(
+          draftOrders.map(async (order) => {
+            // Ensure order exists and has required properties
+            if (!order || !order.id) {
+              console.warn('Invalid order found:', order);
+              return null;
+            }
+
+            // Fetch order details for this draft
+            let items = [];
+            try {
+              const detailsResult = await window.myAPI.getOrderDetailsByOrderId(order.id);
+              console.log(`Order details for draft ${order.id}:`, detailsResult);
+              
+              if (detailsResult && detailsResult.success && Array.isArray(detailsResult.data)) {
+                // Transform order details to cart item format
+                items = detailsResult.data
+                  .filter(item => 
+                    item && 
+                    typeof item === 'object' && 
+                    item.food_id && 
+                    typeof item.quantity === 'number'
+                  )
+                  .map(item => {
+                    // Parse variations and addons safely
+                    let variations = null;
+                    let adons = null;
+                    
+                    try {
+                      if (item.variation) {
+                        variations = JSON.parse(item.variation);
+                      }
+                    } catch (error) {
+                      console.error('Error parsing variations:', error);
+                      variations = null;
+                    }
+                    
+                    try {
+                      if (item.add_ons) {
+                        adons = JSON.parse(item.add_ons);
+                      }
+                    } catch (error) {
+                      console.error('Error parsing addons:', error);
+                      adons = null;
+                    }
+                    
+                    return {
+                      id: item.food_id,
+                      food: {
+                        id: item.food_id,
+                        name: item.food_details || 'Unknown Food',
+                        price: item.price || 0
+                      },
+                      quantity: item.quantity || 1,
+                      variations: variations,
+                      adons: adons,
+                      notes: item.item_note || null,
+                      totalPrice: (item.price || 0) * (item.quantity || 1)
+                    };
+                  });
+              }
+            } catch (error) {
+              console.error(`Error fetching order details for order ${order.id}:`, error);
+              items = []; // Set empty array if there's an error
+            }
+            
+            return {
+              id: order.id,
+              databaseId: order.id,
+              orderNumber: order.order_number || `draft_id${order.id}`,
+              items: items,
+              customer: {
+                name: order.draft_name || 'Unknown',
+                phone: 'N/A'
+              },
+              total: order.order_amount || 0,
+              coupon: null,
+              orderType: 'Draft',
+              table: 'None',
+              waiter: 'N/A',
+              status: 'Draft',
+              placedAt: order.created_at || new Date().toISOString(),
+              totalItems: items.reduce((sum, item) => {
+                return sum + (item && item.quantity ? item.quantity : 0);
+              }, 0),
+              subTotal: (order.order_amount || 0) - (order.total_tax_amount || 0),
+              discount: order.discount_amount || 0,
+              totalDiscount: order.discount_amount || 0,
+              tax: order.total_tax_amount || 0,
+              charge: 0,
+              tips: 0,
+              totalPayable: order.order_amount || 0,
+              draftName: order.draft_name || 'Unknown'
+            };
+          })
+        );
+
+        // Filter out any null entries
+        const validDrafts = transformedDrafts.filter(draft => draft !== null);
+        
+        setCurrentDraftOrders(validDrafts);
+        console.log('Fetched draft orders:', validDrafts);
+      }
+    } catch (error) {
+      console.error('Error fetching draft orders:', error);
+    }
+  };
+
   // Handle draft order
-  const handleDraftOrder = (userName) => {
+  const handleDraftOrder = async (userName) => {
     if (cartItems.length === 0) {
       showError('Please add items to cart before creating draft');
       return;
     }
 
     try {
-      console.log('Creating local draft order for customer:', userName);
+      console.log('Creating draft order for customer:', userName);
+      
+      // Check if API is available
+      if (!window.myAPI) {
+        showError('API not available. Please refresh the page.');
+        return;
+      }
       
       // Calculate totals
       const subtotal = calculateCartSubtotal();
@@ -2833,10 +3010,160 @@ const RunningOrders = () => {
       const discount = calculateCartDiscount();
       const total = calculateCartTotal();
 
-      // Create draft order object for local storage
+      // Get next draft ID
+      const draftId = await getNextDraftId();
+
+      // Prepare order data for database
+      const orderData = {
+        customer_id: selectedCustomer?.id || null,
+        order_amount: total,
+        coupon_discount_amount: discount,
+        coupon_discount_title: appliedCoupon?.title || null,
+        payment_status: 'pending',
+        order_status: 'draft', // Set status as draft
+        total_tax_amount: tax,
+        payment_method: null,
+        delivery_address_id: null,
+        coupon_code: appliedCoupon?.code || null,
+        order_note: null,
+        order_type: 'draft',
+        restaurant_id: 1,
+        delivery_charge: 0,
+        additional_charge: 0,
+        discount_amount: discount,
+        tax_percentage: 13.5,
+        scheduled: 0,
+        schedule_at: null,
+        failed: 0,
+        refunded: 0,
+        isdeleted: 0,
+        issyncronized: 0,
+        table_details: null,
+        draft_name: userName, // Save the draft name
+        order_number: draftId // Set the draft ID as order number
+      };
+
+      // Create draft order in database
+      const orderResult = await window.myAPI.createOrder(orderData);
+      
+      if (!orderResult.success) {
+        showError('Failed to create draft order: ' + orderResult.message);
+        return;
+      }
+
+      const orderId = orderResult.id;
+      console.log('Draft order created successfully with ID:', orderId);
+
+      // Debug cart items
+      console.log('Cart items before creating order details:', cartItems);
+      console.log('Cart items structure:', cartItems.map(item => ({
+        id: item.id,
+        foodId: item.food?.id,
+        foodName: item.food?.name,
+        price: item.food?.price,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice,
+        hasVariations: !!item.variations,
+        hasAdons: !!item.adons
+      })));
+
+      // Prepare order details data for the draft items
+      const orderDetailsArray = cartItems
+        .filter(item => {
+          const isValid = item && item.food && item.food.id && item.quantity && item.food.price;
+          if (!isValid) {
+            console.warn('Filtered out invalid cart item:', item);
+          }
+          return isValid;
+        })
+        .map(item => {
+          const orderDetail = {
+            order_id: orderId,
+            food_id: item.food.id,
+            quantity: item.quantity,
+            price: item.food.price, // Use food.price instead of item.price
+            food_details: item.food.name || null, // Add food name as food_details
+            item_note: null, // No notes field in cart items
+            variation: item.variations ? JSON.stringify(item.variations) : null, // Use 'variation' instead of 'variations'
+            add_ons: item.adons ? JSON.stringify(item.adons) : null, // Use 'add_ons' instead of 'adons'
+            discount_on_food: 0,
+            discount_type: null,
+            tax_amount: 0,
+            total_add_on_price: 0,
+            issynicronized: 0,
+            isdeleted: 0
+          };
+          console.log('Created order detail object:', orderDetail);
+          return orderDetail;
+        });
+
+      // Test API availability
+      console.log('Testing API availability...');
+      console.log('window.myAPI.createOrderDetail exists:', typeof window.myAPI.createOrderDetail);
+      console.log('window.myAPI.createMultipleOrderDetails exists:', typeof window.myAPI.createMultipleOrderDetails);
+      
+      // Create order details using batch method
+      console.log('Creating order details for draft order:', orderDetailsArray);
+      let createdDetailsCount = 0;
+      
+      if (orderDetailsArray.length > 0) {
+        try {
+          console.log('Using createMultipleOrderDetails...');
+          const batchResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
+          console.log('Batch API response:', batchResult);
+          
+          if (batchResult && batchResult.success) {
+            console.log('Order details created successfully in batch:', batchResult);
+            createdDetailsCount = batchResult.count || orderDetailsArray.length;
+          } else {
+            console.error('Failed to create order details in batch:', batchResult);
+            
+            // Fallback to individual creation
+            console.log('Falling back to individual creation...');
+            for (const detail of orderDetailsArray) {
+              try {
+                console.log('Creating order detail individually:', detail);
+                const detailResult = await window.myAPI.createOrderDetail(detail);
+                console.log('Individual API response:', detailResult);
+                if (detailResult && detailResult.success) {
+                  console.log('Order detail created successfully:', detailResult);
+                  createdDetailsCount++;
+                } else {
+                  console.error('Failed to create order detail:', detailResult);
+                }
+              } catch (error) {
+                console.error('Error creating order detail:', error);
+                console.error('Error stack:', error.stack);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error in batch creation:', error);
+          console.error('Error stack:', error.stack);
+        }
+      } else {
+        console.log('No order details to create');
+      }
+      
+      console.log(`Created ${createdDetailsCount} out of ${orderDetailsArray.length} order details`);
+      
+      // Verify order details were created
+      if (createdDetailsCount > 0) {
+        try {
+          const verifyResult = await window.myAPI.getOrderDetailsByOrderId(orderId);
+          if (verifyResult && verifyResult.success) {
+            console.log(`Verification: Found ${verifyResult.data.length} order details for draft order ${orderId}`);
+          }
+        } catch (error) {
+          console.error('Error verifying order details:', error);
+        }
+      }
+
+      // Create local draft order object for UI
       const newDraftOrder = {
-        id: Date.now(), // Use timestamp as unique ID
-        orderNumber: `DRAFT-${Date.now()}`,
+        id: orderId, // Use database ID
+        databaseId: orderId, // Store database ID
+        orderNumber: draftId, // Use the draft ID format
         items: [...cartItems],
         customer: selectedCustomer || { name: userName, phone: 'N/A' },
         total: total,
@@ -2853,7 +3180,8 @@ const RunningOrders = () => {
         tax: tax,
         charge: 0,
         tips: 0,
-        totalPayable: total
+        totalPayable: total,
+        draftName: userName // Store draft name
       };
 
       // Add draft order to local state
@@ -3170,7 +3498,7 @@ const RunningOrders = () => {
           ) : imageSrc ? (
             <img
               src={imageSrc}
-              alt={item.name}
+              alt={item?.name || 'Food'}
               className="w-full h-[100%] object-cover"
               onError={() => setImageSrc(null)}
             />
@@ -3180,7 +3508,7 @@ const RunningOrders = () => {
             </div>
           )}
         </div>
-          <h3 className="font-semibold text-gray-800 text-md mt-2 mb-1 text-center">{item.name}</h3>
+          <h3 className="font-semibold text-gray-800 text-md mt-2 mb-1 text-center">{item?.name || 'Unknown Food'}</h3>
         <div className="flex justify-between p-2 items-center">
           <p className="text-gray-600 font-semibold text-md mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
         <button

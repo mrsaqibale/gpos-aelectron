@@ -13,11 +13,13 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
 
     const filteredDrafts = currentDraftOrders.filter(draft => {
     if (!searchQuery.trim()) return true;
+    if (!draft) return false; // Safety check for undefined draft
+    
     const query = searchQuery.toLowerCase();
     return (
-      draft.customer.name.toLowerCase().includes(query) ||
-      draft.customer.phone.toLowerCase().includes(query) ||
-      draft.id.toString().includes(query)
+      (draft.draftName || (draft.customer && draft.customer.name) || 'Unknown').toLowerCase().includes(query) ||
+      (draft.customer && draft.customer.phone || 'N/A').toLowerCase().includes(query) ||
+      (draft.orderNumber || draft.id || 'Unknown').toString().toLowerCase().includes(query)
     );
   });
 
@@ -107,22 +109,26 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
                         </td>
                       </tr>
                     ) : (
-                      filteredDrafts.map((draft) => (
-                        <tr
-                          key={draft.id}
-                          onClick={() => handleDraftSelect(draft)}
-                          className={`cursor-pointer hover:bg-gray-50 transition-colors ${
-                            selectedDraft?.id === draft.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                          }`}
-                        >
-                          <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                            {draft.id}
-                          </td>
-                          <td className="px-4 py-2 text-sm text-gray-700">
-                            {draft.customer.name}
-                          </td>
-                        </tr>
-                      ))
+                      filteredDrafts.map((draft) => {
+                        if (!draft) return null; // Safety check
+                        
+                        return (
+                          <tr
+                            key={draft.id || Math.random()}
+                            onClick={() => handleDraftSelect(draft)}
+                            className={`cursor-pointer hover:bg-gray-50 transition-colors ${
+                              selectedDraft?.id === draft.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                            }`}
+                          >
+                            <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                              {draft.orderNumber || draft.id || 'Unknown'}
+                            </td>
+                            <td className="px-4 py-2 text-sm text-gray-700">
+                              {draft.draftName || (draft.customer && draft.customer.name) || 'Unknown'}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -161,7 +167,11 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Draft ID:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.id}</span>
+                    <span className="text-sm text-gray-900">{selectedDraft.orderNumber || selectedDraft.id || 'Unknown'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium text-gray-700">Draft Name:</span>
+                    <span className="text-sm text-gray-900">{selectedDraft.draftName || (selectedDraft.customer && selectedDraft.customer.name) || 'Unknown'}</span>
                   </div>
                   {/* <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Order Type:</span>
@@ -173,11 +183,11 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [] }) => {
                   </div> */}
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Customer:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.customer.name}</span>
+                    <span className="text-sm text-gray-900">{selectedDraft.customer && selectedDraft.customer.name || 'Unknown'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Phone:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.customer.phone}</span>
+                    <span className="text-sm text-gray-900">{selectedDraft.customer && selectedDraft.customer.phone || 'N/A'}</span>
                   </div>
                   {/* <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Table:</span>
