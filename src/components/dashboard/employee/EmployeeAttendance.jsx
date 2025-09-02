@@ -130,13 +130,8 @@ const EmployeeAttendance = () => {
     return attendance.sort((a, b) => new Date(b.date) - new Date(a.date));
   };
 
-  // Memoized attendance records for the selected employee
-  const selectedEmployeeAttendance = useMemo(() => {
-    if (selectedEmployee) {
-      return generateEmployeeAttendance(selectedEmployee.id, selectedEmployee.totalDays, selectedEmployee.presentDays, selectedEmployee.lateDays);
-    }
-    return [];
-  }, [selectedEmployee?.id, selectedEmployee?.totalDays, selectedEmployee?.presentDays, selectedEmployee?.lateDays]);
+  // Real attendance records list for modal
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
 
   // Enhanced dummy employee attendance data with salary history
   const dummyEmployees = [
@@ -395,9 +390,22 @@ const EmployeeAttendance = () => {
   };
 
   // Handle modal open
-  const handleModalOpen = (employee) => {
+  const handleModalOpen = async (employee) => {
     setSelectedEmployee(employee);
     setShowModal(true);
+    try {
+      if (api) {
+        const res = await api.attendanceGetByEmployee(employee.id);
+        const records = Array.isArray(res) ? res : (res?.data || []);
+        records.sort((a, b) => new Date(`${b.date} ${b.checkin || '00:00:00'}`) - new Date(`${a.date} ${a.checkin || '00:00:00'}`));
+        setAttendanceRecords(records);
+      } else {
+        setAttendanceRecords([]);
+      }
+    } catch (err) {
+      console.error('Error loading attendance records:', err);
+      setAttendanceRecords([]);
+    }
   };
 
   // Handle modal close
@@ -448,8 +456,9 @@ const EmployeeAttendance = () => {
         let checkout = null;
 
         if (attendanceAction === 'Check In') {
-          if (existingAttendance.success && existingAttendance.data) {
-            setAlertMessage('Employee already checked in today');
+          // Allow multiple check-ins per day only if last session is closed (has checkout)
+          if (existingAttendance.success && existingAttendance.data && !existingAttendance.data.checkout) {
+            setAlertMessage('Already checked in. Please Check Out first.');
             setAlertType('error');
             setShowAlert(true);
             return;
@@ -457,8 +466,8 @@ const EmployeeAttendance = () => {
           checkin = currentTime;
           status = 'present';
         } else if (attendanceAction === 'Check Out') {
-          if (!existingAttendance.success || !existingAttendance.data) {
-            setAlertMessage('Employee must check in before checking out');
+          if (!existingAttendance.success || !existingAttendance.data || existingAttendance.data.checkout) {
+            setAlertMessage('No open session to check out');
             setAlertType('error');
             setShowAlert(true);
             return;
@@ -496,6 +505,15 @@ const EmployeeAttendance = () => {
             
             // Reload employees to update attendance data
             await loadEmployees();
+            // Refresh modal records if details modal is open for this employee
+            try {
+              if (showModal && selectedEmployee && selectedEmployee.id === selectedEmp?.id) {
+                const res = await api.attendanceGetByEmployee(selectedEmp.id);
+                const records = Array.isArray(res) ? res : (res?.data || []);
+                records.sort((a, b) => new Date(`${b.date} ${b.checkin || '00:00:00'}`) - new Date(`${a.date} ${a.checkin || '00:00:00'}`));
+                setAttendanceRecords(records);
+              }
+            } catch (e) {}
             
             handleAttendanceModalClose();
           } else {
@@ -510,6 +528,15 @@ const EmployeeAttendance = () => {
           
           // Reload employees to update attendance data
           await loadEmployees();
+          // Refresh modal records if details modal is open for this employee
+          try {
+            if (showModal && selectedEmployee && selectedEmployee.id === selectedEmp?.id) {
+              const res = await api.attendanceGetByEmployee(selectedEmp.id);
+              const records = Array.isArray(res) ? res : (res?.data || []);
+              records.sort((a, b) => new Date(`${b.date} ${b.checkin || '00:00:00'}`) - new Date(`${a.date} ${a.checkin || '00:00:00'}`));
+              setAttendanceRecords(records);
+            }
+          } catch (e) {}
           
           handleAttendanceModalClose();
         }
@@ -1135,26 +1162,31 @@ const EmployeeAttendance = () => {
                         </th>
                       </tr>
                     </thead>
-                                         <tbody>
-                       {selectedEmployeeAttendance.map((record) => (
+                    <tbody>
+                      {attendanceRecords.map((record) => {
+                        const status = (record.status || '').toLowerCase();
+                        const checkInText = record.checkin ? new Date(record.checkin).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-';
+                        const checkOutText = record.checkout ? new Date(record.checkout).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-';
+                        const totalHours = record.total_hours != null ? record.total_hours : (record.checkin && record.checkout ? ((new Date(record.checkout) - new Date(record.checkin)) / (1000*60*60)).toFixed(2) : 0);
+                        return (
                         <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4 text-sm text-gray-600">
                             {formatDate(record.date)}
                           </td>
                           <td className="py-3 px-4">
-                            {record.status === 'Present' && (
+                            {status === 'present' && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 <CheckCircle size={12} className="mr-1" />
                                 Present
                               </span>
                             )}
-                            {record.status === 'Late' && (
+                            {status === 'late' && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                 <Clock size={12} className="mr-1" />
                                 Late
                               </span>
                             )}
-                            {record.status === 'Absent' && (
+                            {status === 'absent' && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                 <XCircle size={12} className="mr-1" />
                                 Absent
@@ -1162,16 +1194,17 @@ const EmployeeAttendance = () => {
                             )}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600">
-                            {record.checkIn || '-'}
+                            {checkInText}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600">
-                            {record.checkOut || '-'}
+                            {checkOutText}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600">
-                            {record.totalHours > 0 ? `${record.totalHours}h` : '-'}
+                            {totalHours > 0 ? `${totalHours}h` : '-'}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
