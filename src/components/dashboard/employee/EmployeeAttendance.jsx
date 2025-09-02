@@ -979,23 +979,7 @@ const EmployeeAttendance = () => {
                   Salary
                   <ChevronDown className="inline ml-1" size={12} />
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Attendance Rate
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Present Days
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Late Days
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Joining Date
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Paid/Unpaid</th>
+                
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Actions</th>
               </tr>
             </thead>
@@ -1032,39 +1016,7 @@ const EmployeeAttendance = () => {
                     <td className="py-3 px-4 text-sm text-gray-600">
                       €{employee.salary.toLocaleString()}
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-800">
-                          {attendancePercentage}%
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusBadge.color}`}>
-                          {statusBadge.text}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {employee.presentDays}/{employee.totalDays}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {employee.lateDays}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {formatDate(employee.joiningDate)}
-                    </td>
-                                         <td className="py-3 px-4">
-                       <button
-                         onClick={() => handlePaymentToggle(employee.id)}
-                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                           employee.isPaid ? 'bg-primary' : 'bg-gray-300'
-                         }`}
-                       >
-                         <span
-                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                             employee.isPaid ? 'translate-x-6' : 'translate-x-1'
-                           }`}
-                         />
-                       </button>
-                     </td>
+                    
                     <td className="py-3 px-4">
                       <button
                         onClick={() => handleModalOpen(employee)}
