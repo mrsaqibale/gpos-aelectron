@@ -207,6 +207,59 @@ contextBridge.exposeInMainWorld('myAPI', {
   searchVoucherByCode: (code) => ipcRenderer.invoke('voucher:searchByCode', code),
 
   // Hotel
+
+  // Attendance Management
+  attendanceCreate: (data) => ipcRenderer.invoke('attendance-create', data),
+  attendanceGetByEmployee: (employeeId, startDate, endDate) => ipcRenderer.invoke('attendance-get-by-employee', { employeeId, startDate, endDate }),
+  attendanceGetByDateRange: (startDate, endDate) => ipcRenderer.invoke('attendance-get-by-date-range', { startDate, endDate }),
+  attendanceGetByDate: (date) => ipcRenderer.invoke('attendance-get-by-date', date),
+  attendanceUpdate: (id, updateData) => ipcRenderer.invoke('attendance-update', { id, updateData }),
+  attendanceDelete: (id) => ipcRenderer.invoke('attendance-delete', id),
+  attendanceGetStatistics: (startDate, endDate) => ipcRenderer.invoke('attendance-get-statistics', { startDate, endDate }),
+  attendanceCheckTodayStatus: (employeeId, date) => ipcRenderer.invoke('attendance-check-today-status', { employeeId, date }),
+  attendanceGetEmployeeSummary: (employeeId, month, year) => ipcRenderer.invoke('attendance-get-employee-summary', { employeeId, month, year }),
+  attendanceGetLateEmployees: (date) => ipcRenderer.invoke('attendance-get-late-employees', date),
+  attendanceGetAbsentEmployees: (date) => ipcRenderer.invoke('attendance-get-absent-employees', date),
+  attendanceBulkCreate: (records) => ipcRenderer.invoke('attendance-bulk-create', records),
+
+  // Salary Payments
+  salaryPaymentCreate: (data) => ipcRenderer.invoke('salary-payment-create', data),
+  salaryPaymentGetByEmployee: (employeeId, startDate, endDate) => ipcRenderer.invoke('salary-payment-get-by-employee', { employeeId, startDate, endDate }),
+  salaryPaymentGetByDateRange: (startDate, endDate) => ipcRenderer.invoke('salary-payment-get-by-date-range', { startDate, endDate }),
+  salaryPaymentGetById: (id) => ipcRenderer.invoke('salary-payment-get-by-id', id),
+  salaryPaymentUpdate: (id, updateData) => ipcRenderer.invoke('salary-payment-update', { id, updateData }),
+  salaryPaymentDelete: (id) => ipcRenderer.invoke('salary-payment-delete', id),
+  salaryPaymentGetTotalPaid: (employeeId, startDate, endDate) => ipcRenderer.invoke('salary-payment-get-total-paid', { employeeId, startDate, endDate }),
+  salaryPaymentGetStatistics: (startDate, endDate) => ipcRenderer.invoke('salary-payment-get-statistics', { startDate, endDate }),
+  salaryPaymentGetPending: () => ipcRenderer.invoke('salary-payment-get-pending'),
+  salaryPaymentGetHistory: (employeeId, limit) => ipcRenderer.invoke('salary-payment-get-history', { employeeId, limit }),
+  salaryPaymentGetByMethod: (method, startDate, endDate) => ipcRenderer.invoke('salary-payment-get-by-method', { method, startDate, endDate }),
+  salaryPaymentGetMonthlySummary: (month, year) => ipcRenderer.invoke('salary-payment-get-monthly-summary', { month, year }),
+  salaryPaymentGetYearlySummary: (year) => ipcRenderer.invoke('salary-payment-get-yearly-summary', year),
+  salaryPaymentCheckPending: (employeeId) => ipcRenderer.invoke('salary-payment-check-pending', employeeId),
+  salaryPaymentGetMethodsSummary: (startDate, endDate) => ipcRenderer.invoke('salary-payment-get-methods-summary', { startDate, endDate }),
+
+  // Leave Requests
+  leaveRequestCreate: (data) => ipcRenderer.invoke('leave-request-create', data),
+  leaveRequestGetByEmployee: (employeeId, status) => ipcRenderer.invoke('leave-request-get-by-employee', { employeeId, status }),
+  leaveRequestGetById: (id) => ipcRenderer.invoke('leave-request-get-by-id', id),
+  leaveRequestGetAll: (filters) => ipcRenderer.invoke('leave-request-get-all', filters),
+  leaveRequestGetPending: () => ipcRenderer.invoke('leave-request-get-pending'),
+  leaveRequestGetApproved: (startDate, endDate) => ipcRenderer.invoke('leave-request-get-approved', { startDate, endDate }),
+  leaveRequestGetRejected: () => ipcRenderer.invoke('leave-request-get-rejected'),
+  leaveRequestUpdate: (id, updateData) => ipcRenderer.invoke('leave-request-update', { id, updateData }),
+  leaveRequestApprove: (id, approvedBy, approvedAt) => ipcRenderer.invoke('leave-request-approve', { id, approvedBy, approvedAt }),
+  leaveRequestReject: (id, rejectedBy, rejectionReason, rejectedAt) => ipcRenderer.invoke('leave-request-reject', { id, rejectedBy, rejectionReason, rejectedAt }),
+  leaveRequestDelete: (id) => ipcRenderer.invoke('leave-request-delete', id),
+  leaveRequestGetByDateRange: (startDate, endDate, status) => ipcRenderer.invoke('leave-request-get-by-date-range', { startDate, endDate, status }),
+  leaveRequestGetByType: (leaveType, startDate, endDate) => ipcRenderer.invoke('leave-request-get-by-type', { leaveType, startDate, endDate }),
+  leaveRequestGetStatistics: (startDate, endDate) => ipcRenderer.invoke('leave-request-get-statistics', { startDate, endDate }),
+  leaveRequestGetEmployeeBalance: (employeeId, year) => ipcRenderer.invoke('leave-request-get-employee-balance', { employeeId, year }),
+  leaveRequestCheckOverlapping: (employeeId, startDate, endDate, excludeId) => ipcRenderer.invoke('leave-request-check-overlapping', { employeeId, startDate, endDate, excludeId }),
+  leaveRequestGetMonthlySummary: (month, year) => ipcRenderer.invoke('leave-request-get-monthly-summary', { month, year }),
+  leaveRequestGetYearlySummary: (year) => ipcRenderer.invoke('leave-request-get-yearly-summary', year),
+  leaveRequestGetStatusCounts: () => ipcRenderer.invoke('leave-request-get-status-counts'),
+  leaveRequestGetNeedingApproval: () => ipcRenderer.invoke('leave-request-get-needing-approval'),
   checkHotelStatus: () => ipcRenderer.invoke('check-hotel-status'),
   getHotelInfo: () => ipcRenderer.invoke('get-hotel-info'),
   createOrUpdateHotel: (hotelData) => ipcRenderer.invoke('create-or-update-hotel', hotelData),
@@ -227,6 +280,24 @@ contextBridge.exposeInMainWorld('api', {
   getSubcategories: (hotelId) => ipcRenderer.invoke('get-subcategories', hotelId),
   createSubcategory: (data) => ipcRenderer.invoke('create-subcategory', data),
   // ...add more as needed
+
+  // Employees (mirror commonly used functions for convenience)
+  getAllEmployees: () => ipcRenderer.invoke('employee:getAll'),
+  getEmployeeById: (id) => ipcRenderer.invoke('employee:getById', id),
+
+  // Attendance (subset required by EmployeeAttendance.jsx)
+  attendanceCreate: (data) => ipcRenderer.invoke('attendance-create', data),
+  attendanceGetByEmployee: (employeeId, startDate, endDate) => ipcRenderer.invoke('attendance-get-by-employee', { employeeId, startDate, endDate }),
+  attendanceUpdate: (id, updateData) => ipcRenderer.invoke('attendance-update', { id, updateData }),
+  attendanceCheckTodayStatus: (employeeId, date) => ipcRenderer.invoke('attendance-check-today-status', { employeeId, date }),
+
+  // Salary Payments (subset required by EmployeeAttendance.jsx)
+  salaryPaymentCreate: (data) => ipcRenderer.invoke('salary-payment-create', data),
+  salaryPaymentGetByEmployee: (employeeId, startDate, endDate) => ipcRenderer.invoke('salary-payment-get-by-employee', { employeeId, startDate, endDate }),
+
+  // Leave Requests (subset required by EmployeeAttendance.jsx)
+  leaveRequestCreate: (data) => ipcRenderer.invoke('leave-request-create', data),
+  leaveRequestCheckOverlapping: (employeeId, startDate, endDate, excludeId) => ipcRenderer.invoke('leave-request-check-overlapping', { employeeId, startDate, endDate, excludeId }),
 });
 
 // others

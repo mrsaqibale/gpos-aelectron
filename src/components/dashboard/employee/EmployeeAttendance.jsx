@@ -3,6 +3,9 @@ import { Users, ChevronDown, Search, Download, ChevronLeft, ChevronRight, Mail, 
 import VirtualKeyboard from '../../VirtualKeyboard';
 import CustomAlert from '../../CustomAlert';
 
+// Use the preload API for IPC calls
+const { api } = window;
+
 const EmployeeAttendance = () => {
   // State for filters
   const [attendanceStartDate, setAttendanceStartDate] = useState('');
@@ -13,6 +16,8 @@ const EmployeeAttendance = () => {
   
   // Salary payment state
   const [paySalary, setPaySalary] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentNote, setPaymentNote] = useState('');
 
   // Employee attendance list state
   const [employees, setEmployees] = useState([]);
@@ -30,6 +35,17 @@ const EmployeeAttendance = () => {
   const [selectedEmployeeForAttendance, setSelectedEmployeeForAttendance] = useState('');
   const [attendanceAction, setAttendanceAction] = useState('');
 
+  // Salary history modal state
+  const [showSalaryHistoryModal, setShowSalaryHistoryModal] = useState(false);
+  const [salaryHistory, setSalaryHistory] = useState([]);
+
+  // Leave request modal state
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveType, setLeaveType] = useState('');
+  const [leaveStartDate, setLeaveStartDate] = useState('');
+  const [leaveEndDate, setLeaveEndDate] = useState('');
+  const [leaveReason, setLeaveReason] = useState('');
+
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
@@ -39,13 +55,33 @@ const EmployeeAttendance = () => {
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
 
-  // Sample sorting options
+  // Enhanced sorting options
   const sortingOptions = [
     { value: 'present_today', label: 'Present Today' },
     { value: 'absent_today', label: 'Absent Today' },
     { value: 'late_today', label: 'Late Today' },
     { value: 'most_attendance', label: 'Most Attendance' },
-    { value: 'least_attendance', label: 'Least Attendance' }
+    { value: 'least_attendance', label: 'Least Attendance' },
+    { value: 'highest_salary', label: 'Highest Salary' },
+    { value: 'lowest_salary', label: 'Lowest Salary' },
+    { value: 'unpaid_salary', label: 'Unpaid Salary' },
+    { value: 'recent_joiners', label: 'Recent Joiners' }
+  ];
+
+  // Leave types
+  const leaveTypes = [
+    { value: 'sick', label: 'Sick Leave' },
+    { value: 'annual', label: 'Annual Leave' },
+    { value: 'personal', label: 'Personal Leave' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  // Payment methods
+  const paymentMethods = [
+    { value: 'cash', label: 'Cash' },
+    { value: 'bank_transfer', label: 'Bank Transfer' },
+    { value: 'check', label: 'Check' },
+    { value: 'digital_payment', label: 'Digital Payment' }
   ];
 
   // Generate dummy attendance records for each employee
@@ -101,7 +137,7 @@ const EmployeeAttendance = () => {
     return [];
   }, [selectedEmployee?.id, selectedEmployee?.totalDays, selectedEmployee?.presentDays, selectedEmployee?.lateDays]);
 
-  // Dummy employee attendance data
+  // Enhanced dummy employee attendance data with salary history
   const dummyEmployees = [
     {
       id: 1,
@@ -117,7 +153,12 @@ const EmployeeAttendance = () => {
       salary: 3500,
       joiningDate: '2024-01-15',
       isPaid: true,
-      address: '123 Main Street, Dublin, Co. Dublin, D01 AB12, Ireland'
+      address: '123 Main Street, Dublin, Co. Dublin, D01 AB12, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2024-01-31', amount: 3500, method: 'bank_transfer', note: 'January 2024 Salary' },
+        { id: 2, date: '2024-02-29', amount: 3500, method: 'bank_transfer', note: 'February 2024 Salary' },
+        { id: 3, date: '2024-03-31', amount: 3500, method: 'bank_transfer', note: 'March 2024 Salary' }
+      ]
     },
     {
       id: 2,
@@ -133,7 +174,11 @@ const EmployeeAttendance = () => {
       salary: 2800,
       joiningDate: '2024-02-20',
       isPaid: false,
-      address: '456 Oak Avenue, Cork, Co. Cork, T12 CD34, Ireland'
+      address: '456 Oak Avenue, Cork, Co. Cork, T12 CD34, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2024-02-29', amount: 2800, method: 'cash', note: 'February 2024 Salary' },
+        { id: 2, date: '2024-03-31', amount: 2800, method: 'cash', note: 'March 2024 Salary' }
+      ]
     },
     {
       id: 3,
@@ -149,7 +194,14 @@ const EmployeeAttendance = () => {
       salary: 3200,
       joiningDate: '2023-11-10',
       isPaid: true,
-      address: '789 River Road, Galway, Co. Galway, H91 EF56, Ireland'
+      address: '789 River Road, Galway, Co. Galway, H91 EF56, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2023-11-30', amount: 3200, method: 'bank_transfer', note: 'November 2023 Salary' },
+        { id: 2, date: '2023-12-31', amount: 3200, method: 'bank_transfer', note: 'December 2023 Salary' },
+        { id: 3, date: '2024-01-31', amount: 3200, method: 'bank_transfer', note: 'January 2024 Salary' },
+        { id: 4, date: '2024-02-29', amount: 3200, method: 'bank_transfer', note: 'February 2024 Salary' },
+        { id: 5, date: '2024-03-31', amount: 3200, method: 'bank_transfer', note: 'March 2024 Salary' }
+      ]
     },
     {
       id: 4,
@@ -165,7 +217,10 @@ const EmployeeAttendance = () => {
       salary: 2600,
       joiningDate: '2024-03-05',
       isPaid: false,
-      address: '321 Hill Street, Limerick, Co. Limerick, V94 GH78, Ireland'
+      address: '321 Hill Street, Limerick, Co. Limerick, V94 GH78, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2024-03-31', amount: 2600, method: 'cash', note: 'March 2024 Salary' }
+      ]
     },
     {
       id: 5,
@@ -181,27 +236,130 @@ const EmployeeAttendance = () => {
       salary: 3100,
       joiningDate: '2023-12-15',
       isPaid: true,
-      address: '654 Park Lane, Waterford, Co. Waterford, X91 IJ90, Ireland'
+      address: '654 Park Lane, Waterford, Co. Waterford, X91 IJ90, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2023-12-31', amount: 3100, method: 'bank_transfer', note: 'December 2023 Salary' },
+        { id: 2, date: '2024-01-31', amount: 3100, method: 'bank_transfer', note: 'January 2024 Salary' },
+        { id: 3, date: '2024-02-29', amount: 3100, method: 'bank_transfer', note: 'February 2024 Salary' },
+        { id: 4, date: '2024-03-31', amount: 3100, method: 'bank_transfer', note: 'March 2024 Salary' }
+      ]
     }
   ];
 
   // Initialize employees data
   useEffect(() => {
-    setEmployees(dummyEmployees);
-    setFilteredEmployees(dummyEmployees);
+    loadEmployees();
   }, []);
 
-  // Filter employees based on search term
+  // Load employees from database
+  const loadEmployees = async () => {
+    try {
+      if (api) {
+        const result = await api.getAllEmployees();
+        const rawEmployees = Array.isArray(result) ? result : (result?.data || []);
+
+        // Filter only active and not-deleted employees (robust against 0/1, true/false, '0'/'1', null)
+        const activeEmployees = rawEmployees.filter(emp => {
+          const activeVal = typeof emp.isActive === 'string' ? parseInt(emp.isActive, 10) : emp.isActive;
+          const deletedVal = typeof emp.isDeleted === 'string' ? parseInt(emp.isDeleted, 10) : emp.isDeleted;
+          const isActiveOk = activeVal === 1 || activeVal === true || activeVal === '1' || activeVal == null;
+          const isDeletedOk = deletedVal === 0 || deletedVal === false || deletedVal === '0' || deletedVal == null;
+          return isActiveOk && isDeletedOk;
+        });
+
+        // Transform database data to match our component structure
+        const transformedEmployees = activeEmployees.map(emp => ({
+          id: emp.id,
+          employeeId: emp.code || `EMP${emp.id.toString().padStart(3, '0')}`,
+          name: `${emp.fname} ${emp.lname}`,
+          email: emp.email || '',
+          phone: emp.phone || '',
+          role: emp.roll || 'Employee',
+          totalDays: 0,
+          presentDays: 0,
+          lateDays: 0,
+          totalHours: 0,
+          salary: emp.salary || 0,
+          joiningDate: emp.created_at || new Date().toISOString().split('T')[0],
+          isPaid: false,
+          address: emp.address || '',
+          salaryHistory: []
+        }));
+
+        // Load additional data for each employee
+        const employeesWithDetails = await Promise.all(
+          transformedEmployees.map(async (emp) => {
+            try {
+              const attendanceResult = await api.attendanceGetByEmployee(emp.id);
+              const salaryResult = await api.salaryPaymentGetByEmployee(emp.id);
+
+              const attendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.data || []);
+              const totalDays = attendance.length;
+              const presentDays = attendance.filter(record => record.status === 'present').length;
+              const lateDays = attendance.filter(record => record.status === 'late').length;
+              const totalHours = presentDays * 8;
+
+              const salaryHistoryRaw = Array.isArray(salaryResult) ? salaryResult : (salaryResult?.data || []);
+              const totalPaid = salaryHistoryRaw.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+              const isPaid = totalPaid >= emp.salary;
+
+              return { ...emp, totalDays, presentDays, lateDays, totalHours, isPaid, salaryHistory: salaryHistoryRaw };
+            } catch (error) {
+              console.error(`Error loading details for employee ${emp.id}:`, error);
+              return emp;
+            }
+          })
+        );
+
+        setEmployees(employeesWithDetails);
+        setFilteredEmployees(employeesWithDetails);
+      } 
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      // Do not fallback to dummy; show no employees to avoid fake data in production
+      setEmployees([]);
+      setFilteredEmployees([]);
+    }
+  };
+
+  // Filter and sort employees based on search term and sort criteria
   useEffect(() => {
-    const filtered = employees.filter(employee =>
+    let filtered = employees.filter(employee =>
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.phone.includes(searchTerm) ||
       employee.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Apply sorting
+    if (sortBy) {
+      switch (sortBy) {
+        case 'highest_salary':
+          filtered.sort((a, b) => b.salary - a.salary);
+          break;
+        case 'lowest_salary':
+          filtered.sort((a, b) => a.salary - b.salary);
+          break;
+        case 'unpaid_salary':
+          filtered = filtered.filter(emp => !emp.isPaid);
+          break;
+        case 'recent_joiners':
+          filtered.sort((a, b) => new Date(b.joiningDate) - new Date(a.joiningDate));
+          break;
+        case 'most_attendance':
+          filtered.sort((a, b) => (b.presentDays / b.totalDays) - (a.presentDays / a.totalDays));
+          break;
+        case 'least_attendance':
+          filtered.sort((a, b) => (a.presentDays / a.totalDays) - (b.presentDays / b.totalDays));
+          break;
+        default:
+          break;
+      }
+    }
+
     setFilteredEmployees(filtered);
     setCurrentPage(1);
-  }, [searchTerm, employees]);
+  }, [searchTerm, employees, sortBy]);
 
   // Get current employees for pagination
   const indexOfLastEmployee = currentPage * employeesPerPage;
@@ -249,7 +407,10 @@ const EmployeeAttendance = () => {
   };
 
   // Handle attendance modal open
-  const handleAttendanceModalOpen = () => {
+  const handleAttendanceModalOpen = async () => {
+    try {
+      await loadEmployees();
+    } catch (e) {}
     setShowAttendanceModal(true);
     setSelectedEmployeeForAttendance('');
     setAttendanceAction('');
@@ -263,7 +424,7 @@ const EmployeeAttendance = () => {
   };
 
   // Handle attendance save
-  const handleAttendanceSave = () => {
+  const handleAttendanceSave = async () => {
     if (!selectedEmployeeForAttendance || !attendanceAction) {
       setAlertMessage('Please select both employee and action');
       setAlertType('error');
@@ -272,26 +433,97 @@ const EmployeeAttendance = () => {
     }
 
     const selectedEmp = employees.find(emp => emp.id.toString() === selectedEmployeeForAttendance);
-    const currentTime = new Date().toLocaleTimeString('en-GB', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
+    const currentTime = new Date().toISOString();
     const currentDate = new Date().toISOString().split('T')[0];
 
-    // Here you would typically make an API call to save the attendance record
-    console.log('Attendance record:', {
-      employeeId: selectedEmployeeForAttendance,
-      employeeName: selectedEmp?.name,
-      action: attendanceAction,
-      time: currentTime,
-      date: currentDate
-    });
+    try {
+      if (api) {
+        // Check if employee already has attendance for today
+        const existingAttendance = await api.attendanceCheckTodayStatus(selectedEmployeeForAttendance, currentDate);
 
-    setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${currentTime}`);
-    setAlertType('success');
-    setShowAlert(true);
-    handleAttendanceModalClose();
+        let status = 'present';
+        let checkin = null;
+        let checkout = null;
+
+        if (attendanceAction === 'Check In') {
+          if (existingAttendance.success && existingAttendance.data) {
+            setAlertMessage('Employee already checked in today');
+            setAlertType('error');
+            setShowAlert(true);
+            return;
+          }
+          checkin = currentTime;
+          status = 'present';
+        } else if (attendanceAction === 'Check Out') {
+          if (!existingAttendance.success || !existingAttendance.data) {
+            setAlertMessage('Employee must check in before checking out');
+            setAlertType('error');
+            setShowAlert(true);
+            return;
+          }
+          checkout = currentTime;
+          // Update existing record with checkout time
+          await api.attendanceUpdate(existingAttendance.data.id, { checkout });
+        }
+
+        // Create new attendance record if checking in
+        if (attendanceAction === 'Check In') {
+          const attendanceData = {
+            employee_id: parseInt(selectedEmployeeForAttendance),
+            date: currentDate,
+            checkin,
+            checkout,
+            status,
+            added_by: 1 // Current logged-in employee ID
+          };
+
+          const result = await api.attendanceCreate(attendanceData);
+          
+          if (result.success) {
+            setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${new Date(currentTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`);
+            setAlertType('success');
+            setShowAlert(true);
+            
+            // Reload employees to update attendance data
+            await loadEmployees();
+            
+            handleAttendanceModalClose();
+          } else {
+            setAlertMessage('Failed to save attendance record');
+            setAlertType('error');
+            setShowAlert(true);
+          }
+        } else {
+          setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${new Date(currentTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`);
+          setAlertType('success');
+          setShowAlert(true);
+          
+          // Reload employees to update attendance data
+          await loadEmployees();
+          
+          handleAttendanceModalClose();
+        }
+      } else {
+        // Fallback for development
+        console.log('Attendance record:', {
+          employeeId: selectedEmployeeForAttendance,
+          employeeName: selectedEmp?.name,
+          action: attendanceAction,
+          time: currentTime,
+          date: currentDate
+        });
+
+        setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${new Date(currentTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`);
+        setAlertType('success');
+        setShowAlert(true);
+        handleAttendanceModalClose();
+      }
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      setAlertMessage('Error saving attendance record');
+      setAlertType('error');
+      setShowAlert(true);
+    }
   };
 
   // Handle keyboard input
@@ -328,6 +560,8 @@ const EmployeeAttendance = () => {
       setPaySalary(input);
     } else if (inputName === 'searchTerm') {
       setSearchTerm(input);
+    } else if (inputName === 'paymentNote') {
+      setPaymentNote(input);
     }
   };
 
@@ -361,8 +595,8 @@ const EmployeeAttendance = () => {
     }
   };
 
-  // Handle salary payment
-  const handleSalaryPayment = () => {
+    // Handle salary payment
+  const handleSalaryPayment = async () => {
     if (!paySalary || parseFloat(paySalary) <= 0) {
       setAlertMessage('Please enter a valid salary amount');
       setAlertType('error');
@@ -370,27 +604,237 @@ const EmployeeAttendance = () => {
       return;
     }
     
-    // Here you would typically make an API call to save the salary payment
-    console.log('Paying salary:', paySalary, 'for employee:', selectedEmployee?.name);
+    try {
+      if (api) {
+        // Create salary payment record
+        const paymentData = {
+          employee_id: selectedEmployee.id,
+          payment_date: new Date().toISOString().split('T')[0],
+          amount: parseFloat(paySalary),
+          payment_method: paymentMethod,
+          payment_note: paymentNote || `Salary payment for ${selectedEmployee?.name}`,
+          paid_by: 1 // Current logged-in employee ID
+        };
+
+        const result = await api.salaryPaymentCreate(paymentData);
+        
+        if (result.success) {
+          // Reload employees to get updated data
+          await loadEmployees();
+          
+          // Update the selected employee in the modal
+          const updatedEmployee = employees.find(emp => emp.id === selectedEmployee.id);
+          if (updatedEmployee) {
+            setSelectedEmployee(updatedEmployee);
+          }
+          
+          setAlertMessage(`Salary payment of €${parseFloat(paySalary).toLocaleString()} saved successfully for ${selectedEmployee?.name}!`);
+          setAlertType('success');
+          setShowAlert(true);
+          setPaySalary(''); // Reset the input
+          setPaymentMethod('cash');
+          setPaymentNote('');
+        } else {
+          setAlertMessage('Failed to save salary payment');
+          setAlertType('error');
+          setShowAlert(true);
+        }
+      } else {
+        // Fallback for development
+        console.log('Paying salary:', paySalary, 'for employee:', selectedEmployee?.name);
+        
+        // Create new salary payment record
+        const newPayment = {
+          id: Date.now(),
+          date: new Date().toISOString().split('T')[0],
+          amount: parseFloat(paySalary),
+          method: paymentMethod,
+          note: paymentNote || `Salary payment for ${selectedEmployee?.name}`,
+          paid_by: 1 // Current logged-in employee ID
+        };
+        
+        // Update the employee's payment status and salary history
+        if (selectedEmployee) {
+          setEmployees(prevEmployees =>
+            prevEmployees.map(employee =>
+              employee.id === selectedEmployee.id
+                ? { 
+                    ...employee, 
+                    isPaid: true,
+                    salaryHistory: [...(employee.salaryHistory || []), newPayment]
+                  }
+                : employee
+            )
+          );
+          
+          // Update the selected employee in the modal
+          setSelectedEmployee(prev => prev ? { 
+            ...prev, 
+            isPaid: true,
+            salaryHistory: [...(prev.salaryHistory || []), newPayment]
+          } : null);
+        }
+        
+        setAlertMessage(`Salary payment of €${parseFloat(paySalary).toLocaleString()} saved successfully for ${selectedEmployee?.name}!`);
+        setAlertType('success');
+        setShowAlert(true);
+        setPaySalary(''); // Reset the input
+        setPaymentMethod('cash');
+        setPaymentNote('');
+      }
+    } catch (error) {
+      console.error('Error saving salary payment:', error);
+      setAlertMessage('Error saving salary payment');
+      setAlertType('error');
+      setShowAlert(true);
+    }
+  };
+
+  // Handle salary history modal
+  const handleSalaryHistoryModal = async (employee) => {
+    setSelectedEmployee(employee);
     
-    // Update the employee's payment status
-    if (selectedEmployee) {
-      setEmployees(prevEmployees =>
-        prevEmployees.map(employee =>
-          employee.id === selectedEmployee.id
-            ? { ...employee, isPaid: true }
-            : employee
-        )
-      );
-      
-      // Update the selected employee in the modal
-      setSelectedEmployee(prev => prev ? { ...prev, isPaid: true } : null);
+    try {
+      if (api) {
+        // Load real salary history from database
+        const result = await api.salaryPaymentGetByEmployee(employee.id);
+        
+        if (result.success) {
+          // Transform database data to match component structure
+          const transformedHistory = result.data.map(payment => ({
+            id: payment.id,
+            date: payment.payment_date,
+            amount: payment.amount,
+            method: payment.payment_method,
+            note: payment.payment_note
+          }));
+          
+          setSalaryHistory(transformedHistory);
+        } else {
+          setSalaryHistory([]);
+        }
+      } else {
+        // Fallback to employee data
+        setSalaryHistory(employee.salaryHistory || []);
+      }
+    } catch (error) {
+      console.error('Error loading salary history:', error);
+      setSalaryHistory(employee.salaryHistory || []);
     }
     
-    setAlertMessage(`Salary payment of €${parseFloat(paySalary).toLocaleString()} saved successfully for ${selectedEmployee?.name}!`);
-    setAlertType('success');
-    setShowAlert(true);
-    setPaySalary(''); // Reset the input
+    setShowSalaryHistoryModal(true);
+  };
+
+  // Handle leave request modal
+  const handleLeaveModalOpen = async () => {
+    try {
+      await loadEmployees();
+    } catch (e) {}
+    setShowLeaveModal(true);
+    setLeaveType('');
+    setLeaveStartDate('');
+    setLeaveEndDate('');
+    setLeaveReason('');
+  };
+
+  // Handle leave request save
+  const handleLeaveRequestSave = async () => {
+    if (!leaveType || !leaveStartDate || !leaveEndDate) {
+      setAlertMessage('Please fill in all required fields');
+      setAlertType('error');
+      setShowAlert(true);
+      return;
+    }
+
+    const startDate = new Date(leaveStartDate);
+    const endDate = new Date(leaveEndDate);
+    
+    if (startDate > endDate) {
+      setAlertMessage('Start date cannot be after end date');
+      setAlertType('error');
+      setShowAlert(true);
+      return;
+    }
+
+    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    try {
+      if (api) {
+        // Check for overlapping leave requests
+        const overlappingCheck = await api.leaveRequestCheckOverlapping(selectedEmployee.id, leaveStartDate, leaveEndDate);
+
+        if (overlappingCheck.success && overlappingCheck.data.hasOverlapping) {
+          setAlertMessage('Employee has overlapping leave requests for these dates');
+          setAlertType('error');
+          setShowAlert(true);
+          return;
+        }
+
+        // Create leave request
+        const leaveData = {
+          employee_id: selectedEmployee.id,
+          leave_type: leaveType,
+          start_date: leaveStartDate,
+          end_date: leaveEndDate,
+          total_days: totalDays,
+          reason: leaveReason
+        };
+
+        const result = await api.leaveRequestCreate(leaveData);
+        
+        if (result.success) {
+          setAlertMessage(`Leave request submitted successfully for ${totalDays} days`);
+          setAlertType('success');
+          setShowAlert(true);
+          handleLeaveModalClose();
+        } else {
+          setAlertMessage('Failed to submit leave request');
+          setAlertType('error');
+          setShowAlert(true);
+        }
+      } else {
+        // Fallback for development
+        console.log('Leave request:', {
+          employeeId: selectedEmployee?.id,
+          leaveType,
+          startDate: leaveStartDate,
+          endDate: leaveEndDate,
+          totalDays,
+          reason: leaveReason
+        });
+
+        setAlertMessage(`Leave request submitted successfully for ${totalDays} days`);
+        setAlertType('success');
+        setShowAlert(true);
+        handleLeaveModalClose();
+      }
+    } catch (error) {
+      console.error('Error submitting leave request:', error);
+      setAlertMessage('Error submitting leave request');
+      setAlertType('error');
+      setShowAlert(true);
+    }
+  };
+
+  // Handle leave modal close
+  const handleLeaveModalClose = () => {
+    setShowLeaveModal(false);
+    setLeaveType('');
+    setLeaveStartDate('');
+    setLeaveEndDate('');
+    setLeaveReason('');
+  };
+
+  // Calculate total salary paid
+  const calculateTotalSalaryPaid = (employee) => {
+    if (!employee.salaryHistory) return 0;
+    return employee.salaryHistory.reduce((total, payment) => total + payment.amount, 0);
+  };
+
+  // Calculate remaining salary
+  const calculateRemainingSalary = (employee) => {
+    const totalPaid = calculateTotalSalaryPaid(employee);
+    return Math.max(0, employee.salary - totalPaid);
   };
 
   return (
@@ -457,8 +901,8 @@ const EmployeeAttendance = () => {
 
         </div>
 
-        {/* Employee Attendance Button */}
-        <div className="mt-6 pt-4 border-t border-gray-200">
+        {/* Action Buttons */}
+        <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
           <button
             onClick={handleAttendanceModalOpen}
             className="px-6 py-3 bg-primary text-white font-medium rounded-lg cursor-pointer
@@ -466,6 +910,15 @@ const EmployeeAttendance = () => {
              transition-all flex items-center gap-2"
           >
             Employee Attendance
+          </button>
+          
+          <button
+            onClick={handleLeaveModalOpen}
+            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg cursor-pointer
+            hover:translate-y-[2px] 
+             transition-all flex items-center gap-2"
+          >
+            Leave Request
           </button>
         </div>
       </div>
@@ -824,8 +1277,16 @@ const EmployeeAttendance = () => {
                   <h5 className="text-sm font-medium text-gray-700 mb-3">Salary Information</h5>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Salary:</span>
+                      <span className="text-sm text-gray-600">Monthly Salary:</span>
                       <span className="text-sm font-medium text-gray-800">€{selectedEmployee.salary.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total Paid:</span>
+                      <span className="text-sm font-medium text-green-600">€{calculateTotalSalaryPaid(selectedEmployee).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Remaining:</span>
+                      <span className="text-sm font-medium text-blue-600">€{calculateRemainingSalary(selectedEmployee).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Payment Status:</span>
@@ -833,6 +1294,16 @@ const EmployeeAttendance = () => {
                         {selectedEmployee.isPaid ? 'Paid' : 'Unpaid'}
                       </span>
                     </div>
+                  </div>
+
+                  {/* Salary History Button */}
+                  <div className="mt-4">
+                    <button
+                      onClick={() => handleSalaryHistoryModal(selectedEmployee)}
+                      className="w-full px-4 py-2 bg-blue-50 text-blue-700 font-medium rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+                    >
+                      View Salary History
+                    </button>
                   </div>
                   
                   {/* Pay Salary Section */}
@@ -855,6 +1326,40 @@ const EmployeeAttendance = () => {
                         required
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Payment Method
+                      </label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                      >
+                        {paymentMethods.map((method) => (
+                          <option key={method.value} value={method.value}>
+                            {method.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Payment Note
+                      </label>
+                      <textarea
+                        value={paymentNote}
+                        onChange={(e) => setPaymentNote(e.target.value)}
+                        onFocus={() => handleInputFocus('paymentNote')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'paymentNote')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                        placeholder="Optional note about this payment"
+                        rows="2"
+                      />
+                    </div>
+
                     <button
                       onClick={handleSalaryPayment}
                       disabled={!paySalary || parseFloat(paySalary) <= 0}
@@ -967,6 +1472,208 @@ const EmployeeAttendance = () => {
         </div>
       )}
 
+      {/* Salary History Modal */}
+      {showSalaryHistoryModal && selectedEmployee && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800">Salary History - {selectedEmployee.name}</h3>
+              <button onClick={() => setShowSalaryHistoryModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {/* Salary Summary */}
+              <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-800">€{selectedEmployee.salary.toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Monthly Salary</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">€{calculateTotalSalaryPaid(selectedEmployee).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Total Paid</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">€{calculateRemainingSalary(selectedEmployee).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Remaining</div>
+                </div>
+              </div>
+
+              {/* Salary History Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Date</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Amount</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Method</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salaryHistory.length > 0 ? (
+                      salaryHistory.map((payment) => (
+                        <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {formatDate(payment.date)}
+                          </td>
+                          <td className="py-3 px-4 text-sm font-medium text-green-600">
+                            €{payment.amount.toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            <span className="capitalize">{payment.method.replace('_', ' ')}</span>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {payment.note || '-'}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="py-8 text-center text-gray-500">
+                          No salary payments found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Request Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800">Leave Request</h3>
+              <button onClick={handleLeaveModalClose} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Employee Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Employee <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedEmployee?.id || ''}
+                    onChange={(e) => {
+                      const emp = employees.find(emp => emp.id.toString() === e.target.value);
+                      setSelectedEmployee(emp);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="">Choose an employee</option>
+                    {employees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.employeeId} - {employee.name} ({employee.role})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
+              {/* Leave Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Leave Type <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={leaveType}
+                    onChange={(e) => setLeaveType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="">Choose leave type</option>
+                    {leaveTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={leaveStartDate}
+                  onChange={(e) => setLeaveStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  required
+                />
+              </div>
+
+              {/* End Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={leaveEndDate}
+                  onChange={(e) => setLeaveEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  required
+                />
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason
+                </label>
+                <textarea
+                  value={leaveReason}
+                  onChange={(e) => setLeaveReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="Reason for leave request"
+                  rows="3"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleLeaveModalClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLeaveRequestSave}
+                  disabled={!selectedEmployee || !leaveType || !leaveStartDate || !leaveEndDate}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg 
+                  shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
+                  active:shadow-none active:translate-y-[4px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
+                >
+                  Submit Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Virtual Keyboard */}
       <VirtualKeyboard
         isVisible={showKeyboard}
@@ -977,6 +1684,7 @@ const EmployeeAttendance = () => {
         inputValue={
           activeInput === 'paySalary' ? (paySalary || '') :
           activeInput === 'searchTerm' ? (searchTerm || '') :
+          activeInput === 'paymentNote' ? (paymentNote || '') :
           (chooseFirst || '')
         }
         placeholder="Type here..."

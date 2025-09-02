@@ -25,6 +25,11 @@ const { registerOrderDetailsIpcHandlers } = require('./ipchandler/orderDetails.c
 const { registerCouponIpcHandlers } = require('./ipchandler/coupon.cjs');
 const { registerVoucherIpcHandlers } = require('./ipchandler/voucher.cjs');
 const { registerHotelIpcHandlers } = require('./ipchandler/hotel.cjs');
+
+// Import new attendance management IPC handlers
+require('./ipchandler/attendance.cjs');
+require('./ipchandler/salaryPayments.cjs');
+require('./ipchandler/leaveRequests.cjs');
 const { initDatabase } = require('./init-database.cjs');
 
 async function createWindow() {
