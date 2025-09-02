@@ -38,13 +38,18 @@ const getDbPath = () => {
         added_by
       } = attendanceData;
 
+      // Get employee's hourly salary rate
+      const empStmt = db.prepare('SELECT salary_per_hour FROM employee WHERE id = ?');
+      const emp = empStmt.get(employee_id);
+      const hourlyRate = emp ? Number(emp.salary_per_hour) || 0 : 0;
+
       const query = `
-        INSERT INTO attendance (employee_id, date, checkin, checkout, status, added_by, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO attendance (employee_id, date, checkin, checkout, status, added_by, pay_rate, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `;
       
       const stmt = db.prepare(query);
-      const result = stmt.run(employee_id, date, checkin, checkout, status, added_by);
+      const result = stmt.run(employee_id, date, checkin, checkout, status, added_by, hourlyRate);
       db.close();
       
       return { success: true, id: result.lastID };
@@ -170,9 +175,9 @@ const getDbPath = () => {
 
           // Persist computed hours in attendance.total_hours
           updateData.total_hours = computedHours;
-          // Snapshot pay rate and earned amount at checkout time
-          updateData.pay_rate = hourlyRate;
-          updateData.earned_amount = computedPay;
+          // Calculate earned amount based on hours worked × pay_rate
+          const earnedAmount = Math.round((computedHours * hourlyRate) * 100) / 100;
+          updateData.earned_amount = earnedAmount;
         }
       }
 
