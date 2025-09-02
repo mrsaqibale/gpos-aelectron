@@ -81,10 +81,10 @@ function saveImageFile(imageData, employeeId, originalFilename) {
 }
 
 // Create a new employee
-export function createEmployee({ fname, lname, imgurl, s3url, phone, roll, email, address, pin, code, isActive = true, isDeleted = false, isSyncronized = false, originalFilename }) {
+export function createEmployee({ fname, lname, imgurl, s3url, phone, roll, email, address, pin, code, salary = 0, salary_per_hour = 0, vnumber = null, vtype = null, isActive = true, isDeleted = false, isSyncronized = false, originalFilename }) {
   try {
     console.log('Creating employee with data:', {
-      fname, lname, phone, roll, email, pin, code,
+      fname, lname, phone, roll, email, pin, code, salary, salary_per_hour, vnumber, vtype,
       imgurl: imgurl ? `image_data_provided` : null,
       isActive, isDeleted, isSyncronized
     });
@@ -101,8 +101,12 @@ export function createEmployee({ fname, lname, imgurl, s3url, phone, roll, email
     
     // First insert employee to get the ID
     const stmt = db.prepare(`
-      INSERT INTO employee (fname, lname, imgurl, s3url, phone, roll, email, address, pin, code, isActive, isDeleted, isSyncronized)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO employee (
+        fname, lname, imgurl, s3url, phone, roll, email, address, pin, code,
+        salary, salary_per_hour, vnumber, vtype,
+        isActive, isDeleted, isSyncronized
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     // Convert boolean values to integers for SQLite
@@ -111,7 +115,25 @@ export function createEmployee({ fname, lname, imgurl, s3url, phone, roll, email
     const isSyncronizedInt = isSyncronized ? 1 : 0;
     
     // Initially save without image path
-    const info = stmt.run(fname, lname, null, s3url, phone, roll, email, address, pin, code, isActiveInt, isDeletedInt, isSyncronizedInt);
+    const info = stmt.run(
+      fname,
+      lname,
+      null,
+      s3url,
+      phone,
+      roll,
+      email,
+      address,
+      pin,
+      code,
+      salary,
+      salary_per_hour,
+      vnumber,
+      vtype,
+      isActiveInt,
+      isDeletedInt,
+      isSyncronizedInt
+    );
     const employeeId = info.lastInsertRowid;
     
     // If image is provided, save it and update the record

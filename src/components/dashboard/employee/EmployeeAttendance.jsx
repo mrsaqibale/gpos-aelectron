@@ -34,6 +34,7 @@ const EmployeeAttendance = () => {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [selectedEmployeeForAttendance, setSelectedEmployeeForAttendance] = useState('');
   const [attendanceAction, setAttendanceAction] = useState('');
+  const [attendanceActionOptions, setAttendanceActionOptions] = useState(['Check In', 'Check Out']);
 
   // Salary history modal state
   const [showSalaryHistoryModal, setShowSalaryHistoryModal] = useState(false);
@@ -414,6 +415,7 @@ const EmployeeAttendance = () => {
     setShowAttendanceModal(true);
     setSelectedEmployeeForAttendance('');
     setAttendanceAction('');
+    setAttendanceActionOptions(['Check In', 'Check Out']);
   };
 
   // Handle attendance modal close
@@ -463,7 +465,15 @@ const EmployeeAttendance = () => {
           }
           checkout = currentTime;
           // Update existing record with checkout time
-          await api.attendanceUpdate(existingAttendance.data.id, { checkout });
+          const upd = await api.attendanceUpdate(existingAttendance.data.id, { checkout });
+          if (upd?.success) {
+            if (upd.computedHours != null) {
+              const payInfo = upd.computedPay != null ? `, Pay: €${Number(upd.computedPay).toLocaleString()}` : '';
+              setAlertMessage(`Checked out. Hours: ${upd.computedHours}${payInfo}`);
+              setAlertType('success');
+              setShowAlert(true);
+            }
+          }
         }
 
         // Create new attendance record if checking in
@@ -1366,7 +1376,39 @@ const EmployeeAttendance = () => {
                 <div className="relative">
                   <select
                     value={selectedEmployeeForAttendance}
-                    onChange={(e) => setSelectedEmployeeForAttendance(e.target.value)}
+                    onChange={async (e) => {
+                      const value = e.target.value;
+                      setSelectedEmployeeForAttendance(value);
+                      // Dynamically decide which actions are available for today
+                      try {
+                        if (api && value) {
+                          const today = new Date().toISOString().split('T')[0];
+                          const status = await api.attendanceCheckTodayStatus(value, today);
+                          if (status?.success && status.data) {
+                            // Already has a record today
+                            const hasCheckout = !!status.data.checkout;
+                            if (hasCheckout) {
+                              setAttendanceActionOptions(['Check In']);
+                              setAttendanceAction('Check In');
+                            } else {
+                              setAttendanceActionOptions(['Check Out']);
+                              setAttendanceAction('Check Out');
+                            }
+                          } else {
+                            // No record yet today
+                            setAttendanceActionOptions(['Check In']);
+                            setAttendanceAction('Check In');
+                          }
+                        } else {
+                          setAttendanceActionOptions(['Check In', 'Check Out']);
+                          setAttendanceAction('');
+                        }
+                      } catch (err) {
+                        console.error('Error checking today status:', err);
+                        setAttendanceActionOptions(['Check In', 'Check Out']);
+                        setAttendanceAction('');
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
                     required
                   >
@@ -1394,8 +1436,9 @@ const EmployeeAttendance = () => {
                     required
                   >
                     <option value="">Choose action</option>
-                    <option value="Check In">Check In</option>
-                    <option value="Check Out">Check Out</option>
+                    {attendanceActionOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>

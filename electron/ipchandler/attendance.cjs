@@ -143,6 +143,33 @@ const getDbPath = () => {
       const dbPath = getDbPath();
       const db = new Database(dbPath);
       
+      // If checkout is being set, compute worked hours and estimated pay
+      let computedHours = null;
+      let computedPay = null;
+
+      if (Object.prototype.hasOwnProperty.call(updateData, 'checkout') && updateData.checkout) {
+        // Load existing record to get checkin and employee_id
+        const getStmt = db.prepare('SELECT employee_id, date, checkin, checkout FROM attendance WHERE id = ?');
+        const existing = getStmt.get(id);
+        if (existing && existing.checkin) {
+          const checkinTime = new Date(existing.checkin);
+          const checkoutTime = new Date(updateData.checkout);
+          // Calculate total hours in decimal (rounded to 2 decimals)
+          const diffMs = Math.max(0, checkoutTime - checkinTime);
+          const hours = diffMs / (1000 * 60 * 60);
+          computedHours = Math.round(hours * 100) / 100;
+
+          // Get employee hourly salary
+          const empStmt = db.prepare('SELECT salary, salary_per_hour FROM employee WHERE id = ?');
+          const emp = empStmt.get(existing.employee_id);
+          const hourlyRate = emp && emp.salary_per_hour != null ? Number(emp.salary_per_hour) : 0;
+          computedPay = Math.round((computedHours * hourlyRate) * 100) / 100;
+
+          // Persist computed hours in attendance.total_hours
+          updateData.total_hours = computedHours;
+        }
+      }
+
       const fields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
       const values = Object.values(updateData);
       values.push(new Date().toISOString(), id);
@@ -157,7 +184,7 @@ const getDbPath = () => {
       const result = stmt.run(...values);
       db.close();
       
-      return { success: true, changes: result.changes };
+      return { success: true, changes: result.changes, computedHours, computedPay };
     } catch (error) {
       console.error('Error updating attendance record:', error);
       return { success: false, error: error.message };
