@@ -38,13 +38,47 @@ const getDbPath = () => {
         paid_by
       } = paymentData;
 
+      // Compute totals from attendance and prior payments
+      const earnedStmt = db.prepare(`
+        SELECT COALESCE(SUM(earned_amount), 0) as total_earned
+        FROM attendance
+        WHERE employee_id = ? AND isdeleted = 0 AND earned_amount IS NOT NULL
+          AND (date <= ?)
+      `);
+      const earnedRow = earnedStmt.get(employee_id, payment_date);
+      const totalEarnedToDate = earnedRow ? Number(earnedRow.total_earned) : 0;
+
+      const paidStmt = db.prepare(`
+        SELECT COALESCE(SUM(amount), 0) as total_paid
+        FROM salary_payments
+        WHERE employee_id = ? AND isdeleted = 0 AND payment_date < ?
+      `);
+      const paidRow = paidStmt.get(employee_id, payment_date);
+      const totalPaidBefore = paidRow ? Number(paidRow.total_paid) : 0;
+
+      const totalPaidToDate = totalPaidBefore + Number(amount || 0);
+      const remainingAfterPayment = Math.max(0, totalEarnedToDate - totalPaidToDate);
+
       const query = `
-        INSERT INTO salary_payments (employee_id, payment_date, amount, payment_method, payment_note, paid_by, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO salary_payments (
+          employee_id, payment_date, amount, payment_method, payment_note, paid_by, created_at,
+          total_earned_to_date, total_paid_to_date, remaining_after_payment
+        )
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)
       `;
       
       const stmt = db.prepare(query);
-      const result = stmt.run(employee_id, payment_date, amount, payment_method, payment_note, paid_by);
+      const result = stmt.run(
+        employee_id,
+        payment_date,
+        amount,
+        payment_method,
+        payment_note,
+        paid_by,
+        totalEarnedToDate,
+        totalPaidToDate,
+        remainingAfterPayment
+      );
       db.close();
       
       return { success: true, id: result.lastID };
@@ -61,7 +95,7 @@ const getDbPath = () => {
       const db = new Database(dbPath);
       
       let query = `
-        SELECT sp.*, e.fname, e.lname, e.roll, e.employee_id
+        SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
         FROM salary_payments sp
         JOIN employee e ON sp.employee_id = e.id
         WHERE sp.employee_id = ? AND sp.isdeleted = 0
@@ -94,7 +128,7 @@ ipcMain.handle('salary-payment-get-by-date-range', async (event, { startDate, en
     await db.connect();
     
     const query = `
-      SELECT sp.*, e.fname, e.lname, e.roll, e.employee_id
+      SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
       FROM salary_payments sp
       JOIN employee e ON sp.employee_id = e.id
       WHERE sp.payment_date BETWEEN ? AND ? AND sp.isdeleted = 0
@@ -118,7 +152,7 @@ ipcMain.handle('salary-payment-get-by-id', async (event, id) => {
     await db.connect();
     
     const query = `
-      SELECT sp.*, e.fname, e.lname, e.roll, e.employee_id
+      SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
       FROM salary_payments sp
       JOIN employee e ON sp.employee_id = e.id
       WHERE sp.id = ? AND sp.isdeleted = 0
@@ -263,17 +297,28 @@ ipcMain.handle('salary-payment-get-pending', async (event) => {
     const db = new Database();
     await db.connect();
     
-    // Get employees with pending salary
+    // Get employees with pending salary: earned from attendance minus total paid
     const query = `
+      WITH earned AS (
+        SELECT employee_id, COALESCE(SUM(earned_amount), 0) AS total_earned
+        FROM attendance
+        WHERE isdeleted = 0 AND earned_amount IS NOT NULL
+        GROUP BY employee_id
+      ), paid AS (
+        SELECT employee_id, COALESCE(SUM(amount), 0) AS total_paid
+        FROM salary_payments
+        WHERE isdeleted = 0
+        GROUP BY employee_id
+      )
       SELECT 
-        e.id, e.fname, e.lname, e.roll, e.employee_id, e.salary,
-        COALESCE(SUM(sp.amount), 0) as total_paid,
-        (e.salary - COALESCE(SUM(sp.amount), 0)) as remaining
+        e.id, e.fname, e.lname, e.roll, e.id AS employee_id, e.salary,
+        COALESCE(er.total_earned, 0) AS total_earned,
+        COALESCE(pd.total_paid, 0) AS total_paid,
+        (COALESCE(er.total_earned, 0) - COALESCE(pd.total_paid, 0)) AS remaining
       FROM employee e
-      LEFT JOIN salary_payments sp ON e.id = sp.employee_id AND sp.isdeleted = 0
+      LEFT JOIN earned er ON e.id = er.employee_id
+      LEFT JOIN paid pd ON e.id = pd.employee_id
       WHERE e.isActive = 1 AND e.isDeleted = 0
-      GROUP BY e.id
-      HAVING remaining > 0
       ORDER BY remaining DESC
     `;
     
@@ -294,7 +339,7 @@ ipcMain.handle('salary-payment-get-history', async (event, { employeeId, limit }
     await db.connect();
     
     const query = `
-      SELECT sp.*, e.fname, e.lname, e.roll, e.employee_id
+      SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
       FROM salary_payments sp
       JOIN employee e ON sp.employee_id = e.id
       WHERE sp.employee_id = ? AND sp.isdeleted = 0
@@ -319,7 +364,7 @@ ipcMain.handle('salary-payment-get-by-method', async (event, { method, startDate
     await db.connect();
     
     let query = `
-      SELECT sp.*, e.fname, e.lname, e.roll, e.employee_id
+      SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
       FROM salary_payments sp
       JOIN employee e ON sp.employee_id = e.id
       WHERE sp.payment_method = ? AND sp.isdeleted = 0

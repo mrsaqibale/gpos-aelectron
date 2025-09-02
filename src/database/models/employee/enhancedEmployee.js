@@ -101,8 +101,21 @@ class EnhancedEmployee {
     const absentDays = attendanceRecords.filter(record => record.status === 'absent').length;
     const lateDays = attendanceRecords.filter(record => record.status === 'late').length;
 
-    // Calculate total hours (assuming 8 hours per day for present employees)
-    const totalHours = presentDays * 8; // This can be enhanced with actual check-in/check-out times
+    // Calculate total hours from actual check-in/check-out or stored total_hours
+    const totalHours = attendanceRecords.reduce((sum, record) => {
+      if (record && record.total_hours != null) {
+        const hours = Number(record.total_hours);
+        return sum + (Number.isFinite(hours) ? hours : 0);
+      }
+      if (record && record.checkin && record.checkout) {
+        const start = new Date(record.checkin);
+        const end = new Date(record.checkout);
+        const diffMs = Math.max(0, end - start);
+        const hours = diffMs / (1000 * 60 * 60);
+        return sum + (Number.isFinite(hours) ? Math.round(hours * 100) / 100 : 0);
+      }
+      return sum;
+    }, 0);
     
     const attendanceRate = totalDays > 0 ? (presentDays / totalDays) * 100 : 0;
     const averageHoursPerDay = presentDays > 0 ? totalHours / presentDays : 0;

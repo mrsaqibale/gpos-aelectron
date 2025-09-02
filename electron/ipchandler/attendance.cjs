@@ -94,7 +94,7 @@ const getDbPath = () => {
       const db = new Database(dbPath);
       
       const query = `
-        SELECT a.*, e.fname, e.lname, e.roll, e.employee_id
+        SELECT a.*, e.fname, e.lname, e.roll, e.id AS employee_id
         FROM attendance a
         JOIN employee e ON a.employee_id = e.id
         WHERE a.date BETWEEN ? AND ? AND a.isdeleted = 0
@@ -119,7 +119,7 @@ const getDbPath = () => {
       const db = new Database(dbPath);
       
       const query = `
-        SELECT a.*, e.fname, e.lname, e.roll, e.employee_id
+        SELECT a.*, e.fname, e.lname, e.roll, e.id AS employee_id
         FROM attendance a
         JOIN employee e ON a.employee_id = e.id
         WHERE a.date = ? AND a.isdeleted = 0
@@ -159,14 +159,20 @@ const getDbPath = () => {
           const hours = diffMs / (1000 * 60 * 60);
           computedHours = Math.round(hours * 100) / 100;
 
-          // Get employee hourly salary
+          // Get employee salary and derive hourly if missing
           const empStmt = db.prepare('SELECT salary, salary_per_hour FROM employee WHERE id = ?');
-          const emp = empStmt.get(existing.employee_id);
-          const hourlyRate = emp && emp.salary_per_hour != null ? Number(emp.salary_per_hour) : 0;
+          const emp = empStmt.get(existing.employee_id) || { salary: 0, salary_per_hour: 0 };
+          const baseMonthly = Number(emp.salary) || 0;
+          const configuredHourly = emp.salary_per_hour != null ? Number(emp.salary_per_hour) : 0;
+          const derivedHourly = baseMonthly > 0 ? baseMonthly / 160 : 0; // assume 160 hours/month
+          const hourlyRate = configuredHourly > 0 ? configuredHourly : derivedHourly;
           computedPay = Math.round((computedHours * hourlyRate) * 100) / 100;
 
           // Persist computed hours in attendance.total_hours
           updateData.total_hours = computedHours;
+          // Snapshot pay rate and earned amount at checkout time
+          updateData.pay_rate = hourlyRate;
+          updateData.earned_amount = computedPay;
         }
       }
 
@@ -340,7 +346,7 @@ const getDbPath = () => {
       const db = new Database(dbPath);
       
       const query = `
-        SELECT a.*, e.fname, e.lname, e.roll, e.employee_id
+        SELECT a.*, e.fname, e.lname, e.roll, e.id AS employee_id
         FROM attendance a
         JOIN employee e ON a.employee_id = e.id
         WHERE a.date = ? AND a.status = 'late' AND a.isdeleted = 0
@@ -365,7 +371,7 @@ const getDbPath = () => {
       const db = new Database(dbPath);
       
       // Get all employees
-      const allEmployeesStmt = db.prepare('SELECT id, fname, lname, roll, employee_id FROM employee WHERE isActive = 1 AND isDeleted = 0');
+      const allEmployeesStmt = db.prepare('SELECT id, fname, lname, roll, id AS employee_id FROM employee WHERE isActive = 1 AND isDeleted = 0');
       const allEmployees = allEmployeesStmt.all();
       
       // Get present employees for the date
