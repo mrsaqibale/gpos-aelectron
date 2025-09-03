@@ -21,6 +21,7 @@ import {
 import VirtualKeyboard from '../../components/VirtualKeyboard';
 import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
 import UpdateOrderStatus from '../../components/UpdateOrderStatus';
+import AssignRider from '../../components/AssignRider';
 
 const ManageOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -45,6 +46,8 @@ const ManageOrders = () => {
   const [selectedOrderForStatus, setSelectedOrderForStatus] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState('New');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [showAssignRiderModal, setShowAssignRiderModal] = useState(false);
+  const [selectedOrderForRider, setSelectedOrderForRider] = useState(null);
   const navigate = useNavigate();
 
   // Use the custom hook for keyboard functionality
@@ -271,8 +274,27 @@ const ManageOrders = () => {
       status: order.status,
       customer: order.customerData
     });
-    // Ensure status is properly capitalized to match the component's expected format
-    const normalizedStatus = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase() : 'New';
+    // Ensure status is properly normalized to match the component's expected format
+    const normalizeStatus = (status) => {
+      if (!status) return 'New';
+      
+      // Handle common status variations
+      const statusMap = {
+        'new': 'New',
+        'in progress': 'In Progress',
+        'inprogress': 'In Progress',
+        'ready': 'Ready',
+        'completed': 'Completed',
+        'delivered': 'Delivered',
+        'on the way': 'On the way',
+        'ontheway': 'On the way'
+      };
+      
+      const lowerStatus = status.toLowerCase().replace(/[_\s-]+/g, ' ');
+      return statusMap[lowerStatus] || status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    };
+    
+    const normalizedStatus = normalizeStatus(order.status);
     setSelectedStatus(normalizedStatus);
     setShowUpdateStatusModal(true);
   };
@@ -281,6 +303,28 @@ const ManageOrders = () => {
     setShowUpdateStatusModal(false);
     setSelectedOrderForStatus(null);
     setSelectedStatus('New');
+  };
+
+  const openAssignRiderModal = (order) => {
+    // Only allow rider assignment for delivery orders
+    if (normalizeOrderType(order.order_type) !== 'delivery') {
+      console.log('Rider assignment is only available for delivery orders');
+      return;
+    }
+    
+    setSelectedOrderForRider({
+      id: order.id,
+      orderNumber: order.id,
+      orderType: getOrderTypeDisplay(order.order_type),
+      status: order.status,
+      customer: order.customerData
+    });
+    setShowAssignRiderModal(true);
+  };
+
+  const closeAssignRiderModal = () => {
+    setShowAssignRiderModal(false);
+    setSelectedOrderForRider(null);
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -321,6 +365,35 @@ const ManageOrders = () => {
 
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
+  };
+
+  const handleAssignRider = async (rider) => {
+    if (!selectedOrderForRider) return false;
+    
+    try {
+      // Here you would call your API to assign the rider to the order
+      // For now, we'll just log it and close the modal
+      console.log(`Assigning rider ${rider.name} to order ${selectedOrderForRider.id}`);
+      
+      // You can add your API call here:
+      // const result = await window.myAPI.assignRiderToOrder(selectedOrderForRider.id, rider.id);
+      
+      // Update the local state to show the assigned rider
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === selectedOrderForRider.id 
+            ? { ...order, driver: rider.name }
+            : order
+        )
+      );
+      
+      // Close the modal on success
+      closeAssignRiderModal();
+      return true;
+    } catch (error) {
+      console.error('Error assigning rider:', error);
+      return false;
+    }
   };
 
   // Handle keyboard input changes
@@ -689,7 +762,26 @@ const ManageOrders = () => {
             >
               Move Order
             </button>
-            {['Pay', 'Assign Driver', 'Complete All', 'Mark Delivered', 'Print'].map((action) => (
+            {['Pay'].map((action) => (
+              <button
+                key={action}
+                className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
+              >
+                {action}
+              </button>
+            ))}
+            <button
+              className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                openAssignRiderModal(order);
+              }}
+            >
+              Assign Driver
+            </button>
+            {['Complete All', 'Mark Delivered', 'Print'].map((action) => (
               <button
                 key={action}
                 className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
@@ -1013,6 +1105,18 @@ const ManageOrders = () => {
           selectedStatus={selectedStatus}
           onStatusChange={handleStatusChange}
           isUpdating={isUpdatingStatus}
+        />
+      )}
+
+      {/* Assign Rider Modal */}
+      {showAssignRiderModal && selectedOrderForRider && (
+        <AssignRider
+          isOpen={showAssignRiderModal}
+          onClose={closeAssignRiderModal}
+          onBack={closeAssignRiderModal}
+          order={selectedOrderForRider}
+          onAssignRider={handleAssignRider}
+          onStatusUpdate={handleStatusUpdate}
         />
       )}
 
