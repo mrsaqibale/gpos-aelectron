@@ -29,6 +29,10 @@ const ManageOrders = () => {
   const [appliedDateFilter, setAppliedDateFilter] = useState('');
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
   const [appliedCustomerSearchTerm, setAppliedCustomerSearchTerm] = useState('');
+  const [fromDateTime, setFromDateTime] = useState('');
+  const [toDateTime, setToDateTime] = useState('');
+  const [appliedFromDateTime, setAppliedFromDateTime] = useState('');
+  const [appliedToDateTime, setAppliedToDateTime] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [isModalAnimating, setIsModalAnimating] = useState(false);
@@ -235,6 +239,25 @@ const ManageOrders = () => {
     return dateStr;
   };
 
+  const parseOrderDateTime = (order) => {
+    // order.orderDate like '9/3/2025' and order.orderTime like '10:37:59 AM'
+    try {
+      return new Date(`${order.orderDate} ${order.orderTime}`);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const parseLocalDateTime = (value) => {
+    // value is HTML datetime-local like '2025-09-03T12:00'
+    if (!value) return null;
+    try {
+      return new Date(value);
+    } catch (e) {
+      return null;
+    }
+  };
+
   const getFilteredOrders = () => {
     let filtered = orders;
 
@@ -255,21 +278,21 @@ const ManageOrders = () => {
       filtered = filtered.filter(o => o.paymentStatus === 'Unpaid');
     }
 
-    // Filter by payment status
+    // Payment status filter
     if (paymentStatusFilter === 'paid') {
       filtered = filtered.filter(o => o.paymentStatus === 'Paid');
     } else if (paymentStatusFilter === 'unpaid') {
       filtered = filtered.filter(o => o.paymentStatus === 'Unpaid');
     }
 
-    // Filter by applied search term (Order ID only)
+    // Order ID filter
     if (appliedSearchTerm) {
       filtered = filtered.filter(o => 
         o.id.toLowerCase().includes(appliedSearchTerm.toLowerCase())
       );
     }
 
-    // Filter by applied customer search term
+    // Customer filter
     if (appliedCustomerSearchTerm) {
       filtered = filtered.filter(o => 
         o.customer.toLowerCase().includes(appliedCustomerSearchTerm.toLowerCase()) ||
@@ -277,11 +300,24 @@ const ManageOrders = () => {
       );
     }
 
-    // Filter by applied date filter
+    // Old single date filter (kept for compatibility)
     if (appliedDateFilter) {
       filtered = filtered.filter(o => {
         const orderDate = formatDateForComparison(o.orderDate);
         return orderDate === appliedDateFilter;
+      });
+    }
+
+    // New datetime range filter
+    const fromDt = parseLocalDateTime(appliedFromDateTime);
+    const toDt = parseLocalDateTime(appliedToDateTime);
+    if (fromDt || toDt) {
+      filtered = filtered.filter(o => {
+        const dt = parseOrderDateTime(o);
+        if (!dt) return false;
+        if (fromDt && dt < fromDt) return false;
+        if (toDt && dt > toDt) return false;
+        return true;
       });
     }
 
@@ -436,7 +472,12 @@ const ManageOrders = () => {
                     id="from-datetime"
                     type="datetime-local"
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
-                    defaultValue="2025-09-03T12:00"
+                    value={fromDateTime}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFromDateTime(v);
+                      setAppliedFromDateTime(v);
+                    }}
                   />
                 </div>
               </div>
@@ -448,7 +489,12 @@ const ManageOrders = () => {
                     id="to-datetime"
                     type="datetime-local"
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
-                    defaultValue="2025-09-03T12:00"
+                    value={toDateTime}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setToDateTime(v);
+                      setAppliedToDateTime(v);
+                    }}
                   />
                 </div>
               </div>
@@ -503,9 +549,13 @@ const ManageOrders = () => {
                   setSearchTerm('');
                   setDateFilter('');
                   setCustomerSearchTerm('');
+                  setFromDateTime('');
+                  setToDateTime('');
                   setAppliedSearchTerm('');
                   setAppliedDateFilter('');
                   setAppliedCustomerSearchTerm('');
+                  setAppliedFromDateTime('');
+                  setAppliedToDateTime('');
                 }}
               >
                 <RotateCcw size={18} className="text-gray-600" />
