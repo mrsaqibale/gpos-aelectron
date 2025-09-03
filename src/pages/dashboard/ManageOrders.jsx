@@ -27,6 +27,9 @@ const ManageOrders = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
   const [appliedDateFilter, setAppliedDateFilter] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [isModalAnimating, setIsModalAnimating] = useState(false);
   
   // Use the custom hook for keyboard functionality
   const {
@@ -50,115 +53,150 @@ const ManageOrders = () => {
     const mockOrders = [
       {
         id: '100031',
-        type: 'web',
-        orderDate: '05 Jul 2025',
-        orderTime: '07:43 PM',
-        collectionTime: '05 Jul 2025 09:10 pm',
-        customer: 'John Dolan',
-        phone: '0894632626',
+        kitchenId: 'K1000',
+        type: 'Online',
+        orderDate: '9/3/2025',
+        orderTime: '10:37:59 AM',
+        dueDate: '9/3/2025',
+        dueTime: '11:46:51 AM',
+        customer: 'Alice Johnson',
+        phone: '+353 89100000',
+        address: '45 High St, Dublin',
         source: 'Online App',
         items: ['2x Margherita Pizza', '1x Caesar Salad'],
-        total: 42.90,
+        total: 19.92,
         paymentMethod: 'Card',
         orderMethod: 'Delivery',
-        status: 'pending',
-        paymentStatus: 'paid'
+        status: 'In Progress',
+        paymentStatus: 'Paid',
+        driver: 'Tom B.',
+        table: null
       },
       {
         id: '100029',
-        type: 'pos',
-        orderDate: '05 Jul 2025',
-        orderTime: '06:50 PM',
-        collectionTime: '05 Jul 2025 07:15 pm',
-        customer: 'Jessica Irving',
-        phone: '0962626267',
+        kitchenId: 'K1001',
+        type: 'In Store',
+        orderDate: '9/2/2025',
+        orderTime: '7:37:59 PM',
+        dueDate: '9/2/2025',
+        dueTime: '8:24:10 PM',
+        customer: 'Bob Smith',
+        phone: '+353 89100137',
+        address: '',
         source: 'POS Terminal',
         items: ['1x Burger Deluxe', '2x French Fries'],
-        total: 58.80,
+        total: 14.88,
         paymentMethod: 'Card',
         orderMethod: 'Collection',
-        status: 'preparing',
-        paymentStatus: 'paid'
+        status: 'In Prepare',
+        paymentStatus: 'Paid',
+        driver: null,
+        table: null
       },
       {
         id: '100028',
-        type: 'pos',
-        orderDate: '05 Jul 2025',
-        orderTime: '06:24 PM',
-        collectionTime: '05 Jul 2025 07:00 pm',
+        kitchenId: 'K1002',
+        type: 'Dine In',
+        orderDate: '9/2/2025',
+        orderTime: '6:24:00 PM',
+        dueDate: '9/2/2025',
+        dueTime: '7:00:00 PM',
         customer: 'Sandra McDowell',
-        phone: '08637637623',
+        phone: '+353 8637637623',
+        address: '78 Oak Ave, Dublin',
         source: 'POS Terminal',
         items: ['1x Chicken Alfredo'],
         total: 70.55,
         paymentMethod: 'Card',
-        orderMethod: 'Collection',
-        status: 'ready',
-        paymentStatus: 'unpaid'
+        orderMethod: 'Dine In',
+        status: 'Ready',
+        paymentStatus: 'Unpaid',
+        driver: null,
+        table: 'T2'
       },
       {
         id: '100026',
-        type: 'web',
-        orderDate: '05 Jul 2025',
-        orderTime: '01:46 PM',
-        collectionTime: '05 Jul 2025 06:00 pm',
+        kitchenId: 'K1003',
+        type: 'Collection',
+        orderDate: '9/1/2025',
+        orderTime: '1:46:00 PM',
+        dueDate: '9/1/2025',
+        dueTime: '6:00:00 PM',
         customer: 'Michelle Lonergan',
-        phone: '086237676',
+        phone: '+353 86237676',
+        address: '123 Main St, Dublin',
         source: 'Website',
         items: ['1x Pepperoni Pizza', '1x Garlic Bread'],
         total: 28.10,
         paymentMethod: 'Card',
         orderMethod: 'Collection',
-        status: 'confirmed',
-        paymentStatus: 'paid'
+        status: 'Completed',
+        paymentStatus: 'Paid',
+        driver: null,
+        table: null
       },
       {
         id: '100025',
-        type: 'pos',
-        orderDate: '04 Jul 2025',
-        orderTime: '09:30 AM',
-        collectionTime: '04 Jul 2025 10:30 am',
+        kitchenId: 'K1004',
+        type: 'Delivery',
+        orderDate: '9/1/2025',
+        orderTime: '9:30:00 AM',
+        dueDate: '9/1/2025',
+        dueTime: '10:30:00 AM',
         customer: 'Anna Davis',
-        phone: '082367237',
+        phone: '+353 82367237',
+        address: '67 Park Lane, Dublin',
         source: 'POS Terminal',
         items: ['1x Fish & Chips'],
         total: 16.99,
         paymentMethod: 'Cash',
         orderMethod: 'Delivery',
-        status: 'completed',
-        paymentStatus: 'paid'
+        status: 'Delivered',
+        paymentStatus: 'Paid',
+        driver: 'John D.',
+        table: null
       },
       {
         id: '100024',
-        type: 'dinein',
-        orderDate: '05 Jul 2025',
-        orderTime: '05:30 PM',
-        collectionTime: '05 Jul 2025 06:30 pm',
+        kitchenId: 'K1005',
+        type: 'Dine In',
+        orderDate: '9/1/2025',
+        orderTime: '5:30:00 PM',
+        dueDate: '9/1/2025',
+        dueTime: '6:30:00 PM',
         customer: 'Michael Brown',
-        phone: '23236368238',
+        phone: '+353 23236368238',
+        address: '34 River Rd, Dublin',
         source: 'Dine In',
         items: ['1x Steak Dinner', '1x Wine'],
         total: 85.50,
         paymentMethod: 'Card',
         orderMethod: 'Dine In',
-        status: 'new',
-        paymentStatus: 'unpaid'
+        status: 'In Progress',
+        paymentStatus: 'Unpaid',
+        driver: null,
+        table: 'T1'
       },
       {
         id: '100023',
-        type: 'web',
-        orderDate: '06 Jul 2025',
-        orderTime: '12:30 PM',
-        collectionTime: '06 Jul 2025 01:30 pm',
+        kitchenId: 'K1006',
+        type: 'Online',
+        orderDate: '8/31/2025',
+        orderTime: '12:30:00 PM',
+        dueDate: '8/31/2025',
+        dueTime: '1:30:00 PM',
         customer: 'Sarah Johnson',
-        phone: '0851234567',
+        phone: '+353 851234567',
+        address: '89 Hill Street, Dublin',
         source: 'Website',
         items: ['1x Chicken Curry', '1x Naan Bread'],
         total: 35.40,
         paymentMethod: 'Card',
         orderMethod: 'Collection',
-        status: 'cancelled',
-        paymentStatus: 'refunded'
+        status: 'Completed',
+        paymentStatus: 'Paid',
+        driver: null,
+        table: null
       }
     ];
     setOrders(mockOrders);
@@ -168,12 +206,13 @@ const ManageOrders = () => {
 
   const tabs = [
     { id: 'all', label: 'All Orders', count: orders.length },
-    { id: 'collection', label: 'Collection', count: orders.filter(o => o.orderMethod === 'Collection').length },
-    { id: 'delivery', label: 'Delivery', count: orders.filter(o => o.orderMethod === 'Delivery').length },
-    { id: 'web', label: 'Web Orders', count: orders.filter(o => o.type === 'web').length },
-    { id: 'dinein', label: 'Dine In', count: orders.filter(o => o.orderMethod === 'Dine In').length },
-    { id: 'paid', label: 'Paid', count: orders.filter(o => o.paymentStatus === 'paid').length },
-    { id: 'unpaid', label: 'Unpaid', count: orders.filter(o => o.paymentStatus === 'unpaid').length }
+    { id: 'collection', label: 'Collection', count: orders.filter(o => o.type === 'Collection').length },
+    { id: 'delivery', label: 'Delivery', count: orders.filter(o => o.type === 'Delivery').length },
+    { id: 'online', label: 'Online', count: orders.filter(o => o.type === 'Online').length },
+    { id: 'dinein', label: 'Dine In', count: orders.filter(o => o.type === 'Dine In').length },
+    { id: 'instore', label: 'In Store', count: orders.filter(o => o.type === 'In Store').length },
+    { id: 'paid', label: 'Paid', count: orders.filter(o => o.paymentStatus === 'Paid').length },
+    { id: 'unpaid', label: 'Unpaid', count: orders.filter(o => o.paymentStatus === 'Unpaid').length }
   ];
 
   const formatDateForComparison = (dateStr) => {
@@ -198,17 +237,19 @@ const ManageOrders = () => {
 
     // Filter by tab
     if (activeTab === 'collection') {
-      filtered = filtered.filter(o => o.orderMethod === 'Collection');
+      filtered = filtered.filter(o => o.type === 'Collection');
     } else if (activeTab === 'delivery') {
-      filtered = filtered.filter(o => o.orderMethod === 'Delivery');
-    } else if (activeTab === 'web') {
-      filtered = filtered.filter(o => o.type === 'web');
+      filtered = filtered.filter(o => o.type === 'Delivery');
+    } else if (activeTab === 'online') {
+      filtered = filtered.filter(o => o.type === 'Online');
     } else if (activeTab === 'dinein') {
-      filtered = filtered.filter(o => o.orderMethod === 'Dine In');
+      filtered = filtered.filter(o => o.type === 'Dine In');
+    } else if (activeTab === 'instore') {
+      filtered = filtered.filter(o => o.type === 'In Store');
     } else if (activeTab === 'paid') {
-      filtered = filtered.filter(o => o.paymentStatus === 'paid');
+      filtered = filtered.filter(o => o.paymentStatus === 'Paid');
     } else if (activeTab === 'unpaid') {
-      filtered = filtered.filter(o => o.paymentStatus === 'unpaid');
+      filtered = filtered.filter(o => o.paymentStatus === 'Unpaid');
     }
 
     // Filter by applied search term (Order ID only)
@@ -239,6 +280,21 @@ const ManageOrders = () => {
     setDateFilter('');
     setAppliedSearchTerm('');
     setAppliedDateFilter('');
+  };
+
+  const handleOrderClick = (order) => {
+    setSelectedOrder(order);
+    setShowOrderModal(true);
+    // Trigger animation after modal is shown
+    setTimeout(() => setIsModalAnimating(true), 10);
+  };
+
+  const closeOrderModal = () => {
+    setIsModalAnimating(false);
+    setTimeout(() => {
+      setShowOrderModal(false);
+      setSelectedOrder(null);
+    }, 300);
   };
 
   // Handle keyboard input changes
@@ -273,13 +329,18 @@ const ManageOrders = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      new: 'bg-purple-50 text-purple-700 border-purple-200',
-      pending: 'bg-orange-50 text-orange-700 border-orange-200',
-      confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
-      preparing: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-      ready: 'bg-green-50 text-green-700 border-green-200',
-      completed: 'bg-gray-50 text-gray-700 border-gray-200',
-      cancelled: 'bg-red-50 text-red-700 border-red-200'
+      'In Prepare': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      'In Progress': 'bg-blue-50 text-blue-700 border-blue-200',
+      'Ready': 'bg-green-50 text-green-700 border-green-200',
+      'Completed': 'bg-gray-50 text-gray-700 border-gray-200',
+      'Delivered': 'bg-blue-50 text-blue-700 border-blue-200',
+      'new': 'bg-purple-50 text-purple-700 border-purple-200',
+      'pending': 'bg-orange-50 text-orange-700 border-orange-200',
+      'confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
+      'preparing': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      'ready': 'bg-green-50 text-green-700 border-green-200',
+      'completed': 'bg-gray-50 text-gray-700 border-gray-200',
+      'cancelled': 'bg-red-50 text-red-700 border-red-200'
     };
     return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
   };
@@ -425,58 +486,91 @@ const ManageOrders = () => {
             <thead className="sticky top-0 bg-primaryExtraLight z-10">
               <tr>
                 <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <input type="checkbox" className="rounded border-gray-300 text-primaryLight focus:ring-primaryLight" />
+                </th>
+                <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
-                    SI
-                    <ChevronRight size={12} className="rotate-90" />
+                    Type
+                    
                   </div>
                 </th>
                 <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Order ID
-                    <ChevronRight size={12} className="rotate-90" />
+                    
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
-                    Order Date
-                    <ChevronRight size={12} className="rotate-90" />
+                    Kitchen ID
+                    
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
-                    Collection Time
-                    <ChevronRight size={12} className="rotate-90" />
+                    Date/Time
+                    
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
-                    Customer Information
-                    <ChevronRight size={12} className="rotate-90" />
+                    Due At
+                    
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
-                    Total Amount
-                    <ChevronRight size={12} className="rotate-90" />
+                    Driver/Table
+                    
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
-                    Order Status
-                    <ChevronRight size={12} className="rotate-90" />
+                    Customer
+                    
                   </div>
                 </th>
-                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Address
+                    
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Amount
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Payment
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Status
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
               {getFilteredOrders().map((order, index) => (
-                <tr key={order.id} className={`border-b border-gray-100 hover:bg-gray-25 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                <tr 
+                  key={order.id} 
+                  className={`border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                  onClick={() => handleOrderClick(order)}
+                >
                   <td className="py-3 px-4">
-                    <span className="text-sm font-medium text-gray-700">{index + 1}</span>
+                    <input type="checkbox" className="rounded border-gray-300 text-primaryLight focus:ring-primaryLight" />
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm font-medium text-primary">{order.id}</span>
+                    <span className="text-sm font-medium text-gray-700">{order.type}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-primary">ORD-{order.id}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-700">{order.kitchenId}</span>
                   </td>
                   <td className="py-3 px-4">
                     <div className="space-y-1">
@@ -485,37 +579,39 @@ const ManageOrders = () => {
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{order.collectionTime}</span>
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-800">{order.dueDate}</div>
+                      <div className="text-xs text-gray-600">{order.dueTime}</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">
+                      {order.driver || order.table || 'N/A'}
+                    </span>
                   </td>
                   <td className="py-3 px-4">
                     <div className="space-y-1">
                       <div className="text-sm font-medium text-gray-800">{order.customer}</div>
-                      <div className="text-xs text-gray-600">{order.phone}</div>
+                      <div className="text-xs text-gray-600">({order.phone})</div>
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="space-y-1">
-                      <div className="text-sm font-semibold text-gray-800">{order.total.toFixed(2)} €</div>
-                      <div className="flex gap-1">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentMethod === 'Card' ? 'bg-primaryExtraLight text-primary' : 'bg-green-100 text-green-800'}`}>
-                          {order.paymentMethod}
-                        </span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : order.paymentStatus === 'refunded' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'}`}>
-                          {order.paymentStatus}
-                        </span>
-                      </div>
-                    </div>
+                    <span className="text-sm text-gray-600">
+                      {order.address || 'N/A'}
+                    </span>
                   </td>
                   <td className="py-3 px-4">
-                    <div className="space-y-1">
-                      <span className={`px-2 py-1 rounded text-xs font-medium bg-primaryExtraLight text-primary`}>
-                        {getStatusText(order.status)}
-                      </span>
-                      <div className="text-xs text-primary mt-2 pl-1">{order.orderMethod}</div>
-                    </div>
+                    <div className="text-sm font-semibold text-gray-800">€{order.total.toFixed(2)}</div>
                   </td>
                   <td className="py-3 px-4">
-                    {getActionButtons(order)}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {order.paymentStatus}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                      {order.status}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -533,6 +629,122 @@ const ManageOrders = () => {
           )}
         </div>
       </div>
+      
+      {/* Order Details Modal - Slides in from right */}
+      {showOrderModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-[#00000080] bg-opacity-50 transition-opacity"
+            onClick={closeOrderModal}
+          />
+          
+          {/* Modal Content - Slides in from right */}
+          <div className={`relative w-96 h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${
+            isModalAnimating ? 'translate-x-0' : 'translate-x-full'
+          }`}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Order Details</h2>
+              <button
+                onClick={closeOrderModal}
+                className="text-primaryLight hover:text-primary transition-colors p-2 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Order Info */}
+            <div className="p-6 space-y-6">
+              {/* Order ID and Type */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold text-primary">ORD-{selectedOrder.id}</span>
+                  <span className="text-sm text-gray-600">•</span>
+                  <span className="text-sm text-gray-600">{selectedOrder.type}</span>
+                </div>
+                <p className="text-sm text-gray-600">{selectedOrder.orderDate}, {selectedOrder.orderTime}</p>
+              </div>
+
+              {/* Items */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-gray-800">Items</h3>
+                <div className="space-y-2">
+                  {selectedOrder.items.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-700">{item}</span>
+                      <span className="text-sm font-medium text-gray-800">
+                        €{(selectedOrder.total / selectedOrder.items.length).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment and Customer Info */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Payment Details */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-gray-800">Payment</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Method:</span>
+                      <span className="text-gray-800">{selectedOrder.paymentMethod}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="font-medium text-gray-800">€{selectedOrder.total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        selectedOrder.paymentStatus === 'Paid' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedOrder.paymentStatus}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Customer Details */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-gray-800">Customer</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="text-gray-800 font-medium">{selectedOrder.customer}</div>
+                    <div className="text-gray-600">{selectedOrder.phone}</div>
+                    <div className="text-gray-400">-</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Status */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-gray-800">Current Status</h3>
+                <span className={`px-3 py-2 rounded-full text-sm font-medium ${getStatusColor(selectedOrder.status)}`}>
+                  {selectedOrder.status}
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200 bg-white">
+              <div className="flex gap-3">
+                <button className="w-full px-4 py-2 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium">
+                  Update Status
+                </button>
+                <button className="w-full px-4 py-2 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium">
+                  Print Invoice
+                </button>
+                <button className="w-full px-4 py-2 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium">
+                  Assign Driver
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard
