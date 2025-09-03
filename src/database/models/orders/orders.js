@@ -385,3 +385,24 @@ export function getOrderStatistics(startDate = null, endDate = null) {
     return errorResponse(err.message);
   }
 } 
+
+// Get orders by date range
+export function getOrdersByDateRange(startDate, endDate, limit = 1000, offset = 0) {
+  try {
+    console.log(`Getting orders between ${startDate} and ${endDate}`);
+    const stmt = db.prepare(`
+      SELECT * FROM orders 
+      WHERE isdeleted = 0 
+      AND created_at BETWEEN ? AND ?
+      ORDER BY created_at DESC 
+      LIMIT ? OFFSET ?
+    `);
+    const orders = stmt.all(startDate, endDate, limit, offset);
+    console.log(`Found ${orders.length} orders in date range`);
+    
+    return { success: true, data: orders };
+  } catch (err) {
+    console.error('Error getting orders by date range:', err.message);
+    return errorResponse(err.message);
+  }
+} 

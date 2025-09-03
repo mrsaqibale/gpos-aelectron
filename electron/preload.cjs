@@ -170,6 +170,7 @@ contextBridge.exposeInMainWorld('myAPI', {
   getAllOrders: (limit, offset) => ipcRenderer.invoke('order:getAll', limit, offset),
   getOrdersByStatus: (status, limit, offset) => ipcRenderer.invoke('order:getByStatus', status, limit, offset),
   getOrdersByCustomer: (customerId, limit, offset) => ipcRenderer.invoke('order:getByCustomer', customerId, limit, offset),
+  getOrdersByDateRange: (startDate, endDate, limit, offset) => ipcRenderer.invoke('order:getByDateRange', startDate, endDate, limit, offset),
   cancelOrder: (id, reason, canceledBy, note) => ipcRenderer.invoke('order:cancel', id, reason, canceledBy, note),
   getOrderStatistics: (startDate, endDate) => ipcRenderer.invoke('order:getStatistics', startDate, endDate),
   deleteOrder: (id) => ipcRenderer.invoke('order:delete', id),

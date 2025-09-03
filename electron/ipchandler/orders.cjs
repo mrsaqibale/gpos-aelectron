@@ -9,7 +9,8 @@ const {
   updateOrderStatus, 
   cancelOrder, 
   deleteOrder, 
-  getOrderStatistics 
+  getOrderStatistics,
+  getOrdersByDateRange
 } = require('../../src/database/models/orders/orders.js');
 
 function registerOrdersIpcHandlers() {
@@ -75,6 +76,17 @@ function registerOrdersIpcHandlers() {
       return result;
     } catch (error) {
       console.error('Error in order:getByStatus handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // Handle get orders by date range
+  ipcMain.handle('order:getByDateRange', async (event, startDate, endDate, limit, offset) => {
+    try {
+      const result = getOrdersByDateRange(startDate, endDate, limit, offset);
+      return result;
+    } catch (error) {
+      console.error('Error in order:getByDateRange handler:', error);
       return { success: false, message: error.message };
     }
   });
