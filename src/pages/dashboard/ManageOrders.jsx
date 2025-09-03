@@ -24,6 +24,7 @@ import UpdateOrderStatus from '../../components/UpdateOrderStatus';
 import AssignRider from '../../components/AssignRider';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import CustomAlert from '../../components/CustomAlert';
+import Invoice from '../../components/Invoice';
 
 const ManageOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -51,6 +52,8 @@ const ManageOrders = () => {
   const [showAssignRiderModal, setShowAssignRiderModal] = useState(false);
   const [selectedOrderForRider, setSelectedOrderForRider] = useState(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState(null);
   const [confirmationConfig, setConfirmationConfig] = useState({
     title: '',
     message: '',
@@ -340,6 +343,107 @@ const ManageOrders = () => {
   const closeAssignRiderModal = () => {
     setShowAssignRiderModal(false);
     setSelectedOrderForRider(null);
+  };
+
+  const openInvoiceModal = async (order) => {
+    try {
+      // Fetch order details and totals for the invoice
+      const [detailsResult, totalsResult] = await Promise.all([
+        window.myAPI.getOrderDetailsWithFood(order.id),
+        window.myAPI.calculateOrderTotal(order.id)
+      ]);
+      
+      const details = detailsResult?.success ? detailsResult.data : [];
+      const totals = totalsResult?.success ? totalsResult.data : null;
+      
+      // Transform order data to match Invoice component expectations
+      const invoiceOrder = {
+        orderNumber: order.id,
+        orderType: getOrderTypeDisplay(order.order_type),
+        placedAt: order.created_at,
+        createdAt: order.created_at,
+        customer: order.customerData ? {
+          name: order.customerData.name || 'Walk-in Customer',
+          phone: order.customerData.phone,
+          email: order.customerData.email,
+          address: order.customerData.address,
+          addresses: order.customerData.address ? [order.customerData.address] : []
+        } : {
+          name: 'Walk-in Customer',
+          phone: 'N/A',
+          address: 'N/A',
+          addresses: []
+        },
+        table: order.table_details,
+        items: details.map(d => ({
+          id: d.id,
+          food: {
+            id: d.food_id,
+            name: d.food_name,
+            description: d.food_description
+          },
+          quantity: d.quantity,
+          totalPrice: Number(d.price || 0) * Number(d.quantity || 1),
+          variations: d.variation ? (() => { try { return JSON.parse(d.variation); } catch { return {}; } })() : {},
+          adons: d.add_ons ? (() => { try { return JSON.parse(d.add_ons); } catch { return []; } })() : []
+        })),
+        notes: order.special_instructions || null
+      };
+      
+      // Create foodDetails structure for variations and add-ons
+      const foodDetailsForInvoice = {
+        variations: details.reduce((acc, detail) => {
+          if (detail.variation) {
+            try {
+              const variations = JSON.parse(detail.variation);
+              Object.keys(variations).forEach(variationId => {
+                if (!acc[variationId]) {
+                  acc[variationId] = {
+                    id: parseInt(variationId),
+                    name: `Variation ${variationId}`,
+                    options: []
+                  };
+                }
+              });
+            } catch (e) {
+              console.warn('Failed to parse variations for detail:', detail.id);
+            }
+          }
+          return acc;
+        }, {}),
+        adons: details.reduce((acc, detail) => {
+          if (detail.add_ons) {
+            try {
+              const addons = JSON.parse(detail.add_ons);
+              addons.forEach(addonId => {
+                if (!acc.find(a => a.id === parseInt(addonId))) {
+                  acc.push({
+                    id: parseInt(addonId),
+                    name: `Addon ${addonId}`,
+                    price: 0
+                  });
+                }
+              });
+            } catch (e) {
+              console.warn('Failed to parse add-ons for detail:', detail.id);
+            }
+          }
+          return acc;
+        }, [])
+      };
+      
+      setSelectedOrderForInvoice(invoiceOrder);
+      setOrderDetails(details); // Update orderDetails for the Invoice component
+      setShowInvoiceModal(true);
+    } catch (error) {
+      console.error('Error preparing invoice data:', error);
+      showCustomAlert('Failed to load invoice data', 'error');
+    }
+  };
+
+  const closeInvoiceModal = () => {
+    setShowInvoiceModal(false);
+    setSelectedOrderForInvoice(null);
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -1146,14 +1250,31 @@ const ManageOrders = () => {
             >
               Complete All
             </button>
-            {['Print'].map((action) => (
-              <button
-                key={action}
-                className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
-              >
-                {action}
-              </button>
-            ))}
+            <button
+              className={`w-full px-4 py-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                (() => {
+                  if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return 'bg-white text-primary cursor-pointer';
+                  
+                  return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
+                })()
+              }`}
+              disabled={!selectedOrderIdForSales}
+              title={(() => {
+                if (!selectedOrderIdForSales) return 'No order selected';
+                return 'Print invoice for selected order';
+              })()}
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                
+                openInvoiceModal(order);
+              }}
+            >
+              Print
+            </button>
           </div>
         </div>
         
@@ -1342,7 +1463,7 @@ const ManageOrders = () => {
           />
 
           {/* Modal Content - Slides in from right */}
-          <div className={`relative w-96 h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${isModalAnimating ? 'translate-x-0' : 'translate-x-full'
+          <div className={`relative w-96 h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isModalAnimating ? 'translate-x-0' : 'translate-x-full'
             }`}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -1355,7 +1476,8 @@ const ManageOrders = () => {
               </button>
             </div>
 
-            {/* Order Info */}
+            {/* Order Info - Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
             <div className="p-6 space-y-6">
               {/* Order ID and Type */}
               <div className="space-y-2">
@@ -1457,19 +1579,45 @@ const ManageOrders = () => {
                 <span className={`px-3 py-2 rounded-full text-sm font-medium ${getStatusColor(selectedOrder.status)}`}>
                   {getStatusText(selectedOrder.status)}
                 </span>
+                </div>
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200 bg-white">
               <div className="flex gap-3">
-                <button className="w-full px-4 py-2 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium">
+                <button 
+                  className="w-full px-4 py-2 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium"
+                  onClick={() => {
+                    closeOrderModal();
+                    openUpdateStatusModal(selectedOrder);
+                  }}
+                >
                   Update Status
                 </button>
-                <button className="w-full px-4 py-2 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium">
+                <button 
+                  className="w-full px-4 py-2 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium"
+                  onClick={() => {
+                    closeOrderModal();
+                    openInvoiceModal(selectedOrder);
+                  }}
+                >
                   Print Invoice
                 </button>
-                <button className="w-full px-4 py-2 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium">
+                <button 
+                  className={`w-full px-4 py-2 border rounded-lg transition-colors font-medium ${
+                    normalizeOrderType(selectedOrder.order_type) === 'delivery'
+                      ? 'border-primaryLight text-primaryLight hover:bg-primaryLight hover:text-white'
+                      : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                  }`}
+                  disabled={normalizeOrderType(selectedOrder.order_type) !== 'delivery'}
+                  onClick={() => {
+                    if (normalizeOrderType(selectedOrder.order_type) === 'delivery') {
+                      closeOrderModal();
+                      openAssignRiderModal(selectedOrder);
+                    }
+                  }}
+                >
                   Assign Driver
                 </button>
               </div>
@@ -1506,6 +1654,28 @@ const ManageOrders = () => {
           order={selectedOrderForRider}
           onAssignRider={handleAssignRider}
           onStatusUpdate={handleStatusUpdate}
+        />
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoiceModal && selectedOrderForInvoice && (
+        <Invoice
+          order={selectedOrderForInvoice}
+          isOpen={showInvoiceModal}
+          onClose={closeInvoiceModal}
+          onPrint={() => {
+            // Use the browser's print functionality
+            try {
+              // Small delay to ensure modal is fully rendered
+              setTimeout(() => {
+                window.print();
+              }, 100);
+            } catch (error) {
+              console.error('Print failed:', error);
+              showCustomAlert('Print failed. Please try again.', 'error');
+            }
+          }}
+          foodDetails={orderDetails}
         />
       )}
 
