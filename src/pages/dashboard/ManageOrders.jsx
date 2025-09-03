@@ -22,6 +22,8 @@ import VirtualKeyboard from '../../components/VirtualKeyboard';
 import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
 import UpdateOrderStatus from '../../components/UpdateOrderStatus';
 import AssignRider from '../../components/AssignRider';
+import ConfirmationModal from '../../components/ConfirmationModal';
+import CustomAlert from '../../components/CustomAlert';
 
 const ManageOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -48,6 +50,19 @@ const ManageOrders = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [showAssignRiderModal, setShowAssignRiderModal] = useState(false);
   const [selectedOrderForRider, setSelectedOrderForRider] = useState(null);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [confirmationConfig, setConfirmationConfig] = useState({
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
+  const [isConfirmationLoading, setIsConfirmationLoading] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    message: '',
+    type: 'success'
+  });
   const navigate = useNavigate();
 
   // Use the custom hook for keyboard functionality
@@ -447,40 +462,146 @@ const ManageOrders = () => {
     try {
       // Check if order is already delivered
       if (order.status === 'delivered' || order.status === 'Delivered') {
-        alert(`Order #${order.id} is already marked as delivered`);
+        showCustomAlert(`Order #${order.id} is already marked as delivered`, 'warning');
         return;
       }
       
-      console.log(`Marking order ${order.id} as delivered`);
-      
-      // Update the order status to "delivered" in the database
-      const result = await window.myAPI.updateOrderStatus(order.id, 'delivered');
-      
-      if (result.success) {
-        // Update the local state
-        setOrders(prevOrders => 
-          prevOrders.map(o => 
-            o.id === order.id 
-              ? { ...o, status: 'delivered' }
-              : o
-          )
-        );
-        
-        console.log('Order marked as delivered successfully');
-        
-        // Show success feedback
-        // You can add a toast notification here or use alert for now
-        alert(`Order #${order.id} has been marked as delivered successfully!`);
-        
-        // Clear the selection after successful update
-        setSelectedOrderIdForSales(null);
-      } else {
-        console.error('Failed to mark order as delivered:', result.message);
-        alert(`Failed to mark order as delivered: ${result.message}`);
-      }
+      // Show beautiful confirmation modal
+      showConfirmation(
+        'Mark Order as Delivered',
+        `Are you sure you want to mark Order #${order.id} as delivered?\n\nThis action will change the order status to "delivered" and cannot be undone.`,
+        'warning',
+        async () => {
+          try {
+            console.log(`Marking order ${order.id} as delivered`);
+            
+            // Update the order status to "delivered" in the database
+            const result = await window.myAPI.updateOrderStatus(order.id, 'delivered');
+            
+            if (result.success) {
+              // Update the local state
+              setOrders(prevOrders => 
+                prevOrders.map(o => 
+                  o.id === order.id 
+                    ? { ...o, status: 'delivered' }
+                    : o
+                )
+              );
+              
+              console.log('Order marked as delivered successfully');
+              
+              // Show success feedback
+              showCustomAlert(`Order #${order.id} has been marked as delivered successfully!`, 'success');
+              
+              // Clear the selection after successful update
+              setSelectedOrderIdForSales(null);
+            } else {
+              console.error('Failed to mark order as delivered:', result.message);
+              showCustomAlert(`Failed to mark order as delivered: ${result.message}`, 'error');
+            }
+          } catch (error) {
+            console.error('Error marking order as delivered:', error);
+            showCustomAlert('An error occurred while marking the order as delivered', 'error');
+          }
+        }
+      );
     } catch (error) {
       console.error('Error marking order as delivered:', error);
       alert('An error occurred while marking the order as delivered');
+    }
+  };
+
+  // Helper function to show confirmation modal
+  const showConfirmation = (title, message, type = 'warning', onConfirm) => {
+    setConfirmationConfig({
+      title,
+      message,
+      type,
+      onConfirm
+    });
+    setShowConfirmationModal(true);
+  };
+
+  // Helper function to close confirmation modal
+  const closeConfirmation = () => {
+    setShowConfirmationModal(false);
+    setConfirmationConfig({
+      title: '',
+      message: '',
+      type: 'warning',
+      onConfirm: null
+    });
+  };
+
+  // Helper function to show custom alert
+  const showCustomAlert = (message, type = 'success') => {
+    setAlertConfig({ message, type });
+    setShowAlert(true);
+  };
+
+  // Handle completing all orders
+  const handleCompleteAll = async () => {
+    try {
+      if (!selectedOrderIdForSales) return;
+      
+      const order = orders.find(o => o.id === selectedOrderIdForSales);
+      if (!order) return;
+      
+      // Check if order is already completed
+      if (order.status === 'completed' || order.status === 'Completed') {
+        showCustomAlert(`Order #${order.id} is already completed`, 'warning');
+        return;
+      }
+      
+      // Check if order is in a final state that shouldn't be changed to completed
+      if (order.status === 'delivered' || order.status === 'Delivered' || 
+          order.status === 'canceled' || order.status === 'Canceled') {
+        showCustomAlert(`Order #${order.id} cannot be completed as it is in ${order.status} state`, 'warning');
+        return;
+      }
+      
+      // Show beautiful confirmation modal
+      showConfirmation(
+        'Complete Order',
+        `Are you sure you want to mark Order #${order.id} as completed?\n\nThis action will change the order status to "completed" and cannot be undone.`,
+        'warning',
+        async () => {
+          try {
+            console.log(`Completing order ${order.id}`);
+            
+            // Update the order status to "completed" in the database
+            const result = await window.myAPI.updateOrderStatus(order.id, 'completed');
+            
+            if (result.success) {
+              // Update the local state
+              setOrders(prevOrders => 
+                prevOrders.map(o => 
+                  o.id === order.id 
+                    ? { ...o, status: 'completed' }
+                    : o
+                )
+              );
+              
+              console.log('Order completed successfully');
+              
+              // Show success feedback
+              showCustomAlert(`Order #${order.id} has been completed successfully!`, 'success');
+              
+              // Clear the selection after successful update
+              setSelectedOrderIdForSales(null);
+            } else {
+              console.error('Failed to complete order:', result.message);
+              showCustomAlert(`Failed to complete order: ${result.message}`, 'error');
+            }
+          } catch (error) {
+            console.error('Error completing order:', error);
+            showCustomAlert('An error occurred while completing the order', 'error');
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error completing order:', error);
+      alert('An error occurred while completing the order');
     }
   };
 
@@ -800,13 +921,13 @@ const ManageOrders = () => {
             <button
               className={`w-full px-4 py-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
                 (() => {
-                  if (!selectedOrderIdForSales) return 'bg-gray-300 text-black cursor-not-allowed';
+                  if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
                   const order = orders.find(o => o.id === selectedOrderIdForSales);
-                  if (!order) return 'bg-gray-300 text-black cursor-not-allowed';
+                  if (!order) return 'bg-white text-primary cursor-pointer';
                   
                   // Check if order status prevents navigation to sales
                   if (isOrderStatusBlocked(order.status)) {
-                    return 'bg-gray-300 text-black cursor-not-allowed';
+                    return 'bg-white text-primary cursor-pointer';
                   }
                   
                   return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
@@ -912,13 +1033,13 @@ const ManageOrders = () => {
             <button
               className={`w-full px-4 py-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
                 (() => {
-                  if (!selectedOrderIdForSales) return 'bg-gray-300 text-gray-500 cursor-not-allowed';
+                  if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
                   const order = orders.find(o => o.id === selectedOrderIdForSales);
-                  if (!order) return 'bg-white text-black cursor-not-allowed';
+                  if (!order) return 'bg-white text-primary cursor-pointer';
                   
                   // Only enable for delivery orders
                   if (normalizeOrderType(order.order_type) !== 'delivery') {
-                    return 'bg-white text-black cursor-not-allowed';
+                    return 'bg-white text-primary cursor-pointer';
                   }
                   
                   return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
@@ -966,7 +1087,66 @@ const ManageOrders = () => {
             >
               Mark Delivered
             </button>
-            {['Complete All', 'Print'].map((action) => (
+            <button
+              className={`w-full px-4 py-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                (() => {
+                  if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
+                  
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return 'bg-white text-primary cursor-pointer';
+                  
+                  // Check if order can be completed
+                  if (order.status === 'completed' || order.status === 'Completed' ||
+                      order.status === 'delivered' || order.status === 'Delivered' ||
+                      order.status === 'canceled' || order.status === 'Canceled') {
+                    return 'bg-white text-primary cursor-pointer';
+                  }
+                  
+                  return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
+                })()
+              }`}
+              disabled={(() => {
+                if (!selectedOrderIdForSales) return true;
+                
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return true;
+                
+                // Disable if order is in a final state
+                return order.status === 'completed' || order.status === 'Completed' ||
+                       order.status === 'delivered' || order.status === 'Delivered' ||
+                       order.status === 'canceled' || order.status === 'Canceled';
+              })()}
+              title={(() => {
+                if (!selectedOrderIdForSales) return 'No order selected';
+                
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return 'No order selected';
+                
+                if (order.status === 'completed' || order.status === 'Completed') {
+                  return 'Order is already completed';
+                }
+                
+                if (order.status === 'delivered' || order.status === 'Delivered') {
+                  return 'Order is delivered and cannot be completed';
+                }
+                
+                if (order.status === 'canceled' || order.status === 'Canceled') {
+                  return 'Order is canceled and cannot be completed';
+                }
+                
+                return 'Mark order as completed';
+              })()}
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                
+                handleCompleteAll();
+              }}
+            >
+              Complete All
+            </button>
+            {['Print'].map((action) => (
               <button
                 key={action}
                 className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
@@ -1052,21 +1232,15 @@ const ManageOrders = () => {
                 <tr
                   key={order.id}
                   className={`border-b border-gray-100 transition-colors ${
-                    isOrderStatusBlocked(order.status)
-                      ? 'bg-gray-100 opacity-75'
-                      : index % 2 === 0 
-                        ? 'bg-white hover:bg-blue-50' 
-                        : 'bg-gray-50 hover:bg-blue-50'
+                    index % 2 === 0 
+                      ? 'bg-white hover:bg-blue-50' 
+                      : 'bg-gray-50 hover:bg-blue-50'
                   }`}
                 >
                   <td className="py-3 px-4">
                     <input 
                       type="checkbox" 
-                      className={`rounded border-gray-300 focus:ring-primaryLight ${
-                        isOrderStatusBlocked(order.status) 
-                          ? 'text-gray-400 cursor-not-allowed' 
-                          : 'text-primaryLight cursor-pointer'
-                      }`}
+                      className="rounded border-gray-300 focus:ring-primaryLight text-primaryLight cursor-pointer"
                       checked={selectedOrderIdForSales === order.id}
                       disabled={isOrderStatusBlocked(order.status)}
                       title={isOrderStatusBlocked(order.status) 
@@ -1334,6 +1508,36 @@ const ManageOrders = () => {
           onStatusUpdate={handleStatusUpdate}
         />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={closeConfirmation}
+        onConfirm={() => {
+          if (confirmationConfig.onConfirm) {
+            setIsConfirmationLoading(true);
+            confirmationConfig.onConfirm().finally(() => {
+              setIsConfirmationLoading(false);
+            });
+          }
+          closeConfirmation();
+        }}
+        title={confirmationConfig.title}
+        message={confirmationConfig.message}
+        type={confirmationConfig.type}
+        confirmText="Confirm"
+        cancelText="Cancel"
+        isLoading={isConfirmationLoading}
+      />
+
+      {/* Custom Alert */}
+      <CustomAlert
+        message={alertConfig.message}
+        isVisible={showAlert}
+        onClose={() => setShowAlert(false)}
+        type={alertConfig.type}
+        duration={4000}
+      />
 
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard
