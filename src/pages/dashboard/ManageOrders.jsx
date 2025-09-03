@@ -25,6 +25,7 @@ import AssignRider from '../../components/AssignRider';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import CustomAlert from '../../components/CustomAlert';
 import Invoice from '../../components/Invoice';
+import FinalizeSaleModal from '../../components/FinalizeSaleModal';
 
 const ManageOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -66,6 +67,35 @@ const ManageOrders = () => {
     message: '',
     type: 'success'
   });
+  
+  // FinalizeSaleModal state variables
+  const [showFinalizeSaleModal, setShowFinalizeSaleModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Cash');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [givenAmount, setGivenAmount] = useState('');
+  const [changeAmount, setChangeAmount] = useState('');
+  const [addedPayments, setAddedPayments] = useState([]);
+  const [sendSMS, setSendSMS] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState('EUR');
+  const [currencyAmount, setCurrencyAmount] = useState('');
+  const [currencyOptions] = useState([
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'GBP', symbol: '£', name: 'British Pound' }
+  ]);
+  
+  // Coupon and discount state
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [discountType, setDiscountType] = useState('percentage');
+  const [discountAmount, setDiscountAmount] = useState('');
+  
+  // Numeric keyboard state
+  const [numericActiveInput, setNumericActiveInput] = useState('');
+  const [numericKeyboardInput, setNumericKeyboardInput] = useState('');
+  
   const navigate = useNavigate();
 
   // Use the custom hook for keyboard functionality
@@ -709,6 +739,249 @@ const ManageOrders = () => {
     }
   };
 
+  // FinalizeSaleModal handler functions
+  const handleCashGivenAmountChange = (value) => {
+    setGivenAmount(value);
+    setPaymentAmount(value);
+    if (value) {
+      const total = parseFloat(order?.total || 0);
+      const change = parseFloat(value) - total;
+      setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+    } else {
+      setChangeAmount('0.00');
+    }
+  };
+
+  const handleCashAmountChange = (value) => {
+    setPaymentAmount(value);
+    setGivenAmount(value);
+    if (value) {
+      const total = parseFloat(order?.total || 0);
+      const change = parseFloat(value) - total;
+      setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+    } else {
+      setChangeAmount('0.00');
+    }
+  };
+
+  const handleNumericInputFocus = (e, inputName, currentValue) => {
+    setNumericActiveInput(inputName);
+    setNumericKeyboardInput(currentValue || '');
+  };
+
+  const handleNumericKeyboardChange = (input) => {
+    setNumericKeyboardInput(input);
+  };
+
+  const handleNumericKeyboardKeyPress = (button) => {
+    if (button === '{bksp}') {
+      setNumericKeyboardInput(prev => prev.slice(0, -1));
+    }
+  };
+
+  const handleAddPayment = () => {
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) return;
+    
+    const newPayment = {
+      method: selectedPaymentMethod,
+      amount: parseFloat(paymentAmount)
+    };
+    
+    setAddedPayments(prev => [...prev, newPayment]);
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+    setCurrencyAmount('');
+  };
+
+  const handleApplyManualDiscount = () => {
+    if (!discountAmount || parseFloat(discountAmount) <= 0) return;
+    
+    // For now, just show a success message
+    showCustomAlert(`Manual discount of ${discountAmount}${discountType === 'percentage' ? '%' : '€'} applied successfully!`, 'success');
+    
+    // Clear the discount fields
+    setDiscountAmount('');
+  };
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) return;
+    
+    // For now, just show a success message
+    showCustomAlert(`Coupon code "${couponCode}" applied successfully!`, 'success');
+    
+    // Clear the coupon code
+    setCouponCode('');
+  };
+
+  const removeAppliedCoupon = () => {
+    setAppliedCoupon(null);
+    showCustomAlert('Coupon removed successfully!', 'success');
+  };
+
+  const handleCustomInputBlur = (e, inputName) => {
+    // Handle custom input blur for keyboard
+  };
+
+  // Calculation functions for FinalizeSaleModal
+  const calculateCartTotal = () => {
+    return parseFloat(selectedOrder?.total || 0);
+  };
+
+  const calculateCartSubtotal = () => {
+    return parseFloat(selectedOrder?.total || 0);
+  };
+
+  const calculateCartTax = () => {
+    return 0; // No tax calculation for now
+  };
+
+  const calculateCartDiscount = () => {
+    return 0; // No discount calculation for now
+  };
+
+  const calculateDueAmount = () => {
+    const total = calculateCartTotal();
+    const paid = addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+    return Math.max(0, total - paid);
+  };
+
+  const getCurrencySymbol = () => {
+    return currencyOptions.find(c => c.code === selectedCurrency)?.symbol || '€';
+  };
+
+  // Reset FinalizeSaleModal
+  const resetFinalizeSaleModal = () => {
+    setSelectedPaymentMethod('Cash');
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+    setAddedPayments([]);
+    setDiscountAmount('');
+    setSendSMS(false);
+    setSelectedCurrency('EUR');
+    setCurrencyAmount('');
+    setAppliedCoupon(null);
+    setCouponCode('');
+  };
+
+  // Open FinalizeSaleModal for payment
+  const openFinalizeSaleModal = (order) => {
+    if (!order) return;
+    
+    // Format the order to match what FinalizeSaleModal expects
+    const formattedOrder = {
+      ...order,
+      databaseId: order.id, // Add databaseId for payment processing
+      orderNumber: `ORD-${order.id}`,
+      items: orderDetails.length > 0 ? orderDetails.map(d => ({
+        id: d.id,
+        food: {
+          id: d.food_id,
+          name: d.food_name,
+          description: d.food_description
+        },
+        quantity: d.quantity,
+        totalPrice: Number(d.price || 0) * Number(d.quantity || 1),
+        variations: d.variation ? (() => { try { return JSON.parse(d.variation); } catch { return {}; } })() : {},
+        adons: d.add_ons ? (() => { try { return JSON.parse(d.add_ons); } catch { return []; } })() : []
+      })) : [],
+      customer: order.customerData ? {
+        name: order.customerData.name || 'Walk-in Customer',
+        phone: order.customerData.phone,
+        email: order.customerData.email,
+        address: order.customerData.address
+      } : {
+        name: 'Walk-in Customer',
+        phone: 'N/A',
+        address: 'N/A'
+      },
+      total: order.total,
+      orderType: getOrderTypeDisplay(order.order_type),
+      table: order.table_details || 'None',
+      waiter: 'Ds Waiter',
+      status: order.status,
+      placedAt: order.created_at
+    };
+    
+    setSelectedOrder(formattedOrder);
+    setShowFinalizeSaleModal(true);
+  };
+
+  // Close FinalizeSaleModal
+  const closeFinalizeSaleModal = () => {
+    setShowFinalizeSaleModal(false);
+    resetFinalizeSaleModal();
+  };
+
+  // Handle successful payment completion
+  const handlePaymentSuccess = async (orderId) => {
+    try {
+      // Update the local state to reflect payment status change
+      setOrders(prevOrders => 
+        prevOrders.map(o => 
+          o.id === orderId 
+            ? { ...o, paymentStatus: 'paid' }
+            : o
+        )
+      );
+      
+      // Clear the selection after successful payment
+      setSelectedOrderIdForSales(null);
+      
+      // Show success message
+      showCustomAlert(`Payment processed successfully for Order #${orderId}!`, 'success');
+      
+      // Close the modal
+      closeFinalizeSaleModal();
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      showCustomAlert('Payment processed but failed to update display. Please refresh the page.', 'warning');
+    }
+  };
+
+  // Handle payment submission
+  const handlePaymentSubmission = async () => {
+    try {
+      if (!selectedOrder) return;
+      
+      // Check if payment is complete
+      if (addedPayments.length === 0 || calculateDueAmount() > 0) {
+        showCustomAlert('Please complete the payment before submitting', 'warning');
+        return;
+      }
+      
+      // Update the order payment status in the database
+      const paymentUpdates = {
+        payment_status: 'paid',
+        payment_method: selectedPaymentMethod
+      };
+      
+      const updateResult = await window.myAPI.updateOrder(selectedOrder.id, paymentUpdates);
+      if (updateResult.success) {
+        // Update the local state
+        setOrders(prevOrders => 
+          prevOrders.map(o => 
+            o.id === selectedOrder.id 
+              ? { ...o, paymentStatus: 'paid' }
+              : o
+          )
+        );
+        
+        // Clear the selection after successful payment
+        setSelectedOrderIdForSales(null);
+        
+        showCustomAlert(`Payment processed successfully for Order #${selectedOrder.id}!`, 'success');
+        closeFinalizeSaleModal();
+      } else {
+        showCustomAlert(`Failed to process payment: ${updateResult.message}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      showCustomAlert('An error occurred while processing the payment', 'error');
+    }
+  };
+
   // Handle keyboard input changes
   const handleKeyboardChange = (input, inputName) => {
     if (inputName === 'searchTerm') {
@@ -1118,7 +1391,19 @@ const ManageOrders = () => {
             {['Pay'].map((action) => (
               <button
                 key={action}
-                className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
+                className={`w-full px-4 py-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                  !selectedOrderIdForSales
+                    ? 'bg-white text-primary cursor-not-allowed'
+                    : 'bg-white text-primary hover:bg-gray-100 cursor-pointer'
+                }`}
+                disabled={!selectedOrderIdForSales}
+                title={!selectedOrderIdForSales ? 'No order selected' : 'Process payment for selected order'}
+                onClick={() => {
+                  if (!selectedOrderIdForSales) return;
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return;
+                  openFinalizeSaleModal(order);
+                }}
               >
                 {action}
               </button>
@@ -1708,6 +1993,147 @@ const ManageOrders = () => {
         type={alertConfig.type}
         duration={4000}
       />
+
+      {/* FinalizeSaleModal */}
+      {showFinalizeSaleModal && selectedOrder && (
+        <FinalizeSaleModal
+          isOpen={showFinalizeSaleModal}
+          onClose={closeFinalizeSaleModal}
+          // Payment related props
+          selectedPaymentMethod={selectedPaymentMethod}
+          setSelectedPaymentMethod={setSelectedPaymentMethod}
+          paymentAmount={paymentAmount}
+          setPaymentAmount={setPaymentAmount}
+          givenAmount={givenAmount}
+          setGivenAmount={setGivenAmount}
+          changeAmount={changeAmount}
+          setChangeAmount={setChangeAmount}
+          currencyAmount={currencyAmount}
+          setCurrencyAmount={setCurrencyAmount}
+          selectedCurrency={selectedCurrency}
+          setSelectedCurrency={setSelectedCurrency}
+          currencyOptions={currencyOptions}
+          addedPayments={addedPayments}
+          setAddedPayments={setAddedPayments}
+          // Mode and data props
+          isSinglePayMode={false}
+          selectedSplitBill={null}
+          selectedPlacedOrder={selectedOrder}
+          cartItems={[]}
+          foodDetails={null}
+          // Coupon related props
+          appliedCoupon={appliedCoupon}
+          removeAppliedCoupon={removeAppliedCoupon}
+          couponCode={couponCode}
+          setCouponCode={setCouponCode}
+          availableCoupons={availableCoupons}
+          couponsLoading={couponsLoading}
+          // Discount related props
+          discountType={discountType}
+          setDiscountType={setDiscountType}
+          discountAmount={discountAmount}
+          setDiscountAmount={setDiscountAmount}
+          // Other props
+          sendSMS={sendSMS}
+          setSendSMS={setSendSMS}
+          // Handler functions
+          handleCashGivenAmountChange={handleCashGivenAmountChange}
+          handleCashAmountChange={handleCashAmountChange}
+          handleNumericInputFocus={handleNumericInputFocus}
+          handleNumericKeyboardChange={handleNumericKeyboardChange}
+          handleNumericKeyboardKeyPress={handleNumericKeyboardKeyPress}
+          handleAddPayment={handleAddPayment}
+          handleApplyManualDiscount={handleApplyManualDiscount}
+          handleApplyCoupon={handleApplyCoupon}
+          handleAnyInputFocus={handleAnyInputFocus}
+          handleAnyInputClick={handleAnyInputClick}
+          handleCustomInputBlur={handleCustomInputBlur}
+          // Calculation functions
+          calculateSinglePayTotals={() => ({ total: calculateCartTotal(), subtotal: calculateCartSubtotal(), tax: calculateCartTax(), discount: calculateCartDiscount() })}
+          calculateSplitBillTotal={calculateCartTotal}
+          calculateCartTotal={calculateCartTotal}
+          calculateSplitBillSubtotal={calculateCartSubtotal}
+          calculateSplitBillTax={calculateCartTax}
+          calculateSplitBillDiscount={calculateCartDiscount}
+          calculateSplitBillCharge={() => 0}
+          calculateSplitBillTips={() => 0}
+          calculateCartSubtotal={calculateCartSubtotal}
+          calculateCartTax={calculateCartTax}
+          calculateCartDiscount={calculateCartDiscount}
+          calculateDueAmount={calculateDueAmount}
+          getCurrencySymbol={getCurrencySymbol}
+          // State variables
+          numericActiveInput={numericActiveInput}
+          numericKeyboardInput={numericKeyboardInput}
+          setNumericActiveInput={setNumericActiveInput}
+          setNumericKeyboardInput={setNumericKeyboardInput}
+          // Modal state
+          setShowCartDetailsModal={() => {}}
+          // Split bill props
+          splitBillToRemove={null}
+          setSplitBills={() => {}}
+          setSplitBillToRemove={() => {}}
+          // Order related props
+          placedOrders={[]}
+          selectedCustomer={selectedOrder?.customerData || null}
+          selectedOrderType={getOrderTypeDisplay(selectedOrder?.order_type)}
+          selectedTable={selectedOrder?.table_details || null}
+          // Functions
+          handlePlaceOrder={async () => {
+            try {
+              // Check if payment is complete
+              if (addedPayments.length === 0 || calculateDueAmount() > 0) {
+                showCustomAlert('Please complete the payment before submitting', 'warning');
+                return null;
+              }
+              
+              // Process payment for the existing order
+              const paymentUpdates = {
+                payment_status: 'paid',
+                payment_method: selectedPaymentMethod
+              };
+              
+              const updateResult = await window.myAPI.updateOrder(selectedOrder.id, paymentUpdates);
+              if (updateResult.success) {
+                // Update the local state
+                setOrders(prevOrders => 
+                  prevOrders.map(o => 
+                    o.id === selectedOrder.id 
+                      ? { ...o, paymentStatus: 'paid' }
+                      : o
+                  )
+                );
+                
+                // Clear the selection after successful payment
+                setSelectedOrderIdForSales(null);
+                
+                // Show success message
+                showCustomAlert(`Payment processed successfully for Order #${selectedOrder.id}!`, 'success');
+                
+                // Close the modal
+                closeFinalizeSaleModal();
+                
+                return selectedOrder.id;
+              } else {
+                showCustomAlert(`Failed to process payment: ${updateResult.message}`, 'error');
+                return null;
+              }
+            } catch (error) {
+              console.error('Error processing payment:', error);
+              showCustomAlert('An error occurred while processing the payment', 'error');
+              return null;
+            }
+          }}
+          showError={showCustomAlert}
+          setIsInvoiceAfterPayment={() => {}}
+          setShowInvoiceModal={() => {}}
+          clearCart={() => {}}
+          resetFinalizeSaleModal={resetFinalizeSaleModal}
+          setIsSinglePayMode={() => {}}
+          setSelectedPlacedOrder={() => {}}
+          setCurrentOrderForInvoice={() => {}}
+        />
+      )}
 
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard
