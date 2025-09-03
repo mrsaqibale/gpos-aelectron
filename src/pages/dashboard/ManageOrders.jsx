@@ -454,24 +454,23 @@ const ManageOrders = () => {
   };
 
   return (
-    <div className="h-full flex flex-col px-4 py-2">
-
-
+    <div className="h-full flex flex-col px-4 py-2 bg-transparent">
       {/* Orders Table - Takes remaining space */}
-      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="bg-[#CDCDCD] rounded-lg mb-6">
         {/* Top Section: Date Filters, Order Type Filters, and Global Actions */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200">
+        <div className="flex-shrink-0 p-4">
           <div className="flex items-start justify-between gap-2 mb-4 ">
             {/* Date & Time Range Filter */}
             <div className="flex flex-col items-start gap-6">
               {/* From Date & Time */}
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700" htmlFor="from-datetime">From:</label>
+                <label className="w-20 text-center rounded-md px-3 py-2 text-sm font-medium text-white bg-primary" htmlFor="from-datetime">From:</label>
                 <div className="relative flex items-center gap-2">
                   <input
                     id="from-datetime"
                     type="datetime-local"
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                    className="px-3 py-2 border bg-white text-black border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
                     value={fromDateTime}
                     onChange={(e) => {
                       const v = e.target.value;
@@ -483,12 +482,12 @@ const ManageOrders = () => {
               </div>
               {/* To Date & Time */}
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700" htmlFor="to-datetime">To:</label>
+                <label className="w-20 text-center rounded-md px-3 py-2 text-sm font-medium text-white bg-primary" htmlFor="to-datetime">To:</label>
                 <div className="relative flex items-center gap-2">
                   <input
                     id="to-datetime"
                     type="datetime-local"
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                    className="px-3 py-2 border bg-white text-black border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
                     value={toDateTime}
                     onChange={(e) => {
                       const v = e.target.value;
@@ -508,8 +507,8 @@ const ManageOrders = () => {
                 <button
                   key={type}
                   className={`w-28 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === type.toLowerCase().replace('-', '')
-                      ? 'bg-primaryLight text-white'
-                      : 'bg-primaryExtraLight text-primaryLight hover:bg-primaryLight hover:text-white'
+                      ? 'bg-primary text-white'
+                      : 'bg-primary text-white cursor-pointer'
                     }`}
                   onClick={() => setActiveTab(type.toLowerCase().replace('-', ''))}
                 >
@@ -522,8 +521,8 @@ const ManageOrders = () => {
             <div className="flex flex-col items-center gap-2 mb-4">
               <button
                 className={`w-24 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'paid'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                    ? 'bg-[#16A34A] text-white'
+                    : 'bg-[#16A34A] text-white hover:bg-[#16A34A] cursor-pointer'
                   }`}
                 onClick={() => setPaymentStatusFilter(paymentStatusFilter === 'paid' ? 'all' : 'paid')}
               >
@@ -531,8 +530,8 @@ const ManageOrders = () => {
               </button>
               <button
                 className={`w-24 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'unpaid'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                    ? 'bg-[#0EA5E9] text-white'
+                    : 'bg-[#0EA5E9] text-white hover:bg-[#0EA5E9] cursor-pointer'
                   }`}
                 onClick={() => setPaymentStatusFilter(paymentStatusFilter === 'unpaid' ? 'all' : 'unpaid')}
               >
@@ -542,7 +541,7 @@ const ManageOrders = () => {
             {/* Global Action Buttons */}
             <div className="flex items-center gap-2">
               <button 
-                className="w-10 h-10 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors"
+                className="w-10 h-10 bg-white border border-gray-300 rounded-md flex items-center justify-center hover:bg-gray-50 transition-colors"
                 onClick={() => {
                   setActiveTab('all');
                   setPaymentStatusFilter('all');
@@ -560,7 +559,7 @@ const ManageOrders = () => {
               >
                 <RotateCcw size={18} className="text-gray-600" />
               </button>
-              <button className="w-10 h-10 bg-white border cursor-pointer border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <button className="w-10 h-10 bg-white border cursor-pointer border-gray-300 rounded-md flex items-center justify-center hover:bg-gray-50 transition-colors">
                 <ShoppingBag size={18} className="text-gray-600" />
               </button>
             </div>
@@ -572,7 +571,7 @@ const ManageOrders = () => {
           <div className="flex items-center justify-center gap-4 mb-4">
             {/* Status Filter */}
             <div className="flex items-center gap-2">
-              <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent">
+              <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white w-38">
                 <option>Status (All)</option>
                 <option>In Prepare</option>
                 <option>In Progress</option>
@@ -597,7 +596,7 @@ const ManageOrders = () => {
                 onFocus={(e) => handleInputFocusEnhanced(e, 'searchTerm')}
                 onClick={(e) => handleInputClickEnhanced(e, 'searchTerm')}
                 onBlur={handleInputBlur}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                className="px-3 py-2 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
               />
               <input
                 type="text"
@@ -612,7 +611,7 @@ const ManageOrders = () => {
                 onFocus={(e) => handleInputFocusEnhanced(e, 'customerSearchTerm')}
                 onClick={(e) => handleInputClickEnhanced(e, 'customerSearchTerm')}
                 onBlur={handleInputBlur}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                className="px-3 py-2 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
               />
               <button className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
                 Search by Driver
@@ -623,9 +622,9 @@ const ManageOrders = () => {
             </div>
           </div>
         </div>
-
+        </div>
         {/* Bulk Actions Bar */}
-        <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 bg-primary">
+        <div className="flex-shrink-0 px-4 py-2 rounded-lg mb-5 border-b border-gray-200 bg-primary">
           <div className="flex gap-2 w-full">
             {['Load Sales', 'Move Order', 'Pay', 'Assign Driver', 'Complete All', 'Mark Delivered', 'Print'].map((action) => (
               <button
@@ -637,6 +636,7 @@ const ManageOrders = () => {
             ))}
           </div>
         </div>
+        
 
         {/* Table Container - Scrollable */}
         <div className="flex-1 overflow-auto">
