@@ -330,11 +330,43 @@ const ManageOrders = () => {
   const handleStatusUpdate = async (newStatus) => {
     if (!selectedOrderForStatus) return;
     
+    console.log('handleStatusUpdate called with status:', newStatus);
+    console.log('selectedOrderForStatus:', selectedOrderForStatus);
+    
     setIsUpdatingStatus(true);
     
     try {
+      // Map UI status to database status format
+      let dbStatus = newStatus;
+      switch (newStatus) {
+        case 'New':
+          dbStatus = 'new';
+          break;
+        case 'In Progress':
+          dbStatus = 'in_progress';
+          break;
+        case 'Ready':
+          dbStatus = 'ready';
+          break;
+        case 'On the way':
+          dbStatus = 'on_the_way';
+          break;
+        case 'Delivered':
+          dbStatus = 'delivered';
+          break;
+        case 'Completed':
+          dbStatus = 'completed';
+          break;
+        default:
+          dbStatus = newStatus.toLowerCase().replace(/\s+/g, '_');
+      }
+      
+      console.log('Mapped status for database:', dbStatus);
+      
       // Update the order status in the database
-      const result = await window.myAPI.updateOrderStatus(selectedOrderForStatus.id, newStatus);
+      const result = await window.myAPI.updateOrderStatus(selectedOrderForStatus.id, dbStatus);
+      
+      console.log('API result:', result);
       
       if (result.success) {
         // Update the local state
@@ -346,11 +378,14 @@ const ManageOrders = () => {
           )
         );
         
-        // Close the modal
-        closeUpdateStatusModal();
-        
         // Show success message
         console.log('Order status updated successfully');
+        
+        // Add a small delay before closing the modal to show success state
+        setTimeout(() => {
+          closeUpdateStatusModal();
+        }, 500);
+        
         // You can add a toast notification here if you have a notification system
         // For now, we'll just close the modal and update the UI
       } else {
@@ -364,6 +399,7 @@ const ManageOrders = () => {
   };
 
   const handleStatusChange = (status) => {
+    console.log('handleStatusChange called with status:', status);
     setSelectedStatus(status);
   };
 
@@ -378,18 +414,28 @@ const ManageOrders = () => {
       // You can add your API call here:
       // const result = await window.myAPI.assignRiderToOrder(selectedOrderForRider.id, rider.id);
       
-      // Update the local state to show the assigned rider
-      setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === selectedOrderForRider.id 
-            ? { ...order, driver: rider.name }
-            : order
-        )
-      );
+      // Update the order status to "On the way" since this is triggered from status selection
+      const statusUpdateResult = await window.myAPI.updateOrderStatus(selectedOrderForRider.id, 'on_the_way');
       
-      // Close the modal on success
-      closeAssignRiderModal();
-      return true;
+      if (statusUpdateResult.success) {
+        // Update the local state to show the assigned rider and new status
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === selectedOrderForRider.id 
+              ? { ...order, driver: rider.name, status: 'On the way' }
+              : order
+          )
+        );
+        
+        console.log('Order status updated to "On the way" and rider assigned successfully');
+        
+        // Close the modal on success
+        closeAssignRiderModal();
+        return true;
+      } else {
+        console.error('Failed to update order status:', statusUpdateResult.message);
+        return false;
+      }
     } catch (error) {
       console.error('Error assigning rider:', error);
       return false;
@@ -504,6 +550,14 @@ const ManageOrders = () => {
     } else {
       return 'N/A';
     }
+  };
+
+  // Helper function to check if an order status prevents navigation to sales
+  const isOrderStatusBlocked = (status) => {
+    if (!status) return false;
+    const normalizedStatus = status.toLowerCase().replace(/[_\s-]+/g, '');
+    const blockedStatuses = ['completed', 'ontheway', 'delivered'];
+    return blockedStatuses.includes(normalizedStatus);
   };
 
   const tabs = [
@@ -701,11 +755,42 @@ const ManageOrders = () => {
         <div className="flex-shrink-0 px-4 py-2 rounded-lg mb-5 border-b border-gray-200 bg-primary">
           <div className="flex gap-2 w-full">
             <button
-              className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold"
+              className={`w-full px-4 py-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                (() => {
+                  if (!selectedOrderIdForSales) return 'bg-gray-300 text-black cursor-not-allowed';
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return 'bg-gray-300 text-black cursor-not-allowed';
+                  
+                  // Check if order status prevents navigation to sales
+                  if (isOrderStatusBlocked(order.status)) {
+                    return 'bg-gray-300 text-black cursor-not-allowed';
+                  }
+                  
+                  return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
+                })()
+              }`}
+              title={(() => {
+                if (!selectedOrderIdForSales) return 'No order selected';
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return 'No order selected';
+                
+                if (isOrderStatusBlocked(order.status)) {
+                  return `Cannot load sales for order with status: ${order.status}`;
+                }
+                
+                return 'Load order into sales screen';
+              })()}
               onClick={async () => {
                 if (!selectedOrderIdForSales) return;
                 const order = orders.find(o => o.id === selectedOrderIdForSales);
                 if (!order) return;
+                
+                // Check if order status prevents navigation to sales
+                if (isOrderStatusBlocked(order.status)) {
+                  console.log(`Cannot load sales for order with status: ${order.status}`);
+                  return;
+                }
+                
                 try {
                   // Fetch details and totals to pass along
                   const [detailsResult] = await Promise.all([
@@ -866,14 +951,35 @@ const ManageOrders = () => {
                 return (
                 <tr
                   key={order.id}
-                  className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                  className={`border-b border-gray-100 transition-colors ${
+                    isOrderStatusBlocked(order.status)
+                      ? 'bg-gray-100 opacity-75'
+                      : index % 2 === 0 
+                        ? 'bg-white hover:bg-blue-50' 
+                        : 'bg-gray-50 hover:bg-blue-50'
+                  }`}
                 >
                   <td className="py-3 px-4">
                     <input 
                       type="checkbox" 
-                      className="rounded border-gray-300 text-primaryLight focus:ring-primaryLight"
+                      className={`rounded border-gray-300 focus:ring-primaryLight ${
+                        isOrderStatusBlocked(order.status) 
+                          ? 'text-gray-400 cursor-not-allowed' 
+                          : 'text-primaryLight cursor-pointer'
+                      }`}
                       checked={selectedOrderIdForSales === order.id}
-                      onChange={(e) => setSelectedOrderIdForSales(e.target.checked ? order.id : null)}
+                      disabled={isOrderStatusBlocked(order.status)}
+                      title={isOrderStatusBlocked(order.status) 
+                        ? `Cannot select order with status: ${order.status}` 
+                        : 'Select order for sales operations'
+                      }
+                      onChange={(e) => {
+                        // Prevent selection of orders with blocked statuses
+                        if (isOrderStatusBlocked(order.status)) {
+                          return;
+                        }
+                        setSelectedOrderIdForSales(e.target.checked ? order.id : null);
+                      }}
                     />
                   </td>
                   <td className="py-3 px-4">
@@ -927,9 +1033,12 @@ const ManageOrders = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
                         {getStatusText(order.status)}
-                    </span>
+                      </span>
+                      
+                    </div>
                   </td>
                 </tr>
                 );
@@ -1102,6 +1211,12 @@ const ManageOrders = () => {
           onClose={closeUpdateStatusModal}
           order={selectedOrderForStatus}
           onStatusUpdate={handleStatusUpdate}
+          onRiderAssignment={() => {
+            closeUpdateStatusModal();
+            // Open the rider assignment modal for delivery orders
+            setSelectedOrderForRider(selectedOrderForStatus);
+            setShowAssignRiderModal(true);
+          }}
           selectedStatus={selectedStatus}
           onStatusChange={handleStatusChange}
           isUpdating={isUpdatingStatus}

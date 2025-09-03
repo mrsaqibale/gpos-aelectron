@@ -11,6 +11,20 @@ const UpdateOrderStatus = ({
   onStatusChange,
   isUpdating = false
 }) => {
+  const [showSuccess, setShowSuccess] = useState(false);
+  
+  // Reset success state when modal opens/closes
+  React.useEffect(() => {
+    if (isOpen) {
+      setShowSuccess(false);
+    }
+  }, [isOpen]);
+  
+  const handleClose = () => {
+    setShowSuccess(false);
+    onClose();
+  };
+  
   if (!isOpen || !order) return null;
 
   // Get statuses based on order type
@@ -55,12 +69,13 @@ const UpdateOrderStatus = ({
     if (!status.disabled) {
       // Check if this is "On the way" for delivery orders
       if (order.orderType === 'Delivery' && status.key === 'On the way') {
-        // Show rider assignment modal first
-        onClose();
+        // For delivery orders with "On the way" status, immediately trigger rider assignment
+        handleClose();
         if (onRiderAssignment) {
           onRiderAssignment();
         }
       } else {
+        // For all other statuses, just update the selected status
         onStatusChange(status.key);
       }
     }
@@ -68,6 +83,10 @@ const UpdateOrderStatus = ({
 
   const handleUpdateStatus = () => {
     if (onStatusUpdate) {
+      // Show success state first
+      setShowSuccess(true);
+      
+      // Update the status normally
       onStatusUpdate(selectedStatus);
     }
   };
@@ -79,7 +98,7 @@ const UpdateOrderStatus = ({
         <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
           <h2 className="text-xl font-bold">Update Order Status</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
           >
             <X size={20} />
@@ -125,10 +144,20 @@ const UpdateOrderStatus = ({
           </div>
         </div>
 
+        {/* Success Message */}
+        {showSuccess && (
+          <div className="px-6 py-3 bg-green-50 border-t border-green-200">
+            <div className="flex items-center gap-2 text-green-800">
+              <CheckCircle size={20} />
+              <span className="font-medium">Status updated successfully!</span>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="p-6 border-t border-gray-200 flex gap-3">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
           >
             Cancel
@@ -138,7 +167,7 @@ const UpdateOrderStatus = ({
             disabled={isUpdating}
             className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
               isUpdating
-                ? 'bg-gray-400 text-white cursor-not-allowed'
+                ? 'bg-gray-400 text-gray-400 cursor-not-allowed'
                 : 'bg-primary text-white hover:bg-primary cursor-pointer'
             }`}
           >

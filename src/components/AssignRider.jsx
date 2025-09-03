@@ -13,6 +13,7 @@ const AssignRider = ({
   const [riderSearchQuery, setRiderSearchQuery] = useState('');
   const [availableRiders, setAvailableRiders] = useState([]);
   const [ridersLoading, setRidersLoading] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   // Fetch available riders
   const fetchAvailableRiders = async () => {
@@ -77,6 +78,8 @@ const AssignRider = ({
     }
 
     try {
+      setIsAssigning(true);
+      
       // Call the parent's onAssignRider function
       const success = await onAssignRider(selectedRider);
       if (success) {
@@ -89,6 +92,8 @@ const AssignRider = ({
     } catch (error) {
       console.error('Error assigning rider:', error);
       return false;
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -225,13 +230,13 @@ const AssignRider = ({
           </button>
           <button
             onClick={handleAssignRider}
-            disabled={!selectedRider}
-            className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${selectedRider
-                ? 'bg-primary text-white hover:bg-primary/90'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            disabled={!selectedRider || isAssigning}
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${!selectedRider || isAssigning
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-primary text-white hover:bg-primary/90'
             }`}
           >
-            Assign Rider
+            {isAssigning ? 'Assigning...' : 'Assign Rider'}
           </button>
         </div>
       </div>
