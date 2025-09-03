@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Home,
   Receipt,
@@ -75,6 +76,8 @@ import DueTo from '../../components/DueTo';
 import { useDraftCount } from '../../contexts/DraftContext';
 
 const RunningOrders = () => {
+  // Accept navigation state to pre-load an order
+  const location = useLocation();
   // Custom Alert Hook
   const { alertState, showSuccess, showError, showWarning, showInfo, hideAlert } = useCustomAlert();
   const { updateDraftCount } = useDraftCount();
@@ -115,6 +118,51 @@ const RunningOrders = () => {
   const [mergeTable2, setMergeTable2] = useState('');
   const [mergeTableSelections, setMergeTableSelections] = useState([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
 
+  // Load order from ManageOrders when navigated with state
+  useEffect(() => {
+    const state = location?.state;
+    if (!state || !state.loadOrder) return;
+    const o = state.loadOrder;
+
+    // Set customer
+    if (o.customer) setSelectedCustomer(o.customer);
+
+    // Set order type
+    if (o.orderType) setSelectedOrderType(o.orderType);
+
+    // Load items into cart
+    if (o.items && Array.isArray(o.items)) {
+      const cartItems = o.items.map((item, idx) => ({
+        id: Date.now() + idx,
+        food: item.food,
+        variations: item.variations || {},
+        adons: item.adons || [],
+        quantity: item.quantity || 1,
+        totalPrice: item.totalPrice || 0,
+        addedAt: new Date().toISOString()
+      }));
+      setCartItems(cartItems);
+      setCartItemId(Date.now() + cartItems.length + 1);
+    }
+
+    // Table if any
+    if (o.table) {
+      setSelectedTable(o.table);
+    }
+
+    // Optional: set a selectedPlacedOrder representation if needed elsewhere
+    setSelectedPlacedOrder({
+      id: o.orderId,
+      databaseId: o.databaseId,
+      customer: o.customer,
+      items: o.items,
+      orderType: o.orderType,
+      table: o.table
+    });
+
+    // Clear state to avoid reapplying when navigating within sales
+    window.history.replaceState({}, document.title);
+  }, [location]);
 
   const [foods, setFoods] = useState([]);
   const [foodsLoading, setFoodsLoading] = useState(false);
