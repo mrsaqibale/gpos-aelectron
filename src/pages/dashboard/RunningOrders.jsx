@@ -124,16 +124,31 @@ const RunningOrders = () => {
     if (!state || !state.loadOrder) return;
     const o = state.loadOrder;
 
+    // Imitate "Modify Order" flow: clear current context first
+    setCartItems([]);
+    setAppliedCoupon(null);
+    setSelectedTable('');
+    setSelectedPersons('');
+    setSelectedFloor('');
+    setSelectedCustomer(null);
+    setMergeTable1('');
+    setMergeTable2('');
+    setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+    setEditingCartItem(null);
+    setFoodQuantity(1);
+    setSelectedVariations({});
+    setSelectedAdons([]);
+
     // Set customer
     if (o.customer) setSelectedCustomer(o.customer);
-
     // Set order type
     if (o.orderType) setSelectedOrderType(o.orderType);
 
     // Load items into cart
+    const nowBase = Date.now();
     if (o.items && Array.isArray(o.items)) {
       const cartItems = o.items.map((item, idx) => ({
-        id: Date.now() + idx,
+        id: nowBase + idx,
         food: item.food,
         variations: item.variations || {},
         adons: item.adons || [],
@@ -142,7 +157,7 @@ const RunningOrders = () => {
         addedAt: new Date().toISOString()
       }));
       setCartItems(cartItems);
-      setCartItemId(Date.now() + cartItems.length + 1);
+      setCartItemId(nowBase + (o.items.length || 0) + 1);
     }
 
     // Table if any
@@ -150,7 +165,11 @@ const RunningOrders = () => {
       setSelectedTable(o.table);
     }
 
-    // Optional: set a selectedPlacedOrder representation if needed elsewhere
+    // Mark as modifying this order
+    setIsModifyingOrder(true);
+    setModifyingOrderId(o.databaseId || o.orderId);
+
+    // Set selectedPlacedOrder for compatibility with existing flows
     setSelectedPlacedOrder({
       id: o.orderId,
       databaseId: o.databaseId,

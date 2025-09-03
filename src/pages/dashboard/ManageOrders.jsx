@@ -79,7 +79,8 @@ const ManageOrders = () => {
     setFromDateTime(formatForDatetimeLocal(todayStart));
     setToDateTime(formatForDatetimeLocal(todayEnd));
     
-    // Initial values set; fetching will be triggered by the date range effect
+    // Also fetch immediately on mount
+    loadOrders(todayStart.toISOString(), todayEnd.toISOString());
   }, []);
 
   // Load orders from database
