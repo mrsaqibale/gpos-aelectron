@@ -419,19 +419,19 @@ const ManageOrders = () => {
       
       if (statusUpdateResult.success) {
         // Update the local state to show the assigned rider and new status
-        setOrders(prevOrders => 
-          prevOrders.map(order => 
-            order.id === selectedOrderForRider.id 
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === selectedOrderForRider.id 
               ? { ...order, driver: rider.name, status: 'On the way' }
-              : order
-          )
-        );
+            : order
+        )
+      );
         
         console.log('Order status updated to "On the way" and rider assigned successfully');
-        
-        // Close the modal on success
-        closeAssignRiderModal();
-        return true;
+      
+      // Close the modal on success
+      closeAssignRiderModal();
+      return true;
       } else {
         console.error('Failed to update order status:', statusUpdateResult.message);
         return false;
@@ -439,6 +439,48 @@ const ManageOrders = () => {
     } catch (error) {
       console.error('Error assigning rider:', error);
       return false;
+    }
+  };
+
+  // Handle marking order as delivered
+  const handleMarkDelivered = async (order) => {
+    try {
+      // Check if order is already delivered
+      if (order.status === 'delivered' || order.status === 'Delivered') {
+        alert(`Order #${order.id} is already marked as delivered`);
+        return;
+      }
+      
+      console.log(`Marking order ${order.id} as delivered`);
+      
+      // Update the order status to "delivered" in the database
+      const result = await window.myAPI.updateOrderStatus(order.id, 'delivered');
+      
+      if (result.success) {
+        // Update the local state
+        setOrders(prevOrders => 
+          prevOrders.map(o => 
+            o.id === order.id 
+              ? { ...o, status: 'delivered' }
+              : o
+          )
+        );
+        
+        console.log('Order marked as delivered successfully');
+        
+        // Show success feedback
+        // You can add a toast notification here or use alert for now
+        alert(`Order #${order.id} has been marked as delivered successfully!`);
+        
+        // Clear the selection after successful update
+        setSelectedOrderIdForSales(null);
+      } else {
+        console.error('Failed to mark order as delivered:', result.message);
+        alert(`Failed to mark order as delivered: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error marking order as delivered:', error);
+      alert('An error occurred while marking the order as delivered');
     }
   };
 
@@ -866,7 +908,64 @@ const ManageOrders = () => {
             >
               Assign Driver
             </button>
-            {['Complete All', 'Mark Delivered', 'Print'].map((action) => (
+            <button
+              className={`w-full px-4 py-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                (() => {
+                  if (!selectedOrderIdForSales) return 'bg-gray-300 text-gray-500 cursor-not-allowed';
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return 'bg-white text-black cursor-not-allowed';
+                  
+                  // Only enable for delivery orders
+                  if (normalizeOrderType(order.order_type) !== 'delivery') {
+                    return 'bg-white text-black cursor-not-allowed';
+                  }
+                  
+                  return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
+                })()
+              }`}
+              disabled={(() => {
+                if (!selectedOrderIdForSales) return true;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return true;
+                
+                // Disable if not a delivery order or if already delivered
+                if (normalizeOrderType(order.order_type) !== 'delivery') return true;
+                if (order.status === 'delivered' || order.status === 'Delivered') return true;
+                
+                return false;
+              })()}
+              title={(() => {
+                if (!selectedOrderIdForSales) return 'No order selected';
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return 'No order selected';
+                
+                if (normalizeOrderType(order.order_type) !== 'delivery') {
+                  return 'Mark Delivered is only available for delivery orders';
+                }
+                
+                if (order.status === 'delivered' || order.status === 'Delivered') {
+                  return 'Order is already marked as delivered';
+                }
+                
+                return 'Mark order as delivered';
+              })()}
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                
+                // Only allow marking as delivered for delivery orders
+                if (normalizeOrderType(order.order_type) !== 'delivery') {
+                  console.log('Mark Delivered is only available for delivery orders');
+                  return;
+                }
+                
+                handleMarkDelivered(order);
+              }}
+            >
+              Mark Delivered
+            </button>
+            {['Complete All', 'Print'].map((action) => (
               <button
                 key={action}
                 className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
@@ -1034,9 +1133,9 @@ const ManageOrders = () => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex flex-col gap-1">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
                         {getStatusText(order.status)}
-                      </span>
+                    </span>
                       
                     </div>
                   </td>
