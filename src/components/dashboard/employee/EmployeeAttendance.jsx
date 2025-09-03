@@ -891,6 +891,11 @@ const EmployeeAttendance = () => {
     return Math.max(0, totalEarned - totalPaid);
   };
 
+  // Calculate advance amount when payment exceeds pending
+  const calculateAdvanceAmount = (paymentAmount, pendingAmount) => {
+    return Math.max(0, paymentAmount - pendingAmount);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1257,6 +1262,12 @@ const EmployeeAttendance = () => {
                       <span className="text-sm text-gray-600">Pending Amount:</span>
                       <span className="text-sm font-medium text-red-600">€{calculatePendingAmount(selectedEmployee).toLocaleString()}</span>
                     </div>
+                    {calculateAdvanceAmount(parseFloat(paySalary), calculatePendingAmount(selectedEmployee)) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Advance Amount:</span>
+                        <span className="text-sm font-medium text-blue-600">€{calculateAdvanceAmount(parseFloat(paySalary), calculatePendingAmount(selectedEmployee)).toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Salary History Button */}
@@ -1288,6 +1299,19 @@ const EmployeeAttendance = () => {
                         step="0.01"
                         required
                       />
+                      {paySalary && parseFloat(paySalary) > 0 && (
+                        <div className="mt-2 text-sm">
+                          {parseFloat(paySalary) > calculatePendingAmount(selectedEmployee) ? (
+                            <div className="text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                              <strong>Advance Payment:</strong> This payment exceeds the pending amount by €{calculateAdvanceAmount(parseFloat(paySalary), calculatePendingAmount(selectedEmployee)).toFixed(2)}
+                            </div>
+                          ) : (
+                            <div className="text-green-600 bg-green-50 p-2 rounded border border-green-200">
+                              <strong>Regular Payment:</strong> This payment covers €{parseFloat(paySalary).toFixed(2)} of the €{calculatePendingAmount(selectedEmployee).toFixed(2)} pending amount
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -1483,7 +1507,7 @@ const EmployeeAttendance = () => {
             {/* Modal Content */}
             <div className="p-6 overflow-y-auto max-h-[60vh]">
               {/* Salary Summary */}
-              <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-800">€{calculateTotalEarnedAmount(selectedEmployee).toLocaleString()}</div>
                   <div className="text-sm text-gray-600">Total Amount</div>
@@ -1496,6 +1520,10 @@ const EmployeeAttendance = () => {
                   <div className="text-2xl font-bold text-red-600">€{calculatePendingAmount(selectedEmployee).toLocaleString()}</div>
                   <div className="text-sm text-gray-600">Pending Amount</div>
                 </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">€{calculateAdvanceAmount(calculateTotalSalaryPaid(selectedEmployee), calculatePendingAmount(selectedEmployee)).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Advance Amount</div>
+                </div>
               </div>
 
               {/* Salary History Table */}
@@ -1506,30 +1534,40 @@ const EmployeeAttendance = () => {
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Date</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Amount</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Method</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Type</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Note</th>
                     </tr>
                   </thead>
                   <tbody>
                     {salaryHistory.length > 0 ? (
-                      salaryHistory.map((payment) => (
-                        <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            {formatDate(payment.date)}
-                          </td>
-                          <td className="py-3 px-4 text-sm font-medium text-green-600">
-                            €{payment.amount.toLocaleString()}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            <span className="capitalize">{payment.method.replace('_', ' ')}</span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">
-                            {payment.note || '-'}
-                          </td>
-                        </tr>
-                      ))
+                      salaryHistory.map((payment) => {
+                        const paymentType = payment.amount > calculatePendingAmount(selectedEmployee) ? 'Advance' : 'Regular';
+                        const typeColor = paymentType === 'Advance' ? 'text-blue-600' : 'text-green-600';
+                        return (
+                          <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              {formatDate(payment.date)}
+                            </td>
+                            <td className="py-3 px-4 text-sm font-medium text-green-600">
+                              €{payment.amount.toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              <span className="capitalize">{payment.method.replace('_', ' ')}</span>
+                            </td>
+                            <td className="py-3 px-4 text-sm font-medium">
+                              <span className={`${typeColor} bg-opacity-10 px-2 py-1 rounded-full text-xs`}>
+                                {paymentType}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              {payment.note || '-'}
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
-                        <td colSpan="4" className="py-8 text-center text-gray-500">
+                        <td colSpan="5" className="py-8 text-center text-gray-500">
                           No salary payments found
                         </td>
                       </tr>
