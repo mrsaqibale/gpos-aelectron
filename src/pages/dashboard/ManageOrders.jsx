@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Clock, 
-  User, 
-  MapPin, 
-  ShoppingBag, 
+import {
+  Clock,
+  User,
+  MapPin,
+  ShoppingBag,
   Eye,
   Check,
   X,
@@ -27,10 +27,13 @@ const ManageOrders = () => {
   const [dateFilter, setDateFilter] = useState('');
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
   const [appliedDateFilter, setAppliedDateFilter] = useState('');
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [appliedCustomerSearchTerm, setAppliedCustomerSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [isModalAnimating, setIsModalAnimating] = useState(false);
-  
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+
   // Use the custom hook for keyboard functionality
   const {
     showKeyboard,
@@ -46,7 +49,7 @@ const ManageOrders = () => {
     onKeyboardKeyPress,
     resetKeyboardInputs,
     hideKeyboard
-  } = useVirtualKeyboard(['searchTerm', 'dateFilter']);
+  } = useVirtualKeyboard(['searchTerm', 'dateFilter', 'customerSearchTerm']);
 
   // Mock data - replace with actual API calls
   useEffect(() => {
@@ -221,7 +224,7 @@ const ManageOrders = () => {
       'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
       'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
     };
-    
+
     const parts = dateStr.split(' ');
     if (parts.length === 3) {
       const day = parts[0].padStart(2, '0');
@@ -252,10 +255,25 @@ const ManageOrders = () => {
       filtered = filtered.filter(o => o.paymentStatus === 'Unpaid');
     }
 
+    // Filter by payment status
+    if (paymentStatusFilter === 'paid') {
+      filtered = filtered.filter(o => o.paymentStatus === 'Paid');
+    } else if (paymentStatusFilter === 'unpaid') {
+      filtered = filtered.filter(o => o.paymentStatus === 'Unpaid');
+    }
+
     // Filter by applied search term (Order ID only)
     if (appliedSearchTerm) {
       filtered = filtered.filter(o => 
         o.id.toLowerCase().includes(appliedSearchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by applied customer search term
+    if (appliedCustomerSearchTerm) {
+      filtered = filtered.filter(o => 
+        o.customer.toLowerCase().includes(appliedCustomerSearchTerm.toLowerCase()) ||
+        o.phone.includes(appliedCustomerSearchTerm)
       );
     }
 
@@ -307,6 +325,10 @@ const ManageOrders = () => {
       setDateFilter(input);
       // Apply date filter immediately as user types
       setAppliedDateFilter(input);
+    } else if (inputName === 'customerSearchTerm') {
+      setCustomerSearchTerm(input);
+      // Apply customer search filter immediately as user types
+      setAppliedCustomerSearchTerm(input);
     }
   };
 
@@ -322,6 +344,30 @@ const ManageOrders = () => {
       if (nextInput) {
         nextInput.focus();
       }
+    }
+  };
+
+  // Enhanced input focus handling for keyboard
+  const handleInputFocusEnhanced = (e, inputName) => {
+    // Set the active input for the virtual keyboard
+    if (inputName === 'searchTerm') {
+      handleAnyInputFocus(e, 'searchTerm', searchTerm);
+    } else if (inputName === 'customerSearchTerm') {
+      handleAnyInputFocus(e, 'customerSearchTerm', customerSearchTerm);
+    } else if (inputName === 'dateFilter') {
+      handleAnyInputFocus(e, 'dateFilter', dateFilter);
+    }
+  };
+
+  // Enhanced input click handling for keyboard
+  const handleInputClickEnhanced = (e, inputName) => {
+    // Set the active input for the virtual keyboard
+    if (inputName === 'searchTerm') {
+      handleAnyInputClick(e, 'searchTerm', searchTerm);
+    } else if (inputName === 'customerSearchTerm') {
+      handleAnyInputClick(e, 'customerSearchTerm', customerSearchTerm);
+    } else if (inputName === 'dateFilter') {
+      handleAnyInputClick(e, 'dateFilter', dateFilter);
     }
   };
 
@@ -373,111 +419,173 @@ const ManageOrders = () => {
 
   return (
     <div className="h-full flex flex-col px-4 py-2">
-      {/* Filter Tabs - Fixed at top */}
-      <div className="flex-shrink-0 p-4 bg-white rounded-lg shadow-sm mb-6">
-        <div className="flex flex-wrap gap-2">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors flex items-center gap-2 ${
-                activeTab === tab.id 
-                  ? 'bg-primaryLight text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {tab.label}
-              <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Orders Table - Takes remaining space */}
       <div className="flex-1 flex flex-col bg-white rounded-lg shadow-sm overflow-hidden">
-        {/* Search and Date Filter - Fixed */}
+        {/* Top Section: Date Filters, Order Type Filters, and Global Actions */}
         <div className="flex-shrink-0 p-4 border-b border-gray-200">
-          <div className="flex justify-end">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  name="searchTerm"
-                  placeholder="Search by Order ID"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setSearchTerm(value);
-                    setAppliedSearchTerm(value);
-                  }}
-                  onFocus={(e) => handleAnyInputFocus(e, 'searchTerm', searchTerm)}
-                  onClick={(e) => handleAnyInputClick(e, 'searchTerm', searchTerm)}
-                  onBlur={handleInputBlur}
-                  className="w-64 px-4 py-1.5 border text-sm border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+          <div className="flex items-start justify-between gap-2 mb-4 ">
+            {/* Date & Time Range Filter */}
+            <div className="flex flex-col items-start gap-6">
+              {/* From Date & Time */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700" htmlFor="from-datetime">From:</label>
+                <div className="relative flex items-center gap-2">
+                  <input
+                    id="from-datetime"
+                    type="datetime-local"
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                    defaultValue="2025-09-03T12:00"
+                  />
                 </div>
               </div>
-              
-              {/* Date Filter */}
-              <div className="relative">
-                <input
-                  type="date"
-                  name="dateFilter"
-                  value={dateFilter}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setDateFilter(value);
-                    setAppliedDateFilter(value);
-                  }}
-                  onFocus={(e) => handleAnyInputFocus(e, 'dateFilter', dateFilter)}
-                  onClick={(e) => handleAnyInputClick(e, 'dateFilter', dateFilter)}
-                  onBlur={handleInputBlur}
-                  className="px-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
-                />
+              {/* To Date & Time */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700" htmlFor="to-datetime">To:</label>
+                <div className="relative flex items-center gap-2">
+                  <input
+                    id="to-datetime"
+                    type="datetime-local"
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                    defaultValue="2025-09-03T12:00"
+                  />
+                </div>
               </div>
+            </div>
 
-              {/* Apply Filters Button */}
+
+
+            {/* Order Type Filters */}
+            <div className="flex items-center gap-2 mb-4">
+              {['In-Store', 'Dine-In', 'Collection', 'Delivery', 'Online'].map((type) => (
+                <button
+                  key={type}
+                  className={`w-28 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === type.toLowerCase().replace('-', '')
+                      ? 'bg-primaryLight text-white'
+                      : 'bg-primaryExtraLight text-primaryLight hover:bg-primaryLight hover:text-white'
+                    }`}
+                  onClick={() => setActiveTab(type.toLowerCase().replace('-', ''))}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+
+            {/* Payment Status Filters */}
+            <div className="flex flex-col items-center gap-2 mb-4">
               <button
-                onClick={handleApplyFilters}
-                className="px-4 py-1.5 bg-primaryLight text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+                className={`w-24 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'paid'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                  }`}
+                onClick={() => setPaymentStatusFilter(paymentStatusFilter === 'paid' ? 'all' : 'paid')}
               >
-                <Filter size={16} />
-                Apply Filters
+                Paid
               </button>
-
-              {/* Clear Filters Button */}
               <button
-                onClick={handleClearFilters}
-                className="px-4 py-1.5 bg-gray-100 text-gray-700 cursor-pointer text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                className={`w-24 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'unpaid'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                  }`}
+                onClick={() => setPaymentStatusFilter(paymentStatusFilter === 'unpaid' ? 'all' : 'unpaid')}
               >
-                <RotateCcw size={16} />
-                Clear
+                Unpaid
+              </button>
+            </div>
+            {/* Global Action Buttons */}
+            <div className="flex items-center gap-2">
+              <button 
+                className="w-10 h-10 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors"
+                onClick={() => {
+                  setActiveTab('all');
+                  setPaymentStatusFilter('all');
+                  setSearchTerm('');
+                  setDateFilter('');
+                  setCustomerSearchTerm('');
+                  setAppliedSearchTerm('');
+                  setAppliedDateFilter('');
+                  setAppliedCustomerSearchTerm('');
+                }}
+              >
+                <RotateCcw size={18} className="text-gray-600" />
+              </button>
+              <button className="w-10 h-10 bg-white border cursor-pointer border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors">
+                <ShoppingBag size={18} className="text-gray-600" />
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Active Filters Display */}
-          {(appliedSearchTerm || appliedDateFilter) && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-              <span className="font-medium">Active Filters:</span>
-              {appliedSearchTerm && (
-                <span className="px-2 py-1 bg-primaryExtraLight text-primary font-medium rounded-full text-xs">
-                  Order ID: {appliedSearchTerm}
-                </span>
-              )}
-              {appliedDateFilter && (
-                <span className="px-2 py-1 bg-primaryExtraLight text-primary font-medium rounded-full text-xs">
-                  Date: {appliedDateFilter}
-                </span>
-              )}
+        {/* Middle Section: Search and Advanced Search */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent">
+                <option>Status (All)</option>
+                <option>In Prepare</option>
+                <option>In Progress</option>
+                <option>Ready</option>
+                <option>Completed</option>
+                <option>Delivered</option>
+              </select>
             </div>
-          )}
+
+            {/* Search Fields */}
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                name="searchTerm"
+                placeholder="Search by Order ID"
+                value={searchTerm}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchTerm(value);
+                  setAppliedSearchTerm(value);
+                }}
+                onFocus={(e) => handleInputFocusEnhanced(e, 'searchTerm')}
+                onClick={(e) => handleInputClickEnhanced(e, 'searchTerm')}
+                onBlur={handleInputBlur}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+              />
+              <input
+                type="text"
+                name="customerSearchTerm"
+                placeholder="Search by Customer name or Number"
+                value={customerSearchTerm}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCustomerSearchTerm(value);
+                  setAppliedCustomerSearchTerm(value);
+                }}
+                onFocus={(e) => handleInputFocusEnhanced(e, 'customerSearchTerm')}
+                onClick={(e) => handleInputClickEnhanced(e, 'customerSearchTerm')}
+                onBlur={handleInputBlur}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+              />
+              <button className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+                Search by Driver
+              </button>
+              <button className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+                Advanced Search
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bulk Actions Bar */}
+        <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 bg-primary">
+          <div className="flex gap-2 w-full">
+            {['Load Sales', 'Move Order', 'Pay', 'Assign Driver', 'Complete All', 'Mark Delivered', 'Print'].map((action) => (
+              <button
+                key={action}
+                className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold"
+              >
+                {action}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Table Container - Scrollable */}
@@ -491,49 +599,49 @@ const ManageOrders = () => {
                 <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Type
-                    
+
                   </div>
                 </th>
                 <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Order ID
-                    
+
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Kitchen ID
-                    
+
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Date/Time
-                    
+
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Due At
-                    
+
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Driver/Table
-                    
+
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Customer
-                    
+
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1">
                     Address
-                    
+
                   </div>
                 </th>
                 <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -555,8 +663,8 @@ const ManageOrders = () => {
             </thead>
             <tbody>
               {getFilteredOrders().map((order, index) => (
-                <tr 
-                  key={order.id} 
+                <tr
+                  key={order.id}
                   className={`border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                   onClick={() => handleOrderClick(order)}
                 >
@@ -629,20 +737,19 @@ const ManageOrders = () => {
           )}
         </div>
       </div>
-      
+
       {/* Order Details Modal - Slides in from right */}
       {showOrderModal && selectedOrder && (
         <div className="fixed inset-0 z-50 flex justify-end">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-[#00000080] bg-opacity-50 transition-opacity"
+          <div
+            className="absolute inset-0 bg-[#0000000d] bg-opacity-50 transition-opacity"
             onClick={closeOrderModal}
           />
-          
+
           {/* Modal Content - Slides in from right */}
-          <div className={`relative w-96 h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${
-            isModalAnimating ? 'translate-x-0' : 'translate-x-full'
-          }`}>
+          <div className={`relative w-96 h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${isModalAnimating ? 'translate-x-0' : 'translate-x-full'
+            }`}>
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800">Order Details</h2>
@@ -697,11 +804,10 @@ const ManageOrders = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Status:</span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        selectedOrder.paymentStatus === 'Paid' 
-                          ? 'bg-green-100 text-green-800' 
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${selectedOrder.paymentStatus === 'Paid'
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}>
+                        }`}>
                         {selectedOrder.paymentStatus}
                       </span>
                     </div>
@@ -745,7 +851,7 @@ const ManageOrders = () => {
           </div>
         </div>
       )}
-      
+
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard
         isVisible={showKeyboard}
