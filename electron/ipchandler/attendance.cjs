@@ -39,9 +39,23 @@ const getDbPath = () => {
       } = attendanceData;
 
       // Get employee's hourly salary rate
-      const empStmt = db.prepare('SELECT salary_per_hour FROM employee WHERE id = ?');
+      const empStmt = db.prepare('SELECT salary_per_hour, salary FROM employee WHERE id = ?');
       const emp = empStmt.get(employee_id);
-      const hourlyRate = emp ? Number(emp.salary_per_hour) || 0 : 0;
+      let hourlyRate = 0;
+      
+      if (emp) {
+        // If salary_per_hour is set, use it directly
+        if (emp.salary_per_hour && Number(emp.salary_per_hour) > 0) {
+          hourlyRate = Number(emp.salary_per_hour);
+        } 
+        // Otherwise, use salary (which is already hourly rate)
+        else if (emp.salary && Number(emp.salary) > 0) {
+          hourlyRate = Number(emp.salary);
+        }
+      }
+      
+      // Round to 2 decimal places
+      hourlyRate = Math.round(hourlyRate * 100) / 100;
 
       const query = `
         INSERT INTO attendance (employee_id, date, checkin, checkout, status, added_by, pay_rate, created_at)
@@ -154,7 +168,7 @@ const getDbPath = () => {
 
       if (Object.prototype.hasOwnProperty.call(updateData, 'checkout') && updateData.checkout) {
         // Load existing record to get checkin and employee_id
-        const getStmt = db.prepare('SELECT employee_id, date, checkin, checkout FROM attendance WHERE id = ?');
+        const getStmt = db.prepare('SELECT employee_id, date, checkin, checkout, pay_rate FROM attendance WHERE id = ?');
         const existing = getStmt.get(id);
         if (existing && existing.checkin) {
           const checkinTime = new Date(existing.checkin);
@@ -164,20 +178,18 @@ const getDbPath = () => {
           const hours = diffMs / (1000 * 60 * 60);
           computedHours = Math.round(hours * 100) / 100;
 
-          // Get employee salary and derive hourly if missing
-          const empStmt = db.prepare('SELECT salary, salary_per_hour FROM employee WHERE id = ?');
-          const emp = empStmt.get(existing.employee_id) || { salary: 0, salary_per_hour: 0 };
-          const baseMonthly = Number(emp.salary) || 0;
-          const configuredHourly = emp.salary_per_hour != null ? Number(emp.salary_per_hour) : 0;
-          const derivedHourly = baseMonthly > 0 ? baseMonthly / 160 : 0; // assume 160 hours/month
-          const hourlyRate = configuredHourly > 0 ? configuredHourly : derivedHourly;
-          computedPay = Math.round((computedHours * hourlyRate) * 100) / 100;
+          // Get the pay_rate that was saved during check-in
+          const payRate = existing.pay_rate || 0;
+          
+          // Calculate earned amount: total_hours × pay_rate
+          const earnedAmount = Math.round((computedHours * payRate) * 100) / 100;
 
-          // Persist computed hours in attendance.total_hours
+          // Persist computed hours and earned amount
           updateData.total_hours = computedHours;
-          // Calculate earned amount based on hours worked × pay_rate
-          const earnedAmount = Math.round((computedHours * hourlyRate) * 100) / 100;
           updateData.earned_amount = earnedAmount;
+          
+          // Store computed pay for return value
+          computedPay = earnedAmount;
         }
       }
 
@@ -407,21 +419,41 @@ const getDbPath = () => {
       const db = new Database(dbPath);
       
       const query = `
-        INSERT INTO attendance (employee_id, date, checkin, checkout, status, added_by, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO attendance (employee_id, date, checkin, checkout, status, added_by, pay_rate, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `;
       
       const stmt = db.prepare(query);
       const results = [];
       
       for (const record of attendanceRecords) {
+        // Get employee's hourly salary rate for each record
+        const empStmt = db.prepare('SELECT salary_per_hour, salary FROM employee WHERE id = ?');
+        const emp = empStmt.get(record.employee_id);
+        let hourlyRate = 0;
+        
+        if (emp) {
+          // If salary_per_hour is set, use it directly
+          if (emp.salary_per_hour && Number(emp.salary_per_hour) > 0) {
+            hourlyRate = Number(emp.salary_per_hour);
+          } 
+          // Otherwise, use salary (which is already hourly rate)
+          else if (emp.salary && Number(emp.salary) > 0) {
+            hourlyRate = Number(emp.salary);
+          }
+        }
+        
+        // Round to 2 decimal places
+        hourlyRate = Math.round(hourlyRate * 100) / 100;
+        
         const result = stmt.run(
           record.employee_id,
           record.date,
           record.checkin,
           record.checkout,
           record.status,
-          record.added_by
+          record.added_by,
+          hourlyRate
         );
         results.push({ id: result.lastID, success: true });
       }

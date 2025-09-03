@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, ChevronDown, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, Clock, Calendar, CheckCircle, XCircle, Eye, X } from 'lucide-react';
+import { Users, ChevronDown, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, Clock, Calendar, Eye, X } from 'lucide-react';
 import VirtualKeyboard from '../../VirtualKeyboard';
 import CustomAlert from '../../CustomAlert';
 
@@ -293,7 +293,7 @@ const EmployeeAttendance = () => {
               const totalDays = attendance.length;
               const presentDays = attendance.filter(record => record.status === 'present').length;
               const lateDays = attendance.filter(record => record.status === 'late').length;
-              const totalHours = presentDays * 8;
+              const totalHours = attendance.reduce((sum, record) => sum + (record.total_hours || 0), 0);
 
               const salaryHistoryRaw = Array.isArray(salaryResult) ? salaryResult : (salaryResult?.data || []);
               const totalPaid = salaryHistoryRaw.reduce((sum, payment) => sum + (payment.amount || 0), 0);
@@ -1145,7 +1145,7 @@ const EmployeeAttendance = () => {
                           <ChevronDown className="inline ml-1" size={12} />
                         </th>
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                          Status
+                          Salary
                           <ChevronDown className="inline ml-1" size={12} />
                         </th>
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
@@ -1164,7 +1164,6 @@ const EmployeeAttendance = () => {
                     </thead>
                     <tbody>
                       {attendanceRecords.map((record) => {
-                        const status = (record.status || '').toLowerCase();
                         const checkInText = record.checkin ? new Date(record.checkin).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-';
                         const checkOutText = record.checkout ? new Date(record.checkout).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-';
                         const totalHours = record.total_hours != null ? record.total_hours : (record.checkin && record.checkout ? ((new Date(record.checkout) - new Date(record.checkin)) / (1000*60*60)).toFixed(2) : 0);
@@ -1173,25 +1172,8 @@ const EmployeeAttendance = () => {
                           <td className="py-3 px-4 text-sm text-gray-600">
                             {formatDate(record.date)}
                           </td>
-                          <td className="py-3 px-4">
-                            {status === 'present' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <CheckCircle size={12} className="mr-1" />
-                                Present
-                              </span>
-                            )}
-                            {status === 'late' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                <Clock size={12} className="mr-1" />
-                                Late
-                              </span>
-                            )}
-                            {status === 'absent' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                <XCircle size={12} className="mr-1" />
-                                Absent
-                              </span>
-                            )}
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {record.earned_amount ? `€${Number(record.earned_amount).toFixed(2)}` : '-'}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600">
                             {checkInText}
