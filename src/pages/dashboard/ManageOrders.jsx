@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import VirtualKeyboard from '../../components/VirtualKeyboard';
 import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
+import UpdateOrderStatus from '../../components/UpdateOrderStatus';
 
 const ManageOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -40,6 +41,10 @@ const ManageOrders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedOrderIdForSales, setSelectedOrderIdForSales] = useState(null);
+  const [showUpdateStatusModal, setShowUpdateStatusModal] = useState(false);
+  const [selectedOrderForStatus, setSelectedOrderForStatus] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState('New');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const navigate = useNavigate();
 
   // Use the custom hook for keyboard functionality
@@ -258,6 +263,66 @@ const ManageOrders = () => {
     }, 300);
   };
 
+  const openUpdateStatusModal = (order) => {
+    setSelectedOrderForStatus({
+      id: order.id,
+      orderNumber: order.id,
+      orderType: getOrderTypeDisplay(order.order_type),
+      status: order.status,
+      customer: order.customerData
+    });
+    // Ensure status is properly capitalized to match the component's expected format
+    const normalizedStatus = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase() : 'New';
+    setSelectedStatus(normalizedStatus);
+    setShowUpdateStatusModal(true);
+  };
+
+  const closeUpdateStatusModal = () => {
+    setShowUpdateStatusModal(false);
+    setSelectedOrderForStatus(null);
+    setSelectedStatus('New');
+  };
+
+  const handleStatusUpdate = async (newStatus) => {
+    if (!selectedOrderForStatus) return;
+    
+    setIsUpdatingStatus(true);
+    
+    try {
+      // Update the order status in the database
+      const result = await window.myAPI.updateOrderStatus(selectedOrderForStatus.id, newStatus);
+      
+      if (result.success) {
+        // Update the local state
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === selectedOrderForStatus.id 
+              ? { ...order, status: newStatus }
+              : order
+          )
+        );
+        
+        // Close the modal
+        closeUpdateStatusModal();
+        
+        // Show success message
+        console.log('Order status updated successfully');
+        // You can add a toast notification here if you have a notification system
+        // For now, we'll just close the modal and update the UI
+      } else {
+        console.error('Failed to update order status:', result.message);
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleStatusChange = (status) => {
+    setSelectedStatus(status);
+  };
+
   // Handle keyboard input changes
   const handleKeyboardChange = (input, inputName) => {
     if (inputName === 'searchTerm') {
@@ -450,8 +515,8 @@ const ManageOrders = () => {
 
             {/* Order Type Filters */}
             <div className="flex items-center gap-2 mb-4">
-              {['In-Store', 'Dine-In', 'Collection', 'Delivery', 'Online'].map((type) => {
-                const typeId = type.toLowerCase().replace('-', '');
+              {['In Store', 'Dine In', 'Collection', 'Delivery', 'Online'].map((type) => {
+                const typeId = type.toLowerCase().replace(/\s+/g, '');
                 return (
                 <button
                   key={type}
@@ -613,10 +678,21 @@ const ManageOrders = () => {
             >
               Load Sales
             </button>
-            {['Move Order', 'Pay', 'Assign Driver', 'Complete All', 'Mark Delivered', 'Print'].map((action) => (
+            <button
+              className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                openUpdateStatusModal(order);
+              }}
+            >
+              Move Order
+            </button>
+            {['Pay', 'Assign Driver', 'Complete All', 'Mark Delivered', 'Print'].map((action) => (
               <button
                 key={action}
-                className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold"
+                className="w-full px-4 py-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
               >
                 {action}
               </button>
@@ -925,6 +1001,19 @@ const ManageOrders = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Update Order Status Modal */}
+      {showUpdateStatusModal && selectedOrderForStatus && (
+        <UpdateOrderStatus
+          isOpen={showUpdateStatusModal}
+          onClose={closeUpdateStatusModal}
+          order={selectedOrderForStatus}
+          onStatusUpdate={handleStatusUpdate}
+          selectedStatus={selectedStatus}
+          onStatusChange={handleStatusChange}
+          isUpdating={isUpdatingStatus}
+        />
       )}
 
       {/* Virtual Keyboard Component */}

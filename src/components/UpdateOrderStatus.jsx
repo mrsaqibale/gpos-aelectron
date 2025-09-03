@@ -8,7 +8,8 @@ const UpdateOrderStatus = ({
   onStatusUpdate, 
   onRiderAssignment,
   selectedStatus,
-  onStatusChange 
+  onStatusChange,
+  isUpdating = false
 }) => {
   if (!isOpen || !order) return null;
 
@@ -91,6 +92,9 @@ const UpdateOrderStatus = ({
             <h3 className="text-2xl font-bold text-gray-800 mb-2">
               #{order.orderNumber}
             </h3>
+            <p className="text-sm text-gray-600 mb-1">
+              Type: {order.orderType || 'N/A'}
+            </p>
             <p className="text-sm text-gray-600">
               Current: {order.status || 'Pending'}
             </p>
@@ -100,24 +104,15 @@ const UpdateOrderStatus = ({
         {/* Status Selection */}
         <div className="p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {getStatusesForOrderType(order.orderType).map((status) => {
-              // For In Store orders, maintain consistent styling for the only enabled button
-              const isInStoreOrder = order.orderType === 'In Store';
-              const isOnlyEnabledButton = isInStoreOrder && !status.disabled;
-              
-              return (
+            {getStatusesForOrderType(order.orderType).map((status) => (
                 <button
                   key={status.key}
                   onClick={() => handleStatusSelect(status)}
                   className={`p-4 rounded-lg border-2 transition-all ${status.disabled
                       ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed'
-                      : isOnlyEnabledButton
-                        ? selectedStatus === status.key
-                          ? 'bg-primary text-white border-primary cursor-pointer' // Selected state for In Store
-                          : 'bg-white border-primary text-primary cursor-pointer' // Default state for In Store
-                        : selectedStatus === status.key
-                          ? 'bg-white border-primary text-primary'
-                          : 'bg-primary text-white border-primary hover:bg-primary/90 cursor-pointer'
+                      : selectedStatus === status.key
+                        ? 'bg-white border-primary text-primary cursor-pointer' // Selected state
+                        : 'bg-primary text-white border-primary hover:bg-primary/90 cursor-pointer' // Default state
                   }`}
                   disabled={status.disabled}
                 >
@@ -126,8 +121,7 @@ const UpdateOrderStatus = ({
                     <span className="font-medium">{status.label}</span>
                   </div>
                 </button>
-              );
-            })}
+            ))}
           </div>
         </div>
 
@@ -141,9 +135,14 @@ const UpdateOrderStatus = ({
           </button>
           <button
             onClick={handleUpdateStatus}
-            className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors cursor-pointer"
+            disabled={isUpdating}
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+              isUpdating
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : 'bg-primary text-white hover:bg-primary cursor-pointer'
+            }`}
           >
-            Update Status
+            {isUpdating ? 'Updating...' : 'Update Status'}
           </button>
         </div>
       </div>

@@ -126,6 +126,8 @@ const RunningOrders = () => {
     if (!state || !state.loadOrder) return;
     const o = state.loadOrder;
 
+    console.log('RunningOrders: Received order data from ManageOrders:', o);
+
     // Imitate "Modify Order" flow: clear current context first
     setCartItems([]);
     setAppliedCoupon(null);
@@ -142,13 +144,21 @@ const RunningOrders = () => {
     setSelectedAdons([]);
 
     // Set customer
-    if (o.customer) setSelectedCustomer(o.customer);
+    if (o.customer) {
+      console.log('Setting customer:', o.customer);
+      setSelectedCustomer(o.customer);
+    }
+    
     // Set order type
-    if (o.orderType) setSelectedOrderType(o.orderType);
+    if (o.orderType) {
+      console.log('Setting order type:', o.orderType);
+      setSelectedOrderType(o.orderType);
+    }
 
     // Load items into cart
     const nowBase = Date.now();
     if (o.items && Array.isArray(o.items)) {
+      console.log('Loading items into cart:', o.items);
       const cartItems = o.items.map((item, idx) => ({
         id: nowBase + idx,
         food: item.food,
@@ -164,6 +174,7 @@ const RunningOrders = () => {
 
     // Table if any
     if (o.table) {
+      console.log('Setting table:', o.table);
       setSelectedTable(o.table);
     }
 
