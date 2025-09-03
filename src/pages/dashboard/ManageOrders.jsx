@@ -689,9 +689,10 @@ const ManageOrders = () => {
                 return (
                 <button
                   key={type}
-                    className={`w-28 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === typeId
-                      ? 'bg-primary text-white'
-                      : 'bg-primary text-white cursor-pointer'
+                    className={`w-28 px-4 py-2 rounded-lg text-sm font-medium transition-colors border-2 ${
+                      activeTab === typeId
+                        ? 'bg-white text-black border-primary cursor-pointer'
+                        : 'bg-primary text-white border-primary cursor-pointer'
                     }`}
                     onClick={() => setActiveTab(typeId)}
                 >
