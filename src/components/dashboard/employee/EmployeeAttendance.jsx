@@ -665,6 +665,16 @@ const EmployeeAttendance = () => {
             setSelectedEmployee(updatedEmployee);
           }
           
+          // Refresh attendance records to update calculations
+          try {
+            const res = await api.attendanceGetByEmployee(selectedEmployee.id);
+            const records = Array.isArray(res) ? res : (res?.data || []);
+            records.sort((a, b) => new Date(`${b.date} ${b.checkin || '00:00:00'}`) - new Date(`${a.date} ${a.checkin || '00:00:00'}`));
+            setAttendanceRecords(records);
+          } catch (e) {
+            console.error('Error refreshing attendance records:', e);
+          }
+          
           setAlertMessage(`Salary payment of €${parseFloat(paySalary).toLocaleString()} saved successfully for ${selectedEmployee?.name}!`);
           setAlertType('success');
           setShowAlert(true);
@@ -868,10 +878,17 @@ const EmployeeAttendance = () => {
     return employee.salaryHistory.reduce((total, payment) => total + payment.amount, 0);
   };
 
-  // Calculate remaining salary
-  const calculateRemainingSalary = (employee) => {
+  // Calculate total earned amount from attendance records
+  const calculateTotalEarnedAmount = (employee) => {
+    if (!attendanceRecords || attendanceRecords.length === 0) return 0;
+    return attendanceRecords.reduce((total, record) => total + (record.earned_amount || 0), 0);
+  };
+
+  // Calculate pending amount
+  const calculatePendingAmount = (employee) => {
+    const totalEarned = calculateTotalEarnedAmount(employee);
     const totalPaid = calculateTotalSalaryPaid(employee);
-    return Math.max(0, employee.salary - totalPaid);
+    return Math.max(0, totalEarned - totalPaid);
   };
 
   return (
@@ -1222,54 +1239,23 @@ const EmployeeAttendance = () => {
                   </div>
                 </div>
                 
-                {/* Attendance Summary */}
-                <div className="border-t border-gray-200 pt-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-3">Attendance Summary</h5>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Days:</span>
-                      <span className="text-sm font-medium text-gray-800">{selectedEmployee.totalDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Present Days:</span>
-                      <span className="text-sm font-medium text-green-600">{selectedEmployee.presentDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Late Days:</span>
-                      <span className="text-sm font-medium text-yellow-600">{selectedEmployee.lateDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Absent Days:</span>
-                      <span className="text-sm font-medium text-red-600">{selectedEmployee.totalDays - selectedEmployee.presentDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Attendance Rate:</span>
-                      <span className="text-sm font-medium text-primary">{getAttendancePercentage(selectedEmployee.presentDays, selectedEmployee.totalDays)}%</span>
-                    </div>
-                  </div>
-                </div>
+
                 
                 {/* Salary Section */}
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <h5 className="text-sm font-medium text-gray-700 mb-3">Salary Information</h5>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Monthly Salary:</span>
-                      <span className="text-sm font-medium text-gray-800">€{selectedEmployee.salary.toLocaleString()}</span>
+                      <span className="text-sm text-gray-600">Total Amount:</span>
+                      <span className="text-sm font-medium text-gray-800">€{calculateTotalEarnedAmount(selectedEmployee).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Paid:</span>
+                      <span className="text-sm text-gray-600">Paid Amount:</span>
                       <span className="text-sm font-medium text-green-600">€{calculateTotalSalaryPaid(selectedEmployee).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Remaining:</span>
-                      <span className="text-sm font-medium text-blue-600">€{calculateRemainingSalary(selectedEmployee).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Payment Status:</span>
-                      <span className={`text-sm font-medium ${selectedEmployee.isPaid ? 'text-green-600' : 'text-red-600'}`}>
-                        {selectedEmployee.isPaid ? 'Paid' : 'Unpaid'}
-                      </span>
+                      <span className="text-sm text-gray-600">Pending Amount:</span>
+                      <span className="text-sm font-medium text-red-600">€{calculatePendingAmount(selectedEmployee).toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -1499,16 +1485,16 @@ const EmployeeAttendance = () => {
               {/* Salary Summary */}
               <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-800">€{selectedEmployee.salary.toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">Monthly Salary</div>
+                  <div className="text-2xl font-bold text-gray-800">€{calculateTotalEarnedAmount(selectedEmployee).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Total Amount</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">€{calculateTotalSalaryPaid(selectedEmployee).toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">Total Paid</div>
+                  <div className="text-sm text-gray-600">Paid Amount</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">€{calculateRemainingSalary(selectedEmployee).toLocaleString()}</div>
-                  <div className="text-sm text-gray-600">Remaining</div>
+                  <div className="text-2xl font-bold text-red-600">€{calculatePendingAmount(selectedEmployee).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Pending Amount</div>
                 </div>
               </div>
 
