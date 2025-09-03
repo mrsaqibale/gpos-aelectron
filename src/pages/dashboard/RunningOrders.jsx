@@ -73,6 +73,8 @@ import Invoice from '../../components/Invoice';
 import Drafts from '../../components/Drafts';
 import DraftNumberModal from '../../components/DraftNumberModal';
 import DueTo from '../../components/DueTo';
+import AssignRider from '../../components/AssignRider';
+import UpdateOrderStatus from '../../components/UpdateOrderStatus';
 import { useDraftCount } from '../../contexts/DraftContext';
 
 const RunningOrders = () => {
@@ -305,13 +307,6 @@ const RunningOrders = () => {
   const [currentOrderForInvoice, setCurrentOrderForInvoice] = useState(null);
   const [isInvoiceAfterPayment, setIsInvoiceAfterPayment] = useState(false);
 
-  // Rider Assignment Modal State
-  const [showRiderAssignmentModal, setShowRiderAssignmentModal] = useState(false);
-  const [selectedRider, setSelectedRider] = useState(null);
-  const [riderSearchQuery, setRiderSearchQuery] = useState('');
-  const [availableRiders, setAvailableRiders] = useState([]);
-  const [ridersLoading, setRidersLoading] = useState(false);
-
   // Finalize Sale Modal State
   const [showFinalizeSaleModal, setShowFinalizeSaleModal] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Cash');
@@ -323,6 +318,9 @@ const RunningOrders = () => {
   const [sendSMS, setSendSMS] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState('EUR');
   const [currencyAmount, setCurrencyAmount] = useState('');
+
+  // Rider Assignment Modal State
+  const [showRiderAssignmentModal, setShowRiderAssignmentModal] = useState(false);
 
   // Cart Details Modal State
   const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
@@ -4468,125 +4466,7 @@ const RunningOrders = () => {
     setShowStatusUpdateModal(true);
   };
 
-  // Fetch available riders
-  const fetchAvailableRiders = async () => {
-    try {
-      setRidersLoading(true);
-      // Mock data for now - replace with actual API call
-      const mockRiders = [
-        {
-          id: 1,
-          name: 'John Smith',
-          status: 'Available',
-          vehicle: 'Car - ABC123',
-          vehicleType: 'car'
-        },
-        {
-          id: 2,
-          name: 'Mike Johnson',
-          status: 'Available',
-          vehicle: 'Motorcycle - XYZ789',
-          vehicleType: 'motorcycle'
-        },
-        {
-          id: 3,
-          name: 'Sarah Wilson',
-          status: 'On Delivery',
-          vehicle: 'Car - DEF456',
-          vehicleType: 'car'
-        },
-        {
-          id: 4,
-          name: 'David Brown',
-          status: 'Available',
-          vehicle: 'Motorcycle - GHI789',
-          vehicleType: 'motorcycle'
-        },
-        {
-          id: 5,
-          name: 'Lisa Davis',
-          status: 'Available',
-          vehicle: 'Car - JKL012',
-          vehicleType: 'car'
-        }
-      ];
-      setAvailableRiders(mockRiders);
-    } catch (error) {
-      console.error('Error fetching riders:', error);
-      setAvailableRiders([]);
-    } finally {
-      setRidersLoading(false);
-    }
-  };
 
-  // Handle rider selection
-  const handleRiderSelect = (rider) => {
-    setSelectedRider(rider);
-  };
-
-  // Handle rider assignment
-  const handleAssignRider = async () => {
-    if (!selectedRider) {
-      showError('Please select a rider first');
-      return;
-    }
-
-    try {
-      // Here you would typically update the order with the assigned rider
-      // For now, we'll just show a success message
-      showSuccess(`Rider ${selectedRider.name} assigned to order successfully!`);
-      
-      // Set the status to "On the way" since rider is assigned
-      setSelectedStatus('On the way');
-      
-      // Close the rider assignment modal and return to status update modal
-      setShowRiderAssignmentModal(false);
-      setShowStatusUpdateModal(true);
-      setSelectedRider(null);
-      setRiderSearchQuery('');
-    } catch (error) {
-      console.error('Error assigning rider:', error);
-      showError('Failed to assign rider. Please try again.');
-    }
-  };
-
-  // Get statuses based on order type
-  const getStatusesForOrderType = (orderType) => {
-    switch (orderType) {
-      case 'In Store':
-        return [
-          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: false },
-          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: false },
-          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: false },
-          { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
-        ];
-      case 'Table':
-      case 'Dine In':
-      case 'Collection':
-        return [
-          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: false },
-          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: false },
-          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: false },
-          { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
-        ];
-      case 'Delivery':
-        return [
-          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: false },
-          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: false },
-          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: false },
-          { key: 'On the way', label: 'On the way', icon: <Truck size={20} />, disabled: false },
-          { key: 'Delivered', label: 'Delivered', icon: <CheckCircle size={20} />, disabled: false },
-          { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
-        ];
-      default:
-        return [
-          { key: 'New', label: 'New', icon: <Clock size={20} />, disabled: false },
-          { key: 'In Progress', label: 'In Progress', icon: <Clock size={20} />, disabled: false },
-          { key: 'Ready', label: 'Ready', icon: <CheckCircle size={20} />, disabled: false },
-          { key: 'Completed', label: 'Completed', icon: <Star size={20} />, disabled: false }
-        ];
-    }
-  };
 
   // Handle updating order status
   const handleUpdateOrderStatus = async () => {
@@ -7722,12 +7602,7 @@ const RunningOrders = () => {
                       )}
                     </div>
                   </div>
-
-
                 </div>
-
-
-
               </div>
             </div>
           </div>
@@ -9196,240 +9071,53 @@ const RunningOrders = () => {
       )}
 
       {/* Status Update Modal */}
-      {showStatusUpdateModal && selectedOrderForStatusUpdate && (
-        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl">
-            {/* Header */}
-            <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
-              <h2 className="text-xl font-bold">Update Order Status</h2>
-              <button
-                onClick={() => setShowStatusUpdateModal(false)}
-                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Order Information */}
-            <div className="p-6 bg-gray-50">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                  #{selectedOrderForStatusUpdate.orderNumber}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Current: {selectedOrderForStatusUpdate.status || 'Pending'}
-                </p>
-              </div>
-            </div>
-
-            {/* Status Selection */}
-            <div className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {getStatusesForOrderType(selectedOrderForStatusUpdate.orderType).map((status) => {
-                  // For In Store orders, maintain consistent styling for the only enabled button
-                  const isInStoreOrder = selectedOrderForStatusUpdate.orderType === 'In Store';
-                  const isOnlyEnabledButton = isInStoreOrder && !status.disabled;
-                  
-                  return (
-                    <button
-                      key={status.key}
-                      onClick={() => {
-                        if (!status.disabled) {
-                          // Check if this is "On the way" for delivery orders
-                          if (selectedOrderForStatusUpdate.orderType === 'Delivery' && status.key === 'On the way') {
-                            // Show rider assignment modal first
-                            setShowStatusUpdateModal(false);
-                            setShowRiderAssignmentModal(true);
-                            fetchAvailableRiders();
-                          } else {
-                            setSelectedStatus(status.key);
-                          }
-                        }
-                      }}
-                      className={`p-4 rounded-lg border-2 transition-all ${status.disabled
-                          ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed'
-                          : isOnlyEnabledButton
-                            ? selectedStatus === status.key
-                              ? 'bg-primary text-white border-primary cursor-pointer' // Selected state for In Store
-                              : 'bg-white border-primary text-primary cursor-pointer' // Default state for In Store
-                            : selectedStatus === status.key
-                              ? 'bg-white border-primary text-primary'
-                              : 'bg-primary text-white border-primary hover:bg-primary/90 cursor-pointer'
-                      }`}
-                      disabled={status.disabled}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        {status.icon}
-                        <span className="font-medium">{status.label}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="p-6 border-t border-gray-200 flex gap-3">
-              <button
-                onClick={() => setShowStatusUpdateModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateOrderStatus}
-                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary transition-colors cursor-pointer"
-              >
-                Update Status
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UpdateOrderStatus
+        isOpen={showStatusUpdateModal}
+        onClose={() => setShowStatusUpdateModal(false)}
+        order={selectedOrderForStatusUpdate}
+        onStatusUpdate={handleUpdateOrderStatus}
+        onRiderAssignment={() => {
+          setShowStatusUpdateModal(false);
+          setShowRiderAssignmentModal(true);
+        }}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+      />
 
       {/* Rider Assignment Modal */}
-      {showRiderAssignmentModal && (
-        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setShowRiderAssignmentModal(false);
-                    setShowStatusUpdateModal(true);
-                    setSelectedRider(null);
-                    setRiderSearchQuery('');
-                  }}
-                  className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
-                >
-                  <ArrowLeft size={20} />
-                </button>
-                <h2 className="text-xl font-bold">Assign Rider</h2>
-              </div>
-              <button
-                onClick={() => {
-                  setShowRiderAssignmentModal(false);
-                  setSelectedRider(null);
-                  setRiderSearchQuery('');
-                }}
-                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Order Information */}
-            <div className="p-4 bg-gray-50 border-b">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                  #{selectedOrderForStatusUpdate?.orderNumber}
-                </h3>
-                <p className="text-sm text-gray-600">Delivery Order</p>
-              </div>
-            </div>
-
-            {/* Search Bar */}
-            <div className="p-4 border-b">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type="text"
-                  placeholder="Search riders..."
-                  value={riderSearchQuery}
-                  onChange={(e) => setRiderSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                />
-              </div>
-            </div>
-
-            {/* Rider List */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {ridersLoading ? (
-                <div className="text-center py-8">
-                  <div className="text-gray-500 text-sm">Loading riders...</div>
-                </div>
-              ) : availableRiders.length > 0 ? (
-                <div className="space-y-3">
-                  {availableRiders
-                    .filter(rider => 
-                      rider.name.toLowerCase().includes(riderSearchQuery.toLowerCase()) ||
-                      rider.vehicle.toLowerCase().includes(riderSearchQuery.toLowerCase())
-                    )
-                    .map((rider) => (
-                      <div
-                        key={rider.id}
-                        onClick={() => handleRiderSelect(rider)}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedRider?.id === rider.id
-                            ? 'border-primary bg-primary/5'
-                            : 'border-gray-200 hover:border-primary/50 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-gray-800">{rider.name}</h4>
-                            <div className="flex items-center gap-2 mt-1">
-                              {rider.vehicleType === 'car' ? (
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              ) : (
-                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              )}
-                              <span className="text-sm text-gray-600">{rider.vehicle}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${rider.status === 'Available'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              {rider.status}
-                            </span>
-                            {selectedRider?.id === rider.id && (
-                              <CheckCircle size={16} className="text-primary" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-500 text-sm">No riders available</div>
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="p-4 border-t border-gray-200 flex gap-3">
-              <button
-                onClick={() => {
-                  setShowRiderAssignmentModal(false);
-                  setShowStatusUpdateModal(true);
-                  setSelectedRider(null);
-                  setRiderSearchQuery('');
-                }}
-                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAssignRider}
-                disabled={!selectedRider}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors cursor-pointer ${selectedRider
-                    ? 'bg-primary text-white hover:bg-primary/90'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Assign Rider
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AssignRider
+        isOpen={showRiderAssignmentModal}
+        onClose={() => {
+          setShowRiderAssignmentModal(false);
+        }}
+        onBack={() => {
+          setShowRiderAssignmentModal(false);
+          setShowStatusUpdateModal(true);
+        }}
+        order={selectedOrderForStatusUpdate}
+        onAssignRider={async (rider) => {
+          try {
+            // Here you would typically update the order with the assigned rider
+            // For now, we'll just show a success message
+            showSuccess(`Rider ${rider.name} assigned to order successfully!`);
+            
+            // Set the status to "On the way" since rider is assigned
+            setSelectedStatus('On the way');
+            
+            // Close the rider assignment modal and return to status update modal
+            setShowRiderAssignmentModal(false);
+            setShowStatusUpdateModal(true);
+            return true;
+          } catch (error) {
+            console.error('Error assigning rider:', error);
+            showError('Failed to assign rider. Please try again.');
+            return false;
+          }
+        }}
+        onStatusUpdate={() => {
+          // This function can be used if needed for status updates
+        }}
+      />
 
       
 
