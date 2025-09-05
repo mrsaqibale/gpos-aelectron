@@ -62,6 +62,13 @@ function registerCustomerIpcHandlers() {
   ipcMain.handle('address:getByCustomer', async (event, customerId) => getCustomerAddresses(customerId));
   ipcMain.handle('address:update', async (event, id, updates) => updateAddress(id, updates));
   ipcMain.handle('address:delete', async (event, id) => deleteAddress(id));
+  
+  // Customer management with order statistics
+  ipcMain.handle('customer:getWithOrderStats', async (event, hotelId, limit, offset) => getCustomersWithOrderStats(hotelId, limit, offset));
+  ipcMain.handle('customer:getCount', async (event, hotelId) => getCustomersCount(hotelId));
+  ipcMain.handle('customer:searchWithOrderStats', async (event, searchTerm, hotelId, limit, offset) => searchCustomersWithOrderStats(searchTerm, hotelId, limit, offset));
+  ipcMain.handle('customer:getOrders', async (event, customerId, limit, offset) => getCustomerOrders(customerId, limit, offset));
+  ipcMain.handle('customer:getOrderCount', async (event, customerId) => getCustomerOrderCount(customerId));
 }
 
 module.exports = { registerCustomerIpcHandlers }; 
