@@ -121,6 +121,19 @@ async function createWindow() {
     console.log('Window loaded successfully');
   });
   
+  // Add debugging for white screen issues
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('Failed to load:', errorCode, errorDescription, validatedURL);
+  });
+  
+  win.webContents.on('dom-ready', () => {
+    console.log('DOM ready - React should be loading');
+  });
+  
+  win.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`Console [${level}]:`, message);
+  });
+  
   return win;
 }
 
