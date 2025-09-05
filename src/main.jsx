@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
+import { createHashRouter, RouterProvider, Navigate } from "react-router-dom"
 import WelcomeScreen from './pages/loginPage/WelcomeScreen.jsx'
 import POSLogin from './pages/loginPage/PosLogin.jsx'
 import LicenseScreen from './pages/loginPage/LicenseScreen.jsx'
@@ -39,7 +39,7 @@ const ErrorBoundary = ({ children }) => {
   }
 };
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: '/',
     element: <ErrorBoundary><ThemeProvider><DraftProvider><App /></DraftProvider></ThemeProvider></ErrorBoundary>,
