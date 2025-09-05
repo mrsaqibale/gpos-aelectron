@@ -74,7 +74,7 @@ function saveImageFile(base64Data, originalFilename) {
 function deleteImageFile(imagePath) {
   try {
     if (imagePath && imagePath.startsWith('uploads/')) {
-      const fullPath = path.join(__dirname, '../../', imagePath);
+      const fullPath = getDynamicPath(imagePath);
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
       }
