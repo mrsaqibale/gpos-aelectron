@@ -15,7 +15,10 @@ const CustomerManagement = () => {
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [customersPerPage] = useState(7);
+  const [customersPerPage, setCustomersPerPage] = useState(10);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [customerOrders, setCustomerOrders] = useState([]);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -31,6 +34,9 @@ const CustomerManagement = () => {
     { value: 'impulse_customers', label: 'Impulse Customers' },
     { value: 'discount_customer', label: 'Discount Customers' }
   ];
+
+  // Pagination options
+  const paginationOptions = [10, 20, 30, 50, 100];
 
   // Generate dummy orders for each customer based on their total orders
   const generateCustomerOrders = (customerId, totalOrders, totalAmount) => {
@@ -212,10 +218,68 @@ const CustomerManagement = () => {
     }
   ];
 
+  // Load customers from database
+  const loadCustomers = async (page = 1, limit = customersPerPage, search = '') => {
+    setLoading(true);
+    try {
+      const offset = (page - 1) * limit;
+      let result;
+      
+      if (search.trim()) {
+        result = await window.electronAPI.invoke('customer:searchWithOrderStats', search, 1, limit, offset);
+      } else {
+        result = await window.electronAPI.invoke('customer:getWithOrderStats', 1, limit, offset);
+      }
+      
+      if (result.success) {
+        setCustomers(result.data);
+        setFilteredCustomers(result.data);
+      } else {
+        console.error('Failed to load customers:', result.message);
+        setCustomers([]);
+        setFilteredCustomers([]);
+      }
+    } catch (error) {
+      console.error('Error loading customers:', error);
+      setCustomers([]);
+      setFilteredCustomers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load total customer count
+  const loadCustomerCount = async () => {
+    try {
+      const result = await window.electronAPI.invoke('customer:getCount', 1);
+      if (result.success) {
+        setTotalCustomers(result.count);
+      }
+    } catch (error) {
+      console.error('Error loading customer count:', error);
+    }
+  };
+
+  // Load customer orders for modal
+  const loadCustomerOrders = async (customerId) => {
+    try {
+      const result = await window.electronAPI.invoke('customer:getOrders', customerId, 50, 0);
+      if (result.success) {
+        setCustomerOrders(result.data);
+      } else {
+        console.error('Failed to load customer orders:', result.message);
+        setCustomerOrders([]);
+      }
+    } catch (error) {
+      console.error('Error loading customer orders:', error);
+      setCustomerOrders([]);
+    }
+  };
+
   // Initialize customers data
   useEffect(() => {
-    setCustomers(dummyCustomers);
-    setFilteredCustomers(dummyCustomers);
+    loadCustomers();
+    loadCustomerCount();
   }, []);
 
   // Filter customers based on search term
