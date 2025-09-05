@@ -1,9 +1,27 @@
 const path = require('path');
+const fs = require('fs');
 const Database = require('better-sqlite3');
 
 function initDatabase() {
   try {
-    const dbPath = path.join(__dirname, '../src/database/pos.db');
+    // Check if we're in development or production
+    const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV;
+    
+    let dbPath;
+    if (isDev) {
+      // Development mode - use src/database path
+      dbPath = path.join(__dirname, '../src/database/pos.db');
+    } else {
+      // Production mode - use resources/database path
+      dbPath = path.join(process.resourcesPath, 'database/pos.db');
+    }
+    
+    // Ensure the directory exists
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    
     const db = new Database(dbPath);
     
     console.log('Initializing database...');

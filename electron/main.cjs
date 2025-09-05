@@ -60,45 +60,54 @@ async function createWindow() {
     },
   });
 
-  // Always try to load the Vite dev server first
-  const http = require('http');
-  const checkPort = (port) => {
-    return new Promise((resolve) => {
-      const req = http.get(`http://localhost:${port}`, (res) => {
-        req.destroy();
-        resolve(res.statusCode === 200);
+  // Check if we're in development or production
+  const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV;
+  
+  if (isDev) {
+    // Development mode - try to load Vite dev server
+    const http = require('http');
+    const checkPort = (port) => {
+      return new Promise((resolve) => {
+        const req = http.get(`http://localhost:${port}`, (res) => {
+          req.destroy();
+          resolve(res.statusCode === 200);
+        });
+        req.on('error', () => {
+          req.destroy();
+          resolve(false);
+        });
+        req.setTimeout(2000, () => {
+          req.destroy();
+          resolve(false);
+        });
       });
-      req.on('error', () => {
-        req.destroy();
-        resolve(false);
-      });
-      req.setTimeout(2000, () => {
-        req.destroy();
-        resolve(false);
-      });
-    });
-  };
+    };
 
-  // Try common Vite ports - check from lowest to highest
-  const ports = [5173, 5174, 5175, 5176, 5177, 5178];
-  let devServerPort = null;
+    // Try common Vite ports - check from lowest to highest
+    const ports = [5173, 5174, 5175, 5176, 5177, 5178];
+    let devServerPort = null;
 
-  for (const port of ports) {
-    console.log(`Checking port ${port}...`);
-    const isAvailable = await checkPort(port);
-    if (isAvailable) {
-      devServerPort = port;
-      console.log(`Found Vite dev server on port ${devServerPort}`);
-      break;
+    for (const port of ports) {
+      console.log(`Checking port ${port}...`);
+      const isAvailable = await checkPort(port);
+      if (isAvailable) {
+        devServerPort = port;
+        console.log(`Found Vite dev server on port ${devServerPort}`);
+        break;
+      }
     }
-  }
 
-  if (devServerPort) {
-    console.log(`Loading Vite dev server on port ${devServerPort}`);
-    win.loadURL(`http://localhost:${devServerPort}/`);
-    win.webContents.openDevTools();
+    if (devServerPort) {
+      console.log(`Loading Vite dev server on port ${devServerPort}`);
+      win.loadURL(`http://localhost:${devServerPort}/`);
+      win.webContents.openDevTools();
+    } else {
+      console.log('Vite dev server not found, loading production build');
+      win.loadFile(path.join(__dirname, '../dist/index.html'));
+    }
   } else {
-    console.log('Vite dev server not found, loading production build');
+    // Production mode - always load the built files
+    console.log('Loading production build');
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }
   
