@@ -296,4 +296,130 @@ export function deleteAddress(id) {
   } catch (err) {
     return errorResponse(err.message);
   }
+}
+
+// Get customers with order statistics for management table
+export function getCustomersWithOrderStats(hotel_id = 1, limit = 50, offset = 0) {
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      LEFT JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? AND c.isDelete = 0
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    const customers = stmt.all(hotel_id, limit, offset);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get total count of customers for pagination
+export function getCustomersCount(hotel_id = 1) {
+  try {
+    const stmt = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM customer 
+      WHERE hotel_id = ? AND isDelete = 0
+    `);
+    const result = stmt.get(hotel_id);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Search customers with order statistics
+export function searchCustomersWithOrderStats(searchTerm, hotel_id = 1, limit = 50, offset = 0) {
+  try {
+    if (!searchTerm) {
+      return getCustomersWithOrderStats(hotel_id, limit, offset);
+    }
+    
+    const stmt = db.prepare(`
+      SELECT 
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      LEFT JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? AND c.isDelete = 0 
+        AND (LOWER(c.name) LIKE LOWER(?) OR LOWER(c.email) LIKE LOWER(?) OR c.phone LIKE ?)
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    const searchPattern = `%${searchTerm}%`;
+    const phonePattern = `${searchTerm}%`;
+    const customers = stmt.all(hotel_id, searchPattern, searchPattern, phonePattern, limit, offset);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get customer orders for modal display
+export function getCustomerOrders(customer_id, limit = 50, offset = 0) {
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        id,
+        order_number,
+        order_status,
+        order_amount,
+        payment_status,
+        payment_method,
+        created_at,
+        order_type,
+        table_details
+      FROM orders 
+      WHERE customer_id = ? AND isdeleted = 0
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    const orders = stmt.all(customer_id, limit, offset);
+    
+    return { success: true, data: orders };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get customer order count
+export function getCustomerOrderCount(customer_id) {
+  try {
+    const stmt = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM orders 
+      WHERE customer_id = ? AND isdeleted = 0
+    `);
+    const result = stmt.get(customer_id);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
 } 

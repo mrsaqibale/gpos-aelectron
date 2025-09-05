@@ -38,7 +38,12 @@ const {
   createAddress,
   getCustomerAddresses,
   updateAddress,
-  deleteAddress
+  deleteAddress,
+  getCustomersWithOrderStats,
+  getCustomersCount,
+  searchCustomersWithOrderStats,
+  getCustomerOrders,
+  getCustomerOrderCount
 } = getModelPath('customer/customer.js');
 
 function registerCustomerIpcHandlers() {
