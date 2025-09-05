@@ -30,10 +30,23 @@ const getModelPath = (modelPath) => {
 const { createFloor, updateFloor, getFloorById, getAllFloors } = getModelPath('tables/floor.js');
 
 // Import the sample data function
-const addSampleDataPath = path.join(__dirname, '../../src/database/test/add-sample-data.js');
 let addSampleFloorAndTableData;
 try {
-  const sampleDataModule = require(addSampleDataPath);
+  // Try multiple paths for sample data
+  const devSamplePath = path.join(__dirname, '../../src/database/test/add-sample-data.js');
+  const prodSamplePath = path.join(__dirname, '../../database/test/add-sample-data.js');
+  const builtSamplePath = path.join(process.resourcesPath, 'database/test/add-sample-data.js');
+  
+  let sampleDataModule;
+  if (fs.existsSync(devSamplePath)) {
+    sampleDataModule = require(devSamplePath);
+  } else if (fs.existsSync(prodSamplePath)) {
+    sampleDataModule = require(prodSamplePath);
+  } else if (fs.existsSync(builtSamplePath)) {
+    sampleDataModule = require(builtSamplePath);
+  } else {
+    throw new Error(`Sample data module not found at ${devSamplePath}, ${prodSamplePath}, or ${builtSamplePath}`);
+  }
   addSampleFloorAndTableData = sampleDataModule.addSampleFloorAndTableData;
 } catch (error) {
   console.error('Failed to load sample data module:', error);

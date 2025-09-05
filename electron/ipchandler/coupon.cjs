@@ -1,4 +1,31 @@
 const { ipcMain } = require('electron');
+const path = require('path');
+const fs = require('fs');
+
+// Use dynamic path resolution for both development and production
+const getModelPath = (modelPath) => {
+  try {
+    // Check if we're in development by looking for src/database
+    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
+    const prodPath = path.join(__dirname, '../../database/models', modelPath);
+    // For built app, check in the unpacked directory
+    const builtPath = path.join(process.resourcesPath, 'database/models', modelPath);
+    
+    if (fs.existsSync(devPath)) {
+      return require(devPath);
+    } else if (fs.existsSync(prodPath)) {
+      return require(prodPath);
+    } else if (fs.existsSync(builtPath)) {
+      return require(builtPath);
+    } else {
+      throw new Error(`Model not found at ${devPath}, ${prodPath}, or ${builtPath}`);
+    }
+  } catch (error) {
+    console.error(`Failed to load model: ${modelPath}`, error);
+    throw error;
+  }
+};
+
 const { 
   createCoupon, 
   updateCoupon, 
@@ -7,7 +34,7 @@ const {
   getCouponsByCustomerId, 
   deleteCoupon, 
   searchCouponByCode 
-} = require('../../src/database/models/coupon/coupon.js');
+} = getModelPath('coupon/coupon.js');
 
 function registerCouponIpcHandlers() {
   // Create coupon
