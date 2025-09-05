@@ -145,16 +145,22 @@ contextBridge.exposeInMainWorld('myAPI', {
   getAllLoginSessions: (limit, offset) => ipcRenderer.invoke('employeeLogin:getAllSessions', limit, offset),
 
                 // Customer
-              createCustomer: (data) => ipcRenderer.invoke('customer:create', data),
-              createCustomerWithAddresses: (data) => ipcRenderer.invoke('customer:createWithAddresses', data),
-              updateCustomer: (id, updates) => ipcRenderer.invoke('customer:update', id, updates),
-              getCustomerById: (id) => ipcRenderer.invoke('customer:getById', id),
-              getCustomersByHotelId: (hotelId) => ipcRenderer.invoke('customer:getByHotelId', hotelId),
-              searchCustomerByPhone: (phone) => ipcRenderer.invoke('customer:searchByPhone', phone),
-              searchCustomerByName: (name) => ipcRenderer.invoke('customer:searchByName', name),
-              getCustomerAddresses: (customerId) => ipcRenderer.invoke('address:getByCustomer', customerId),
-              deleteAddress: (id) => ipcRenderer.invoke('address:delete', id),
+  createCustomer: (data) => ipcRenderer.invoke('customer:create', data),
   createCustomerWithAddresses: (data) => ipcRenderer.invoke('customer:createWithAddresses', data),
+  updateCustomer: (id, updates) => ipcRenderer.invoke('customer:update', id, updates),
+  getCustomerById: (id) => ipcRenderer.invoke('customer:getById', id),
+  getCustomersByHotelId: (hotelId) => ipcRenderer.invoke('customer:getByHotelId', hotelId),
+  searchCustomerByPhone: (phone) => ipcRenderer.invoke('customer:searchByPhone', phone),
+  searchCustomerByName: (name) => ipcRenderer.invoke('customer:searchByName', name),
+  getCustomerAddresses: (customerId) => ipcRenderer.invoke('address:getByCustomer', customerId),
+  deleteAddress: (id) => ipcRenderer.invoke('address:delete', id),
+  
+  // Customer Management with Order Statistics
+  getCustomersWithOrderStats: (hotelId, limit, offset) => ipcRenderer.invoke('customer:getWithOrderStats', hotelId, limit, offset),
+  getCustomersCount: (hotelId) => ipcRenderer.invoke('customer:getCount', hotelId),
+  searchCustomersWithOrderStats: (searchTerm, hotelId, limit, offset) => ipcRenderer.invoke('customer:searchWithOrderStats', searchTerm, hotelId, limit, offset),
+  getCustomerOrders: (customerId, limit, offset) => ipcRenderer.invoke('customer:getOrders', customerId, limit, offset),
+  getCustomerOrderCount: (customerId) => ipcRenderer.invoke('customer:getOrderCount', customerId),
 
   // Address
   createAddress: (data) => ipcRenderer.invoke('address:create', data),
@@ -299,6 +305,14 @@ contextBridge.exposeInMainWorld('api', {
   // Leave Requests (subset required by EmployeeAttendance.jsx)
   leaveRequestCreate: (data) => ipcRenderer.invoke('leave-request-create', data),
   leaveRequestCheckOverlapping: (employeeId, startDate, endDate, excludeId) => ipcRenderer.invoke('leave-request-check-overlapping', { employeeId, startDate, endDate, excludeId }),
+});
+
+// Expose electronAPI for components that use it
+contextBridge.exposeInMainWorld('electronAPI', {
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+  send: (channel, ...args) => ipcRenderer.send(channel, ...args),
+  on: (channel, callback) => ipcRenderer.on(channel, callback),
+  removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
 });
 
 // others
