@@ -16,6 +16,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    assetsDir: 'assets',
+    base: './', // Use relative paths for Electron
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html')
