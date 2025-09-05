@@ -34,6 +34,7 @@ const {
   loginEmployee, 
   getEmployeeById, 
   deleteEmployeeImage,
+  getEmployeeImage,
   checkEmailUnique,
   checkPhoneUnique,
   checkPinUnique,
