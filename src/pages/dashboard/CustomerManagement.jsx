@@ -38,185 +38,6 @@ const CustomerManagement = () => {
   // Pagination options
   const paginationOptions = [10, 20, 30, 50, 100];
 
-  // Generate dummy orders for each customer based on their total orders
-  const generateCustomerOrders = (customerId, totalOrders, totalAmount) => {
-    const orders = [];
-    const baseOrderId = 100000 + (customerId * 10);
-    const averageOrderAmount = totalAmount / totalOrders;
-    
-    for (let i = 0; i < totalOrders; i++) {
-      // Vary the order amount slightly around the average
-      const variation = (Math.random() - 0.5) * 0.4; // ±20% variation
-      const orderAmount = Math.max(5, averageOrderAmount * (1 + variation));
-      
-      orders.push({
-        id: (baseOrderId + i).toString(),
-        status: 'Confirmed',
-        totalAmount: parseFloat(orderAmount.toFixed(2)),
-        date: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Random date within last 90 days
-      });
-    }
-    
-    return orders.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
-  };
-
-  // Dummy customer data
-  const dummyCustomers = [
-    {
-      id: 1,
-      name: 'Laura',
-      email: 'Lbcarew@gmail.com',
-      phone: '0871601656',
-      totalOrders: 4,
-      totalAmount: 100.70,
-      joiningDate: '2025-06-21',
-      isLoyal: true,
-      address: 'Windmill, Cashel, Co. Tipperary, E25 YK57, Ireland'
-    },
-    {
-      id: 2,
-      name: 'Selena Connor',
-      email: 'selenaconnor@gmail.com',
-      phone: '0881234567',
-      totalOrders: 3,
-      totalAmount: 2387.55,
-      joiningDate: '2025-05-24',
-      isLoyal: true,
-      address: 'Main Street, Dublin, Co. Dublin, D01 AB12, Ireland'
-    },
-    {
-      id: 3,
-      name: 'john dolan',
-      email: 'dolan.john28@gmail.com',
-      phone: '0894562363',
-      totalOrders: 2,
-      totalAmount: 85.50,
-      joiningDate: '2025-06-28',
-      isLoyal: true,
-      address: 'Oak Avenue, Cork, Co. Cork, T12 CD34, Ireland'
-    },
-    {
-      id: 4,
-      name: 'James Donald',
-      email: 'jamesdonald@gmail.com',
-      phone: '0862294367',
-      totalOrders: 1,
-      totalAmount: 35.49,
-      joiningDate: '2025-06-11',
-      isLoyal: true,
-      address: 'River Road, Galway, Co. Galway, H91 EF56, Ireland'
-    },
-    {
-      id: 5,
-      name: 'Stephen Fahy',
-      email: 'fahystephen47@gmail.com',
-      phone: '0877005711',
-      totalOrders: 1,
-      totalAmount: 25.94,
-      joiningDate: '2025-06-13',
-      isLoyal: true,
-      address: 'Hill Street, Limerick, Co. Limerick, V94 GH78, Ireland'
-    },
-    {
-      id: 6,
-      name: 'Marie Johnston',
-      email: 'mariecgillane@gmail.com',
-      phone: '0834004467',
-      totalOrders: 1,
-      totalAmount: 44.57,
-      joiningDate: '2025-06-13',
-      isLoyal: true,
-      address: 'Park Lane, Waterford, Co. Waterford, X91 IJ90, Ireland'
-    },
-    {
-      id: 7,
-      name: 'Michael O\'Connor',
-      email: 'michael.oconnor@email.com',
-      phone: '0861234567',
-      totalOrders: 5,
-      totalAmount: 320.80,
-      joiningDate: '2025-05-15',
-      isLoyal: true,
-      address: 'Church Street, Kilkenny, Co. Kilkenny, R95 KL12, Ireland'
-    },
-    {
-      id: 8,
-      name: 'Sarah Walsh',
-      email: 'sarah.walsh@email.com',
-      phone: '0879876543',
-      totalOrders: 2,
-      totalAmount: 156.25,
-      joiningDate: '2025-06-05',
-      isLoyal: false,
-      address: 'Bridge Street, Wexford, Co. Wexford, Y35 MN34, Ireland'
-    },
-    {
-      id: 9,
-      name: 'David Murphy',
-      email: 'david.murphy@email.com',
-      phone: '0854567890',
-      totalOrders: 8,
-      totalAmount: 892.30,
-      joiningDate: '2025-04-20',
-      isLoyal: true,
-      address: 'High Street, Sligo, Co. Sligo, F91 PQ56, Ireland'
-    },
-    {
-      id: 10,
-      name: 'Emma Ryan',
-      email: 'emma.ryan@email.com',
-      phone: '0831234567',
-      totalOrders: 3,
-      totalAmount: 245.60,
-      joiningDate: '2025-06-10',
-      isLoyal: true,
-      address: 'Queen Street, Derry, Co. Derry, BT48 RS78, Ireland'
-    },
-    {
-      id: 11,
-      name: 'James Byrne',
-      email: 'james.byrne@email.com',
-      phone: '0867890123',
-      totalOrders: 1,
-      totalAmount: 67.89,
-      joiningDate: '2025-06-25',
-      isLoyal: true,
-      address: 'King Street, Belfast, Co. Antrim, BT1 TU90, Ireland'
-    },
-    {
-      id: 12,
-      name: 'Lisa Kelly',
-      email: 'lisa.kelly@email.com',
-      phone: '0874567890',
-      totalOrders: 6,
-      totalAmount: 456.78,
-      joiningDate: '2025-05-08',
-      isLoyal: true,
-      address: 'Castle Street, Armagh, Co. Armagh, BT61 VW12, Ireland'
-    },
-    {
-      id: 13,
-      name: 'Patrick O\'Sullivan',
-      email: 'patrick.osullivan@email.com',
-      phone: '0851234567',
-      totalOrders: 4,
-      totalAmount: 234.56,
-      joiningDate: '2025-06-18',
-      isLoyal: false,
-      address: 'Market Square, Tralee, Co. Kerry, V92 XY34, Ireland'
-    },
-    {
-      id: 14,
-      name: 'Aoife McCarthy',
-      email: 'aoife.mccarthy@email.com',
-      phone: '0869876543',
-      totalOrders: 2,
-      totalAmount: 123.45,
-      joiningDate: '2025-06-22',
-      isLoyal: true,
-      address: 'Harbour Road, Drogheda, Co. Louth, A92 ZA56, Ireland'
-    }
-  ];
 
   // Load customers from database
   const loadCustomers = async (page = 1, limit = customersPerPage, search = '') => {
@@ -595,50 +416,50 @@ const CustomerManagement = () => {
                   <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {indexOfFirstCustomer + index}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-800">{customer.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-sm">
-                        <div className="text-gray-800">{customer.email}</div>
-                        <div className="text-gray-500">{customer.phone}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {customer.totalOrders}
-                    </td>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-800">
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-800">{customer.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="text-sm">
+                      <div className="text-gray-800">{customer.email}</div>
+                      <div className="text-gray-500">{customer.phone}</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-600">
+                    {customer.totalOrders}
+                  </td>
+                  <td className="py-3 px-4 text-sm font-medium text-gray-800">
                       {parseFloat(customer.totalAmount || 0).toFixed(2)} €
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {formatDate(customer.joiningDate)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <button
-                        onClick={() => handleStatusToggle(customer.id)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-600">
+                    {formatDate(customer.joiningDate)}
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => handleStatusToggle(customer.id)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                           customer.isloyal ? 'bg-primary' : 'bg-gray-300'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                             customer.isloyal ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </td>
-                    <td className="py-3 px-4">
-                      <button
-                        onClick={() => handleModalOpen(customer)}
-                        className="p-1 text-gray-400 hover:text-primary transition-colors"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    </td>
-                  </tr>
+                        }`}
+                      />
+                    </button>
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => handleModalOpen(customer)}
+                      className="p-1 text-gray-400 hover:text-primary transition-colors"
+                    >
+                      <Eye size={16} />
+                    </button>
+                  </td>
+                </tr>
                 ))
               )}
             </tbody>
@@ -737,23 +558,35 @@ const CustomerManagement = () => {
                       </tr>
                     </thead>
                                          <tbody>
-                       {generateCustomerOrders(selectedCustomer.id, selectedCustomer.totalOrders, selectedCustomer.totalAmount).map((order, index) => (
+                      {customerOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="py-8 text-center text-gray-500">
+                            No orders found for this customer
+                          </td>
+                        </tr>
+                      ) : (
+                        customerOrders.map((order, index) => (
                          <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
                            <td className="py-3 px-4 text-sm text-gray-600">
                              {index + 1}
                            </td>
                            <td className="py-3 px-4">
                              <span className="text-primary font-medium cursor-pointer hover:underline">
-                               {order.id}
+                                {order.order_number || order.id}
                              </span>
                            </td>
                            <td className="py-3 px-4">
-                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                               {order.status}
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                order.order_status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                order.order_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                order.order_status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {order.order_status || 'Confirmed'}
                              </span>
                            </td>
                            <td className="py-3 px-4 text-sm font-medium text-gray-800">
-                             {order.totalAmount.toFixed(2)} €
+                              {parseFloat(order.order_amount || 0).toFixed(2)} €
                            </td>
                            <td className="py-3 px-4">
                              <div className="flex gap-2">
@@ -766,7 +599,8 @@ const CustomerManagement = () => {
                              </div>
                            </td>
                          </tr>
-                       ))}
+                        ))
+                      )}
                      </tbody>
                   </table>
                 </div>
