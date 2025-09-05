@@ -12,11 +12,15 @@ const getDynamicPath = (relativePath) => {
     // Check if we're in development by looking for src/database
     const devPath = path.join(__dirname, '../../', relativePath);
     const prodPath = path.join(__dirname, '../../../', relativePath);
+    // For built app, check in the resources directory
+    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
     
     if (fs.existsSync(devPath)) {
       return devPath;
     } else if (fs.existsSync(prodPath)) {
       return prodPath;
+    } else if (fs.existsSync(builtPath)) {
+      return builtPath;
     } else {
       // Fallback to development path
       return devPath;
@@ -453,5 +457,39 @@ export function deleteEmployeeImage(employeeId) {
   } catch (err) {
     console.error('Error deleting employee image:', err);
     return errorResponse('Failed to delete image');
+  }
+}
+
+// Get employee image
+export function getEmployeeImage(imagePath) {
+  try {
+    if (!imagePath || !imagePath.startsWith('uploads/')) {
+      return { success: false, message: 'Invalid image path' };
+    }
+    
+    const fullPath = getDynamicPath(imagePath);
+    
+    // Security check
+    const uploadsDir = getDynamicPath('uploads');
+    if (!fullPath.startsWith(uploadsDir)) {
+      return { success: false, message: 'Access denied' };
+    }
+    
+    if (fs.existsSync(fullPath)) {
+      const imageBuffer = fs.readFileSync(fullPath);
+      const base64Data = imageBuffer.toString('base64');
+      const ext = path.extname(fullPath).toLowerCase();
+      const mimeType = ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
+      return { 
+        success: true,
+        data: `data:${mimeType};base64,${base64Data}`,
+        mimeType: mimeType
+      };
+    } else {
+      return { success: false, message: 'Image not found' };
+    }
+  } catch (err) {
+    console.error('Error loading employee image:', err);
+    return { success: false, message: 'Failed to load image' };
   }
 } 

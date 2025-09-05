@@ -5,11 +5,38 @@ import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../pos.db');
+
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in development by looking for src/database
+    const devPath = path.join(__dirname, '../../', relativePath);
+    const prodPath = path.join(__dirname, '../../../', relativePath);
+    // For built app, check in the resources directory
+    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
+    
+    if (fs.existsSync(devPath)) {
+      return devPath;
+    } else if (fs.existsSync(prodPath)) {
+      return prodPath;
+    } else if (fs.existsSync(builtPath)) {
+      return builtPath;
+    } else {
+      // Fallback to development path
+      return devPath;
+    }
+  } catch (error) {
+    console.error(`Failed to resolve path: ${relativePath}`, error);
+    // Fallback to development path
+    return path.join(__dirname, '../../', relativePath);
+  }
+};
+
+const dbPath = getDynamicPath('pos.db');
 const db = new Database(dbPath);
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../../uploads');
+const uploadsDir = getDynamicPath('uploads');
 const categoryUploadsDir = path.join(uploadsDir, 'category');
 
 // Create directories if they don't exist
@@ -140,10 +167,11 @@ export function getCategoryImage(imagePath) {
       return { success: false, message: 'Invalid image path' };
     }
     
-    const fullPath = path.join(__dirname, '../../', imagePath);
+    // Use dynamic path resolution
+    const fullPath = getDynamicPath(imagePath);
     
     // Security check
-    const uploadsDir = path.join(__dirname, '../../uploads');
+    const uploadsDir = getDynamicPath('uploads');
     if (!fullPath.startsWith(uploadsDir)) {
       return { success: false, message: 'Access denied' };
     }
