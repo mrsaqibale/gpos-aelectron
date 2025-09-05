@@ -508,9 +508,25 @@ const CustomerManagement = () => {
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-800">Customer list</h3>
-            <span className="text-sm text-gray-500">({filteredCustomers.length} customers)</span>
+            <span className="text-sm text-gray-500">({totalCustomers} customers)</span>
           </div>
           <div className="flex items-center gap-3">
+            {/* Pagination Options */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <select
+                value={customersPerPage}
+                onChange={(e) => {
+                  setCustomersPerPage(parseInt(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {paginationOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
             {/* Search */}
             <div className="relative">
               <input
@@ -562,55 +578,69 @@ const CustomerManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {currentCustomers.map((customer, index) => (
-                <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {indexOfFirstCustomer + index + 1}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-800">{customer.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="text-sm">
-                      <div className="text-gray-800">{customer.email}</div>
-                      <div className="text-gray-500">{customer.phone}</div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {customer.totalOrders}
-                  </td>
-                  <td className="py-3 px-4 text-sm font-medium text-gray-800">
-                    {customer.totalAmount.toFixed(2)} €
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {formatDate(customer.joiningDate)}
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => handleStatusToggle(customer.id)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        customer.isLoyal ? 'bg-primary' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          customer.isLoyal ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => handleModalOpen(customer)}
-                      className="p-1 text-gray-400 hover:text-primary transition-colors"
-                    >
-                      <Eye size={16} />
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="py-8 text-center text-gray-500">
+                    Loading customers...
                   </td>
                 </tr>
-              ))}
+              ) : customers.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-8 text-center text-gray-500">
+                    No customers found
+                  </td>
+                </tr>
+              ) : (
+                customers.map((customer, index) => (
+                  <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {indexOfFirstCustomer + index}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-800">{customer.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="text-sm">
+                        <div className="text-gray-800">{customer.email}</div>
+                        <div className="text-gray-500">{customer.phone}</div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {customer.totalOrders}
+                    </td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-800">
+                      {parseFloat(customer.totalAmount || 0).toFixed(2)} €
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {formatDate(customer.joiningDate)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => handleStatusToggle(customer.id)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          customer.isloyal ? 'bg-primary' : 'bg-gray-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            customer.isloyal ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </td>
+                    <td className="py-3 px-4">
+                      <button
+                        onClick={() => handleModalOpen(customer)}
+                        className="p-1 text-gray-400 hover:text-primary transition-colors"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -619,7 +649,7 @@ const CustomerManagement = () => {
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-500">
-              Showing {indexOfFirstCustomer + 1} to {Math.min(indexOfLastCustomer, filteredCustomers.length)} of {filteredCustomers.length} customers
+              Showing {indexOfFirstCustomer} to {indexOfLastCustomer} of {totalCustomers} customers
             </div>
             <div className="flex items-center gap-2">
               <button
