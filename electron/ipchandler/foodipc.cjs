@@ -61,7 +61,8 @@ const {
   deleteFood,
   updateFoodPosition,
   searchFoodsByName,
-  deleteFoodImage
+  deleteFoodImage,
+  getFoodImage
 } = getModelPath('foods/food.js');
 
 const { 
