@@ -5,20 +5,26 @@ const Database = require('better-sqlite3');
 function initDatabase() {
   try {
     // Check if we're in development or production
-    const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV;
+    // In built app, __dirname will be inside app.asar, so we check for that
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../src/database/pos.db'));
     
     let dbPath;
     if (isDev) {
       // Development mode - use src/database path
       dbPath = path.join(__dirname, '../src/database/pos.db');
+      console.log('Development mode: Using src/database path');
     } else {
       // Production mode - use resources/database path
       dbPath = path.join(process.resourcesPath, 'database/pos.db');
+      console.log('Production mode: Using resources/database path');
     }
+    
+    console.log('Database path:', dbPath);
     
     // Ensure the directory exists
     const dbDir = path.dirname(dbPath);
     if (!fs.existsSync(dbDir)) {
+      console.log('Creating database directory:', dbDir);
       fs.mkdirSync(dbDir, { recursive: true });
     }
     

@@ -61,7 +61,8 @@ async function createWindow() {
   });
 
   // Check if we're in development or production
-  const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV;
+  // In built app, __dirname will be inside app.asar, so we check for that
+  const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../src/database/pos.db'));
   
   if (isDev) {
     // Development mode - try to load Vite dev server
