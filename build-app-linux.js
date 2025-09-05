@@ -17,6 +17,10 @@ try {
   console.log('\n🔨 Building React app...');
   execSync('npm run build', { stdio: 'inherit' });
   
+  // Step 2.5: Fix Electron paths
+  console.log('\n🔧 Fixing Electron paths...');
+  execSync('node scripts/fix-electron-paths.cjs', { stdio: 'inherit' });
+  
   // Step 3: Install electron-builder dependencies
   console.log('\n⚡ Installing electron-builder dependencies...');
   execSync('npx electron-builder install-app-deps', { stdio: 'inherit' });
