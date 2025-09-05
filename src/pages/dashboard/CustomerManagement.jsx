@@ -282,22 +282,29 @@ const CustomerManagement = () => {
     loadCustomerCount();
   }, []);
 
-  // Filter customers based on search term
+  // Handle search with debouncing
   useEffect(() => {
-    const filtered = customers.filter(customer =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm)
-    );
-    setFilteredCustomers(filtered);
-    setCurrentPage(1); // Reset to first page when searching
-  }, [searchTerm, customers]);
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== '') {
+        loadCustomers(1, customersPerPage, searchTerm);
+      } else {
+        loadCustomers(1, customersPerPage);
+      }
+      setCurrentPage(1);
+    }, 500);
 
-  // Get current customers for pagination
-  const indexOfLastCustomer = currentPage * customersPerPage;
-  const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
-  const currentCustomers = filteredCustomers.slice(indexOfFirstCustomer, indexOfLastCustomer);
-  const totalPages = Math.ceil(filteredCustomers.length / customersPerPage);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, customersPerPage]);
+
+  // Handle pagination changes
+  useEffect(() => {
+    loadCustomers(currentPage, customersPerPage, searchTerm);
+  }, [currentPage, customersPerPage]);
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalCustomers / customersPerPage);
+  const indexOfFirstCustomer = (currentPage - 1) * customersPerPage + 1;
+  const indexOfLastCustomer = Math.min(currentPage * customersPerPage, totalCustomers);
 
   // Format date
   const formatDate = (dateString) => {
@@ -315,21 +322,30 @@ const CustomerManagement = () => {
   };
 
   // Handle customer status toggle
-  const handleStatusToggle = (customerId) => {
-    setCustomers(prevCustomers =>
-      prevCustomers.map(customer =>
-        customer.id === customerId
-          ? { ...customer, isLoyal: !customer.isLoyal }
-          : customer
-      )
-    );
+  const handleStatusToggle = async (customerId) => {
+    try {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        const result = await window.electronAPI.invoke('customer:update', customerId, { isloyal: !customer.isloyal });
+        if (result.success) {
+          // Reload customers to get updated data
+          loadCustomers(currentPage, customersPerPage, searchTerm);
+        } else {
+          console.error('Failed to update customer status:', result.message);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating customer status:', error);
+    }
   };
 
   // Handle modal open
-  const handleModalOpen = (customer) => {
+  const handleModalOpen = async (customer) => {
     console.log('Opening modal for customer:', customer);
     setSelectedCustomer(customer);
     setShowModal(true);
+    // Load customer orders when modal opens
+    await loadCustomerOrders(customer.id);
   };
 
   // Handle modal close
