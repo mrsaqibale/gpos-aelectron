@@ -60,7 +60,6 @@ const FoodFormPage = () => {
       <FoodForm 
         food={isEditing ? food : null}
         onSubmit={handleSubmit}
-        onCancel={() => navigate('/dashboard/food-management')}
       />
     </div>
   );
