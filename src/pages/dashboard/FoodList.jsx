@@ -517,14 +517,12 @@ const FoodList = () => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex gap-2">
-                      <Link to={`/dashboard/food-management/edit-food/${item.id}`}>
-                        <button 
-                          onClick={() => handleEditFood(item)}
-                          className="text-primary hover:text-primaryDark cursor-pointer transition-colors"
-                        >
-                          <Edit size={16} />
-                        </button>
-                      </Link>
+                      <button 
+                        onClick={() => handleEditFood(item)}
+                        className="text-primary hover:text-primaryDark cursor-pointer transition-colors"
+                      >
+                        <Edit size={16} />
+                      </button>
                       <button 
                         onClick={() => handleDeleteClick(item)}
                         className="text-red-500 hover:text-red-700 cursor-pointer transition-colors"
