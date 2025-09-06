@@ -1402,7 +1402,7 @@ const ManageOrders = () => {
                   if (!selectedOrderIdForSales) return;
                   const order = orders.find(o => o.id === selectedOrderIdForSales);
                   if (!order) return;
-                  openFinalizeSaleModal(order);
+                  openInvoiceModal(order);
                 }}
               >
                 {action}
