@@ -20,6 +20,7 @@ const FoodFormPage = () => {
           
           if (result && result.success) {
             console.log('Food data fetched successfully:', result.data);
+            console.log('Food data structure:', JSON.stringify(result.data, null, 2));
             setFood(result.data);
           } else {
             console.error('Failed to fetch food data:', result?.message);
@@ -55,6 +56,8 @@ const FoodFormPage = () => {
     );
   }
 
+  console.log('FoodFormPage render - isEditing:', isEditing, 'food:', food);
+  
   return (
     <div className="container mx-auto p-4">
       <FoodForm 

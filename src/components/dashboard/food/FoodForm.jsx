@@ -330,7 +330,9 @@ const FoodForm = ({ food, onSubmit }) => {
   }, [formData.category_id, food]);
 
   useEffect(() => {
+    console.log('FoodForm useEffect triggered with food:', food);
     if (food) {
+      console.log('Setting form data for food:', food);
       setFormData({
         name: food.name || '',
         description: food.description || '',
