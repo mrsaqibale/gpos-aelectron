@@ -371,7 +371,9 @@ export function updateFood(id, { foodData, variations = [] }) {
               variation.type || 'single',
               variation.min || 1,
               variation.max || 1,
-              variation.is_required || false
+              variation.is_required || false,
+              new Date().toISOString(),
+              new Date().toISOString()
             );
             variationId = variationInfo.lastInsertRowid;
           }

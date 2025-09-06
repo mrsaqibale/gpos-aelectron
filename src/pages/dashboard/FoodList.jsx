@@ -128,9 +128,21 @@ const FoodList = () => {
     fetchFoodData();
   }, []);
 
-  const handleEditFood = (food) => {
-    setEditingFood(food);
-    setShowFoodForm(true);
+  const handleEditFood = async (food) => {
+    try {
+      // Fetch complete food data including relationships
+      const result = await window.myAPI?.getFoodById(food.id);
+      if (result && result.success) {
+        setEditingFood(result.data);
+        setShowFoodForm(true);
+      } else {
+        console.error('Failed to fetch food details:', result?.message);
+        alert('Failed to load food details for editing');
+      }
+    } catch (error) {
+      console.error('Error fetching food details:', error);
+      alert('Error loading food details for editing');
+    }
   };
 
   const handleDeleteClick = (food) => {
