@@ -553,11 +553,7 @@ const FoodList = () => {
       {showFoodForm && (
         <FoodForm 
           food={editingFood} 
-          onClose={() => {
-            setShowFoodForm(false);
-            setEditingFood(null);
-          }}
-          onSave={(updatedFood) => {
+          onSubmit={(updatedFood) => {
             if (editingFood) {
               setFoodItems(foodItems.map(item => 
                 item.id === updatedFood.id ? updatedFood : item
