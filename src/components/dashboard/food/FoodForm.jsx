@@ -1049,7 +1049,12 @@ const FoodForm = ({ food, onSubmit }) => {
           }
         }
 
-        navigate('/dashboard/food-management');
+        // Call the onSubmit callback if provided, otherwise navigate
+        if (onSubmit) {
+          onSubmit(result);
+        } else {
+          navigate('/dashboard/food-management');
+        }
       } else {
         console.error(food ? 'Failed to update food:' : 'Failed to create food:', result?.message);
         alert(food ? 'Failed to update food: ' + (result?.message || 'Unknown error') : 'Failed to create food: ' + (result?.message || 'Unknown error'));
@@ -1990,7 +1995,15 @@ const FoodForm = ({ food, onSubmit }) => {
         <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
           <button
             type="button"
-            onClick={() => navigate('/dashboard/food-management')}
+            onClick={() => {
+              if (onSubmit) {
+                // If onSubmit is provided, we're in modal mode, so close the modal
+                onSubmit(null); // Pass null to indicate cancellation
+              } else {
+                // Otherwise navigate back
+                navigate('/dashboard/food-management');
+              }
+            }}
             className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight transition-colors"
           >
             Cancel

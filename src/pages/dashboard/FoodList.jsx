@@ -551,23 +551,37 @@ const FoodList = () => {
       {activeTab === 'ingredients' && <Ingredients />}
 
       {showFoodForm && (
-        <FoodForm 
-          food={editingFood} 
-          onSubmit={(updatedFood) => {
-            if (editingFood) {
-              setFoodItems(foodItems.map(item => 
-                item.id === updatedFood.id ? updatedFood : item
-              ));
-            } else {
-              setFoodItems([...foodItems, {
-                ...updatedFood,
-                id: Math.max(...foodItems.map(i => i.id)) + 1
-              }]);
-            }
-            setShowFoodForm(false);
-            setEditingFood(null);
-          }}
-        />
+        <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+          <FoodForm 
+            food={editingFood} 
+            onSubmit={(updatedFood) => {
+              if (updatedFood === null) {
+                // User cancelled, just close the modal
+                setShowFoodForm(false);
+                setEditingFood(null);
+              } else if (editingFood) {
+                // Food was updated successfully
+                setFoodItems(foodItems.map(item => 
+                  item.id === updatedFood.id ? updatedFood : item
+                ));
+                setShowFoodForm(false);
+                setEditingFood(null);
+                // Refresh the food list after update
+                fetchFoodData();
+              } else {
+                // New food was created
+                setFoodItems([...foodItems, {
+                  ...updatedFood,
+                  id: Math.max(...foodItems.map(i => i.id)) + 1
+                }]);
+                setShowFoodForm(false);
+                setEditingFood(null);
+                // Refresh the food list after creation
+                fetchFoodData();
+              }
+            }}
+          />
+        </div>
       )}
 
       {/* Delete Confirmation Modal */}

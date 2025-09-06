@@ -314,8 +314,20 @@ export function updateFood(id, { foodData, variations = [] }) {
       const fields = [];
       const values = [];
       for (const key in foodData) {
-        fields.push(`${key} = ?`);
-        values.push(foodData[key]);
+        if (foodData[key] !== undefined) { // Only include defined values
+          fields.push(`${key} = ?`);
+          // Convert values to proper types for SQLite
+          let value = foodData[key];
+          if (value === null || value === '') {
+            value = null;
+          } else if (typeof value === 'boolean') {
+            value = value ? 1 : 0;
+          } else if (typeof value === 'object') {
+            // Skip complex objects - they should be handled separately
+            continue;
+          }
+          values.push(value);
+        }
       }
       fields.push('updated_at = ?');
       values.push(new Date().toISOString());
