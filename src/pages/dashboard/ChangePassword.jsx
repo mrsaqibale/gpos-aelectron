@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Eye, EyeOff, Delete, Check, KeyRound, ChevronLeft } from 'lucide-react';
+import { Check, KeyRound, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -16,10 +16,6 @@ const NumericKey = ({ label, onClick, className = '' }) => (
 export default function ChangePassword() {
   const navigate = useNavigate();
   const { themeColors } = useTheme();
-
-  const [showOld, setShowOld] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -40,13 +36,16 @@ export default function ChangePassword() {
   const handleKeyPress = (key) => {
     setError('');
     setSuccess('');
+    const isDigit = /^(\d)$/.test(String(key));
     const apply = (valueSetter, current) => {
       if (key === 'bksp') {
         valueSetter(current.slice(0, -1));
       } else if (key === 'clear') {
         valueSetter('');
-      } else {
-        valueSetter(current + key);
+      } else if (isDigit) {
+        if (current.length < 4) {
+          valueSetter(current + String(key));
+        }
       }
     };
 
@@ -62,18 +61,56 @@ export default function ChangePassword() {
     if (!canSubmit) return;
     try {
       setSubmitting(true);
-      // TODO: Wire backend IPC for real password update
-      await new Promise(r => setTimeout(r, 600));
-      setSuccess('Password changed successfully');
-      setOldPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setActiveField('old');
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      if (!currentEmployee) {
+        setError('No logged-in user found');
+        return;
+      }
+      let employeeId = null;
+      try {
+        const emp = JSON.parse(currentEmployee);
+        employeeId = emp?.id;
+      } catch {}
+      if (!employeeId) {
+        setError('Invalid user session');
+        return;
+      }
+      const result = await window.myAPI?.changeEmployeePassword(employeeId, oldPassword, newPassword);
+      if (result?.success) {
+        setSuccess('Password changed successfully');
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setActiveField('old');
+      } else {
+        setError(result?.message || 'Failed to change password');
+      }
     } catch (err) {
       setError('Failed to change password');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const PinBoxes = ({ value, onFocus, label }) => {
+    const length = Math.min(4, value.length);
+    const boxes = new Array(4).fill(null).map((_, idx) => (
+      <div
+        key={idx}
+        className={`h-12 rounded-lg border flex items-center justify-center text-xl font-semibold ${idx < length ? 'border-primary bg-primaryExtraLight text-primary' : 'border-gray-200 bg-white text-gray-500'}`}
+      >
+        {idx < length ? '•' : ''}
+      </div>
+    ));
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <button type="button" onClick={onFocus} className="w-full">
+          <div className="grid grid-cols-4 gap-3">{boxes}</div>
+        </button>
+        <p className="text-xs text-gray-500 mt-1">4-digit numeric PIN</p>
+      </div>
+    );
   };
 
   return (
@@ -102,75 +139,9 @@ export default function ChangePassword() {
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Old Password</label>
-                <div className="relative">
-                  <input
-                    type={showOld ? 'text' : 'password'}
-                    value={oldPassword}
-                    onChange={(e) => setOldPassword(e.target.value)}
-                    onFocus={() => setActiveField('old')}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 focus:outline-none focus:ring-2"
-                    style={{ outlineColor: themeColors.primaryLight }}
-                    placeholder="Enter old password"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowOld(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                  >
-                    {showOld ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                <div className="relative">
-                  <input
-                    type={showNew ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    onFocus={() => setActiveField('new')}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 focus:outline-none focus:ring-2"
-                    style={{ outlineColor: themeColors.primaryLight }}
-                    placeholder="Enter new password"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNew(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                  >
-                    {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Must be at least 4 digits; numeric keypad provided.</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                <div className="relative">
-                  <input
-                    type={showConfirm ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    onFocus={() => setActiveField('confirm')}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 focus:outline-none focus:ring-2"
-                    style={{ outlineColor: themeColors.primaryLight }}
-                    placeholder="Re-enter new password"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                  >
-                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
+              <PinBoxes label="Old Password" value={oldPassword} onFocus={() => setActiveField('old')} />
+              <PinBoxes label="New Password" value={newPassword} onFocus={() => setActiveField('new')} />
+              <PinBoxes label="Confirm Password" value={confirmPassword} onFocus={() => setActiveField('confirm')} />
 
               {error && (
                 <div className="text-sm text-red-600">{error}</div>
@@ -202,7 +173,7 @@ export default function ChangePassword() {
 
             <div className="">
               <div className="grid grid-cols-3 gap-3 select-none">
-                {['1','2','3','4','5','6','7','8','9','0'].slice(0,9).map(n => (
+                {['1','2','3','4','5','6','7','8','9'].map(n => (
                   <NumericKey key={n} label={n} onClick={handleKeyPress} />
                 ))}
                 <NumericKey label={'bksp'} onClick={() => handleKeyPress('bksp')} className="col-span-1">
@@ -211,7 +182,7 @@ export default function ChangePassword() {
                 <NumericKey label={'clear'} onClick={() => handleKeyPress('clear')} className="col-span-1">
                 </NumericKey>
               </div>
-              <p className="text-xs text-gray-500 mt-3">Tap a field, then use the keypad to enter digits.</p>
+              <p className="text-xs text-gray-500 mt-3">Tap a field, then use the keypad to enter 4 digits.</p>
             </div>
           </form>
         </div>
