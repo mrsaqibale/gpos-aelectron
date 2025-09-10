@@ -38,7 +38,8 @@ const {
   checkEmailUnique,
   checkPhoneUnique,
   checkPinUnique,
-  validateEmployeeData
+  validateEmployeeData,
+  changeEmployeePassword
 } = getModelPath('employee/employee.js');
 const { 
   createRegister, 
@@ -98,6 +99,16 @@ function registerEmployeeIpcHandlers() {
   
   // Get employee image data
   ipcMain.handle('employee:getImage', async (event, imagePath) => getEmployeeImage(imagePath));
+
+  // Change employee password (PIN)
+  ipcMain.handle('employee:changePassword', async (event, employeeId, oldPin, newPin) => {
+    try {
+      return changeEmployeePassword(employeeId, oldPin, newPin);
+    } catch (error) {
+      console.error('Error in employee:changePassword handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
 
   // Register handlers
   ipcMain.handle('register:create', async (event, data) => createRegister(data));
