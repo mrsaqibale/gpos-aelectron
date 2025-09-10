@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Check, KeyRound, ChevronLeft } from 'lucide-react';
+import { Check, KeyRound, ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -24,6 +24,9 @@ export default function ChangePassword() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const canSubmit = useMemo(() => {
     if (!oldPassword || !newPassword || !confirmPassword) return false;
@@ -52,6 +55,8 @@ export default function ChangePassword() {
     if (activeField === 'old') apply(setOldPassword, oldPassword);
     if (activeField === 'new') apply(setNewPassword, newPassword);
     if (activeField === 'confirm') apply(setConfirmPassword, confirmPassword);
+    // Debug current values
+    console.log('activeField:', activeField, 'old:', oldPassword, 'new:', newPassword, 'confirm:', confirmPassword);
   };
 
   const handleSubmit = async (e) => {
@@ -75,7 +80,9 @@ export default function ChangePassword() {
         setError('Invalid user session');
         return;
       }
+      console.log('Submitting change password with:', { employeeId, oldPassword, newPassword });
       const result = await window.myAPI?.changeEmployeePassword(employeeId, oldPassword, newPassword);
+      console.log('Change password result:', result);
       if (result?.success) {
         setSuccess('Password changed successfully');
         setOldPassword('');
@@ -92,22 +99,34 @@ export default function ChangePassword() {
     }
   };
 
-  const PinBoxes = ({ value, onFocus, label }) => {
+  const PinBoxes = ({ value, onFocus, label, isActive, visible, onToggleVisible }) => {
     const length = Math.min(4, value.length);
-    const boxes = new Array(4).fill(null).map((_, idx) => (
-      <div
-        key={idx}
-        className={`h-12 rounded-lg border flex items-center justify-center text-xl font-semibold ${idx < length ? 'border-primary bg-primaryExtraLight text-primary' : 'border-gray-200 bg-white text-gray-500'}`}
-      >
-        {idx < length ? '•' : ''}
-      </div>
-    ));
+    const chars = visible ? value.padEnd(4, ' ') : ''.padStart(length, '•');
+    const boxes = new Array(4).fill(null).map((_, idx) => {
+      const filled = idx < length;
+      const charToShow = visible ? (value[idx] || '') : (filled ? '•' : '');
+      return (
+        <div
+          key={idx}
+          className={`h-12 rounded-lg border flex items-center justify-center text-xl font-semibold ${filled ? 'border-primary bg-primaryExtraLight text-primary' : 'border-gray-200 bg-white text-gray-500'}`}
+        >
+          {charToShow}
+        </div>
+      );
+    });
     return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <button type="button" onClick={onFocus} className="w-full">
-          <div className="grid grid-cols-4 gap-3">{boxes}</div>
-        </button>
+        <div className={`w-full rounded-xl ${isActive ? 'ring-2' : ''}`} style={{ ringColor: isActive ? themeColors.primaryLight : undefined }}>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={onFocus} className="flex-1">
+              <div className={`grid grid-cols-4 gap-3 p-1 rounded-lg ${isActive ? 'bg-primaryExtraLight' : ''}`}>{boxes}</div>
+            </button>
+            <button type="button" onClick={onToggleVisible} className="p-2 text-gray-600 hover:text-gray-800">
+              {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
         <p className="text-xs text-gray-500 mt-1">4-digit numeric PIN</p>
       </div>
     );
@@ -139,9 +158,9 @@ export default function ChangePassword() {
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <PinBoxes label="Old Password" value={oldPassword} onFocus={() => setActiveField('old')} />
-              <PinBoxes label="New Password" value={newPassword} onFocus={() => setActiveField('new')} />
-              <PinBoxes label="Confirm Password" value={confirmPassword} onFocus={() => setActiveField('confirm')} />
+              <PinBoxes label="Old Password" value={oldPassword} onFocus={() => setActiveField('old')} isActive={activeField==='old'} visible={showOld} onToggleVisible={() => setShowOld(v=>!v)} />
+              <PinBoxes label="New Password" value={newPassword} onFocus={() => setActiveField('new')} isActive={activeField==='new'} visible={showNew} onToggleVisible={() => setShowNew(v=>!v)} />
+              <PinBoxes label="Confirm Password" value={confirmPassword} onFocus={() => setActiveField('confirm')} isActive={activeField==='confirm'} visible={showConfirm} onToggleVisible={() => setShowConfirm(v=>!v)} />
 
               {error && (
                 <div className="text-sm text-red-600">{error}</div>
