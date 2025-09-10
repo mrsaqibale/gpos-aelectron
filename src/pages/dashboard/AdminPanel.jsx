@@ -41,6 +41,7 @@ const settingsItems = [
   {
     icon: <Key size={18} className="text-yellow-500" />,
     label: "Change Password",
+    path: "/dashboard/change-password"
   },
   {
     icon: <Settings size={18} className="text-sky-500" />,
