@@ -16,7 +16,7 @@ try {
   // Step 2: Build the React app
   console.log('\n🔨 Building React app...');
   execSync('npm run build', { stdio: 'inherit' });
-  
+   
   // Step 2.5: Fix Electron paths
   console.log('\n🔧 Fixing Electron paths...');
   execSync('node scripts/fix-electron-paths.cjs', { stdio: 'inherit' });
