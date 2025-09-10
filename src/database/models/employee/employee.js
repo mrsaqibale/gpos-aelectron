@@ -497,12 +497,15 @@ export function getEmployeeImage(imagePath) {
 // Change employee 4-digit numeric PIN with validation
 export function changeEmployeePassword(employeeId, oldPin, newPin) {
   try {
+    console.log('[changeEmployeePassword] called with', { employeeId, oldPin, newPin });
     // Basic validations
     const isFourDigit = (v) => typeof v === 'string' && /^\d{4}$/.test(v);
     if (!isFourDigit(oldPin) || !isFourDigit(newPin)) {
+      console.warn('[changeEmployeePassword] validation failed: non 4-digit input');
       return errorResponse('PIN must be exactly 4 numeric digits');
     }
     if (oldPin === newPin) {
+      console.warn('[changeEmployeePassword] validation failed: new pin equals old pin');
       return errorResponse('New PIN must be different from old PIN');
     }
 
@@ -510,23 +513,29 @@ export function changeEmployeePassword(employeeId, oldPin, newPin) {
     const getStmt = db.prepare('SELECT id, pin FROM employee WHERE id = ? AND isDeleted = 0');
     const employee = getStmt.get(employeeId);
     if (!employee) {
+      console.warn('[changeEmployeePassword] employee not found', { employeeId });
       return errorResponse('Employee not found');
     }
 
     // Verify old pin
     if (String(employee.pin) !== String(oldPin)) {
+      console.warn('[changeEmployeePassword] old pin mismatch');
       return errorResponse('Old PIN is incorrect');
     }
 
     // Update pin
     const upd = db.prepare('UPDATE employee SET pin = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND isDeleted = 0');
     const res = upd.run(newPin, employeeId);
+    console.log('[changeEmployeePassword] update result', { changes: res.changes });
     if (res.changes === 0) {
+      console.error('[changeEmployeePassword] update reported 0 changes');
       return errorResponse('Failed to update PIN');
     }
 
+    console.log('[changeEmployeePassword] success');
     return { success: true, message: 'PIN updated successfully' };
   } catch (err) {
+    console.error('[changeEmployeePassword] error', err);
     return errorResponse(err.message);
   }
 }
