@@ -493,3 +493,40 @@ export function getEmployeeImage(imagePath) {
     return { success: false, message: 'Failed to load image' };
   }
 } 
+
+// Change employee 4-digit numeric PIN with validation
+export function changeEmployeePassword(employeeId, oldPin, newPin) {
+  try {
+    // Basic validations
+    const isFourDigit = (v) => typeof v === 'string' && /^\d{4}$/.test(v);
+    if (!isFourDigit(oldPin) || !isFourDigit(newPin)) {
+      return errorResponse('PIN must be exactly 4 numeric digits');
+    }
+    if (oldPin === newPin) {
+      return errorResponse('New PIN must be different from old PIN');
+    }
+
+    // Load employee
+    const getStmt = db.prepare('SELECT id, pin FROM employee WHERE id = ? AND isDeleted = 0');
+    const employee = getStmt.get(employeeId);
+    if (!employee) {
+      return errorResponse('Employee not found');
+    }
+
+    // Verify old pin
+    if (String(employee.pin) !== String(oldPin)) {
+      return errorResponse('Old PIN is incorrect');
+    }
+
+    // Update pin
+    const upd = db.prepare('UPDATE employee SET pin = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND isDeleted = 0');
+    const res = upd.run(newPin, employeeId);
+    if (res.changes === 0) {
+      return errorResponse('Failed to update PIN');
+    }
+
+    return { success: true, message: 'PIN updated successfully' };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
