@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Edit, Plus } from 'lucide-react';
+import { X, Search, Edit, Plus, RefreshCw, Eye } from 'lucide-react';
 import VirtualKeyboard from '../VirtualKeyboard';
 
 const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer, onNewCustomer }) => {
   const [searchName, setSearchName] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
+  const [searchEmail, setSearchEmail] = useState('');
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -22,6 +23,10 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
       setCustomers([]);
       setFilteredCustomers([]);
       setHasSearched(false);
+      setSearchName('');
+      setSearchPhone('');
+      setSearchEmail('');
+      setSelectedCustomer(null);
     }
   }, [isOpen]);
 
@@ -129,6 +134,16 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
     }
   };
 
+  const handleReset = () => {
+    setSearchName('');
+    setSearchPhone('');
+    setSearchEmail('');
+    setCustomers([]);
+    setFilteredCustomers([]);
+    setSelectedCustomer(null);
+    setHasSearched(false);
+  };
+
   // Keyboard event handlers
   const handleInputFocus = (inputName) => {
     setActiveInput(inputName);
@@ -187,6 +202,12 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
       if (activeInput === 'searchPhone') {
         setKeyboardInput(value);
       }
+    } else if (fieldName === 'searchEmail') {
+      setSearchEmail(value);
+      // Update keyboard input if keyboard is active for this field
+      if (activeInput === 'searchEmail') {
+        setKeyboardInput(value);
+      }
     }
   };
 
@@ -212,7 +233,10 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
       <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
         {/* Header */}
         <div className="bg-primary text-white p-4 flex justify-between items-center">
-          <h2 className="text-xl font-bold">Search Customer</h2>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <h2 className="text-xl font-bold">Customer List</h2>
+          </div>
           <button 
             onClick={onClose}
             className="text-white hover:text-primary p-1 rounded-full hover:bg-white hover:bg-opacity-20"
@@ -222,11 +246,28 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
         </div>
 
         {/* Search Section */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="grid grid-cols-2 gap-4 items-end">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Search</h3>
+          <div className="grid grid-cols-4 gap-4 items-end">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Search by Name
+                Phone:
+              </label>
+              <input
+                type="text"
+                name="searchPhone"
+                value={searchPhone}
+                onChange={(e) => handleInputChange(e, 'searchPhone')}
+                onFocus={(e) => handleAnyInputFocus(e, 'searchPhone')}
+                onBlur={handleInputBlur}
+                onClick={(e) => handleAnyInputClick(e, 'searchPhone')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                placeholder="-"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name:
               </label>
               <input
                 type="text"
@@ -242,22 +283,50 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Search by Phone
+                Email:
               </label>
               <input
                 type="text"
-                name="searchPhone"
-                value={searchPhone}
-                onChange={(e) => handleInputChange(e, 'searchPhone')}
-                onFocus={(e) => handleAnyInputFocus(e, 'searchPhone')}
+                name="searchEmail"
+                value={searchEmail}
+                onChange={(e) => handleInputChange(e, 'searchEmail')}
+                onFocus={(e) => handleAnyInputFocus(e, 'searchEmail')}
                 onBlur={handleInputBlur}
-                onClick={(e) => handleAnyInputClick(e, 'searchPhone')}
+                onClick={(e) => handleAnyInputClick(e, 'searchEmail')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                placeholder="Enter phone number"
+                placeholder="Enter email"
               />
             </div>
+            <button
+              onClick={handleSearch}
+              className="px-4 py-3 bg-[#16A34A] text-white rounded-md hover:bg-[#16A34A]/90 focus:outline-none focus:ring-2 focus:ring-[#16A34A] focus:ring-offset-2 text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <Search size={16} />
+              Search
+            </button>
           </div>
-          <div className="flex justify-end gap-3 mt-4">
+        </div>
+
+        {/* Action Buttons Section */}
+        <div className="pb-6 pl-6 pr-6 border-b border-gray-200">
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={() => {
+                if (selectedCustomer) {
+                  // Handle view customer details
+                  console.log('View customer:', selectedCustomer);
+                }
+              }}
+              disabled={!selectedCustomer}
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                selectedCustomer 
+                  ? 'bg-[#007BFF] text-white hover:bg-[#007BFF]/90 focus:ring-[#007BFF]' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <Eye size={16} />
+              View
+            </button>
             <button
               onClick={() => {
                 if (onNewCustomer) {
@@ -265,10 +334,10 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
                   // Don't close the modal - let the New Customer modal appear on top
                 }
               }}
-              className="px-4 py-2 bg-[#16A34A] text-white rounded-md hover:bg-[#16A34A]/90 focus:outline-none focus:ring-2 focus:ring-[#16A34A] focus:ring-offset-2 text-sm font-medium flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-[#007BFF] text-white rounded-md hover:bg-[#007BFF]/90 focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:ring-offset-2 text-sm font-medium flex items-center justify-center gap-2"
             >
               <Plus size={16} />
-              New Customer
+              Create
             </button>
             <button
               onClick={() => {
@@ -278,7 +347,7 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
                 }
               }}
               disabled={!selectedCustomer}
-              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              className={`flex-1 px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 selectedCustomer 
                   ? 'bg-[#007BFF] text-white hover:bg-[#007BFF]/90 focus:ring-[#007BFF]' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -288,11 +357,11 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
               Edit
             </button>
             <button
-              onClick={handleSearch}
-              className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 text-sm font-medium flex items-center justify-center gap-2"
+              onClick={handleReset}
+              className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-sm font-medium flex items-center justify-center gap-2"
             >
-              <Search size={16} />
-              Search
+              <RefreshCw size={16} />
+              Reset
             </button>
           </div>
         </div>
@@ -315,22 +384,28 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
                         Phone
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Addresses
+                        Order Count
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Delivery Address
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Loyal
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {loading ? (
                       <tr>
-                        <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
                           Loading customers...
                         </td>
                       </tr>
                     ) : filteredCustomers.length === 0 ? (
                       <tr>
-                        <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
                           {!hasSearched 
-                            ? 'Enter name or phone to search customers' 
+                            ? 'Enter name, phone, or email to search customers' 
                             : 'No customers found'}
                         </td>
                       </tr>
@@ -359,6 +434,9 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
                             {customer.phone || 'N/A'}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500">
+                            {customer.orderCount || 0}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">
                             <div className="flex flex-col gap-1">
                               {customer.addresses && customer.addresses.length > 0 ? (
                                 customer.addresses.map((addr, index) => (
@@ -371,6 +449,17 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
                                 <span>No addresses</span>
                               )}
                             </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {customer.isLoyal ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                YES
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                NO
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))
