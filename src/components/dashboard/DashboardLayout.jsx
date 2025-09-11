@@ -8,7 +8,7 @@ import {
   LayoutDashboard,
   Search,
   Users2, Utensils, Table,
-  Tag, X, LogOut, User, Home, Settings
+  Tag, X, LogOut, User, Home, Settings, Clock
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -114,6 +114,12 @@ const DashboardLayout = () => {
         name: "Manage-Orders",
         icon: <LayoutDashboard size={18} />,
         path: "/dashboard/manage-orders",
+        allowedRoles: ["admin", "cashier"]
+      },
+      {
+        name: "Reservations",
+        icon: <Clock size={18} />,
+        path: "/dashboard/reservations",
         allowedRoles: ["admin", "cashier"]
       },
       {
