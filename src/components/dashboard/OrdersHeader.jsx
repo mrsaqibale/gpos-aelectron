@@ -23,7 +23,9 @@ import {
   ListOrderedIcon,
   ListOrdered,
   LogOut,
-  Menu
+  Menu,
+  Save as SaveIcon,
+  TrendingUp
 } from 'lucide-react';
 
 const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => {
@@ -134,7 +136,7 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
                 if (item.path) { navigate(item.path); return; }
                 if (index === 0) navigate('/dashboard'); // fallback: home
               }}
-              className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-4 py-2 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
+              className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-4 py-3 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
               style={item.style || (item.bgColor ? { backgroundColor: item.bgColor } : {})}
             >
               {item.icon}
@@ -142,20 +144,30 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
             </div>
           ))}
         </div>
-
-        {/* Right side - Menu button (optional) */}
-        {showMenuButton && (
-          <div className="flex items-center  mr-5">
-            <button
-              onClick={onMenuClick}
-              className="flex cursor-pointer flex-col justify-center items-center p-2 rounded-md text-primary text-xs font-semibold"
-              style={{ color: themeColors?.primary }}
-            >
-              <Menu size={18} />
-              Menu
-            </button>
-          </div>
-        )}
+        {/* Right side - Actions */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('headerSaveClicked'));
+            }}
+            title="Save"
+            className="flex justify-center items-center gap-2 py-3 w-[100px] rounded-md text-white text-sm font-semibold btn-lifted bg-[#16A34A] flex items-center gap-2"
+          >
+            <SaveIcon size={14} />
+            Save
+          </button>
+          <button
+            onClick={() => {
+              // Ask RunningOrders to open the Status modal
+              window.dispatchEvent(new CustomEvent('openStatusModal'));
+            }}
+            title="Update order status"
+            className="flex justify-center items-center gap-2 py-3 w-[100px] rounded-md text-white text-sm font-semibold btn-lifted bg-[#1976D2] flex items-center gap-2"
+          >
+            <TrendingUp size={14} />
+            Status
+          </button>
+        </div>
       </div>
     </div>
   );

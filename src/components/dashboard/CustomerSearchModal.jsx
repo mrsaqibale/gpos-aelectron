@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search } from 'lucide-react';
+import { X, Search, Edit, Plus } from 'lucide-react';
 import VirtualKeyboard from '../VirtualKeyboard';
 
-const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
+const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer, onNewCustomer }) => {
   const [searchName, setSearchName] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
   const [customers, setCustomers] = useState([]);
@@ -257,7 +257,36 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect }) => {
               />
             </div>
           </div>
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-end gap-3 mt-4">
+            <button
+              onClick={() => {
+                if (onNewCustomer) {
+                  onNewCustomer();
+                  // Don't close the modal - let the New Customer modal appear on top
+                }
+              }}
+              className="px-4 py-2 bg-[#16A34A] text-white rounded-md hover:bg-[#16A34A]/90 focus:outline-none focus:ring-2 focus:ring-[#16A34A] focus:ring-offset-2 text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <Plus size={16} />
+              New Customer
+            </button>
+            <button
+              onClick={() => {
+                if (selectedCustomer && onEditCustomer) {
+                  onEditCustomer(selectedCustomer);
+                  // Don't close the modal - let the Edit Customer modal appear on top
+                }
+              }}
+              disabled={!selectedCustomer}
+              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                selectedCustomer 
+                  ? 'bg-[#007BFF] text-white hover:bg-[#007BFF]/90 focus:ring-[#007BFF]' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <Edit size={16} />
+              Edit
+            </button>
             <button
               onClick={handleSearch}
               className="px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 text-sm font-medium flex items-center justify-center gap-2"

@@ -1020,7 +1020,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
 
     return (
     <>
-      <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-[60] p-4">
         <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl">
           {/* Header */}
           <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">

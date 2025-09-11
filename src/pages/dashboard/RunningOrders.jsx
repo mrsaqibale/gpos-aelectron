@@ -504,6 +504,23 @@ const RunningOrders = () => {
     }
   };
 
+  // Open Status modal when triggered from OrdersHeader
+  const handleOpenStatusModal = () => {
+    const mockOrder = {
+      orderType: selectedOrderType || 'In Store',
+      orderNumber: 'NEW-ORDER',
+      status: 'New'
+    };
+    setSelectedOrderForStatusUpdate(mockOrder);
+    setSelectedStatus('New');
+    setShowStatusUpdateModal(true);
+  };
+
+  React.useEffect(() => {
+    window.addEventListener('openStatusModal', handleOpenStatusModal);
+    return () => window.removeEventListener('openStatusModal', handleOpenStatusModal);
+  }, [selectedOrderType]);
+
   // Fetch foods by category
   const fetchFoodsByCategory = async (categoryId) => {
     try {
@@ -5169,7 +5186,7 @@ const RunningOrders = () => {
               <h2 className="font-bold text-gray-800">Active Orders</h2>
               <button 
                 onClick={fetchExistingOrders}
-                className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
+                className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg p-2 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
               >
                 <RefreshCw size={12} />
                 Refresh Active
@@ -5188,7 +5205,7 @@ const RunningOrders = () => {
                   onFocus={(e) => handleAnyInputFocus(e, 'runningOrdersSearchQuery')}
                   onClick={(e) => handleAnyInputClick(e, 'runningOrdersSearchQuery')}
                   onBlur={(e) => handleCustomInputBlur(e, 'runningOrdersSearchQuery')}
-                  className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-8 text-sm font-semibold pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -5462,7 +5479,7 @@ const RunningOrders = () => {
                   data-invoice-button
                   onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 h-10 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#010101] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  className={`flex-1 h-12 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#010101] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <Receipt size={14} />
                   BILL
                 </button>
@@ -5474,7 +5491,7 @@ const RunningOrders = () => {
                     }
                   }}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 h-10 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  className={`flex-1 h-12 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <FileText size={14} />
                   INVOICE
                 </button>
@@ -5485,7 +5502,7 @@ const RunningOrders = () => {
                 <button
                   onClick={handleOpenOrderDetailsModal}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  className={`flex-1 text-[13px] h-12 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     }`}
                 >
                   <Eye size={14} />
@@ -5501,7 +5518,7 @@ const RunningOrders = () => {
                     }
                   }}
                   disabled={!selectedPlacedOrder || (isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)}
-                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
+                  className={`flex-1 text-[13px] h-12 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
                       ? 'bg-[#f3be25] text-white hover:bg-[#e6b31e]' 
                       : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                   }`}
@@ -5520,7 +5537,7 @@ const RunningOrders = () => {
                 <button 
                   onClick={handleCancelOrder}
                   disabled={!selectedPlacedOrder}
-                className={`w-[70%] text-[13px] mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#C42232] text-white cursor-pointer hover:bg-[#b01a28]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                className={`w-[70%] text-[13px] mx-auto h-12 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#C42232] text-white cursor-pointer hover:bg-[#b01a28]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                   }`}
                 >
                   <X size={14} />
@@ -5645,7 +5662,7 @@ const RunningOrders = () => {
               </div>
               <button
                 onClick={handleOpenSplitPizzaModal}
-                className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 py-2 text-sm transition-colors"
+                className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
               >
                 Create Your Own
               </button>
@@ -5658,7 +5675,7 @@ const RunningOrders = () => {
                 categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`h-9 px-3 text-[14px] flex items-center justify-center gap-1 
+                    className={`h-12 px-5 text-[14px] flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedCategory?.id === category.id
                            ? 'bg-white text-black border-2 border-primary' 
                            : 'bg-primary text-white hover:bg-primary/90'
@@ -5704,7 +5721,7 @@ const RunningOrders = () => {
                 setSelectedScheduleDateTime('');
               }}
               disabled={isModifyingOrder}
-              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'In Store' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'In Store' 
@@ -5729,7 +5746,7 @@ const RunningOrders = () => {
                 setShowTableModal(true);
               }}
               disabled={isModifyingOrder}
-              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Table' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Table' 
@@ -5755,7 +5772,7 @@ const RunningOrders = () => {
                 setReservedTables([]);
               }}
               disabled={isModifyingOrder}
-              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Collection' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Collection' 
@@ -5783,7 +5800,7 @@ const RunningOrders = () => {
                 setSelectedScheduleDateTime('');
               }}
               disabled={isModifyingOrder}
-              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Delivery' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Delivery' 
@@ -5795,33 +5812,11 @@ const RunningOrders = () => {
               </svg>
               Delivery
             </button>
-            <button 
-              onClick={() => {
-                // Create a mock order object with the current selected order type
-                const mockOrder = {
-                  orderType: selectedOrderType || 'In Store',
-                  orderNumber: 'NEW-ORDER',
-                  status: 'New'
-                };
-                
-                // Open status update modal with the current order type
-                setSelectedOrderForStatusUpdate(mockOrder);
-                setSelectedStatus('New');
-                setShowStatusUpdateModal(true);
-              }}
-              title="Update order status"
-              className="h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer text-black hover:border-primary hover:border-2">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
-              </svg>
-              Status
-            </button>
-            {/* Status section */}
+            {/* Status button moved to OrdersHeader. Triggered via custom event. */}
 
             <button 
               onClick={handleOpenScheduleModal}
-              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2 ${selectedScheduleDateTime
                            ? 'bg-primary text-white border-primary' 
                            : 'text-black hover:border-primary hover:border-2'
@@ -5834,40 +5829,20 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => setShowCustomerSearchModal(true)}
-              className="h-9 px-2 bg-[#007BFF] text-white text-[13px] rounded flex items-center justify-center gap-1 
+              className="px-2 h-12 bg-[#007BFF] text-white text-[13px] rounded flex items-center justify-center gap-1 
                      btn-lifted transition-colors cursor-pointer">
               <Users2 size={12} />
               Customer
             </button>
 
-            <button
-              onClick={() => setShowCustomerModal(true)}
-              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
-                     btn-lifted transition-colors cursor-pointer ${showCustomerModal
-                         ? 'bg-primary text-white border-2 border-primary' 
-                         : 'bg-white text-black'
-                     }`}>
-              <Plus size={12} />
-              New Customer
-            </button>
 
             <button
               onClick={() => setSelectedCustomer(null)}
-              className="h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+              className="px-2 h-12 text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
               {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
             </button>
 
-            <button
-              onClick={handleOpenEditModal}
-              disabled={!selectedCustomer}
-              className={`h-9 px-2 btn-lifted flex items-center justify-center gap-1 bg-[#007BFF] text-white text-[13px] rounded transition-colors cursor-pointer ${selectedCustomer
-                ? 'hover:text-green-800 cursor-pointer'
-                : 'cursor-not-allowed'
-                }`}>
-              <Edit size={17} />
-              Edit
-            </button>
 
           </div>
 
@@ -6046,7 +6021,7 @@ const RunningOrders = () => {
                     setShowDeleteCartModal(true);
                   }}
                   disabled={cartItems.length === 0 || isModifyingOrder}
-                  className={`bg-red-700 text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
+                  className={`bg-red-700 text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
                       ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                     }`}>
@@ -6059,24 +6034,24 @@ const RunningOrders = () => {
                       setShowDraftNumberModal(true);
                     }
                   }}
-                  className={`bg-[#5A32A3] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded ${cartItems.length > 0 && !isModifyingOrder
+                  className={`bg-[#5A32A3] text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded ${cartItems.length > 0 && !isModifyingOrder
                       ? 'hover:bg-[#4A2A93] cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                     }`}>
                   DRAFT
                 </button>
-                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded cursor-pointer">
+                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded cursor-pointer">
                   PRINT
                 </button>
                 <button
                   onClick={handlePlaceOrder}
-                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-2 px-1 text-[13px] font-bold rounded  cursor-pointer"
+                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted h-12 px-1 text-[13px] font-bold rounded  cursor-pointer"
                 >
                   {isModifyingOrder ? 'UPDATE ORDER' : 'PLACE ORDER'}
                 </button>
                 <button
                   onClick={handlePayment}
-                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-2 px-1 text-[13px] font-bold rounded cursor-pointer"
+                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted h-12 px-1 text-[13px] font-bold rounded cursor-pointer"
                 >
                   PAY
                 </button>
@@ -6098,6 +6073,8 @@ const RunningOrders = () => {
           isOpen={showCustomerSearchModal}
           onClose={() => setShowCustomerSearchModal(false)}
           onCustomerSelect={handleCustomerSelect}
+          onEditCustomer={handleOpenEditModal}
+          onNewCustomer={() => setShowCustomerModal(true)}
         />
 
         {/* Edit Customer Modal */}
