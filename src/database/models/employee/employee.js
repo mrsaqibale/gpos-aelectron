@@ -261,25 +261,33 @@ export function updateEmployee(id, updates, originalFilename) {
   }
 }
 
-// Login function: get employee by code and roll
-export function loginEmployee(code, roll) {
+// Login function: get employee by pin and roll
+export function loginEmployee(pin, roll) {
   try {
-    const stmt = db.prepare('SELECT * FROM employee WHERE code = ? AND roll = ? AND isDeleted = 0 AND isActive = 1');
-    const employee = stmt.get(code, roll);
-    if (!employee) return errorResponse('Invalid code or roll.');
+    console.log('[loginEmployee] called with', { pin, roll });
+    const stmt = db.prepare('SELECT * FROM employee WHERE pin = ? AND roll = ? AND isDeleted = 0 AND isActive = 1');
+    const employee = stmt.get(pin, roll);
+    if (!employee) {
+      console.warn('[loginEmployee] employee not found with pin and roll');
+      return errorResponse('Invalid PIN or roll.');
+    }
     
     // Check if employee is active
     if (employee.isActive !== 1) {
+      console.warn('[loginEmployee] employee account deactivated');
       return errorResponse('Your account is deactivated. Please contact administrator.');
     }
     
     // Check if employee is not deleted
     if (employee.isDeleted === 1) {
+      console.warn('[loginEmployee] employee account deleted');
       return errorResponse('Your account has been deleted. Please contact administrator.');
     }
     
+    console.log('[loginEmployee] login successful for employee', employee.id);
     return { success: true, data: employee };
   } catch (err) {
+    console.error('[loginEmployee] error', err);
     return errorResponse(err.message);
   }
 }
