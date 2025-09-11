@@ -42,17 +42,18 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
     //   textColor: 'text-white'
     // },
 
-    {
-      // icon: <ShoppingCart size={16} />,
-      style: { backgroundColor: themeColors.primary },
-      textColor: 'text-white',
-      label: 'Register'
-    },
+    // {
+    //   // icon: <ShoppingCart size={16} />,
+    //   style: { backgroundColor: themeColors.primary },
+    //   textColor: 'text-white',
+    //   label: 'Register'
+    // },
     {
       // icon: <FileText size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: 'Manage Orders'
+      label: 'Manage Orders',
+      path: '/dashboard/manage-orders'
     },
 
     {
@@ -65,7 +66,8 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
       // icon: <Bell size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: `Drafts${draftCount > 0 ? ` (${draftCount})` : ''}`
+      label: `Drafts${draftCount > 0 ? ` (${draftCount})` : ''}`,
+      onClick: onDraftsClick
     },
     {
       //  icon: <Monitor size={16} />,
@@ -77,27 +79,29 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
       // icon: <Clock size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: 'Reservations'
+      label: 'Reservations',
+      path: '/dashboard/reservations'
     },
-    {
-      //  icon: <Printer size={16} />,
-      style: { backgroundColor: themeColors.primary },
-      textColor: 'text-white',
-      label: 'Order Screen'
-    },
+    // {
+    //   //  icon: <Printer size={16} />,
+    //   style: { backgroundColor: themeColors.primary },
+    //   textColor: 'text-white',
+    //   label: 'Order Screen'
+    // },
 
     {
       //  icon: <ListOrdered size={16} />,
       label: 'Customer Display',
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
+      path: '/dashboard/customer-management'
     },
-    {
-      //  icon: <ListOrdered size={16} />,
-      label: 'Recent Sales',
-      style: { backgroundColor: themeColors.primary },
-      textColor: 'text-white',
-    },
+    // {
+    //   //  icon: <ListOrdered size={16} />,
+    //   label: 'Recent Sales',
+    //   style: { backgroundColor: themeColors.primary },
+    //   textColor: 'text-white',
+    // },
   ];
 
   const statusItems = [
@@ -126,9 +130,9 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
             <div
               key={index}
               onClick={() => {
-                if (index === 0) navigate('/dashboard'); // Go back when Home icon is clicked
-                if (index === 3 && onDraftsClick) onDraftsClick(); // Handle Drafts button click
-                if (item.onClick) item.onClick(); // Handle custom onClick functions
+                if (item.onClick) { item.onClick(); return; }
+                if (item.path) { navigate(item.path); return; }
+                if (index === 0) navigate('/dashboard'); // fallback: home
               }}
               className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-4 py-2 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
               style={item.style || (item.bgColor ? { backgroundColor: item.bgColor } : {})}
