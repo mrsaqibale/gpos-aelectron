@@ -1,9 +1,21 @@
 import React, { useMemo, useState } from 'react'
 import { X, Clock, Calendar, Users, Table2 } from 'lucide-react'
 import { useTheme } from '../../../contexts/ThemeContext'
+import MergeTableModal from '../table/MergeTableModal'
+import TableSelectionModal from '../table/TableSelectionModal'
 
 const NewReservation = ({ isOpen, onClose, onCreate }) => {
   const { themeColors } = useTheme()
+  const [showMergeTableModal, setShowMergeTableModal] = useState(false)
+  const [showTableSelectionModal, setShowTableSelectionModal] = useState(false)
+  const [floors, setFloors] = useState([])
+  const [floorsLoading, setFloorsLoading] = useState(false)
+  const [selectedFloor, setSelectedFloor] = useState('')
+  const [tables, setTables] = useState([])
+  const [tablesLoading, setTablesLoading] = useState(false)
+  const [selectedTable, setSelectedTable] = useState('')
+  const [selectedPersons, setSelectedPersons] = useState('')
+  const [mergeTableSelections, setMergeTableSelections] = useState([{ id: 1, tableId: '' }, { id: 2, tableId: '' }])
   const [form, setForm] = useState({
     customerName: '',
     phoneNumber: '',
@@ -26,6 +38,75 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
     e.preventDefault()
     if (onCreate) onCreate(form)
   }
+
+  // Load floors when modal opens
+  React.useEffect(() => {
+    if (!showTableSelectionModal) return
+    const run = async () => {
+      try {
+        setFloorsLoading(true)
+        if (!window.myAPI) {
+          setFloors([])
+          return
+        }
+        const result = await window.myAPI.floorGetAll()
+        if (result && result.success) {
+          setFloors(result.data)
+        } else {
+          setFloors([])
+        }
+      } catch (e) {
+        setFloors([])
+      } finally {
+        setFloorsLoading(false)
+      }
+    }
+    run()
+  }, [showTableSelectionModal])
+
+  const fetchTablesByFloor = async (floorId) => {
+    try {
+      setTablesLoading(true)
+      if (!window.myAPI) {
+        setTables([])
+        return
+      }
+      const result = await window.myAPI.tableGetByFloorWithStatus(floorId, 'Free')
+      if (result && result.success) {
+        setTables(result.data)
+      } else {
+        setTables([])
+      }
+    } catch {
+      setTables([])
+    } finally {
+      setTablesLoading(false)
+    }
+  }
+
+  const handleSelectFloor = (floor) => {
+    setSelectedFloor(floor?.name || '')
+    if (floor?.id != null) fetchTablesByFloor(floor.id)
+  }
+
+  const handleMergeTableSelectionChange = (selectionId, tableId) => {
+    setMergeTableSelections((prev) => prev.map((s) => (s.id === selectionId ? { ...s, tableId } : s)))
+  }
+
+  const handleRemoveTableSelection = (selectionId) => {
+    setMergeTableSelections((prev) => (prev.length > 2 ? prev.filter((s) => s.id !== selectionId) : prev))
+  }
+
+  const handleAddMoreTableSelection = () => {
+    setMergeTableSelections((prev) => [...prev, { id: prev.length ? Math.max(...prev.map((p) => Number(p.id))) + 1 : 1, tableId: '' }])
+  }
+
+  const isAddMoreDisabled = () => mergeTableSelections.length >= 6
+  const getAvailableTablesForSelection = () => tables
+  const [reservedTables] = useState([])
+  const isTableReserved = () => false
+  const removeReservedTable = () => {}
+  const getSeatCapacityOptions = () => Array.from({ length: 12 }).map((_, i) => i + 1)
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -90,7 +171,7 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
               </select>
             </div>
             <div className="flex items-end">
-              <button type="button" className="py-2.5 px-4 rounded bg-primary text-white text-sm font-medium">Choose Table</button>
+              <button type="button" onClick={() => setShowTableSelectionModal(true)} className="py-2.5 px-4 rounded bg-primary text-white text-sm font-medium">Choose Table</button>
             </div>
 
             <div className="md:col-span-2">
@@ -106,6 +187,57 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
           </div>
         </form>
       </div>
+
+      {/* Table Selection Modal */}
+      <TableSelectionModal
+        open={showTableSelectionModal}
+        onClose={() => setShowTableSelectionModal(false)}
+        floors={floors}
+        floorsLoading={floorsLoading}
+        selectedFloor={selectedFloor}
+        onSelectFloor={handleSelectFloor}
+        addSampleData={() => {}}
+        tables={tables}
+        tablesLoading={tablesLoading}
+        selectedTable={selectedTable}
+        onSelectTable={(id) => setSelectedTable(id)}
+        reservedTables={reservedTables}
+        onRemoveReservedTable={removeReservedTable}
+        isTableReserved={isTableReserved}
+        selectedPersons={selectedPersons}
+        onSelectPersons={(val) => setSelectedPersons(val)}
+        getSeatCapacityOptions={getSeatCapacityOptions}
+        onMergeTable={() => setShowMergeTableModal(true)}
+        onSave={() => setShowTableSelectionModal(false)}
+      />
+
+      {/* Merge Table Modal */}
+      <MergeTableModal
+        open={showMergeTableModal}
+        onBack={() => setShowMergeTableModal(false)}
+        onClose={() => {
+          setShowMergeTableModal(false)
+          setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }])
+        }}
+        floors={floors}
+        floorsLoading={floorsLoading}
+        selectedFloor={selectedFloor}
+        onSelectFloor={handleSelectFloor}
+        addSampleData={() => {}}
+        tables={tables}
+        tablesLoading={tablesLoading}
+        mergeTableSelections={mergeTableSelections}
+        onSelectionChange={handleMergeTableSelectionChange}
+        onRemoveSelection={handleRemoveTableSelection}
+        onAddMoreSelection={handleAddMoreTableSelection}
+        isAddMoreDisabled={isAddMoreDisabled}
+        getAvailableTablesForSelection={getAvailableTablesForSelection}
+        isTableReserved={isTableReserved}
+        onSave={() => {
+          setShowMergeTableModal(false)
+          setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }])
+        }}
+      />
     </div>
   )
 }
