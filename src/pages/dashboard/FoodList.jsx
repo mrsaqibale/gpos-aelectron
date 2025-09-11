@@ -337,6 +337,34 @@ const FoodList = () => {
 
       {activeTab === 'foodList' && (
         <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
+          {showFoodForm && (
+            <div className="mb-6">
+              <FoodForm 
+                food={editingFood} 
+                onSubmit={(updatedFood) => {
+                  if (updatedFood === null) {
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                  } else if (editingFood) {
+                    setFoodItems(foodItems.map(item => 
+                      item.id === updatedFood.id ? updatedFood : item
+                    ));
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                    fetchFoodData();
+                  } else {
+                    setFoodItems([...foodItems, {
+                      ...updatedFood,
+                      id: Math.max(...foodItems.map(i => i.id)) + 1
+                    }]);
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                    fetchFoodData();
+                  }
+                }}
+              />
+            </div>
+          )}
           {/* Search and Filters */}
           <div className="mb-6 flex justify-end items-center">
             <div className="flex items-center gap-3">
@@ -550,39 +578,7 @@ const FoodList = () => {
        {activeTab === 'addons' && <AddonManagement/>}
       {activeTab === 'ingredients' && <Ingredients />}
 
-      {showFoodForm && (
-        <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
-          <FoodForm 
-            food={editingFood} 
-            onSubmit={(updatedFood) => {
-              if (updatedFood === null) {
-                // User cancelled, just close the modal
-                setShowFoodForm(false);
-                setEditingFood(null);
-              } else if (editingFood) {
-                // Food was updated successfully
-                setFoodItems(foodItems.map(item => 
-                  item.id === updatedFood.id ? updatedFood : item
-                ));
-                setShowFoodForm(false);
-                setEditingFood(null);
-                // Refresh the food list after update
-                fetchFoodData();
-              } else {
-                // New food was created
-                setFoodItems([...foodItems, {
-                  ...updatedFood,
-                  id: Math.max(...foodItems.map(i => i.id)) + 1
-                }]);
-                setShowFoodForm(false);
-                setEditingFood(null);
-                // Refresh the food list after creation
-                fetchFoodData();
-              }
-            }}
-          />
-        </div>
-      )}
+      
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && foodToDelete && (
