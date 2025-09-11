@@ -6040,23 +6040,23 @@ const RunningOrders = () => {
               </div>
               
               {/* Primary Action Buttons */}
-              <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="grid grid-cols-7 gap-3 mb-3">
                 <button
                   onClick={handlePlaceOrder}
-                  className="bg-[#fb8b02] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#e67a00] transition-colors"
+                  className="col-span-2 bg-[#fb8b02] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#e67a00] transition-colors"
                 >
                   <ShoppingCart size={16} />
                   {isModifyingOrder ? 'UPDATE ORDER' : 'PLACE ORDER'}
                 </button>
                 <button
                   onClick={handlePayment}
-                  className="bg-[#16A34A] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#15803d] transition-colors"
+                  className="col-span-3 bg-[#16A34A] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#15803d] transition-colors"
                 >
                   PAY (€{calculateCartTotal().toFixed(2)})
                 </button>
                 <button 
                   onClick={handlePrintInvoice}
-                  className="bg-[#3db4e4] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#2a9fd8] transition-colors"
+                  className="col-span-2 bg-[#3db4e4] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#2a9fd8] transition-colors"
                 >
                   <Printer size={16} />
                   PRINT
