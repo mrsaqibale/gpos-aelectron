@@ -3,6 +3,8 @@ import { X, Clock, Calendar, Users, Table2 } from 'lucide-react'
 import { useTheme } from '../../../contexts/ThemeContext'
 import MergeTableModal from '../table/MergeTableModal'
 import TableSelectionModal from '../table/TableSelectionModal'
+import useCustomAlert from '../../../hooks/useCustomAlert'
+import CustomAlert from '../../CustomAlert'
 
 const NewReservation = ({ isOpen, onClose, onCreate }) => {
   const { themeColors } = useTheme()
@@ -26,8 +28,7 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
     tablePreference: 'any',
     notes: ''
   })
-
-  if (!isOpen) return null
+  const { alertState, showError, hideAlert } = useCustomAlert()
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -36,6 +37,12 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    const requiredFields = ['customerName', 'phoneNumber', 'date', 'startTime', 'partySize']
+    const missing = requiredFields.filter((k) => !String(form[k] || '').trim())
+    if (missing.length) {
+      showError('Fill in the required fields')
+      return
+    }
     if (onCreate) onCreate(form)
   }
 
@@ -108,11 +115,13 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
   const removeReservedTable = () => {}
   const getSeatCapacityOptions = () => Array.from({ length: 12 }).map((_, i) => i + 1)
 
+  if (!isOpen) return null
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose}></div>
 
-      <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-xl overflow-hidden border border-gray-200">
+      <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-xl overflow-hidden">
         {/* Header */}
         <div
           className="flex items-center justify-between px-4 py-3"
@@ -129,20 +138,20 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700">Customer Name <span className="text-red-500">*</span></label>
-              <input name="customerName" value={form.customerName} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="Enter customer name" />
+              <input name="customerName" required value={form.customerName} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="Enter customer name" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Phone Number <span className="text-red-500">*</span></label>
-              <input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="Enter phone number" />
+              <input name="phoneNumber" required value={form.phoneNumber} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="Enter phone number" />
             </div>
 
             <div>
               <label className="text-sm font-medium text-gray-700">Date <span className="text-red-500">*</span></label>
-              <input type="date" name="date" value={form.date} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+              <input type="date" name="date" required value={form.date} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Start Time <span className="text-red-500">*</span></label>
-              <input type="time" name="startTime" value={form.startTime} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+              <input type="time" name="startTime" required value={form.startTime} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" />
             </div>
 
             <div>
@@ -156,7 +165,7 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Party Size <span className="text-red-500">*</span></label>
-              <select name="partySize" value={form.partySize} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-white">
+              <select name="partySize" required value={form.partySize} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 bg-white">
                 {Array.from({ length: 20 }).map((_, i) => (
                   <option key={i + 1} value={i + 1}>{i + 1}</option>
                 ))}
@@ -187,6 +196,15 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
           </div>
         </form>
       </div>
+
+      {/* Custom Alert */}
+      <CustomAlert
+        message={alertState.message}
+        isVisible={alertState.isVisible}
+        onClose={hideAlert}
+        duration={alertState.duration}
+        type={alertState.type}
+      />
 
       {/* Table Selection Modal */}
       <TableSelectionModal

@@ -4,16 +4,37 @@ import { CalendarDays, Filter, Edit, Check, X, Trash2, Plus } from 'lucide-react
 const Reservations = () => {
     const [activeTab, setActiveTab] = useState('all')
 
-    const reservations = [
+    const initialReservations = [
         { id: 1, name: 'John Smith', table: 12, from: '7:30 PM', to: '9:30 PM', dateLabel: 'Today', people: 4, status: 'confirmed' },
         { id: 2, name: 'Sarah Johnson', table: 8, from: '8:00 PM', to: '10:00 PM', dateLabel: 'Today', people: 2, status: 'pending' },
         { id: 3, name: 'Mike Davis', table: 15, from: '6:45 PM', to: '8:45 PM', dateLabel: 'Today', people: 6, status: 'confirmed' },
     ]
+    const [reservations, setReservations] = useState(initialReservations)
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [reservationToDelete, setReservationToDelete] = useState(null)
 
     const filtered = useMemo(() => {
         if (activeTab === 'all') return reservations
         return reservations.filter(r => r.status === activeTab)
     }, [activeTab])
+
+    const handleRequestDelete = (res) => {
+        setReservationToDelete(res)
+        setShowDeleteModal(true)
+    }
+
+    const handleConfirmDelete = () => {
+        if (reservationToDelete) {
+            setReservations(prev => prev.filter(r => r.id !== reservationToDelete.id))
+        }
+        setShowDeleteModal(false)
+        setReservationToDelete(null)
+    }
+
+    const handleCancelDelete = () => {
+        setShowDeleteModal(false)
+        setReservationToDelete(null)
+    }
 
     const statusBadge = (status) => {
         if (status === 'confirmed') return (
@@ -83,12 +104,35 @@ const Reservations = () => {
                                 ) : (
                                     <button className="px-3 py-1 rounded cursor-pointer bg-[#dc3545] text-white text-sm">Cancel</button>
                                 )}
-                                <button className="px-3 py-1 rounded cursor-pointer bg-[#6c757d] text-white text-sm">Delete</button>
+                                <button onClick={() => handleRequestDelete(res)} className="px-3 py-1 rounded cursor-pointer bg-[#6c757d] text-white text-sm">Delete</button>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
+
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40" onClick={handleCancelDelete}></div>
+                    <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 bg-primary">
+                            <h3 className="text-white font-semibold">Delete Reservation</h3>
+                            <button onClick={handleCancelDelete} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/15">
+                                <X className="w-5 h-5 text-white" />
+                            </button>
+                        </div>
+                        <div className="p-4">
+                            <p className="text-gray-700">
+                                Are you sure you want to delete {reservationToDelete?.name}'s reservation for table {reservationToDelete?.table}?
+                            </p>
+                        </div>
+                        <div className="flex justify-end gap-3 p-4 border-t">
+                            <button onClick={handleCancelDelete} className="px-4 py-2 rounded bg-gray-500 text-white">Cancel</button>
+                            <button onClick={handleConfirmDelete} className="px-4 py-2 rounded bg-red-600 text-white">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
   )
 }
