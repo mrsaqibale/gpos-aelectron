@@ -38,13 +38,13 @@ const Reservations = () => {
 
     const statusBadge = (status) => {
         if (status === 'confirmed') return (
-            <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-700">CONFIRMED</span>
+            <span className="px-2 py-2 text-xs rounded bg-green-100 text-green-700">CONFIRMED</span>
         )
         if (status === 'pending') return (
-            <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">PENDING</span>
+            <span className="px-2 py-2 text-xs rounded bg-yellow-100 text-yellow-700">PENDING</span>
         )
         return (
-            <span className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">CANCELLED</span>
+            <span className="px-2 py-2 text-xs rounded bg-gray-100 text-gray-700">CANCELLED</span>
         )
     }
 
@@ -68,7 +68,7 @@ const Reservations = () => {
                         <button
                             key={t.id}
                             onClick={() => setActiveTab(t.id)}
-                            className={`px-3 py-1 rounded text-sm transition-colors duration-150 ${
+                            className={`px-4 py-2 rounded text-sm transition-colors duration-150 ${
                                 activeTab === t.id
                                   ? 'bg-primary text-white'
                                   : 'bg-white text-gray-700 border border-gray-300 shadow-sm'

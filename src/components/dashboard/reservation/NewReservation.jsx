@@ -124,7 +124,7 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
       <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-xl overflow-hidden">
         {/* Header */}
         <div
-          className="flex items-center justify-between px-4 py-3"
+          className="flex items-center justify-between px-4 py-4"
           style={{ backgroundColor: themeColors.primary }}
         >
           <h2 className="text-white font-semibold">New Reservation</h2>

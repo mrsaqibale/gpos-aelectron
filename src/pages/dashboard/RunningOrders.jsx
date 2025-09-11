@@ -3709,18 +3709,18 @@ const RunningOrders = () => {
         <div className="flex justify-between p-2 items-center">
           <p className="text-gray-600 font-semibold text-md mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
         <button
-          className="mt-1 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
+          className="mt-1 w-6 h-6 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
           title="Add"
           onClick={() => handleFoodItemClick(item)}
         >
           <svg
-            width="16"
-            height="16"
+            width="20"
+            height="20"
             viewBox="0 0 20 20"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            className="w-3 h-3"
+            className="w-4 h-4"
           >
             <path d="M10 4v12M4 10h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -3742,7 +3742,7 @@ const RunningOrders = () => {
             <div className="text-gray-500 text-sm">Searching...</div>
           </div>
         ) : filteredFoods.length > 0 ? (
-          <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-4">
             {filteredFoods.map((food) => (
               <MenuCard key={food.id} item={food} />
             ))}
@@ -5686,7 +5686,7 @@ const RunningOrders = () => {
                 categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`h-12 px-5 text-[14px] flex items-center justify-center gap-1 
+                    className={`h-13 px-2 w-[120px] text-md flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedCategory?.id === category.id
                            ? 'bg-white text-black border-2 border-primary' 
                            : 'bg-primary text-white hover:bg-primary/90'
@@ -6028,9 +6028,9 @@ const RunningOrders = () => {
                 </div>
               </div>
               {/* Total Payable */}
-              <div className='flex justify-center items-center'>
+              <div className='flex justify-center items-center mb-4'>
                 <div
-                  className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer w-[70%] rounded flex items-center justify-center mb-4 hover:bg-gray-300 transition-colors"
+                  className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer w-[70%] rounded flex items-center justify-center hover:bg-gray-300 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <Eye size={14} />
@@ -6038,41 +6038,62 @@ const RunningOrders = () => {
                   </div>
                 </div>
               </div>
-              {/* Action buttons */}
-              <div className="flex gap-2 justify-center pb-2">
-                {/* <button
-                  onClick={handleOpenCouponModal}
-                  className="bg-[#43a148] text-white  btn-lifted py-1.5 px-1 w-[100%]  text-[11px] font-bold rounded  hover:bg-green-600"
-                >
-                  DISCOUNT
-                </button> */}
-                
-                <button 
-                  onClick={() => {
-                    if (cartItems.length > 0 && !isModifyingOrder) {
-                      setShowDraftNumberModal(true);
-                    }
-                  }}
-                  className={`bg-[#5A32A3] text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded ${cartItems.length > 0 && !isModifyingOrder
-                      ? 'hover:bg-[#4A2A93] cursor-pointer'
-                      : 'bg-gray-400 cursor-not-allowed'
-                    }`}>
-                  DRAFT
-                </button>
-                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded cursor-pointer">
-                  PRINT
-                </button>
+              
+              {/* Primary Action Buttons */}
+              <div className="grid grid-cols-3 gap-3 mb-3">
                 <button
                   onClick={handlePlaceOrder}
-                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted h-12 px-1 text-[13px] font-bold rounded  cursor-pointer"
+                  className="bg-[#fb8b02] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#e67a00] transition-colors"
                 >
+                  <ShoppingCart size={16} />
                   {isModifyingOrder ? 'UPDATE ORDER' : 'PLACE ORDER'}
                 </button>
                 <button
                   onClick={handlePayment}
-                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted h-12 px-1 text-[13px] font-bold rounded cursor-pointer"
+                  className="bg-[#16A34A] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#15803d] transition-colors"
                 >
-                  PAY
+                  PAY (€{calculateCartTotal().toFixed(2)})
+                </button>
+                <button 
+                  onClick={handlePrintInvoice}
+                  className="bg-[#3db4e4] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#2a9fd8] transition-colors"
+                >
+                  <Printer size={16} />
+                  PRINT
+                </button>
+              </div>
+              
+              {/* Secondary Action Buttons */}
+              <div className="grid grid-cols-4 gap-2">
+                <button
+                  onClick={handleOpenSplitBillModal}
+                  className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
+                >
+                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
+                    <span className="text-[8px]">$</span>
+                  </div>
+                  SPLIT SALE
+                </button>
+                <button
+                  onClick={handleOpenCouponModal}
+                  className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
+                >
+                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
+                    <span className="text-[8px]">%</span>
+                  </div>
+                  DISCOUNT
+                </button>
+                <button className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
+                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
+                    <span className="text-[8px]">$</span>
+                  </div>
+                  OPEN DRAWER
+                </button>
+                <button className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
+                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
+                    <span className="text-[8px]">🍽</span>
+                  </div>
+                  SERVICE FEE
                 </button>
               </div>
             </div>
