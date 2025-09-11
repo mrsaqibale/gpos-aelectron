@@ -5714,7 +5714,7 @@ const RunningOrders = () => {
           {isModifyingOrder && (
             <></>
           )}
-          <div className="grid grid-cols-5 gap-2 px-2 py-2 flex-shrink-0">
+          <div className="grid grid-cols-4 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
             <button
               onClick={() => {
@@ -5853,6 +5853,24 @@ const RunningOrders = () => {
                        btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
               {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
             </button>
+
+            <button
+                  onClick={() => {
+                    if (cartItems.length === 0) {
+                      showError('Cart is already empty');
+                      return;
+                    }
+
+                    setShowDeleteCartModal(true);
+                  }}
+                  disabled={cartItems.length === 0 || isModifyingOrder}
+                  className={`bg-red-700 flex justify-center items-center gap-2 text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
+                      ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
+                      : 'bg-gray-400 cursor-not-allowed'
+                    }`}>
+                  <Trash2 size={17} />
+                  Delete
+                </button>
 
 
           </div>
@@ -6022,23 +6040,7 @@ const RunningOrders = () => {
                 >
                   DISCOUNT
                 </button> */}
-                <button
-                  onClick={() => {
-                    if (cartItems.length === 0) {
-                      showError('Cart is already empty');
-                      return;
-                    }
-
-                    setShowDeleteCartModal(true);
-                  }}
-                  disabled={cartItems.length === 0 || isModifyingOrder}
-                  className={`bg-red-700 text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
-                      ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
-                      : 'bg-gray-400 cursor-not-allowed'
-                    }`}>
-                  {/* <Trash2 size={17} /> */}
-                  Delete
-                </button>
+                
                 <button 
                   onClick={() => {
                     if (cartItems.length > 0 && !isModifyingOrder) {
