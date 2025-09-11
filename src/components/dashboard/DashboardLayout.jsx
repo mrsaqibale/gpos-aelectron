@@ -37,6 +37,8 @@ const DashboardLayout = () => {
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
+    const openMenu = () => setShowDashboardSlider(true);
+    window.addEventListener('openDashboardMenu', openMenu);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -283,6 +285,7 @@ const DashboardLayout = () => {
                 <OrdersHeader 
                   isOrdersRoute={isOrdersRoute} 
                   onMenuClick={() => setShowDashboardSlider(true)}
+                  showMenuButton={false}
                   onDraftsClick={() => {
                     // This will be handled by the RunningOrders component
                     window.dispatchEvent(new CustomEvent('openDraftsModal'));

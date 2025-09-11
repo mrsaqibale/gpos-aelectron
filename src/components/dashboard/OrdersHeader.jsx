@@ -26,7 +26,7 @@ import {
   Menu
 } from 'lucide-react';
 
-const OrdersHeader = ({ onMenuClick, onDraftsClick }) => {
+const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => {
   const location = useLocation();
   const isOrdersRoute = location.pathname === '/dashboard/sales';
   const navigate = useNavigate();
@@ -139,17 +139,19 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick }) => {
           ))}
         </div>
 
-        {/* Right side - Status indicators */}
-        <div className="flex items-center  mr-5">
-          <button
-            onClick={onMenuClick}
-            className="flex cursor-pointer flex-col justify-center items-center p-2 rounded-md text-primary text-xs font-semibold"
-            style={{ color: themeColors?.primary }}
-          >
-            <Menu size={18} />
-            Menu
-          </button>
-        </div>
+        {/* Right side - Menu button (optional) */}
+        {showMenuButton && (
+          <div className="flex items-center  mr-5">
+            <button
+              onClick={onMenuClick}
+              className="flex cursor-pointer flex-col justify-center items-center p-2 rounded-md text-primary text-xs font-semibold"
+              style={{ color: themeColors?.primary }}
+            >
+              <Menu size={18} />
+              Menu
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
