@@ -70,6 +70,7 @@ import CustomAlert from '../../components/CustomAlert';
 import useCustomAlert from '../../hooks/useCustomAlert';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
 import Invoice from '../../components/Invoice';
+import CustomerInformation from '../../components/dashboard/CustomerInformation';
 import Drafts from '../../components/Drafts';
 import DraftNumberModal from '../../components/DraftNumberModal';
 import DueTo from '../../components/DueTo';
@@ -93,6 +94,8 @@ const RunningOrders = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteCartModal, setShowDeleteCartModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCustomerInfo, setShowCustomerInfo] = useState(false);
+  const [customerForInfo, setCustomerForInfo] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -518,6 +521,14 @@ const RunningOrders = () => {
 
   React.useEffect(() => {
     window.addEventListener('openStatusModal', handleOpenStatusModal);
+    const handleOpenInfo = (e) => {
+      const c = e?.detail?.customer;
+      if (c) {
+        setCustomerForInfo(c);
+        setShowCustomerInfo(true);
+      }
+    };
+    window.addEventListener('openCustomerInfo', handleOpenInfo);
     return () => window.removeEventListener('openStatusModal', handleOpenStatusModal);
   }, [selectedOrderType]);
 
@@ -6075,6 +6086,22 @@ const RunningOrders = () => {
           onCustomerSelect={handleCustomerSelect}
           onEditCustomer={handleOpenEditModal}
           onNewCustomer={() => setShowCustomerModal(true)}
+        />
+
+        {/* Customer Information Modal */}
+        <CustomerInformation
+          isOpen={showCustomerInfo}
+          onClose={() => setShowCustomerInfo(false)}
+          customer={customerForInfo}
+          onEditCustomer={(cust) => {
+            if (cust) setSelectedCustomer(cust);
+            setShowCustomerInfo(false);
+            setShowEditModal(true);
+          }}
+          onChangeCustomer={() => {
+            setShowCustomerInfo(false);
+            setShowCustomerSearchModal(true);
+          }}
         />
 
         {/* Edit Customer Modal */}

@@ -312,9 +312,8 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
           <div className="flex gap-3 w-full">
             <button
               onClick={() => {
-                if (selectedCustomer) {
-                  // Handle view customer details
-                  console.log('View customer:', selectedCustomer);
+                if (selectedCustomer && window) {
+                  window.dispatchEvent(new CustomEvent('openCustomerInfo', { detail: { customer: selectedCustomer } }));
                 }
               }}
               disabled={!selectedCustomer}
