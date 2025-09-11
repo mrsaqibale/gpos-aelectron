@@ -5998,26 +5998,32 @@ const RunningOrders = () => {
               </table>
             </div>
             {/* Summary section */}
-            <div className='bg-white mt-5 w-[100%] rounded-lg'>
-              <div className=" mx-auto">
-                <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
-                  <span className="font-medium">Subtotal</span>
-                  <span className="font-medium">Tax</span>
-                  <span className="font-medium">Discount</span>
-                  <span className="font-medium">DIY.CHARGE</span>
-                </div>
-                <div className="grid grid-cols-4 gap-2 place-content-center text-sm mb-4 text-center font-medium">
-                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto ">
-                    €{calculateCartSubtotal().toFixed(2)}
+            <div className='bg-white mt-5 w-[100%] rounded-lg shadow-sm border border-gray-200 p-4'>
+              <div className="space-y-4 pb-2">
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Subtotal</div>
+                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
+                      €{calculateCartSubtotal().toFixed(2)}
+                    </div>
                   </div>
-                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                    €{calculateCartTax().toFixed(2)}
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Tax (13.5%)</div>
+                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
+                      €{calculateCartTax().toFixed(2)}
+                    </div>
                   </div>
-                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto text-red-500">
-                    €{calculateCartDiscount().toFixed(2)}
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Discount</div>
+                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
+                      €{calculateCartDiscount().toFixed(2)}
+                    </div>
                   </div>
-                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                    €0.00
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Total</div>
+                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
+                      €{calculateCartTotal().toFixed(2)}
+                    </div>
                   </div>
                 </div>
               </div>
