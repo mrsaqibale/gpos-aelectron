@@ -273,3 +273,15 @@ function getReservationsCount(hotel_id = 1, status = null) {
     return errorResponse(err.message);
   }
 }
+
+module.exports = {
+  createReservation,
+  updateReservation,
+  getReservationById,
+  getReservationsByHotelId,
+  getReservationsByStatus,
+  getReservationsByDateRange,
+  getReservationsByCustomerId,
+  deleteReservation,
+  getReservationsCount
+};
