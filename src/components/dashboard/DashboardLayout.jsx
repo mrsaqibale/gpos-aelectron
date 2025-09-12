@@ -9,7 +9,7 @@ import {
   LayoutDashboard,
   Search,
   Users2, Utensils, Table,
-  Tag, X, LogOut, User, Home, Settings, Clock
+  Tag, X, LogOut, User, Home, Settings, Clock, BarChart3
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -148,6 +148,12 @@ const DashboardLayout = () => {
         icon: <Users2 size={18} />,
         path: "/dashboard/sales",
         allowedRoles: ["admin", "cashier"]
+      },
+      {
+        name: "Reports",
+        icon: <BarChart3 size={18} />,
+        path: "/dashboard/reports",
+        allowedRoles: ["admin", "manager", "cashier"]
       },
       {
         name: "Admin Panel",

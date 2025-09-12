@@ -21,6 +21,7 @@ import CustomerManagement from './pages/dashboard/CustomerManagement.jsx'
 import AdminPanel from './pages/dashboard/AdminPanel.jsx'
 import ApplicationSettings from './pages/dashboard/ApplicationSettings.jsx'
 import ChangePassword from './pages/dashboard/ChangePassword.jsx'
+import Reports from './pages/dashboard/Reports.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 import { DraftProvider } from './contexts/DraftContext.jsx'
 
@@ -106,6 +107,10 @@ const router = createHashRouter([
             {
             path: 'sales',
             element: <ErrorBoundary><RunningOrders/></ErrorBoundary>
+          },
+          {
+            path: 'reports',
+            element: <ErrorBoundary><Reports /></ErrorBoundary>
           },
           {
             path: 'admin-panel',
