@@ -25,19 +25,6 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
   const [activeInput, setActiveInput] = useState('');
   const [keyboardInput, setKeyboardInput] = useState('');
 
-  useEffect(() => {
-    if (isOpen) {
-      // Don't fetch all customers by default
-      setCustomers([]);
-      setFilteredCustomers([]);
-      setHasSearched(false);
-      setSearchName('');
-      setSearchPhone('');
-      setSearchEmail('');
-      setSelectedCustomer(null);
-    }
-  }, [isOpen]);
-
   const fetchCustomers = async () => {
     setLoading(true);
     try {
@@ -51,6 +38,78 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
       setLoading(false);
     }
   };
+
+  // Function to refresh customer list when a customer is updated
+  const refreshCustomerList = useCallback(async () => {
+    if (customers.length > 0) {
+      // If we have customers in the list, refresh them
+      await fetchCustomers();
+    }
+  }, [customers.length]);
+
+  // Function to update a specific customer in the list
+  const updateCustomerInList = useCallback((updatedCustomer) => {
+    console.log('Updating customer in list:', updatedCustomer);
+    
+    setCustomers(prevCustomers => {
+      const customerExists = prevCustomers.some(customer => customer.id === updatedCustomer.id);
+      if (customerExists) {
+        return prevCustomers.map(customer => 
+          customer.id === updatedCustomer.id ? updatedCustomer : customer
+        );
+      }
+      return prevCustomers;
+    });
+    
+    setFilteredCustomers(prevFiltered => {
+      const customerExists = prevFiltered.some(customer => customer.id === updatedCustomer.id);
+      if (customerExists) {
+        return prevFiltered.map(customer => 
+          customer.id === updatedCustomer.id ? updatedCustomer : customer
+        );
+      }
+      return prevFiltered;
+    });
+    
+    // Update selected customer if it's the one being edited
+    if (selectedCustomer && selectedCustomer.id === updatedCustomer.id) {
+      setSelectedCustomer(updatedCustomer);
+    }
+  }, [selectedCustomer]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Don't fetch all customers by default
+      setCustomers([]);
+      setFilteredCustomers([]);
+      setHasSearched(false);
+      setSearchName('');
+      setSearchPhone('');
+      setSearchEmail('');
+      setSelectedCustomer(null);
+    }
+  }, [isOpen]);
+
+  // Listen for customer update events
+  useEffect(() => {
+    const handleCustomerUpdate = (event) => {
+      console.log('Customer updated event received:', event.detail);
+      const updatedCustomer = event.detail.customer;
+      
+      if (updatedCustomer) {
+        // Update the specific customer in the list
+        updateCustomerInList(updatedCustomer);
+      }
+    };
+
+    // Add event listener for customer updates
+    window.addEventListener('customerUpdated', handleCustomerUpdate);
+
+    // Cleanup event listener on unmount
+    return () => {
+      window.removeEventListener('customerUpdated', handleCustomerUpdate);
+    };
+  }, [updateCustomerInList]);
 
   // Remove filterCustomers function since we're using direct search
 

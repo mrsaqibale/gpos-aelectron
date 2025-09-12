@@ -1550,6 +1550,13 @@ const RunningOrders = () => {
 
   const handleCustomerSelect = (customer) => {
     setSelectedCustomer(customer);
+    
+    // If this is a new customer (has an ID), trigger update event
+    if (customer && customer.id) {
+      window.dispatchEvent(new CustomEvent('customerUpdated', { 
+        detail: { customer: customer } 
+      }));
+    }
   };
 
   const handleDeleteCustomer = async () => {
@@ -1581,6 +1588,11 @@ const RunningOrders = () => {
   const handleEditCustomer = (updatedCustomer) => {
     setSelectedCustomer(updatedCustomer);
     setShowEditModal(false);
+    
+    // Trigger a custom event to refresh customer list in CustomerSearchModal
+    window.dispatchEvent(new CustomEvent('customerUpdated', { 
+      detail: { customer: updatedCustomer } 
+    }));
   };
 
   // Add sample data function
