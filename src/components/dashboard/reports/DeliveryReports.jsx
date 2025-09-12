@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Check, Info, User, Printer, Plus, ShoppingBag } from 'lucide-react'
 import AddRider from '../../AddRider'
 import AssignRider from '../../AssignRider'
+import RiderReport from './RiderReport'
 import { useRiders } from '../../../contexts/RiderContext'
 import {
   Chart as ChartJS,
@@ -36,6 +37,7 @@ const DeliveryReports = () => {
   const [endTime, setEndTime] = useState('23:59')
   const [showAddRiderModal, setShowAddRiderModal] = useState(false)
   const [showAssignRiderModal, setShowAssignRiderModal] = useState(false)
+  const [showRiderReportModal, setShowRiderReportModal] = useState(false)
 
   // Handle saving rider data
   const handleSaveRider = (riderData) => {
@@ -70,6 +72,28 @@ const DeliveryReports = () => {
     console.log('Opening AssignRider modal, closing AddRider if open')
     setShowAddRiderModal(false) // Close AddRider modal if open
     setShowAssignRiderModal(true)
+  }
+
+  // Handle opening Rider Report modal
+  const handleOpenRiderReport = () => {
+    if (!selectedRider) {
+      alert('Please select a rider first')
+      return
+    }
+    setShowRiderReportModal(true)
+  }
+
+  // Handle managing orders - now handled directly in RiderReport component
+  const handleManageOrders = () => {
+    console.log('Managing orders for rider:', selectedRider)
+    setShowRiderReportModal(false)
+  }
+
+  // Handle processing cashout
+  const handleProcessCashout = () => {
+    console.log('Processing cashout for rider:', selectedRider)
+    setShowRiderReportModal(false)
+    // Add cashout processing logic here
   }
 
   // Format date and time for display
@@ -169,19 +193,39 @@ const DeliveryReports = () => {
       <style jsx>{`
         input[type="date"], input[type="time"] {
           color-scheme: light;
+          position: relative;
+          z-index: 1;
         }
         input[type="date"]::-webkit-calendar-picker-indicator,
         input[type="time"]::-webkit-calendar-picker-indicator {
-          opacity: 0;
           position: absolute;
+          top: 0;
+          left: 0;
           right: 0;
-          width: 100%;
-          height: 100%;
+          bottom: 0;
+          width: auto;
+          height: auto;
+          color: transparent;
+          background: transparent;
           cursor: pointer;
+          z-index: 2;
+        }
+        input[type="date"]::-webkit-inner-spin-button,
+        input[type="date"]::-webkit-clear-button,
+        input[type="time"]::-webkit-inner-spin-button,
+        input[type="time"]::-webkit-clear-button {
+          display: none;
+          -webkit-appearance: none;
         }
         input[type="date"]:focus,
         input[type="time"]:focus {
           outline: none;
+          z-index: 10;
+          position: relative;
+        }
+        input[type="date"]:focus::-webkit-calendar-picker-indicator,
+        input[type="time"]:focus::-webkit-calendar-picker-indicator {
+          z-index: 11;
         }
       `}</style>
       {/* Header */}
@@ -204,6 +248,9 @@ const DeliveryReports = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="text-sm border-none outline-none bg-transparent w-20"
               />
               <span className="text-gray-400">|</span>
@@ -211,6 +258,9 @@ const DeliveryReports = () => {
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="text-sm border-none outline-none bg-transparent w-16"
               />
             </div>
@@ -223,6 +273,9 @@ const DeliveryReports = () => {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="text-sm border-none outline-none bg-transparent w-20"
               />
               <span className="text-gray-400">|</span>
@@ -230,6 +283,9 @@ const DeliveryReports = () => {
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                onBlur={(e) => e.stopPropagation()}
                 className="text-sm border-none outline-none bg-transparent w-16"
               />
             </div>
@@ -262,10 +318,12 @@ const DeliveryReports = () => {
           
           Print Report
         </button>
-        <button className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2">
-          
-          Print Report & Cash Out
-        </button>
+         <button 
+           onClick={handleOpenRiderReport}
+           className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2"
+         >
+           Print Report & Cash Out
+         </button>
       </div>
       </div>
 
@@ -330,7 +388,7 @@ const DeliveryReports = () => {
       )}
 
       {/* Assign Rider Modal - Only render if no other modal is open */}
-      {showAssignRiderModal && !showAddRiderModal && (
+      {showAssignRiderModal && !showAddRiderModal && !showRiderReportModal && (
         <AssignRider
           isOpen={showAssignRiderModal}
           onClose={() => setShowAssignRiderModal(false)}
@@ -338,6 +396,17 @@ const DeliveryReports = () => {
           order={{ orderNumber: '001' }} // Mock order data
           onAssignRider={handleAssignRider}
           onStatusUpdate={() => {}} // Empty function for now
+        />
+      )}
+
+      {/* Rider Report Modal - Only render if no other modal is open */}
+      {showRiderReportModal && !showAddRiderModal && !showAssignRiderModal && (
+        <RiderReport
+          isOpen={showRiderReportModal}
+          onClose={() => setShowRiderReportModal(false)}
+          rider={selectedRider}
+          onManageOrders={handleManageOrders}
+          onProcessCashout={handleProcessCashout}
         />
       )}
     </div>
