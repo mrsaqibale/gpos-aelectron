@@ -164,7 +164,7 @@ const DashboardLayout = () => {
   const isKDSRoute = location.pathname === '/dashboard/kds';
   const isOrdersRoute = location.pathname === '/dashboard/sales';
   const isReservationsRoute = location.pathname === '/dashboard/reservations';
-  const shouldHideSidebar = isOrdersRoute || isReservationsRoute;
+  const shouldHideSidebar = isOrdersRoute;
 
   if (isLoading || !user) {
     return (
@@ -305,8 +305,10 @@ const DashboardLayout = () => {
                   />
                 </div>
               ) : isReservationsRoute ? (
-                // Show Reservations toolbar under title bar, no margins
-                <ReservationsHeader />
+                // Show Reservations toolbar under title bar with proper margins when sidebar is visible
+                <div className={shouldHideSidebar ? "" : "md:pl-5"}>
+                  <ReservationsHeader />
+                </div>
               ) : (
                 // Show regular Header for other routes
                 <div className={shouldHideSidebar ? "" : "md:pl-5"}>
