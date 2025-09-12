@@ -5785,6 +5785,8 @@ const RunningOrders = () => {
                 setSelectedTable('');
                 setSelectedPersons('');
                 setReservedTables([]);
+                // Open customer search modal
+                setShowCustomerSearchModal(true);
               }}
               disabled={isModifyingOrder}
               className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
@@ -5813,6 +5815,8 @@ const RunningOrders = () => {
                 setReservedTables([]);
                 // Clear schedule when switching away from Collection
                 setSelectedScheduleDateTime('');
+                // Open customer search modal
+                setShowCustomerSearchModal(true);
               }}
               disabled={isModifyingOrder}
               className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
