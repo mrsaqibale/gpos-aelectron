@@ -1,19 +1,17 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import Database from 'better-sqlite3';
+const path = require('path');
+const Database = require('better-sqlite3');
 
-const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, '../../pos.db');
 const db = new Database(dbPath);
 
 // Universal error response
-export function errorResponse(message) {
+function errorResponse(message) {
   return { success: false, message };
 }
 
 // Create a new reservation
-export function createReservation({
+function createReservation({
   customer_id,
   customer_name,
   customer_phone,
@@ -68,7 +66,7 @@ export function createReservation({
 }
 
 // Update a reservation by id
-export function updateReservation(id, updates) {
+function updateReservation(id, updates) {
   try {
     const fields = [];
     const values = [];
@@ -106,7 +104,7 @@ export function updateReservation(id, updates) {
 }
 
 // Get reservation by id
-export function getReservationById(id) {
+function getReservationById(id) {
   try {
     const stmt = db.prepare(`
       SELECT 
@@ -135,7 +133,7 @@ export function getReservationById(id) {
 }
 
 // Get all reservations by hotel id
-export function getReservationsByHotelId(hotel_id = 1, limit = 50, offset = 0) {
+function getReservationsByHotelId(hotel_id = 1, limit = 50, offset = 0) {
   try {
     const stmt = db.prepare(`
       SELECT 
@@ -162,7 +160,7 @@ export function getReservationsByHotelId(hotel_id = 1, limit = 50, offset = 0) {
 }
 
 // Get reservations by status
-export function getReservationsByStatus(status, hotel_id = 1, limit = 50, offset = 0) {
+function getReservationsByStatus(status, hotel_id = 1, limit = 50, offset = 0) {
   try {
     const stmt = db.prepare(`
       SELECT 
@@ -189,7 +187,7 @@ export function getReservationsByStatus(status, hotel_id = 1, limit = 50, offset
 }
 
 // Get reservations by date range
-export function getReservationsByDateRange(start_date, end_date, hotel_id = 1) {
+function getReservationsByDateRange(start_date, end_date, hotel_id = 1) {
   try {
     const stmt = db.prepare(`
       SELECT 
@@ -215,7 +213,7 @@ export function getReservationsByDateRange(start_date, end_date, hotel_id = 1) {
 }
 
 // Get reservations by customer id
-export function getReservationsByCustomerId(customer_id, limit = 50, offset = 0) {
+function getReservationsByCustomerId(customer_id, limit = 50, offset = 0) {
   try {
     const stmt = db.prepare(`
       SELECT 
@@ -238,7 +236,7 @@ export function getReservationsByCustomerId(customer_id, limit = 50, offset = 0)
 }
 
 // Soft delete reservation
-export function deleteReservation(id) {
+function deleteReservation(id) {
   try {
     const stmt = db.prepare(`
       UPDATE reservations 
@@ -258,7 +256,7 @@ export function deleteReservation(id) {
 }
 
 // Get total count of reservations for pagination
-export function getReservationsCount(hotel_id = 1, status = null) {
+function getReservationsCount(hotel_id = 1, status = null) {
   try {
     let sql = 'SELECT COUNT(*) as count FROM reservations WHERE hotel_id = ? AND is_deleted = 0';
     let params = [hotel_id];
