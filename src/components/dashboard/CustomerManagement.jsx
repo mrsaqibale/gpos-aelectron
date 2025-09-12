@@ -865,10 +865,6 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       newErrors.name = 'Full name is required';
     }
     
-    if (!newCustomer.phone.trim()) {
-      newErrors.phone = 'Phone is required';
-    }
-    
     if (newCustomer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCustomer.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
@@ -1061,7 +1057,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone <span className="text-red-500">*</span>
+                    Phone
                   </label>
                   <input
                     type="tel"

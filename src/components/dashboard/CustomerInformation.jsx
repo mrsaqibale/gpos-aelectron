@@ -36,7 +36,7 @@ const CustomerInformation = ({ isOpen, onClose, customer, onEditCustomer, onChan
     <div className="fixed inset-0 bg-black/40 z-[70] flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl">
         {/* Header */}
-        <div className="bg-black text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
+        <div className="bg-primary text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-green-500 rounded-full" />
             <h3 className="font-semibold">Customer Information</h3>
@@ -85,8 +85,8 @@ const CustomerInformation = ({ isOpen, onClose, customer, onEditCustomer, onChan
         <div className="px-5 pb-5 pt-2 grid grid-cols-4 gap-3">
           <button onClick={onClose} className="col-span-1 h-11 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300">Back</button>
           <button onClick={onChangeCustomer} className="col-span-1 h-11 rounded-md bg-gray-600 text-white hover:bg-gray-700">Change Customer</button>
-          <button onClick={() => onEditCustomer?.(customer)} className="col-span-1 h-11 rounded-md bg-black text-white hover:bg-black/90">Edit Customer</button>
-          <button onClick={onClose} className="col-span-1 h-11 rounded-md bg-black text-white hover:bg-black/90">OK</button>
+          <button onClick={() => onEditCustomer?.(customer)} className="col-span-1 h-11 rounded-md bg-primary text-white hover:bg-black/90">Edit Customer</button>
+          <button onClick={onClose} className="col-span-1 h-11 rounded-md bg-primary/90 text-white">OK</button>
         </div>
       </div>
     </div>

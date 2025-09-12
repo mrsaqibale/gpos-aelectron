@@ -1604,25 +1604,29 @@ const RunningOrders = () => {
     }
   };
 
-  const handleOpenEditModal = async () => {
-    if (!selectedCustomer) {
+  const handleOpenEditModal = async (customerToEdit) => {
+    const customer = customerToEdit ?? selectedCustomer;
+    if (!customer) {
       showError('No customer selected to edit');
       return;
     }
 
     try {
       // Fetch the customer's addresses before opening edit form
-      const addressResult = await window.myAPI?.getCustomerAddresses(selectedCustomer.id);
+      const addressResult = await window.myAPI?.getCustomerAddresses(customer.id);
       if (addressResult && addressResult.success) {
         const customerWithAddresses = {
-          ...selectedCustomer,
+          ...customer,
           addresses: addressResult.data || []
         };
         setSelectedCustomer(customerWithAddresses);
+      } else {
+        setSelectedCustomer(customer);
       }
       setShowEditModal(true);
     } catch (error) {
       console.error('Error fetching customer addresses:', error);
+      setSelectedCustomer(customer);
       setShowEditModal(true); // Still open modal even if address fetch fails
     }
   };
