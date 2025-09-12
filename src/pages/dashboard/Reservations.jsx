@@ -177,9 +177,6 @@ const Reservations = () => {
                         </button>
                     ))}
                 </div>
-                </div>
-
-                
 
                 {loading ? (
                     <div className="flex justify-center items-center py-8">
