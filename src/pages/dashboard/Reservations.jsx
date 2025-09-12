@@ -6,15 +6,13 @@ import CustomAlert from '../../components/CustomAlert'
 
 const Reservations = () => {
     const [activeTab, setActiveTab] = useState('all')
-
-    const initialReservations = [
-        { id: 1, name: 'John Smith', table: 12, from: '7:30 PM', to: '9:30 PM', dateLabel: 'Today', people: 4, status: 'confirmed' },
-        { id: 2, name: 'Sarah Johnson', table: 8, from: '8:00 PM', to: '10:00 PM', dateLabel: 'Today', people: 2, status: 'pending' },
-        { id: 3, name: 'Mike Davis', table: 15, from: '6:45 PM', to: '8:45 PM', dateLabel: 'Today', people: 6, status: 'confirmed' },
-    ]
-    const [reservations, setReservations] = useState(initialReservations)
+    const [reservations, setReservations] = useState([])
+    const [loading, setLoading] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [showNewReservationModal, setShowNewReservationModal] = useState(false)
     const [reservationToDelete, setReservationToDelete] = useState(null)
+    const [reservationToEdit, setReservationToEdit] = useState(null)
+    const { alertState, showError, showSuccess, hideAlert } = useCustomAlert()
 
     const filtered = useMemo(() => {
         if (activeTab === 'all') return reservations
