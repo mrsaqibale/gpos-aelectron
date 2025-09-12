@@ -14,19 +14,76 @@ const Reservations = () => {
     const [reservationToEdit, setReservationToEdit] = useState(null)
     const { alertState, showError, showSuccess, hideAlert } = useCustomAlert()
 
-    const filtered = useMemo(() => {
-        if (activeTab === 'all') return reservations
-        return reservations.filter(r => r.status === activeTab)
+    // Load reservations from database
+    const loadReservations = async () => {
+        setLoading(true)
+        try {
+            if (!window.myAPI) return
+            
+            let result
+            if (activeTab === 'today') {
+                const today = new Date().toISOString().split('T')[0]
+                result = await window.myAPI.getReservationsByDateRange(today, today, 1)
+            } else if (activeTab === 'upcoming') {
+                const today = new Date().toISOString().split('T')[0]
+                const futureDate = new Date()
+                futureDate.setFullYear(futureDate.getFullYear() + 1)
+                result = await window.myAPI.getReservationsByDateRange(today, futureDate.toISOString().split('T')[0], 1)
+            } else if (activeTab === 'all') {
+                result = await window.myAPI.getReservationsByHotelId(1, 100, 0)
+            } else {
+                result = await window.myAPI.getReservationsByStatus(activeTab, 1, 100, 0)
+            }
+            
+            if (result && result.success) {
+                setReservations(result.data || [])
+            }
+        } catch (error) {
+            console.error('Error loading reservations:', error)
+            showError('Failed to load reservations')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Load reservations when component mounts or activeTab changes
+    useEffect(() => {
+        loadReservations()
     }, [activeTab])
+
+    const filtered = useMemo(() => {
+        if (activeTab === 'today') {
+            const today = new Date().toISOString().split('T')[0]
+            return reservations.filter(r => r.reservation_date === today)
+        } else if (activeTab === 'upcoming') {
+            const today = new Date().toISOString().split('T')[0]
+            return reservations.filter(r => r.reservation_date > today)
+        } else if (activeTab === 'all') {
+            return reservations
+        } else {
+            return reservations.filter(r => r.status === activeTab)
+        }
+    }, [activeTab, reservations])
 
     const handleRequestDelete = (res) => {
         setReservationToDelete(res)
         setShowDeleteModal(true)
     }
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (reservationToDelete) {
-            setReservations(prev => prev.filter(r => r.id !== reservationToDelete.id))
+            try {
+                const result = await window.myAPI.deleteReservation(reservationToDelete.id)
+                if (result && result.success) {
+                    showSuccess('Reservation deleted successfully')
+                    loadReservations() // Reload reservations
+                } else {
+                    showError('Failed to delete reservation')
+                }
+            } catch (error) {
+                console.error('Error deleting reservation:', error)
+                showError('An error occurred while deleting the reservation')
+            }
         }
         setShowDeleteModal(false)
         setReservationToDelete(null)
@@ -35,6 +92,37 @@ const Reservations = () => {
     const handleCancelDelete = () => {
         setShowDeleteModal(false)
         setReservationToDelete(null)
+    }
+
+    // Update reservation status
+    const updateReservationStatus = async (id, status) => {
+        try {
+            const result = await window.myAPI.updateReservation(id, { status })
+            if (result && result.success) {
+                showSuccess(`Reservation ${status} successfully`)
+                loadReservations() // Reload reservations
+            } else {
+                showError(`Failed to ${status} reservation`)
+            }
+        } catch (error) {
+            console.error(`Error updating reservation status:`, error)
+            showError(`An error occurred while ${status} the reservation`)
+        }
+    }
+
+    // Handle new reservation creation
+    const handleNewReservation = () => {
+        setShowNewReservationModal(true)
+    }
+
+    // Handle reservation created
+    const handleReservationCreated = () => {
+        loadReservations() // Reload reservations
+    }
+
+    // Check if reservation can be edited
+    const canEditReservation = (reservation) => {
+        return reservation.status !== 'cancelled' && reservation.status !== 'completed'
     }
 
     const statusBadge = (status) => {
