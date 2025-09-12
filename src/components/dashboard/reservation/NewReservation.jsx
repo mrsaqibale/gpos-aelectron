@@ -248,6 +248,13 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
     }
   }
 
+  // Load hotel info when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadHotelInfo()
+    }
+  }, [isOpen])
+
   // Load floors when modal opens
   React.useEffect(() => {
     if (!showTableSelectionModal) return
