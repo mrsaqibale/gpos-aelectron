@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import VirtualKeyboard from '../VirtualKeyboard';
 
-const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer }) => {
+const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer, orderType }) => {
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     phone: '',
@@ -865,6 +865,11 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       newErrors.name = 'Full name is required';
     }
     
+    // Make phone required for Collection and Delivery orders
+    if ((orderType === 'Collection' || orderType === 'Delivery') && !newCustomer.phone.trim()) {
+      newErrors.phone = 'Phone number is required for ' + orderType + ' orders';
+    }
+    
     if (newCustomer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newCustomer.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
@@ -1057,7 +1062,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
+                    Phone {(orderType === 'Collection' || orderType === 'Delivery') && <span className="text-red-500">*</span>}
                   </label>
                   <input
                     type="tel"

@@ -2422,6 +2422,22 @@ const RunningOrders = () => {
       return;
     }
 
+    // Check if customer is selected for collection orders
+    if (selectedOrderType === 'Collection' && !selectedCustomer) {
+      showError('Select customer first');
+      return;
+    }
+
+    // Check phone number for Collection and Delivery orders
+    if ((selectedOrderType === 'Collection' || selectedOrderType === 'Delivery') && selectedCustomer) {
+      if (!selectedCustomer.phone || selectedCustomer.phone.trim().length === 0) {
+        showError('Customer must have a phone number for ' + selectedOrderType + ' orders');
+        // Open customer management modal to edit phone number
+        setShowEditModal(true);
+        return;
+      }
+    }
+
     // Check if customer has address for delivery orders
     if (selectedOrderType === 'Delivery' && selectedCustomer) {
       console.log('Delivery order validation - Customer data:', selectedCustomer);
@@ -6114,6 +6130,7 @@ const RunningOrders = () => {
           isOpen={showCustomerModal}
           onClose={() => setShowCustomerModal(false)}
           onCustomerSelect={handleCustomerSelect}
+          orderType={selectedOrderType}
         />
 
         {/* Customer Search Modal */}
@@ -6123,6 +6140,7 @@ const RunningOrders = () => {
           onCustomerSelect={handleCustomerSelect}
           onEditCustomer={handleOpenEditModal}
           onNewCustomer={() => setShowCustomerModal(true)}
+          orderType={selectedOrderType}
         />
 
         {/* Customer Information Modal */}
@@ -6148,6 +6166,7 @@ const RunningOrders = () => {
             onClose={() => setShowEditModal(false)}
             onCustomerSelect={handleEditCustomer}
             editingCustomer={selectedCustomer}
+            orderType={selectedOrderType}
           />
         )}
 

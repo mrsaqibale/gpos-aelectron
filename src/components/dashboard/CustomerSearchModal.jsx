@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Search, Edit, Plus, RefreshCw, Eye } from 'lucide-react';
 import VirtualKeyboard from '../VirtualKeyboard';
+import CustomAlert from '../CustomAlert';
 
-const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer, onNewCustomer }) => {
+const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer, onNewCustomer, orderType }) => {
   const [searchName, setSearchName] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
   const [searchEmail, setSearchEmail] = useState('');
@@ -11,6 +12,13 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // CustomAlert state
+  const [alertState, setAlertState] = useState({
+    isVisible: false,
+    message: '',
+    type: 'error'
+  });
 
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
@@ -127,8 +135,30 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
     setSelectedCustomer(customer);
   };
 
+  const showAlert = useCallback((message, type = 'error') => {
+    setAlertState({
+      isVisible: true,
+      message,
+      type
+    });
+  }, []);
+
+  const hideAlert = useCallback(() => {
+    setAlertState({
+      isVisible: false,
+      message: '',
+      type: 'error'
+    });
+  }, []);
+
   const handleSave = () => {
     if (selectedCustomer && onCustomerSelect) {
+      // Check phone number for Collection and Delivery orders
+      if ((orderType === 'Collection' || orderType === 'Delivery') && (!selectedCustomer.phone || selectedCustomer.phone.trim().length === 0)) {
+        showAlert('Customer must have a phone number for ' + orderType + ' orders. Please edit the customer to add a phone number.', 'error');
+        return;
+      }
+      
       onCustomerSelect(selectedCustomer);
       onClose();
     }
@@ -501,6 +531,15 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
         onInputBlur={handleInputBlur}
         inputValue={keyboardInput}
         onKeyPress={onKeyboardKeyPress}
+      />
+
+      {/* Custom Alert */}
+      <CustomAlert
+        message={alertState.message}
+        isVisible={alertState.isVisible}
+        onClose={hideAlert}
+        type={alertState.type}
+        duration={3000}
       />
     </div>
   );
