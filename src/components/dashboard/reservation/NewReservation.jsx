@@ -345,9 +345,36 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
         {/* Body */}
         <form onSubmit={handleSubmit} className="px-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="relative">
               <label className="text-sm font-medium text-gray-700">Customer Name <span className="text-red-500">*</span></label>
-              <input name="customerName" required value={form.customerName} onChange={handleChange} className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="Enter customer name" />
+              <div className="relative">
+                <input 
+                  name="customerName" 
+                  required 
+                  value={form.customerName} 
+                  onChange={handleChange} 
+                  className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" 
+                  placeholder="Enter customer name" 
+                  autoComplete="off"
+                />
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
+              
+              {/* Customer Search Dropdown */}
+              {showCustomerDropdown && customerSearchResults.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {customerSearchResults.map((customer) => (
+                    <div
+                      key={customer.id}
+                      onClick={() => selectCustomer(customer)}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="font-medium text-gray-900">{customer.name}</div>
+                      <div className="text-sm text-gray-600">{customer.phone}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Phone Number <span className="text-red-500">*</span></label>
@@ -400,8 +427,10 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
 
           {/* Footer */}
           <div className="flex justify-end gap-3 mt-6 pt-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded bg-gray-500 text-white">Cancel</button>
-            <button type="submit" className="px-4 py-2 rounded bg-primary text-white">Create Reservation</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded bg-gray-500 text-white" disabled={isSubmitting}>Cancel</button>
+            <button type="submit" className="px-4 py-2 rounded bg-primary text-white" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create Reservation'}
+            </button>
           </div>
         </form>
       </div>
