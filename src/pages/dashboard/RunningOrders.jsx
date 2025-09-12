@@ -5091,9 +5091,9 @@ const RunningOrders = () => {
     const endHour = parseInt(closingTime.split(':')[0]);
     const endMinute = parseInt(closingTime.split(':')[1]);
 
-    // Generate 30-minute intervals
+    // Generate 5-minute intervals
     for (let hour = startHour; hour <= endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
+      for (let minute = 0; minute < 60; minute += 5) {
         // Skip if this time is after closing time
         if (hour === endHour && minute >= endMinute) break;
         

@@ -67,7 +67,7 @@ const DueTo = ({
             </label>
 
             {/* Custom Time Input */}
-            <div className="mb-3">
+           {/* <div className="mb-3">
               <div className="flex items-center gap-2 mb-2">
                 <input
                   type="checkbox"
@@ -96,6 +96,7 @@ const DueTo = ({
                 </div>
               )}
             </div>
+            */}
 
             {/* Predefined Time Slots */}
             {!useCustomTime && (
