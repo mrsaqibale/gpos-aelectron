@@ -20,14 +20,21 @@ const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded
       try {
         setLoading(true);
         setError(false);
-        
-        // Check if imagePath exists and is a valid string
-        if (imagePath && typeof imagePath === 'string' && imagePath.startsWith('uploads/')) {
-          const result = await window.myAPI?.getFoodImage(imagePath);
-          if (result && result.success) {
-            setImageSrc(result.data);
+
+        if (imagePath && typeof imagePath === 'string') {
+          if (imagePath.startsWith('uploads/')) {
+            const result = await window.myAPI?.getFoodImage(imagePath);
+            if (result && result.success) {
+              setImageSrc(result.data);
+            } else {
+              setError(true);
+            }
+          } else if (imagePath.startsWith('data:image')) {
+            // Already a data URL
+            setImageSrc(imagePath);
           } else {
-            setError(true);
+            // Unknown format; try to use as-is
+            setImageSrc(imagePath);
           }
         } else {
           setError(true);
@@ -40,7 +47,6 @@ const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded
       }
     };
 
-    // Only load image if imagePath is provided
     if (imagePath) {
       loadImage();
     } else {
