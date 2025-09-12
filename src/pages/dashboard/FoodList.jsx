@@ -20,14 +20,21 @@ const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded
       try {
         setLoading(true);
         setError(false);
-        
-        // Check if imagePath exists and is a valid string
-        if (imagePath && typeof imagePath === 'string' && imagePath.startsWith('uploads/')) {
-          const result = await window.myAPI?.getFoodImage(imagePath);
-          if (result && result.success) {
-            setImageSrc(result.data);
+
+        if (imagePath && typeof imagePath === 'string') {
+          if (imagePath.startsWith('uploads/')) {
+            const result = await window.myAPI?.getFoodImage(imagePath);
+            if (result && result.success) {
+              setImageSrc(result.data);
+            } else {
+              setError(true);
+            }
+          } else if (imagePath.startsWith('data:image')) {
+            // Already a data URL
+            setImageSrc(imagePath);
           } else {
-            setError(true);
+            // Unknown format; try to use as-is
+            setImageSrc(imagePath);
           }
         } else {
           setError(true);
@@ -40,7 +47,6 @@ const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded
       }
     };
 
-    // Only load image if imagePath is provided
     if (imagePath) {
       loadImage();
     } else {
@@ -337,6 +343,34 @@ const FoodList = () => {
 
       {activeTab === 'foodList' && (
         <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
+          {showFoodForm && (
+            <div className="mb-6">
+              <FoodForm 
+                food={editingFood} 
+                onSubmit={(updatedFood) => {
+                  if (updatedFood === null) {
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                  } else if (editingFood) {
+                    setFoodItems(foodItems.map(item => 
+                      item.id === updatedFood.id ? updatedFood : item
+                    ));
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                    fetchFoodData();
+                  } else {
+                    setFoodItems([...foodItems, {
+                      ...updatedFood,
+                      id: Math.max(...foodItems.map(i => i.id)) + 1
+                    }]);
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                    fetchFoodData();
+                  }
+                }}
+              />
+            </div>
+          )}
           {/* Search and Filters */}
           <div className="mb-6 flex justify-end items-center">
             <div className="flex items-center gap-3">
@@ -550,39 +584,7 @@ const FoodList = () => {
        {activeTab === 'addons' && <AddonManagement/>}
       {activeTab === 'ingredients' && <Ingredients />}
 
-      {showFoodForm && (
-        <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
-          <FoodForm 
-            food={editingFood} 
-            onSubmit={(updatedFood) => {
-              if (updatedFood === null) {
-                // User cancelled, just close the modal
-                setShowFoodForm(false);
-                setEditingFood(null);
-              } else if (editingFood) {
-                // Food was updated successfully
-                setFoodItems(foodItems.map(item => 
-                  item.id === updatedFood.id ? updatedFood : item
-                ));
-                setShowFoodForm(false);
-                setEditingFood(null);
-                // Refresh the food list after update
-                fetchFoodData();
-              } else {
-                // New food was created
-                setFoodItems([...foodItems, {
-                  ...updatedFood,
-                  id: Math.max(...foodItems.map(i => i.id)) + 1
-                }]);
-                setShowFoodForm(false);
-                setEditingFood(null);
-                // Refresh the food list after creation
-                fetchFoodData();
-              }
-            }}
-          />
-        </div>
-      )}
+      
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && foodToDelete && (
