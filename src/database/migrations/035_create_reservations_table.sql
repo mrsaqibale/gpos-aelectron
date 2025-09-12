@@ -25,3 +25,4 @@ CREATE TABLE IF NOT EXISTS reservations (
     FOREIGN KEY (hotel_id) REFERENCES hotel(id),
     FOREIGN KEY (added_by) REFERENCES employee(id)
 );
+
