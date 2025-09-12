@@ -169,6 +169,17 @@ contextBridge.exposeInMainWorld('myAPI', {
   updateAddress: (id, updates) => ipcRenderer.invoke('address:update', id, updates),
   deleteAddress: (id) => ipcRenderer.invoke('address:delete', id),
 
+  // Reservation
+  createReservation: (data) => ipcRenderer.invoke('reservation:create', data),
+  updateReservation: (id, updates) => ipcRenderer.invoke('reservation:update', id, updates),
+  getReservationById: (id) => ipcRenderer.invoke('reservation:getById', id),
+  getReservationsByHotelId: (hotelId, limit, offset) => ipcRenderer.invoke('reservation:getByHotelId', hotelId, limit, offset),
+  getReservationsByStatus: (status, hotelId, limit, offset) => ipcRenderer.invoke('reservation:getByStatus', status, hotelId, limit, offset),
+  getReservationsByDateRange: (startDate, endDate, hotelId) => ipcRenderer.invoke('reservation:getByDateRange', startDate, endDate, hotelId),
+  getReservationsByCustomerId: (customerId, limit, offset) => ipcRenderer.invoke('reservation:getByCustomerId', customerId, limit, offset),
+  deleteReservation: (id) => ipcRenderer.invoke('reservation:delete', id),
+  getReservationsCount: (hotelId, status) => ipcRenderer.invoke('reservation:getCount', hotelId, status),
+
   // Orders
   createOrder: (data) => ipcRenderer.invoke('order:create', data),
   updateOrder: (id, updates) => ipcRenderer.invoke('order:update', id, updates),
