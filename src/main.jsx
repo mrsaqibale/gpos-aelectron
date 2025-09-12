@@ -24,6 +24,7 @@ import ChangePassword from './pages/dashboard/ChangePassword.jsx'
 import Reports from './pages/dashboard/Reports.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 import { DraftProvider } from './contexts/DraftContext.jsx'
+import { RiderProvider } from './contexts/RiderContext.jsx'
 
 console.log('main.jsx loading...');
 
@@ -45,7 +46,7 @@ const ErrorBoundary = ({ children }) => {
 const router = createHashRouter([
   {
     path: '/',
-    element: <ErrorBoundary><ThemeProvider><DraftProvider><App /></DraftProvider></ThemeProvider></ErrorBoundary>,
+    element: <ErrorBoundary><ThemeProvider><DraftProvider><RiderProvider><App /></RiderProvider></DraftProvider></ThemeProvider></ErrorBoundary>,
     children: [
       { index: true, element: <ErrorBoundary><WelcomeScreen /></ErrorBoundary> },
       {

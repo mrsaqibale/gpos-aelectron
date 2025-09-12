@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, X, Search, CheckCircle } from 'lucide-react';
+import { useRiders } from '../contexts/RiderContext';
 
 const AssignRider = ({ 
   isOpen, 
@@ -9,6 +10,7 @@ const AssignRider = ({
   onAssignRider, 
   onStatusUpdate 
 }) => {
+  const { riders, getAvailableRiders, setSelectedRider: setGlobalSelectedRider } = useRiders();
   const [selectedRider, setSelectedRider] = useState(null);
   const [riderSearchQuery, setRiderSearchQuery] = useState('');
   const [availableRiders, setAvailableRiders] = useState([]);
@@ -19,45 +21,10 @@ const AssignRider = ({
   const fetchAvailableRiders = async () => {
     try {
       setRidersLoading(true);
-      // Mock data for now - replace with actual API call
-      const mockRiders = [
-        {
-          id: 1,
-          name: 'John Smith',
-          status: 'Available',
-          vehicle: 'Car - ABC123',
-          vehicleType: 'car'
-        },
-        {
-          id: 2,
-          name: 'Mike Johnson',
-          status: 'Available',
-          vehicle: 'Motorcycle - XYZ789',
-          vehicleType: 'motorcycle'
-        },
-        {
-          id: 3,
-          name: 'Sarah Wilson',
-          status: 'On Delivery',
-          vehicle: 'Car - DEF456',
-          vehicleType: 'car'
-        },
-        {
-          id: 4,
-          name: 'David Brown',
-          status: 'Available',
-          vehicle: 'Motorcycle - GHI789',
-          vehicleType: 'motorcycle'
-        },
-        {
-          id: 5,
-          name: 'Lisa Davis',
-          status: 'Available',
-          vehicle: 'Car - JKL012',
-          vehicleType: 'car'
-        }
-      ];
-      setAvailableRiders(mockRiders);
+      // Get riders from context
+      const availableRidersList = getAvailableRiders();
+      console.log('Fetched available riders:', availableRidersList);
+      setAvailableRiders(availableRidersList);
     } catch (error) {
       console.error('Error fetching riders:', error);
       setAvailableRiders([]);
@@ -80,6 +47,9 @@ const AssignRider = ({
     try {
       setIsAssigning(true);
       
+      // Set the selected rider globally
+      setGlobalSelectedRider(selectedRider);
+      
       // Call the parent's onAssignRider function
       const success = await onAssignRider(selectedRider);
       if (success) {
@@ -97,20 +67,23 @@ const AssignRider = ({
     }
   };
 
-  // Fetch riders when modal opens
+  // Fetch riders when modal opens and reset state when modal closes
   useEffect(() => {
     if (isOpen) {
-      fetchAvailableRiders();
-    }
-  }, [isOpen]);
-
-  // Reset state when modal closes
-  useEffect(() => {
-    if (!isOpen) {
+      // Reset all state when modal opens
       setSelectedRider(null);
       setRiderSearchQuery('');
+      setIsAssigning(false);
+      // Fetch fresh rider data
+      fetchAvailableRiders();
+    } else {
+      // Clean up state when modal closes
+      setSelectedRider(null);
+      setRiderSearchQuery('');
+      setIsAssigning(false);
+      setAvailableRiders([]);
     }
-  }, [isOpen]);
+  }, [isOpen, riders]); // Add riders as dependency to refresh when riders change
 
   if (!isOpen) return null;
 
@@ -151,11 +124,13 @@ const AssignRider = ({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             <input
+              key={`search-${isOpen}`}
               type="text"
               placeholder="Search riders..."
               value={riderSearchQuery}
               onChange={(e) => setRiderSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              autoFocus
             />
           </div>
         </div>
@@ -175,7 +150,7 @@ const AssignRider = ({
                 )
                 .map((rider) => (
                   <div
-                    key={rider.id}
+                    key={`rider-${rider.id}-${isOpen}`}
                     onClick={() => handleRiderSelect(rider)}
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedRider?.id === rider.id
                         ? 'border-primary bg-primary/5'

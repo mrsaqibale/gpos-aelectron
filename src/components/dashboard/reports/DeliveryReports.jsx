@@ -1,5 +1,8 @@
 import React, { useState } from 'react'
 import { Check, Info, User, Printer, Plus, ShoppingBag } from 'lucide-react'
+import AddRider from '../../AddRider'
+import AssignRider from '../../AssignRider'
+import { useRiders } from '../../../contexts/RiderContext'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,11 +29,48 @@ ChartJS.register(
 )
 
 const DeliveryReports = () => {
+  const { selectedRider, setSelectedRider } = useRiders()
   const [startDate, setStartDate] = useState('2025-09-12')
   const [startTime, setStartTime] = useState('16:30')
   const [endDate, setEndDate] = useState('2025-09-12')
   const [endTime, setEndTime] = useState('23:59')
-  const [selectedRider, setSelectedRider] = useState(null)
+  const [showAddRiderModal, setShowAddRiderModal] = useState(false)
+  const [showAssignRiderModal, setShowAssignRiderModal] = useState(false)
+
+  // Handle saving rider data
+  const handleSaveRider = (riderData) => {
+    console.log('New rider added:', riderData)
+    // Rider is already added to context in AddRider component
+    // Close the modal after saving
+    setShowAddRiderModal(false)
+  }
+
+  // Handle rider assignment
+  const handleAssignRider = async (rider) => {
+    console.log('Rider assigned:', rider)
+    // Rider is already set in context in AssignRider component
+    // Close the modal after assignment
+    setShowAssignRiderModal(false)
+    return true // Return true to indicate success
+  }
+
+  // Handle going back from AssignRider modal
+  const handleBackFromAssignRider = () => {
+    setShowAssignRiderModal(false)
+  }
+
+  // Ensure only one modal is open at a time
+  const handleOpenAddRider = () => {
+    console.log('Opening AddRider modal, closing AssignRider if open')
+    setShowAssignRiderModal(false) // Close AssignRider modal if open
+    setShowAddRiderModal(true)
+  }
+
+  const handleOpenAssignRider = () => {
+    console.log('Opening AssignRider modal, closing AddRider if open')
+    setShowAddRiderModal(false) // Close AddRider modal if open
+    setShowAssignRiderModal(true)
+  }
 
   // Format date and time for display
   const formatDateTime = (date, time) => {
@@ -125,7 +165,7 @@ const DeliveryReports = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="min-h-screen">
       <style jsx>{`
         input[type="date"], input[type="time"] {
           color-scheme: light;
@@ -145,6 +185,7 @@ const DeliveryReports = () => {
         }
       `}</style>
       {/* Header */}
+      <div className='bg-white p-6 mb-6 rounded-lg'>
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
@@ -202,29 +243,36 @@ const DeliveryReports = () => {
 
       {/* Action Buttons */}
       <div className="flex items-center justify-center gap-3 mb-6">
-        <button className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+        <button 
+          onClick={handleOpenAssignRider}
+          className="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg text-sm font-medium"
+        >
           Select Rider
         </button>
-        <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+        <button 
+          onClick={handleOpenAddRider}
+          className="bg-teal-600 hover:bg-teal-700 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2"
+        >
           <Plus className="w-4 h-4" />
           Add Rider
         </button>
-        <div className="bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm">
-          {selectedRider ? selectedRider : 'No rider selected'}
+        <div className="bg-gray-200 text-gray-600 p-4 rounded-lg text-sm">
+          {selectedRider ? selectedRider.name : 'No rider selected'}
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+        <button className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2">
           <Printer className="w-4 h-4" />
           Print Report
         </button>
-        <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+        <button className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2">
           <Printer className="w-4 h-4" />
           Print Report & Cash Out
         </button>
       </div>
+      </div>
 
       <div className="flex gap-6">
         {/* Left Side - KPI Cards */}
-        <div className="w-80 space-y-4">
+        <div className="w-60 space-y-4">
           {/* Total Deliveries */}
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center gap-4">
@@ -272,6 +320,27 @@ const DeliveryReports = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Rider Modal - Only render if no other modal is open */}
+      {showAddRiderModal && !showAssignRiderModal && (
+        <AddRider
+          isOpen={showAddRiderModal}
+          onClose={() => setShowAddRiderModal(false)}
+          onSave={handleSaveRider}
+        />
+      )}
+
+      {/* Assign Rider Modal - Only render if no other modal is open */}
+      {showAssignRiderModal && !showAddRiderModal && (
+        <AssignRider
+          isOpen={showAssignRiderModal}
+          onClose={() => setShowAssignRiderModal(false)}
+          onBack={handleBackFromAssignRider}
+          order={{ orderNumber: '001' }} // Mock order data
+          onAssignRider={handleAssignRider}
+          onStatusUpdate={() => {}} // Empty function for now
+        />
+      )}
     </div>
   )
 }

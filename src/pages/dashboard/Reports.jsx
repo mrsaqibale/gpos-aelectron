@@ -23,7 +23,7 @@ const Reports = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
+      <div>
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             {tabs.map((tab) => (
@@ -45,7 +45,7 @@ const Reports = () => {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div>
         {tabs.find(tab => tab.id === activeTab)?.component}
       </div>
     </div>
