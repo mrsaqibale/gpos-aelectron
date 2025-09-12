@@ -145,15 +145,107 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
     return true
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const requiredFields = ['customerName', 'phoneNumber', 'date', 'startTime', 'partySize']
-    const missing = requiredFields.filter((k) => !String(form[k] || '').trim())
-    if (missing.length) {
-      showError('Fill in the required fields')
-      return
+    setIsSubmitting(true)
+    
+    try {
+      const requiredFields = ['customerName', 'phoneNumber', 'date', 'startTime', 'partySize']
+      const missing = requiredFields.filter((k) => !String(form[k] || '').trim())
+      if (missing.length) {
+        showError('Fill in the required fields')
+        return
+      }
+
+      // Validate reservation time
+      if (!validateReservationTime(form.startTime, form.duration)) {
+        return
+      }
+
+      // Check table availability if specific table is selected
+      if (selectedTable) {
+        const isAvailable = await checkTableAvailability(selectedTable, form.date, form.startTime, form.duration)
+        if (!isAvailable) {
+          showError('Selected table is not available at the chosen time')
+          return
+        }
+      }
+
+      let customerId = selectedCustomer?.id
+      let customerData = {
+        name: form.customerName,
+        phone: form.phoneNumber,
+        email: '',
+        address: '',
+        isloyal: false,
+        addedBy: 1, // Default employee ID
+        hotel_id: 1
+      }
+
+      // If no customer selected, create new customer
+      if (!customerId) {
+        const customerResult = await window.myAPI.createCustomer(customerData)
+        if (customerResult && customerResult.success) {
+          customerId = customerResult.id
+        } else {
+          showError('Failed to create customer')
+          return
+        }
+      }
+
+      // Calculate end time
+      const startTimeMinutes = timeToMinutes(form.startTime)
+      const endTimeMinutes = startTimeMinutes + (parseFloat(form.duration) * 60)
+      const endTime = `${Math.floor(endTimeMinutes / 60).toString().padStart(2, '0')}:${(endTimeMinutes % 60).toString().padStart(2, '0')}`
+
+      // Create reservation data
+      const reservationData = {
+        customer_id: customerId,
+        customer_name: form.customerName,
+        customer_phone: form.phoneNumber,
+        customer_email: selectedCustomer?.email || '',
+        reservation_date: form.date,
+        start_time: form.startTime,
+        end_time: endTime,
+        duration: parseFloat(form.duration),
+        party_size: parseInt(form.partySize),
+        table_id: selectedTable || null,
+        table_preference: form.tablePreference,
+        is_table_preferred: form.tablePreference === 'customerrequired',
+        status: 'pending',
+        special_notes: form.notes,
+        hotel_id: 1,
+        added_by: 1 // Default employee ID
+      }
+
+      // Create reservation
+      const result = await window.myAPI.createReservation(reservationData)
+      if (result && result.success) {
+        showSuccess('Reservation created successfully!')
+        if (onCreate) onCreate(result.data)
+        // Reset form
+        setForm({
+          customerName: '',
+          phoneNumber: '',
+          date: '',
+          startTime: '',
+          duration: '2',
+          partySize: '2',
+          tablePreference: 'any',
+          notes: ''
+        })
+        setSelectedCustomer(null)
+        setSelectedTable('')
+        onClose()
+      } else {
+        showError('Failed to create reservation')
+      }
+    } catch (error) {
+      console.error('Error creating reservation:', error)
+      showError('An error occurred while creating the reservation')
+    } finally {
+      setIsSubmitting(false)
     }
-    if (onCreate) onCreate(form)
   }
 
   // Load floors when modal opens
