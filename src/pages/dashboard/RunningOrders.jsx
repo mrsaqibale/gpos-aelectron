@@ -70,6 +70,7 @@ import CustomAlert from '../../components/CustomAlert';
 import useCustomAlert from '../../hooks/useCustomAlert';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
 import Invoice from '../../components/Invoice';
+import CustomerInformation from '../../components/dashboard/CustomerInformation';
 import Drafts from '../../components/Drafts';
 import DraftNumberModal from '../../components/DraftNumberModal';
 import DueTo from '../../components/DueTo';
@@ -77,6 +78,7 @@ import AssignRider from '../../components/AssignRider';
 import UpdateOrderStatus from '../../components/UpdateOrderStatus';
 import { useDraftCount } from '../../contexts/DraftContext';
 import FinalizeSaleModal from '../../components/FinalizeSaleModal';
+import MergeTableModal from '../../components/dashboard/table/MergeTableModal';
 
 const RunningOrders = () => {
   // Accept navigation state to pre-load an order
@@ -92,6 +94,8 @@ const RunningOrders = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteCartModal, setShowDeleteCartModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCustomerInfo, setShowCustomerInfo] = useState(false);
+  const [customerForInfo, setCustomerForInfo] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -502,6 +506,31 @@ const RunningOrders = () => {
       setLoading(false);
     }
   };
+
+  // Open Status modal when triggered from OrdersHeader
+  const handleOpenStatusModal = () => {
+    const mockOrder = {
+      orderType: selectedOrderType || 'In Store',
+      orderNumber: 'NEW-ORDER',
+      status: 'New'
+    };
+    setSelectedOrderForStatusUpdate(mockOrder);
+    setSelectedStatus('New');
+    setShowStatusUpdateModal(true);
+  };
+
+  React.useEffect(() => {
+    window.addEventListener('openStatusModal', handleOpenStatusModal);
+    const handleOpenInfo = (e) => {
+      const c = e?.detail?.customer;
+      if (c) {
+        setCustomerForInfo(c);
+        setShowCustomerInfo(true);
+      }
+    };
+    window.addEventListener('openCustomerInfo', handleOpenInfo);
+    return () => window.removeEventListener('openStatusModal', handleOpenStatusModal);
+  }, [selectedOrderType]);
 
   // Fetch foods by category
   const fetchFoodsByCategory = async (categoryId) => {
@@ -3680,18 +3709,18 @@ const RunningOrders = () => {
         <div className="flex justify-between p-2 items-center">
           <p className="text-gray-600 font-semibold text-md mt-1">€{item.price?.toFixed(2) || '0.00'}</p>
         <button
-          className="mt-1 w-5 h-5 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
+          className="mt-1 w-6 h-6 flex items-center justify-center rounded-full bg-primary border-2 border-primary text-white cursor-pointer"
           title="Add"
           onClick={() => handleFoodItemClick(item)}
         >
           <svg
-            width="16"
-            height="16"
+            width="20"
+            height="20"
             viewBox="0 0 20 20"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            className="w-3 h-3"
+            className="w-4 h-4"
           >
             <path d="M10 4v12M4 10h12" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -3713,7 +3742,7 @@ const RunningOrders = () => {
             <div className="text-gray-500 text-sm">Searching...</div>
           </div>
         ) : filteredFoods.length > 0 ? (
-          <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-4">
             {filteredFoods.map((food) => (
               <MenuCard key={food.id} item={food} />
             ))}
@@ -5168,7 +5197,7 @@ const RunningOrders = () => {
               <h2 className="font-bold text-gray-800">Active Orders</h2>
               <button 
                 onClick={fetchExistingOrders}
-                className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg px-1.5 py-1.5 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
+                className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg p-2 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
               >
                 <RefreshCw size={12} />
                 Refresh Active
@@ -5187,7 +5216,7 @@ const RunningOrders = () => {
                   onFocus={(e) => handleAnyInputFocus(e, 'runningOrdersSearchQuery')}
                   onClick={(e) => handleAnyInputClick(e, 'runningOrdersSearchQuery')}
                   onBlur={(e) => handleCustomInputBlur(e, 'runningOrdersSearchQuery')}
-                  className="w-full pl-8 text-xs font-semibold pr-4 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-8 text-sm font-semibold pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -5461,7 +5490,7 @@ const RunningOrders = () => {
                   data-invoice-button
                   onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 h-10 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#010101] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  className={`flex-1 h-12 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#010101] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <Receipt size={14} />
                   BILL
                 </button>
@@ -5473,7 +5502,7 @@ const RunningOrders = () => {
                     }
                   }}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 h-10 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  className={`flex-1 h-12 text-[13px] font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <FileText size={14} />
                   INVOICE
                 </button>
@@ -5484,7 +5513,7 @@ const RunningOrders = () => {
                 <button
                   onClick={handleOpenOrderDetailsModal}
                   disabled={!selectedPlacedOrder}
-                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  className={`flex-1 text-[13px] h-12 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     }`}
                 >
                   <Eye size={14} />
@@ -5500,7 +5529,7 @@ const RunningOrders = () => {
                     }
                   }}
                   disabled={!selectedPlacedOrder || (isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)}
-                  className={`flex-1 text-[13px] h-10 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
+                  className={`flex-1 text-[13px] h-12 font-bold rounded-lg px-3 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
                       ? 'bg-[#f3be25] text-white hover:bg-[#e6b31e]' 
                       : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                   }`}
@@ -5519,7 +5548,7 @@ const RunningOrders = () => {
                 <button 
                   onClick={handleCancelOrder}
                   disabled={!selectedPlacedOrder}
-                className={`w-[70%] text-[13px] mx-auto h-10 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#C42232] text-white cursor-pointer hover:bg-[#b01a28]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                className={`w-[70%] text-[13px] mx-auto h-12 font-bold rounded-lg px-3 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#C42232] text-white cursor-pointer hover:bg-[#b01a28]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                   }`}
                 >
                   <X size={14} />
@@ -5644,7 +5673,7 @@ const RunningOrders = () => {
               </div>
               <button
                 onClick={handleOpenSplitPizzaModal}
-                className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 py-2 text-sm transition-colors"
+                className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
               >
                 Create Your Own
               </button>
@@ -5657,7 +5686,7 @@ const RunningOrders = () => {
                 categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`h-9 px-3 text-[14px] flex items-center justify-center gap-1 
+                    className={`h-13 px-2 w-[120px] text-md flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedCategory?.id === category.id
                            ? 'bg-white text-black border-2 border-primary' 
                            : 'bg-primary text-white hover:bg-primary/90'
@@ -5685,7 +5714,7 @@ const RunningOrders = () => {
           {isModifyingOrder && (
             <></>
           )}
-          <div className="grid grid-cols-5 gap-2 px-2 py-2 flex-shrink-0">
+          <div className="grid grid-cols-4 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
             <button
               onClick={() => {
@@ -5703,7 +5732,7 @@ const RunningOrders = () => {
                 setSelectedScheduleDateTime('');
               }}
               disabled={isModifyingOrder}
-              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'In Store' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'In Store' 
@@ -5728,7 +5757,7 @@ const RunningOrders = () => {
                 setShowTableModal(true);
               }}
               disabled={isModifyingOrder}
-              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Table' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Table' 
@@ -5754,7 +5783,7 @@ const RunningOrders = () => {
                 setReservedTables([]);
               }}
               disabled={isModifyingOrder}
-              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Collection' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Collection' 
@@ -5782,7 +5811,7 @@ const RunningOrders = () => {
                 setSelectedScheduleDateTime('');
               }}
               disabled={isModifyingOrder}
-              className={`h-9 px-2 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Delivery' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Delivery' 
@@ -5794,33 +5823,11 @@ const RunningOrders = () => {
               </svg>
               Delivery
             </button>
-            <button 
-              onClick={() => {
-                // Create a mock order object with the current selected order type
-                const mockOrder = {
-                  orderType: selectedOrderType || 'In Store',
-                  orderNumber: 'NEW-ORDER',
-                  status: 'New'
-                };
-                
-                // Open status update modal with the current order type
-                setSelectedOrderForStatusUpdate(mockOrder);
-                setSelectedStatus('New');
-                setShowStatusUpdateModal(true);
-              }}
-              title="Update order status"
-              className="h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer text-black hover:border-primary hover:border-2">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
-              </svg>
-              Status
-            </button>
-            {/* Status section */}
+            {/* Status button moved to OrdersHeader. Triggered via custom event. */}
 
             <button 
               onClick={handleOpenScheduleModal}
-              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-12 text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2 ${selectedScheduleDateTime
                            ? 'bg-primary text-white border-primary' 
                            : 'text-black hover:border-primary hover:border-2'
@@ -5833,40 +5840,38 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => setShowCustomerSearchModal(true)}
-              className="h-9 px-2 bg-[#007BFF] text-white text-[13px] rounded flex items-center justify-center gap-1 
+              className="px-2 h-12 bg-[#007BFF] text-white text-[13px] rounded flex items-center justify-center gap-1 
                      btn-lifted transition-colors cursor-pointer">
               <Users2 size={12} />
               Customer
             </button>
 
-            <button
-              onClick={() => setShowCustomerModal(true)}
-              className={`h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
-                     btn-lifted transition-colors cursor-pointer ${showCustomerModal
-                         ? 'bg-primary text-white border-2 border-primary' 
-                         : 'bg-white text-black'
-                     }`}>
-              <Plus size={12} />
-              New Customer
-            </button>
 
             <button
               onClick={() => setSelectedCustomer(null)}
-              className="h-9 px-2 text-[13px] rounded flex items-center justify-center gap-1 
+              className="px-2 h-12 text-[13px] rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
               {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
             </button>
 
             <button
-              onClick={handleOpenEditModal}
-              disabled={!selectedCustomer}
-              className={`h-9 px-2 btn-lifted flex items-center justify-center gap-1 bg-[#007BFF] text-white text-[13px] rounded transition-colors cursor-pointer ${selectedCustomer
-                ? 'hover:text-green-800 cursor-pointer'
-                : 'cursor-not-allowed'
-                }`}>
-              <Edit size={17} />
-              Edit
-            </button>
+                  onClick={() => {
+                    if (cartItems.length === 0) {
+                      showError('Cart is already empty');
+                      return;
+                    }
+
+                    setShowDeleteCartModal(true);
+                  }}
+                  disabled={cartItems.length === 0 || isModifyingOrder}
+                  className={`bg-red-700 flex justify-center items-center gap-2 text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
+                      ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
+                      : 'bg-gray-400 cursor-not-allowed'
+                    }`}>
+                  <Trash2 size={17} />
+                  Delete
+                </button>
+
 
           </div>
 
@@ -5993,33 +5998,39 @@ const RunningOrders = () => {
               </table>
             </div>
             {/* Summary section */}
-            <div className='bg-white mt-5 w-[100%] rounded-lg'>
-              <div className=" mx-auto">
-                <div className="grid grid-cols-4 place-content-center text-xs mb-4 text-center">
-                  <span className="font-medium">Subtotal</span>
-                  <span className="font-medium">Tax</span>
-                  <span className="font-medium">Discount</span>
-                  <span className="font-medium">DIY.CHARGE</span>
-                </div>
-                <div className="grid grid-cols-4 gap-2 place-content-center text-sm mb-4 text-center font-medium">
-                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto ">
-                    €{calculateCartSubtotal().toFixed(2)}
+            <div className='bg-white mt-5 w-[100%] rounded-lg shadow-sm border border-gray-200 p-4'>
+              <div className="space-y-4 pb-2">
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Subtotal</div>
+                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
+                      €{calculateCartSubtotal().toFixed(2)}
+                    </div>
                   </div>
-                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                    €{calculateCartTax().toFixed(2)}
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Tax (13.5%)</div>
+                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
+                      €{calculateCartTax().toFixed(2)}
+                    </div>
                   </div>
-                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto text-red-500">
-                    €{calculateCartDiscount().toFixed(2)}
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Discount</div>
+                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
+                      €{calculateCartDiscount().toFixed(2)}
+                    </div>
                   </div>
-                  <div className="border-[1.5px] border-primary w-13 px-1.5 flex items-center justify-center text-xs rounded mx-auto">
-                    €0.00
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-700 mb-2">Total</div>
+                    <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
+                      €{calculateCartTotal().toFixed(2)}
+                    </div>
                   </div>
                 </div>
               </div>
               {/* Total Payable */}
-              <div className='flex justify-center items-center'>
+              <div className='flex justify-center items-center mb-4'>
                 <div
-                  className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer w-[70%] rounded flex items-center justify-center mb-4 hover:bg-gray-300 transition-colors"
+                  className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer w-[70%] rounded flex items-center justify-center hover:bg-gray-300 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <Eye size={14} />
@@ -6027,57 +6038,62 @@ const RunningOrders = () => {
                   </div>
                 </div>
               </div>
-              {/* Action buttons */}
-              <div className="flex gap-2 justify-center pb-2">
-                {/* <button
-                  onClick={handleOpenCouponModal}
-                  className="bg-[#43a148] text-white  btn-lifted py-1.5 px-1 w-[100%]  text-[11px] font-bold rounded  hover:bg-green-600"
-                >
-                  DISCOUNT
-                </button> */}
-                <button
-                  onClick={() => {
-                    if (cartItems.length === 0) {
-                      showError('Cart is already empty');
-                      return;
-                    }
-
-                    setShowDeleteCartModal(true);
-                  }}
-                  disabled={cartItems.length === 0 || isModifyingOrder}
-                  className={`bg-red-700 text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
-                      ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
-                      : 'bg-gray-400 cursor-not-allowed'
-                    }`}>
-                  {/* <Trash2 size={17} /> */}
-                  Delete
-                </button>
-                <button 
-                  onClick={() => {
-                    if (cartItems.length > 0 && !isModifyingOrder) {
-                      setShowDraftNumberModal(true);
-                    }
-                  }}
-                  className={`bg-[#5A32A3] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded ${cartItems.length > 0 && !isModifyingOrder
-                      ? 'hover:bg-[#4A2A93] cursor-pointer'
-                      : 'bg-gray-400 cursor-not-allowed'
-                    }`}>
-                  DRAFT
-                </button>
-                <button className="bg-[#3db4e4] text-white  w-[100%] btn-lifted py-2 px-1  text-[13px] font-bold rounded cursor-pointer">
-                  PRINT
-                </button>
+              
+              {/* Primary Action Buttons */}
+              <div className="grid grid-cols-7 gap-3 mb-3">
                 <button
                   onClick={handlePlaceOrder}
-                  className="bg-[#fb8b02] text-white  w-[100%] btn-lifted py-2 px-1 text-[13px] font-bold rounded  cursor-pointer"
+                  className="col-span-2 bg-[#fb8b02] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#e67a00] transition-colors"
                 >
+                  <ShoppingCart size={16} />
                   {isModifyingOrder ? 'UPDATE ORDER' : 'PLACE ORDER'}
                 </button>
                 <button
                   onClick={handlePayment}
-                  className="bg-[#f42cef] text-white  w-[100%] btn-lifted py-2 px-1 text-[13px] font-bold rounded cursor-pointer"
+                  className="col-span-3 bg-[#16A34A] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#15803d] transition-colors"
                 >
-                  PAY
+                  PAY (€{calculateCartTotal().toFixed(2)})
+                </button>
+                <button 
+                  onClick={handlePrintInvoice}
+                  className="col-span-2 bg-[#3db4e4] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#2a9fd8] transition-colors"
+                >
+                  <Printer size={16} />
+                  PRINT
+                </button>
+              </div>
+              
+              {/* Secondary Action Buttons */}
+              <div className="grid grid-cols-4 gap-2">
+                <button
+                  onClick={handleOpenSplitBillModal}
+                  className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
+                >
+                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
+                    <span className="text-[8px]">$</span>
+                  </div>
+                  SPLIT SALE
+                </button>
+                <button
+                  onClick={handleOpenCouponModal}
+                  className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
+                >
+                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
+                    <span className="text-[8px]">%</span>
+                  </div>
+                  DISCOUNT
+                </button>
+                <button className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
+                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
+                    <span className="text-[8px]">$</span>
+                  </div>
+                  OPEN DRAWER
+                </button>
+                <button className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
+                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
+                    <span className="text-[8px]">🍽</span>
+                  </div>
+                  SERVICE FEE
                 </button>
               </div>
             </div>
@@ -6097,6 +6113,24 @@ const RunningOrders = () => {
           isOpen={showCustomerSearchModal}
           onClose={() => setShowCustomerSearchModal(false)}
           onCustomerSelect={handleCustomerSelect}
+          onEditCustomer={handleOpenEditModal}
+          onNewCustomer={() => setShowCustomerModal(true)}
+        />
+
+        {/* Customer Information Modal */}
+        <CustomerInformation
+          isOpen={showCustomerInfo}
+          onClose={() => setShowCustomerInfo(false)}
+          customer={customerForInfo}
+          onEditCustomer={(cust) => {
+            if (cust) setSelectedCustomer(cust);
+            setShowCustomerInfo(false);
+            setShowEditModal(true);
+          }}
+          onChangeCustomer={() => {
+            setShowCustomerInfo(false);
+            setShowCustomerSearchModal(true);
+          }}
         />
 
         {/* Edit Customer Modal */}
@@ -6804,198 +6838,38 @@ const RunningOrders = () => {
 
         {/* Merge Table Modal */}
         {showMergeTableModal && (
-          <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-              {/* Header */}
-              <div className="bg-primary text-white p-4 flex items-center rounded-t-xl relative flex-shrink-0">
-                <button
-                  onClick={handleBackToTableSelection}
-                  className="text-white cursor-pointer p-1 rounded-full flex items-center gap-1"
-                >
-                  <ArrowLeft size={16} />
-                </button>
-                <h2 className="text-xl font-bold absolute left-1/2 transform -translate-x-1/2">Merge Tables</h2>
-                <button
-                  onClick={() => {
-                    setShowMergeTableModal(false);
-                    // Reset merge table selections when closing modal
-                    setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
-                  }}
-                  className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20 ml-auto"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Content */}
-              <div className="p-6 flex-1 overflow-y-auto">
-                <div className='flex gap-6'>
-                  {/* Floor Selection */}
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Floor</h3>
-                    <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
-                      {floorsLoading ? (
-                        <div className="text-center py-8">
-                          <div className="text-gray-500 text-sm">Loading floors...</div>
-                        </div>
-                      ) : floors.length > 0 ? (
-                        floors.map((floor) => (
-                          <button
-                            key={floor.id}
-                            onClick={() => handleFloorSelect(floor)}
-                            className={`px-4 py-3 text-left rounded-lg transition-colors border ${selectedFloor === floor.name
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-                              }`}
-                          >
-                            <div className="font-medium">{floor.name}</div>
-                            <div className="text-sm opacity-75">{floor.type}</div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="text-gray-500 text-sm">No floors found</div>
-                          <div className="text-gray-400 text-xs mt-2 mb-4">Please add floors to the database</div>
-                          <button
-                            onClick={addSampleData}
-                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm"
-                          >
-                            Add Sample Data
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Merge Tables Section */}
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Select Tables to Merge</h3>
-                    <div className="space-y-4 max-h-60 overflow-y-auto">
-                      {mergeTableSelections.map((selection, index) => (
-                        <div key={selection.id} className="flex items-center gap-4">
-                          <div className="flex-1">
-                            <label className={`block text-sm font-medium mb-2 ${selectedFloor ? 'text-gray-700' : 'text-gray-400'
-                              }`}>
-                              Select Table {index + 1}
-                            </label>
-                            <select
-                              value={selection.tableId}
-                              onChange={(e) => handleMergeTableSelectionChange(selection.id, e.target.value)}
-                              disabled={!selectedFloor}
-                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary ${selectedFloor
-                                ? 'border-gray-300 bg-white'
-                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
-                                }`}
-                            >
-                              <option value="">Choose table {index + 1}...</option>
-                              {tablesLoading ? (
-                                <option value="" disabled>Loading tables...</option>
-                              ) : tables.length > 0 ? (
-                                getAvailableTablesForSelection(selection.id).map((table) => (
-                                  <option 
-                                    key={table.id} 
-                                    value={table.id}
-                                    disabled={isTableReserved(table.id.toString())}
-                                  >
-                                    Table {table.table_no} ({table.seat_capacity || 4} seats) {isTableReserved(table.id.toString()) ? '- RESERVED' : ''}
-                                  </option>
-                                ))
-                              ) : selectedFloor ? (
-                                <option value="" disabled>No available tables</option>
-                              ) : (
-                                <option value="" disabled>Select a floor first</option>
-                              )}
-                            </select>
-                          </div>
-                          {mergeTableSelections.length > 2 && (
-                            <button
-                              onClick={() => handleRemoveTableSelection(selection.id)}
-                              className="mt-6 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Remove table selection"
-                            >
-                              <X size={16} />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Add More Button */}
-                    <div className="mt-4 flex justify-center">
-                      <button
-                        onClick={handleAddMoreTableSelection}
-                        disabled={isAddMoreDisabled()}
-                        className={`w-fit px-4 py-2 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${isAddMoreDisabled()
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-green-500 text-white hover:bg-green-600'
-                          }`}
-                      >
-                        <Plus size={16} />
-                        Add More
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-4 justify-end pt-4 border-t border-gray-200 flex-shrink-0">
-                  <button
-                    onClick={() => {
-                      setShowMergeTableModal(false);
-                      // Reset merge table selections when closing modal
-                      setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
-                    }}
-                    className="px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    disabled={mergeTableSelections.filter(s => s.tableId).length < 2}
-                    onClick={() => {
-                      // Get the selected tables for merging
-                      const selectedTables = mergeTableSelections
-                        .filter(selection => selection.tableId)
-                        .map(selection => {
-                          const table = tables.find(t => t.id.toString() === selection.tableId);
-                          return {
-                            id: selection.tableId,
-                            tableNo: table?.table_no,
-                            floor: selectedFloor
-                          };
-                        });
-
-                      // Add all selected tables to reserved tables
-                      selectedTables.forEach(table => {
-                        if (!isTableReserved(table.id)) {
-                          addReservedTable(table.id, 'Merged Table');
-                        }
-                      });
-
-                      // Show success message
-                      showSuccess(`Successfully merged ${selectedTables.length} tables!`);
-
-                      // Close the modal
-                      setShowMergeTableModal(false);
-                      
-                      // Reset merge table selections
-                      setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
-                    }}
-                    className={`px-6 py-2 font-medium rounded-lg transition-colors flex items-center gap-2 ${mergeTableSelections.filter(s => s.tableId).length >= 2
-                      ? 'bg-primary text-white hover:bg-primary/90'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                      <polyline points="17,21 17,13 7,13 7,21"></polyline>
-                      <polyline points="7,3 7,8 15,8"></polyline>
-                    </svg>
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MergeTableModal
+            open={showMergeTableModal}
+            onBack={handleBackToTableSelection}
+            onClose={() => {
+              setShowMergeTableModal(false);
+              setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+            }}
+            floors={floors}
+            floorsLoading={floorsLoading}
+            selectedFloor={selectedFloor}
+            onSelectFloor={handleFloorSelect}
+            addSampleData={addSampleData}
+            tables={tables}
+            tablesLoading={tablesLoading}
+            mergeTableSelections={mergeTableSelections}
+            onSelectionChange={handleMergeTableSelectionChange}
+            onRemoveSelection={handleRemoveTableSelection}
+            onAddMoreSelection={handleAddMoreTableSelection}
+            isAddMoreDisabled={isAddMoreDisabled}
+            getAvailableTablesForSelection={getAvailableTablesForSelection}
+            isTableReserved={(id) => isTableReserved(id.toString())}
+            onSave={(selectedTables) => {
+              selectedTables.forEach(table => {
+                if (!isTableReserved(table.id)) {
+                  addReservedTable(table.id, 'Merged Table');
+                }
+              });
+              showSuccess(`Successfully merged ${selectedTables.length} tables!`);
+              setShowMergeTableModal(false);
+              setMergeTableSelections([{ id: 1, tableId: '' }, { id: 2, tableId: '' }]);
+            }}
+          />
         )}
 
         {/* Delete Customer Confirmation Modal */}

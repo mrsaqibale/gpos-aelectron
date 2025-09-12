@@ -1,6 +1,7 @@
 import React, { useState, createContext, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import ReservationsHeader from './ReservationsHeader';
 import OrdersHeader from './OrdersHeader'; // Import the new OrdersHeader component
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import CheckInFlow from '../../pages/loginPage/CheckInPopup';
@@ -8,7 +9,7 @@ import {
   LayoutDashboard,
   Search,
   Users2, Utensils, Table,
-  Tag, X, LogOut, User, Home, Settings
+  Tag, X, LogOut, User, Home, Settings, Clock
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -37,6 +38,8 @@ const DashboardLayout = () => {
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
+    const openMenu = () => setShowDashboardSlider(true);
+    window.addEventListener('openDashboardMenu', openMenu);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -117,6 +120,12 @@ const DashboardLayout = () => {
         allowedRoles: ["admin", "cashier"]
       },
       {
+        name: "Reservations",
+        icon: <Clock size={18} />,
+        path: "/dashboard/reservations",
+        allowedRoles: ["admin", "cashier"]
+      },
+      {
         name: "KDS",
         icon: <Search size={18} />,
         path: "/dashboard/kds",
@@ -154,7 +163,8 @@ const DashboardLayout = () => {
   // Check if current route is KDS or Orders
   const isKDSRoute = location.pathname === '/dashboard/kds';
   const isOrdersRoute = location.pathname === '/dashboard/sales';
-  const shouldHideSidebar = isOrdersRoute;
+  const isReservationsRoute = location.pathname === '/dashboard/reservations';
+  const shouldHideSidebar = isOrdersRoute || isReservationsRoute;
 
   if (isLoading || !user) {
     return (
@@ -277,6 +287,7 @@ const DashboardLayout = () => {
                 <OrdersHeader 
                   isOrdersRoute={isOrdersRoute} 
                   onMenuClick={() => setShowDashboardSlider(true)}
+                  showMenuButton={false}
                   onDraftsClick={() => {
                     // This will be handled by the RunningOrders component
                     window.dispatchEvent(new CustomEvent('openDraftsModal'));
@@ -293,6 +304,9 @@ const DashboardLayout = () => {
                     notificationCount={3} // or manage this state
                   />
                 </div>
+              ) : isReservationsRoute ? (
+                // Show Reservations toolbar under title bar, no margins
+                <ReservationsHeader />
               ) : (
                 // Show regular Header for other routes
                 <div className={shouldHideSidebar ? "" : "md:pl-5"}>

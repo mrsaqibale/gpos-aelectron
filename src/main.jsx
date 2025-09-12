@@ -8,6 +8,7 @@ import POSLogin from './pages/loginPage/PosLogin.jsx'
 import LicenseScreen from './pages/loginPage/LicenseScreen.jsx'
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx'
 import Dashboard from './pages/dashboard/Dashboard.jsx'
+import Reservations from './pages/dashboard/Reservations.jsx'
 import ManageOrders from './pages/dashboard/ManageOrders.jsx'
 import KitchenDisplaySystem from './pages/dashboard/KitchenDisplaySystem.jsx'
 import FoodList from './pages/dashboard/FoodList.jsx'
@@ -65,6 +66,10 @@ const router = createHashRouter([
           {
             path: 'manage-orders',
             element: <ErrorBoundary><ManageOrders /></ErrorBoundary>
+          },
+          {
+            path: 'reservations',
+            element: <ErrorBoundary><Reservations /></ErrorBoundary>
           },
           {
             path: 'kds',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Minus, ArrowLeft } from 'lucide-react';
+import { Minus, ArrowLeft, Menu } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -123,28 +123,38 @@ const CustomTitleBar = () => {
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 h-9 z-50 flex items-center justify-between px-4 select-none title-bar"
+      className="fixed top-0 left-0 right-0 h-11 z-50 flex items-center justify-between px-4 select-none title-bar"
       style={{ 
         backgroundColor: themeColors.primary,
         borderBottom: `1px solid ${themeColors.primaryLight}`
       }}
     >
               {/* Left side - App title and logout button */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-2">
           {isOnLoginPage() ? (
             <span className="text-white text-sm font-semibold">POS System</span>
           ) : isLoggedIn() ? (
             <button
               onClick={handleLogout}
-              className="flex cursor-pointer items-center space-x-1 text-gray-300 hover:text-white transition-colors duration-200 rounded-sm px-2 py-1 hover:bg-red-600"
+              className="w-8 h-8 cursor-pointer flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg"
+              style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
               title="Logout"
             >
-              <ArrowLeft className="w-5 h-5 text-white" />
-              <span className="text-white text-sm font-semibold">Logout</span>
+              <ArrowLeft className="w-5 h-5" />
             </button>
           ) : (
             <span className="text-white text-sm font-semibold">POS System</span>
           )}
+        {!isOnLoginPage() && (
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('openDashboardMenu'))}
+            className="w-8 h-8 cursor-pointer flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg"
+            style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
+            title="Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
         </div>
 
       {/* Middle section - Time and Date */}
@@ -175,6 +185,7 @@ const CustomTitleBar = () => {
 
       {/* Right side - Theme switcher and Window controls */}
       <div className="flex items-center space-x-2">
+        
         {/* Theme switcher buttons */}
         <div className="flex items-center space-x-1 mr-2">
           <button
@@ -208,10 +219,8 @@ const CustomTitleBar = () => {
           {/* Minimize button only */}
           <button
             onClick={handleMinimize}
-            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200 rounded-sm"
-            style={{ 
-              '--hover-bg-color': themeColors.primaryLight 
-            }}
+            className="w-9 h-9 flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg"
+            style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
             title="Minimize"
           >
             <Minus className="w-4 h-4" />
