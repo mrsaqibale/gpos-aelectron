@@ -264,7 +264,7 @@ const Reservations = () => {
                         </div>
                         <div className="p-4">
                             <p className="text-gray-700">
-                                Are you sure you want to delete {reservationToDelete?.name}'s reservation for table {reservationToDelete?.table}?
+                                Are you sure you want to delete {reservationToDelete?.customer_name}'s reservation for table {reservationToDelete?.table_no || 'No table'}?
                             </p>
                         </div>
                         <div className="flex justify-end gap-3 p-4 border-t">
