@@ -150,6 +150,8 @@ const Reservations = () => {
                 <div className="flex items-center gap-2 mb-3">
                     {[
                         { id: 'all', label: 'All' },
+                        { id: 'today', label: 'Today' },
+                        { id: 'upcoming', label: 'Upcoming' },
                         { id: 'confirmed', label: 'Confirmed' },
                         { id: 'pending', label: 'Pending' },
                         { id: 'cancelled', label: 'Cancelled' },
