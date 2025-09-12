@@ -185,7 +185,7 @@ const DeliveryReports = () => {
         }
       `}</style>
       {/* Header */}
-      <div className='bg-white p-6 mb-6 rounded-lg'>
+      <div className='bg-white p-6 mb-6 rounded-lg border border-gray-200'>
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
@@ -251,20 +251,19 @@ const DeliveryReports = () => {
         </button>
         <button 
           onClick={handleOpenAddRider}
-          className="bg-teal-600 hover:bg-teal-700 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2"
+          className="bg-primary/80 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" />
           Add Rider
         </button>
         <div className="bg-gray-200 text-gray-600 p-4 rounded-lg text-sm">
           {selectedRider ? selectedRider.name : 'No rider selected'}
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2">
-          <Printer className="w-4 h-4" />
+        <button className="bg-primary text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2">
+          
           Print Report
         </button>
         <button className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2">
-          <Printer className="w-4 h-4" />
+          
           Print Report & Cash Out
         </button>
       </div>
