@@ -181,33 +181,75 @@ const Reservations = () => {
 
                 
 
-                <div className="space-y-3">
-                    {filtered.map(res => (
-                        <div key={res.id} className={`reservation-item ${res.status}`}>
-                            <div className="flex items-start gap-3">
-                                <div>
-                                    <div className="text-sm font-semibold text-gray-800">{res.name}</div>
-                                    <div className="text-lg font-bold text-gray-800 mt-1">Table {res.table}</div>
+                {loading ? (
+                    <div className="flex justify-center items-center py-8">
+                        <div className="text-gray-500">Loading reservations...</div>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {filtered.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                No reservations found
+                            </div>
+                        ) : (
+                            filtered.map(res => (
+                                <div key={res.id} className={`reservation-item ${res.status} p-4 border border-gray-200 rounded-lg`}>
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex-1">
+                                            <div className="text-sm font-semibold text-gray-800">{res.customer_name}</div>
+                                            <div className="text-lg font-bold text-gray-800 mt-1">
+                                                {res.table_no ? `Table ${res.table_no}` : 'No table assigned'}
+                                                {res.floor_name && <span className="text-sm text-gray-500 ml-2">({res.floor_name})</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-sm text-gray-700 mt-2">
+                                        {res.start_time} - {res.end_time}
+                                        <div className="text-gray-500">{new Date(res.reservation_date).toLocaleDateString()}</div>
+                                    </div>
+                                    <div className="text-sm text-gray-700">{res.party_size} people</div>
+                                    {res.special_notes && (
+                                        <div className="text-sm text-gray-600 mt-1">
+                                            <strong>Notes:</strong> {res.special_notes}
+                                        </div>
+                                    )}
+                                    <div className="mt-2">{statusBadge(res.status)}</div>
+                                    <div className="flex items-center gap-2 mt-3">
+                                        {canEditReservation(res) && (
+                                            <button 
+                                                onClick={() => setReservationToEdit(res)}
+                                                className="px-3 py-1 rounded cursor-pointer bg-[#007bff] text-white text-sm hover:bg-[#0056b3]"
+                                            >
+                                                Edit
+                                            </button>
+                                        )}
+                                        {res.status === 'pending' ? (
+                                            <button 
+                                                onClick={() => updateReservationStatus(res.id, 'confirmed')}
+                                                className="px-3 py-1 rounded cursor-pointer bg-[#28a745] text-white text-sm hover:bg-[#1e7e34]"
+                                            >
+                                                Confirm
+                                            </button>
+                                        ) : res.status === 'confirmed' ? (
+                                            <button 
+                                                onClick={() => updateReservationStatus(res.id, 'cancelled')}
+                                                className="px-3 py-1 rounded cursor-pointer bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
+                                            >
+                                                Cancel
+                                            </button>
+                                        ) : null}
+                                        <button 
+                                            onClick={() => handleRequestDelete(res)} 
+                                            className="px-3 py-1 rounded cursor-pointer bg-[#6c757d] text-white text-sm hover:bg-[#545b62]"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="text-sm text-gray-700">
-                                {res.from} - {res.to}
-                                <div className="text-gray-500">{res.dateLabel}</div>
-                            </div>
-                            <div className="text-sm text-gray-700">{res.people} people</div>
-                            <div>{statusBadge(res.status)}</div>
-                            <div className="flex items-center gap-2">
-                                <button className="px-3 py-1 rounded cursor-pointer bg-[#007bff] text-white text-sm">Edit</button>
-                                {res.status === 'pending' ? (
-                                    <button className="px-3 py-1 rounded cursor-pointer bg-[#28a745] text-white text-sm">Confirm</button>
-                                ) : (
-                                    <button className="px-3 py-1 rounded cursor-pointer bg-[#dc3545] text-white text-sm">Cancel</button>
-                                )}
-                                <button onClick={() => handleRequestDelete(res)} className="px-3 py-1 rounded cursor-pointer bg-[#6c757d] text-white text-sm">Delete</button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                            ))
+                        )}
+                    </div>
+                )}
             </div>
 
             {showDeleteModal && (
@@ -232,6 +274,22 @@ const Reservations = () => {
                     </div>
                 </div>
             )}
+
+            {/* New Reservation Modal */}
+            <NewReservation
+                isOpen={showNewReservationModal}
+                onClose={() => setShowNewReservationModal(false)}
+                onCreate={handleReservationCreated}
+            />
+
+            {/* Custom Alert */}
+            <CustomAlert
+                message={alertState.message}
+                isVisible={alertState.isVisible}
+                onClose={hideAlert}
+                duration={alertState.duration}
+                type={alertState.type}
+            />
         </>
   )
 }
