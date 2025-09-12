@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react'
-import { X, Clock, Calendar, Users, Table2 } from 'lucide-react'
+import React, { useMemo, useState, useEffect } from 'react'
+import { X, Clock, Calendar, Users, Table2, Search } from 'lucide-react'
 import { useTheme } from '../../../contexts/ThemeContext'
 import MergeTableModal from '../table/MergeTableModal'
 import TableSelectionModal from '../table/TableSelectionModal'
@@ -28,7 +28,12 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
     tablePreference: 'any',
     notes: ''
   })
-  const { alertState, showError, hideAlert } = useCustomAlert()
+  const [customerSearchResults, setCustomerSearchResults] = useState([])
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [hotelInfo, setHotelInfo] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { alertState, showError, showSuccess, hideAlert } = useCustomAlert()
 
   const handleChange = (e) => {
     const { name, value } = e.target
