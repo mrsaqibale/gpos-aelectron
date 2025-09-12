@@ -38,6 +38,111 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
+    
+    // Handle customer name search
+    if (name === 'customerName' && value.length >= 2) {
+      searchCustomers(value)
+    } else if (name === 'customerName' && value.length < 2) {
+      setCustomerSearchResults([])
+      setShowCustomerDropdown(false)
+    }
+  }
+
+  // Search customers by name
+  const searchCustomers = async (searchTerm) => {
+    try {
+      if (!window.myAPI) return
+      const result = await window.myAPI.searchCustomerByName(searchTerm)
+      if (result && result.success) {
+        setCustomerSearchResults(result.data || [])
+        setShowCustomerDropdown(true)
+      }
+    } catch (error) {
+      console.error('Error searching customers:', error)
+    }
+  }
+
+  // Select customer from dropdown
+  const selectCustomer = (customer) => {
+    setSelectedCustomer(customer)
+    setForm(prev => ({
+      ...prev,
+      customerName: customer.name,
+      phoneNumber: customer.phone || ''
+    }))
+    setShowCustomerDropdown(false)
+    setCustomerSearchResults([])
+  }
+
+  // Load hotel information for opening hours
+  const loadHotelInfo = async () => {
+    try {
+      if (!window.myAPI) return
+      const result = await window.myAPI.getHotelInfo()
+      if (result && result.success) {
+        setHotelInfo(result.data)
+      }
+    } catch (error) {
+      console.error('Error loading hotel info:', error)
+    }
+  }
+
+  // Check table availability
+  const checkTableAvailability = async (tableId, date, startTime, duration) => {
+    try {
+      if (!window.myAPI || !tableId) return true
+      
+      const result = await window.myAPI.getReservationsByDateRange(date, date, 1)
+      if (result && result.success) {
+        const reservations = result.data || []
+        const startTimeMinutes = timeToMinutes(startTime)
+        const endTimeMinutes = startTimeMinutes + (parseFloat(duration) * 60)
+        
+        return !reservations.some(reservation => {
+          if (reservation.table_id !== tableId) return false
+          const resStart = timeToMinutes(reservation.start_time)
+          const resEnd = resStart + (parseFloat(reservation.duration || 2) * 60)
+          
+          // Check for overlap
+          return (startTimeMinutes < resEnd && endTimeMinutes > resStart)
+        })
+      }
+      return true
+    } catch (error) {
+      console.error('Error checking table availability:', error)
+      return true
+    }
+  }
+
+  // Convert time to minutes for comparison
+  const timeToMinutes = (time) => {
+    const [hours, minutes] = time.split(':').map(Number)
+    return hours * 60 + minutes
+  }
+
+  // Validate reservation time against restaurant hours
+  const validateReservationTime = (startTime, duration) => {
+    if (!hotelInfo || !hotelInfo.opening_time || !hotelInfo.closeing_time) return true
+    
+    const startMinutes = timeToMinutes(startTime)
+    const durationMinutes = parseFloat(duration) * 60
+    const endMinutes = startMinutes + durationMinutes
+    
+    const openingMinutes = timeToMinutes(hotelInfo.opening_time)
+    const closingMinutes = timeToMinutes(hotelInfo.closeing_time)
+    
+    if (startMinutes < openingMinutes) {
+      showError(`Reservation time must be after opening time (${hotelInfo.opening_time})`)
+      return false
+    }
+    
+    if (endMinutes > closingMinutes) {
+      const maxDuration = Math.floor((closingMinutes - startMinutes) / 60 * 10) / 10
+      showError(`Maximum duration is ${maxDuration} hours (restaurant closes at ${hotelInfo.closeing_time})`)
+      return false
+    }
+    
+    return true
   }
 
   const handleSubmit = (e) => {
