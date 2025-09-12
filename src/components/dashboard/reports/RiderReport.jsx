@@ -7,9 +7,8 @@ const CashoutSummaryModal = ({ isOpen, onClose, rider, onManageOrders, onProcess
   
   if (!isOpen) return null
 
-  // Mock data - replace with actual data
   const cashoutData = {
-    rider: rider?.name || 'Sarah O\'Connor',
+    rider: rider?.name || 'N/A',
     settledOrders: 2,
     unsettledOrders: 0,
     totalDrops: { count: 3, rate: 3, total: 9.00 },
@@ -113,8 +112,8 @@ const CashoutSummaryModal = ({ isOpen, onClose, rider, onManageOrders, onProcess
         <div className="p-6 flex gap-3">
           <button
             onClick={() => {
-              onClose() // Close the modal first
-              navigate('/dashboard/manage-orders') // Navigate to ManageOrders page
+              onClose() 
+              navigate('/dashboard/manage-orders') 
             }}
             className="flex-1 bg-primary text-white py-3 px-4 rounded-lg font-medium transition-colors"
           >

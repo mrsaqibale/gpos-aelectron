@@ -4,20 +4,20 @@ import DeliveryReports from '../../components/dashboard/reports/DeliveryReports'
 import { BarChart3, Calendar, Truck } from 'lucide-react'
 
 const Reports = () => {
-  const [activeTab, setActiveTab] = useState('daily')
+  const [activeTab, setActiveTab] = useState('delivery')
 
   const tabs = [
-    {
-      id: 'daily',
-      name: 'Daily Reports',
-      icon: <Calendar size={18} />,
-      component: <DailyReports />
-    },
     {
       id: 'delivery',
       name: 'Delivery Reports',
       icon: <Truck size={18} />,
       component: <DeliveryReports />
+    },
+    {
+      id: 'daily',
+      name: 'Daily Reports',
+      icon: <Calendar size={18} />,
+      component: <DailyReports />
     }
   ]
 

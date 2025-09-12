@@ -3,6 +3,7 @@ import { Check, Info, User, Printer, Plus, ShoppingBag } from 'lucide-react'
 import AddRider from '../../AddRider'
 import AssignRider from '../../AssignRider'
 import RiderReport from './RiderReport'
+import PrintRiderReport from './PrintRiderReport'
 import { useRiders } from '../../../contexts/RiderContext'
 import {
   Chart as ChartJS,
@@ -38,6 +39,7 @@ const DeliveryReports = () => {
   const [showAddRiderModal, setShowAddRiderModal] = useState(false)
   const [showAssignRiderModal, setShowAssignRiderModal] = useState(false)
   const [showRiderReportModal, setShowRiderReportModal] = useState(false)
+  const [showPrintRiderReportModal, setShowPrintRiderReportModal] = useState(false)
 
   // Handle saving rider data
   const handleSaveRider = (riderData) => {
@@ -94,6 +96,15 @@ const DeliveryReports = () => {
     console.log('Processing cashout for rider:', selectedRider)
     setShowRiderReportModal(false)
     // Add cashout processing logic here
+  }
+
+  // Handle opening Print Rider Report modal
+  const handleOpenPrintRiderReport = () => {
+    if (!selectedRider) {
+      alert('Please select a rider first')
+      return
+    }
+    setShowPrintRiderReportModal(true)
   }
 
   // Format date and time for display
@@ -314,8 +325,10 @@ const DeliveryReports = () => {
         <div className="bg-gray-200 text-gray-600 p-4 rounded-lg text-sm">
           {selectedRider ? selectedRider.name : 'No rider selected'}
         </div>
-        <button className="bg-primary text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2">
-          
+        <button 
+          onClick={handleOpenPrintRiderReport}
+          className="bg-primary text-white p-4 rounded-lg text-sm font-medium flex items-center gap-2"
+        >
           Print Report
         </button>
          <button 
@@ -400,13 +413,28 @@ const DeliveryReports = () => {
       )}
 
       {/* Rider Report Modal - Only render if no other modal is open */}
-      {showRiderReportModal && !showAddRiderModal && !showAssignRiderModal && (
+      {showRiderReportModal && !showAddRiderModal && !showAssignRiderModal && !showPrintRiderReportModal && (
         <RiderReport
           isOpen={showRiderReportModal}
           onClose={() => setShowRiderReportModal(false)}
           rider={selectedRider}
           onManageOrders={handleManageOrders}
           onProcessCashout={handleProcessCashout}
+        />
+      )}
+
+      {/* Print Rider Report Modal - Only render if no other modal is open */}
+      {showPrintRiderReportModal && !showAddRiderModal && !showAssignRiderModal && !showRiderReportModal && (
+        <PrintRiderReport
+          isOpen={showPrintRiderReportModal}
+          onClose={() => setShowPrintRiderReportModal(false)}
+          rider={selectedRider}
+          reportData={{
+            rider: selectedRider?.name || 'Sarah O\'Connor',
+            orders: 2,
+            amount: 54.75,
+            distance: 6.7
+          }}
         />
       )}
     </div>
