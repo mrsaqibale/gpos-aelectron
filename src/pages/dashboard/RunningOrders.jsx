@@ -57,7 +57,12 @@ import {
   Circle,
   Hash,
   HashIcon,
-  Truck
+  Truck,
+  Store,
+  Table as TableIcon,
+  Package,
+  UserCheck,
+  Clock3
 } from 'lucide-react';
 import Keyboard from 'react-simple-keyboard';
 import 'react-simple-keyboard/build/css/index.css';
@@ -5718,7 +5723,7 @@ const RunningOrders = () => {
                 categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`h-13 px-2 w-[120px] text-md flex items-center justify-center gap-1 
+                    className={`h-13 px-2 w-[120px] text-md font-semibold flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${selectedCategory?.id === category.id
                            ? 'bg-white text-black border-2 border-primary' 
                            : 'bg-primary text-white hover:bg-primary/90'
@@ -5764,16 +5769,14 @@ const RunningOrders = () => {
                 setSelectedScheduleDateTime('');
               }}
               disabled={isModifyingOrder}
-              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'In Store' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'In Store' 
                            ? 'bg-primary text-white' 
                            : 'bg-white hover:border-primary hover:border-2'
                        }`}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              </svg>
+              <Store size={14} />
               In Store
             </button>
             <button
@@ -5789,16 +5792,14 @@ const RunningOrders = () => {
                 setShowTableModal(true);
               }}
               disabled={isModifyingOrder}
-              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Table' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Table' 
                            ? 'bg-primary text-white' 
                            : 'bg-white hover:border-primary hover:border-2'
                        }`}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-              </svg>
+              <TableIcon size={14} />
               Table
             </button>
             <button
@@ -5817,16 +5818,14 @@ const RunningOrders = () => {
                 setShowCustomerSearchModal(true);
               }}
               disabled={isModifyingOrder}
-              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Collection' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Collection' 
                            ? 'bg-primary text-white' 
                            : 'bg-white hover:border-primary hover:border-2'
                        }`}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"></circle>
-              </svg>
+              <Package size={14} />
               Collection
             </button>
             <button
@@ -5847,23 +5846,19 @@ const RunningOrders = () => {
                 setShowCustomerSearchModal(true);
               }}
               disabled={isModifyingOrder}
-              className={`px-2 h-12 text-black text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Delivery' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Delivery' 
                            ? 'bg-primary text-white' 
                            : 'bg-white hover:border-primary hover:border-2'
                        }`}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"></path>
-              </svg>
+              <Truck size={14} />
               Delivery
             </button>
-            {/* Status button moved to OrdersHeader. Triggered via custom event. */}
-
             <button 
               onClick={handleOpenScheduleModal}
-              className={`px-2 h-12 text-[13px] rounded flex items-center justify-center gap-1 
+              className={`px-2 h-10 text-[13px] text-[#666666] font-semibold rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2 ${selectedScheduleDateTime
                            ? 'bg-primary text-white border-primary' 
                            : 'text-black hover:border-primary hover:border-2'
@@ -5876,20 +5871,18 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => setShowCustomerSearchModal(true)}
-              className="px-2 h-12 bg-[#007BFF] text-white text-[13px] rounded flex items-center justify-center gap-1 
+              className="px-2 h-10 bg-[#007BFF] text-white text-[13px] font-semibold rounded flex items-center justify-center gap-1 
                      btn-lifted transition-colors cursor-pointer">
-              <Users2 size={12} />
+              <User size={14} />
               Customer
             </button>
-
-
             <button
               onClick={() => setSelectedCustomer(null)}
-              className="px-2 h-12 text-[13px] rounded flex items-center justify-center gap-1 
+              className="px-2 h-10 text-[13px] text-[#666666] font-semibold rounded flex items-center justify-center gap-1 
                        btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
-              {selectedCustomer ? selectedCustomer.name : 'Walk in Customer'}
+              {!selectedCustomer && <UserCheck size={14} />}
+              {selectedCustomer ? selectedCustomer.name : 'Walk In Customer'}
             </button>
-
             <button
                   onClick={() => {
                     if (cartItems.length === 0) {
@@ -5900,13 +5893,13 @@ const RunningOrders = () => {
                     setShowDeleteCartModal(true);
                   }}
                   disabled={cartItems.length === 0 || isModifyingOrder}
-                  className={`bg-red-700 flex justify-center items-center gap-2 text-white  w-[100%] btn-lifted h-12 px-1  text-[13px] font-bold rounded  ${cartItems.length > 0 && !isModifyingOrder
+                  className={`bg-red-700 flex justify-center items-center gap-2 text-white  w-[100%] btn-lifted h-10 px-1  text-[13px] font-semibold rounded  ${cartItems.length > 0 && !isModifyingOrder
                       ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                     }`}>
-                  <Trash2 size={17} />
+                  <Trash2 size={14} />
                   Delete
-                </button>
+            </button>
 
 
           </div>
@@ -6064,7 +6057,7 @@ const RunningOrders = () => {
                 </div>
               </div>
               {/* Total Payable */}
-              <div className='flex justify-center items-center mb-4'>
+              {/* <div className='flex justify-center items-center mb-4'>
                 <div
                   className="bg-[#d3D3D3] px-4 py-2 btn-lifted cursor-pointer w-[70%] rounded flex items-center justify-center hover:bg-gray-300 transition-colors"
                 >
@@ -6073,7 +6066,7 @@ const RunningOrders = () => {
                     <span className="text-gray-800 font-medium">Total Payable : €{calculateCartTotal().toFixed(2)}</span>
                   </div>
                 </div>
-              </div>
+              </div> */}
               
               {/* Primary Action Buttons */}
               <div className="grid grid-cols-7 gap-3 mb-3">
