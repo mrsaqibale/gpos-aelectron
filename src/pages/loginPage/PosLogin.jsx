@@ -50,8 +50,8 @@ const POSLogin = () => {
           roleButtonBg: 'white',
           roleButtonText: '#032D81',
           roleButtonBorder: 'var(--primary-light, #00bcd4)',
-          roleButtonSelectedBg: 'white',
-          roleButtonSelectedText: '#032D81'
+          roleButtonSelectedBg: '#032D81',
+          roleButtonSelectedText: 'white'
         };
       case 'green':
         return {
@@ -81,9 +81,9 @@ const POSLogin = () => {
           rightActionButtonsBg: '#000000',
           roleButtonBg: 'white',
           roleButtonText: '#000000',
-          roleButtonBorder: '2.5px solid #e0e0e0',
-          roleButtonSelectedBg: 'white',
-          roleButtonSelectedText: '#000000'
+          roleButtonBorder: '1px solid #e0e0e0',
+          roleButtonSelectedBg: '#000000',
+          roleButtonSelectedText: 'white'
         };
       default:
         return {
@@ -297,9 +297,9 @@ const POSLogin = () => {
       return (
         <div
           key={index}
-          className={`w-10 h-10 border-[2px] rounded-lg flex items-center justify-center text-lg font-semibold transition-all duration-200 ${isEmpty
-              ? 'border-[#6BD8E6] bg-[#E0F7FA]'
-              : 'border-[#6BD8E6] bg-[#E0F7FA] text-black'
+          className={`w-10 h-10 border-[1px] rounded-lg flex items-center justify-center text-lg font-semibold transition-all duration-200 ${isEmpty
+              ? 'border-primary bg-[#E0F7FA]'
+              : 'border-primary bg-[#E0F7FA] text-black'
             } shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
             style={{
               boxShadow: "0 0 10px rgba(0, 188, 212, 0.6)"
@@ -316,12 +316,12 @@ const POSLogin = () => {
         <button
           onClick={togglePinVisibility}
           disabled={!selectedRole}
-          className={`ml-1 w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${selectedRole
+          className={`ml-1 w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 bg-primary hover:shadow-lg ${selectedRole
               ? 'text-[#032D3A] hover:text-white hover:bg-[#032D3A] cursor-pointer'
               : 'text-[#032D3A] cursor-not-allowed'
             }`}
         >
-          {showPin ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+          {showPin ? <EyeOff className="w-6 h-6 text-white" /> : <Eye className="w-6 h-6 text-white" />}
         </button>
       </div>
     );
@@ -441,7 +441,7 @@ const POSLogin = () => {
                                                                                               style={{
                           transformStyle: 'preserve-3d',
                           background: isSelected ? themeStyles.roleButtonSelectedBg : themeStyles.roleButtonBg,
-                          borderColor: isSelected ? themeStyles.roleButtonBorder : themeStyles.roleButtonBorder,
+                          border: themeStyles.roleButtonBorder,
                           boxShadow: isSelected
                             ? `0 0 16px 2px ${themeStyles.roleButtonBorder}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
                             : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
@@ -579,7 +579,7 @@ const POSLogin = () => {
             <div className="text-center">
               <button
                 onClick={handleForgotPinClick}
-                className="text-underline cursor-pointer text-sm font-bold transition-colors hover:-translate-y-0.5"
+                className=" underline font-semibold cursor-pointer text-sm transition-colors hover:-translate-y-0.5"
                                  style={{
                      color: themeStyles.rightActionButtonsBg,
                    }}
@@ -589,7 +589,7 @@ const POSLogin = () => {
             </div>
 
             {/* Current Time Display */}
-            <div className="text-center mt-2">
+            <div className="text-center mt-1">
               <div className="text-lg flex items-start justify-start ml-10 font-semibold text-gray-600">
                 <span
                   className="inline-flex items-center justify-center rounded-full mr-2"
