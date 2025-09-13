@@ -88,6 +88,7 @@ import { useDraftCount } from '../../contexts/DraftContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import FinalizeSaleModal from '../../components/FinalizeSaleModal';
 import MergeTableModal from '../../components/dashboard/table/MergeTableModal';
+import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsModalbox';
 
 const RunningOrders = () => {
   // Accept navigation state to pre-load an order
@@ -113,6 +114,7 @@ const RunningOrders = () => {
   const [selectedFood, setSelectedFood] = useState(null);
   const [selectedVariations, setSelectedVariations] = useState({});
   const [foodQuantity, setFoodQuantity] = useState(1);
+  const [showIngredientsModal, setShowIngredientsModal] = useState(false);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showMergeTableModal, setShowMergeTableModal] = useState(false);
 
@@ -7252,7 +7254,17 @@ const RunningOrders = () => {
                     </div>
                   </div>
                 ) : null}
-                
+
+                {/* Ingredients Button */}
+                <div className="mb-6 rounded-lg">
+                  <button
+                    onClick={() => setShowIngredientsModal(true)}
+                    className="w-[150px] bg-primary text-white  flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg transition-colors"
+                  >
+                    <Edit2 size={18} className="text-white" />
+                    <span className="font-medium text-white">Ingredients</span>
+                  </button>
+                </div>
 
                 {/* Note Field */}
                 <div className="mb-4">
@@ -7313,6 +7325,14 @@ const RunningOrders = () => {
             </div>
           </div>
         )}
+
+        {/* Food Ingredients Modal */}
+        <FoodIngredientsModalbox
+          isVisible={showIngredientsModal}
+          onClose={() => setShowIngredientsModal(false)}
+          foodId={selectedFood?.id}
+          foodName={selectedFood?.name}
+        />
 
         {/* Coupon Modal */}
         {showCouponModal && (

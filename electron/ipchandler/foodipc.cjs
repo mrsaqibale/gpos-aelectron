@@ -89,7 +89,8 @@ const {
   createFoodIngredient,
   getFoodIngredients,
   updateFoodIngredients,
-  processFoodIngredients
+  processFoodIngredients,
+  removeFoodIngredient
 } = getModelPath('foods/ingredients.js');
 
 // Category IPC
@@ -150,6 +151,8 @@ ipcMain.handle('food:getImage', (event, imagePath) => getFoodImage(imagePath));
 ipcMain.handle('food:getIngredients', (event, foodId) => getFoodIngredients(foodId));
 ipcMain.handle('food:updateIngredients', (event, foodId, ingredientIds) => updateFoodIngredients(foodId, ingredientIds));
 ipcMain.handle('food:processIngredients', (event, foodId, categoryId, ingredientNames) => processFoodIngredients(foodId, categoryId, ingredientNames));
+ipcMain.handle('food:createFoodIngredient', (event, foodId, ingredientId) => createFoodIngredient(foodId, ingredientId));
+ipcMain.handle('food:removeIngredient', (event, foodId, ingredientId) => removeFoodIngredient(foodId, ingredientId));
 
 // Variation IPC
 ipcMain.handle('variation:create', (event, variationData) => createVariation(variationData));

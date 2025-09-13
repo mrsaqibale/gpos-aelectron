@@ -463,6 +463,28 @@ export function processFoodIngredients(foodId, categoryId, ingredientNames) {
   }
 }
 
+// Remove food-ingredient relationship (soft delete)
+export function removeFoodIngredient(foodId, ingredientId) {
+  try {
+    const stmt = db.prepare(`
+      UPDATE food_ingredients 
+      SET isdeleted = 1, updated_at = ? 
+      WHERE food_id = ? AND ingredient_id = ? AND isdeleted = 0
+    `);
+    
+    const result = stmt.run(new Date().toISOString(), foodId, ingredientId);
+    
+    if (result.changes > 0) {
+      return { success: true, message: 'Food-ingredient relationship removed successfully' };
+    } else {
+      return { success: false, message: 'Food-ingredient relationship not found' };
+    }
+  } catch (error) {
+    console.error('Error removing food-ingredient relationship:', error);
+    return { success: false, message: error.message };
+  }
+}
+
 // Get all ingredients with their category information
 export function getAllIngredientsWithCategories() {
   try {

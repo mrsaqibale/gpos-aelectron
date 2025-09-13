@@ -74,6 +74,8 @@ contextBridge.exposeInMainWorld('myAPI', {
   getFoodIngredients: (foodId) => ipcRenderer.invoke('food:getIngredients', foodId),
   updateFoodIngredients: (foodId, ingredientIds) => ipcRenderer.invoke('food:updateIngredients', foodId, ingredientIds),
   processFoodIngredients: (foodId, categoryId, ingredientNames) => ipcRenderer.invoke('food:processIngredients', foodId, categoryId, ingredientNames),
+  createFoodIngredient: (foodId, ingredientId) => ipcRenderer.invoke('food:createFoodIngredient', foodId, ingredientId),
+  removeFoodIngredient: (foodId, ingredientId) => ipcRenderer.invoke('food:removeIngredient', foodId, ingredientId),
 
   // Variations
   createVariation: (variationData) => ipcRenderer.invoke('variation:create', variationData),
