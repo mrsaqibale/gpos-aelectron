@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useDraftCount } from '../../contexts/DraftContext';
+import NotificationsModal from './NotificationsModal';
 
 import {
   Home,
@@ -34,6 +35,7 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
   const navigate = useNavigate();
   const { themeColors } = useTheme();
   const { draftCount } = useDraftCount();
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
 
   if (!isOrdersRoute) return null;
 
@@ -75,7 +77,8 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
       //  icon: <Monitor size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: 'Notifications'
+      label: 'Notifications',
+      onClick: () => setShowNotificationsModal(true)
     },
     {
       // icon: <Clock size={16} />,
@@ -124,52 +127,60 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
   ];
 
   return (
-    <div className="bg-white border-b border-gray-300 p-2">
-      <div className="flex items-center justify-between">
-        {/* Left side - Navigation icons */}
-        <div className="flex items-center justify-center space-x-2 ">
-          {headerItems.map((item, index) => (
-            <div
-              key={index}
+    <>
+      <div className="bg-white border-b border-gray-300 p-2">
+        <div className="flex items-center justify-between">
+          {/* Left side - Navigation icons */}
+          <div className="flex items-center justify-center space-x-2 ">
+            {headerItems.map((item, index) => (
+              <div
+                key={index}
+                onClick={() => {
+                  if (item.onClick) { item.onClick(); return; }
+                  if (item.path) { navigate(item.path); return; }
+                  if (index === 0) navigate('/dashboard'); // fallback: home
+                }}
+                className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-4 py-3 font-semibold flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
+                style={item.style || (item.bgColor ? { backgroundColor: item.bgColor } : {})}
+              >
+                {item.icon}
+                <span className="text-xs font-semibold">{item.label}</span>
+              </div>
+            ))}
+          </div>
+          {/* Right side - Actions */}
+          <div className="flex items-center gap-2">
+            <button
               onClick={() => {
-                if (item.onClick) { item.onClick(); return; }
-                if (item.path) { navigate(item.path); return; }
-                if (index === 0) navigate('/dashboard'); // fallback: home
+                window.dispatchEvent(new CustomEvent('headerSaveClicked'));
               }}
-              className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-4 py-3 font-semibold flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
-              style={item.style || (item.bgColor ? { backgroundColor: item.bgColor } : {})}
+              title="Save"
+              className="flex justify-center items-center gap-2 py-3 w-[100px] rounded-md text-white text-sm font-semibold btn-lifted bg-[#16A34A] flex items-center gap-2"
             >
-              {item.icon}
-              <span className="text-xs font-semibold">{item.label}</span>
-            </div>
-          ))}
-        </div>
-        {/* Right side - Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('headerSaveClicked'));
-            }}
-            title="Save"
-            className="flex justify-center items-center gap-2 py-3 w-[100px] rounded-md text-white text-sm font-semibold btn-lifted bg-[#16A34A] flex items-center gap-2"
-          >
-            <SaveIcon size={14} />
-            Save
-          </button>
-          <button
-            onClick={() => {
-              // Ask RunningOrders to open the Status modal
-              window.dispatchEvent(new CustomEvent('openStatusModal'));
-            }}
-            title="Update order status"
-            className="flex justify-center items-center gap-2 py-3 w-[100px] rounded-md text-white text-sm font-semibold btn-lifted bg-[#1976D2] flex items-center gap-2"
-          >
-            <TrendingUp size={14} />
-            Status
-          </button>
+              <SaveIcon size={14} />
+              Save
+            </button>
+            <button
+              onClick={() => {
+                // Ask RunningOrders to open the Status modal
+                window.dispatchEvent(new CustomEvent('openStatusModal'));
+              }}
+              title="Update order status"
+              className="flex justify-center items-center gap-2 py-3 w-[100px] rounded-md text-white text-sm font-semibold btn-lifted bg-[#1976D2] flex items-center gap-2"
+            >
+              <TrendingUp size={14} />
+              Status
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      
+      {/* Notifications Modal */}
+      <NotificationsModal 
+        isOpen={showNotificationsModal} 
+        onClose={() => setShowNotificationsModal(false)} 
+      />
+    </>
   );
 };
 
