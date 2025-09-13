@@ -62,7 +62,10 @@ import {
   Table as TableIcon,
   Package,
   UserCheck,
-  Clock3
+  Clock3,
+  Wallet,
+  Save,
+  Archive
 } from 'lucide-react';
 import Keyboard from 'react-simple-keyboard';
 import 'react-simple-keyboard/build/css/index.css';
@@ -6165,30 +6168,22 @@ const RunningOrders = () => {
                   onClick={handleOpenSplitBillModal}
                   className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
                 >
-                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
-                    <span className="text-[8px]">$</span>
-                  </div>
+                  <Wallet size={14} />
                   SPLIT SALE
                 </button>
                 <button
                   onClick={handleOpenCouponModal}
                   className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
                 >
-                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
-                    <span className="text-[8px]">%</span>
-                  </div>
-                  DISCOUNT
+                  <Save size={14} />
+                  HOLD
                 </button>
                 <button className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
-                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
-                    <span className="text-[8px]">$</span>
-                  </div>
+                  <Archive size={14} />
                   OPEN DRAWER
                 </button>
                 <button className="bg-gray-600 text-white btn-lifted h-12 px-2 text-xs font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
-                  <div className="w-3 h-3 border border-white rounded-sm flex items-center justify-center">
-                    <span className="text-[8px]">🍽</span>
-                  </div>
+                  <ChefHat size={14} />
                   SERVICE FEE
                 </button>
               </div>
