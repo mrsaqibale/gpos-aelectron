@@ -82,6 +82,7 @@ import DueTo from '../../components/DueTo';
 import AssignRider from '../../components/AssignRider';
 import UpdateOrderStatus from '../../components/UpdateOrderStatus';
 import { useDraftCount } from '../../contexts/DraftContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import FinalizeSaleModal from '../../components/FinalizeSaleModal';
 import MergeTableModal from '../../components/dashboard/table/MergeTableModal';
 
@@ -91,6 +92,7 @@ const RunningOrders = () => {
   // Custom Alert Hook
   const { alertState, showSuccess, showError, showWarning, showInfo, hideAlert } = useCustomAlert();
   const { updateDraftCount } = useDraftCount();
+  const { addNotification } = useNotifications();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -2421,6 +2423,61 @@ const RunningOrders = () => {
     return slices;
   };
 
+  // Generate notification data based on order type
+  const generateOrderNotification = (orderType, orderId, customerName, tableDetails) => {
+    const baseNotification = {
+      title: '',
+      description: '',
+      icon: '',
+      iconColor: ''
+    };
+
+    switch (orderType) {
+      case 'instore':
+        return {
+          ...baseNotification,
+          title: 'In Store Order',
+          description: `New in-store order #${orderId} placed`,
+          icon: 'store',
+          iconColor: 'bg-blue-500'
+        };
+      case 'table':
+        const tableInfo = tableDetails ? JSON.parse(tableDetails) : null;
+        const tableName = tableInfo?.tables?.[0]?.table_no || 'Unknown';
+        return {
+          ...baseNotification,
+          title: 'Table Order',
+          description: `New order #${orderId} from Table ${tableName}`,
+          icon: 'table',
+          iconColor: 'bg-purple-500'
+        };
+      case 'collection':
+        return {
+          ...baseNotification,
+          title: 'Collection Order',
+          description: `New collection order #${orderId} from ${customerName || 'Customer'}`,
+          icon: 'package',
+          iconColor: 'bg-orange-500'
+        };
+      case 'delivery':
+        return {
+          ...baseNotification,
+          title: 'Delivery Order',
+          description: `New delivery order #${orderId} to ${customerName || 'Customer'}`,
+          icon: 'truck',
+          iconColor: 'bg-green-500'
+        };
+      default:
+        return {
+          ...baseNotification,
+          title: 'New Order',
+          description: `New order #${orderId} placed`,
+          icon: 'shopping-cart',
+          iconColor: 'bg-red-500'
+        };
+    }
+  };
+
   // Handle place order
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
@@ -2940,6 +2997,11 @@ const RunningOrders = () => {
         setPlacedOrders(prev => [newOrder, ...prev]);
         showSuccess('Order placed successfully!', 'success');
         
+        // Add notification for the new order
+        const customerName = selectedCustomer?.name || null;
+        const notification = generateOrderNotification(orderType, orderId, customerName, tableDetails);
+        addNotification(notification);
+        
         // Clear cart completely for new orders
         clearCart();
         
@@ -2948,6 +3010,11 @@ const RunningOrders = () => {
       } else {
         // For PAY button, don't add to active orders, just show success
         showSuccess('Order created for payment!', 'success');
+        
+        // Still add notification for PAY button orders
+        const customerName = selectedCustomer?.name || null;
+        const notification = generateOrderNotification(orderType, orderId, customerName, tableDetails);
+        addNotification(notification);
       }
     }
 

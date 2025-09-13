@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useDraftCount } from '../../contexts/DraftContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import NotificationsModal from './NotificationsModal';
 
 import {
@@ -35,7 +36,10 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
   const navigate = useNavigate();
   const { themeColors } = useTheme();
   const { draftCount } = useDraftCount();
+  const { getUnreadCount } = useNotifications();
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  
+  const unreadNotificationCount = getUnreadCount();
 
   if (!isOrdersRoute) return null;
 
@@ -77,7 +81,7 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
       //  icon: <Monitor size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: 'Notifications',
+      label: `Notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount})` : ''}`,
       onClick: () => setShowNotificationsModal(true)
     },
     {
