@@ -353,9 +353,9 @@ const POSLogin = () => {
       "py-1 px-0 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
     const buttonStyle = {
-      backgroundColor: selectedRole ? (variant === "clear" ? '#ffebee' : variant === "backspace" ? themeStyles.rightActionButtonsBg + '20' : themeStyles.rightActionButtonsBg) : 'white',
-      color: selectedRole ? (variant === "clear" ? '#d32f2f' : 'white') : themeStyles.rightActionButtonsBg,
-      border: selectedRole ? (variant === "clear" ? `2px solid #d32f2f` : variant === "backspace" ? `2px solid ${themeStyles.rightActionButtonsBg}` : 'none') : `2px solid ${themeStyles.rightActionButtonsBg}`,
+      backgroundColor: selectedRole ? themeStyles.rightActionButtonsBg : themeStyles.rightActionButtonsBg,
+      color: selectedRole ? 'white' : 'white',
+      border: selectedRole ? 'none' : `2px solid ${themeStyles.rightActionButtonsBg}`,
     };
 
     return (
@@ -537,14 +537,13 @@ const POSLogin = () => {
                     variant="backspace"
                     disabled={!selectedRole}
                   >
-                                         <svg className="w-7 h-7" viewBox="0 0 20 20" fill="none">
+                    <svg className="w-6 h-6" viewBox="0 0 20 20" fill="none">
                        <path
                          d="M7.5 10H15M5.5 5L2 10L5.5 15M15 5V15"
-                         stroke={themeStyles.rightActionButtonsBg}
+                         stroke={selectedRole ? 'white' : 'white'}
                          strokeWidth="1.5"
                          strokeLinecap="round"
                          strokeLinejoin="round"
-                         style={{ opacity: 0.6 }}
                        />
                      </svg>
                   </ActionButton>
