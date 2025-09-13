@@ -5850,7 +5850,7 @@ const RunningOrders = () => {
                 setSelectedScheduleDateTime('');
               }}
               disabled={isModifyingOrder}
-              className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
+              className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                       transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'In Store' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'In Store' 
@@ -5873,7 +5873,7 @@ const RunningOrders = () => {
                 setShowTableModal(true);
               }}
               disabled={isModifyingOrder}
-              className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
+              className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                       transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Table' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Table' 
@@ -5899,7 +5899,7 @@ const RunningOrders = () => {
                 setShowCustomerSearchModal(true);
               }}
               disabled={isModifyingOrder}
-              className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
+              className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                       transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Collection' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Collection' 
@@ -5927,7 +5927,7 @@ const RunningOrders = () => {
                 setShowCustomerSearchModal(true);
               }}
               disabled={isModifyingOrder}
-              className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
+              className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                        transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Delivery' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Delivery' 
@@ -5939,7 +5939,7 @@ const RunningOrders = () => {
             </button>
             <button 
               onClick={handleOpenScheduleModal}
-              className={`px-2 h-10 text-[13px] text-[#666666] font-semibold rounded flex items-center justify-center gap-1 
+              className={`px-3 py-1.5 h-10 text-base text-[#666666] font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                       transition-colors cursor-pointer hover:border-[#007BFF] hover:border-2 ${selectedScheduleDateTime
                            ? 'bg-primary text-white border-primary' 
                            : 'text-black hover:border-[#007BFF] hover:border-2 hover:bg-[#F8F9FA]'
@@ -5952,14 +5952,14 @@ const RunningOrders = () => {
             </button>
             <button
               onClick={() => setShowCustomerSearchModal(true)}
-              className="px-2 h-10 bg-[#007BFF] text-white text-[13px] font-semibold rounded flex items-center justify-center gap-1 
+              className="px-3 py-1.5 h-10 bg-[#007BFF] text-white text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                      transition-colors cursor-pointer">
               <User size={14} />
               Customer
             </button>
             <button
               onClick={() => setSelectedCustomer(null)}
-              className="px-2 h-10 text-[13px] text-[#666666] font-semibold rounded flex items-center justify-center gap-1 
+              className="px-3 py-1.5 h-10 text-base text-[#666666] font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                        transition-colors cursor-pointer hover:border-[#007BFF] hover:bg-[#F8F9FA] hover:border-2">
               {!selectedCustomer && <UserCheck size={14} />}
               {selectedCustomer ? selectedCustomer.name : 'Walk In Customer'}
@@ -5974,9 +5974,9 @@ const RunningOrders = () => {
                     setShowDeleteCartModal(true);
                   }}
                   disabled={cartItems.length === 0 || isModifyingOrder}
-                  className={`bg-red-700 flex justify-center items-center gap-2 text-white  w-[100%] h-10 px-1  text-[13px] font-semibold rounded  ${cartItems.length > 0 && !isModifyingOrder
-                      ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
-                      : 'bg-gray-400 cursor-pointer hover:border-[#007BFF] hover:border-2'
+                  className={`flex justify-center bg-[#dc3545] items-center gap-2 text-white w-[100%] h-10 px-3 py-1.5 text-base font-semibold rounded-lg border border-[#e0e0e0] ${cartItems.length > 0 && !isModifyingOrder
+                      ? 'cursor-pointer'
+                      : 'cursor-pointer hover:border-[#007BFF] hover:border-2'
                     }`}>
                   <Trash2 size={14} />
                   Delete
