@@ -5849,11 +5849,11 @@ const RunningOrders = () => {
               }}
               disabled={isModifyingOrder}
               className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${isModifyingOrder
+                      transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'In Store' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'In Store' 
                            ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2'
+                           : 'bg-white hover:bg-[#F8F9FA] hover:border-primary hover:border-2'
                        }`}>
               <Store size={14} />
               In Store
@@ -5872,11 +5872,11 @@ const RunningOrders = () => {
               }}
               disabled={isModifyingOrder}
               className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${isModifyingOrder
+                      transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Table' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Table' 
                            ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2'
+                           : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
                        }`}>
               <TableIcon size={14} />
               Table
@@ -5898,11 +5898,11 @@ const RunningOrders = () => {
               }}
               disabled={isModifyingOrder}
               className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${isModifyingOrder
+                      transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Collection' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Collection' 
                            ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2'
+                           : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
                        }`}>
               <Package size={14} />
               Collection
@@ -5926,11 +5926,11 @@ const RunningOrders = () => {
               }}
               disabled={isModifyingOrder}
               className={`px-2 h-10 text-[#666] text-[13px] font-semibold rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer ${isModifyingOrder
+                       transition-colors cursor-pointer ${isModifyingOrder
                            ? (selectedOrderType === 'Delivery' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
                            : selectedOrderType === 'Delivery' 
                            ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2'
+                           : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
                        }`}>
               <Truck size={14} />
               Delivery
@@ -5938,9 +5938,9 @@ const RunningOrders = () => {
             <button 
               onClick={handleOpenScheduleModal}
               className={`px-2 h-10 text-[13px] text-[#666666] font-semibold rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2 ${selectedScheduleDateTime
+                      transition-colors cursor-pointer hover:border-[#007BFF] hover:border-2 ${selectedScheduleDateTime
                            ? 'bg-primary text-white border-primary' 
-                           : 'text-black hover:border-primary hover:border-2'
+                           : 'text-black hover:border-[#007BFF] hover:border-2 hover:bg-[#F8F9FA]'
                        }`}>
               <Clock size={14} />
               Due to
@@ -5951,14 +5951,14 @@ const RunningOrders = () => {
             <button
               onClick={() => setShowCustomerSearchModal(true)}
               className="px-2 h-10 bg-[#007BFF] text-white text-[13px] font-semibold rounded flex items-center justify-center gap-1 
-                     btn-lifted transition-colors cursor-pointer">
+                     transition-colors cursor-pointer">
               <User size={14} />
               Customer
             </button>
             <button
               onClick={() => setSelectedCustomer(null)}
               className="px-2 h-10 text-[13px] text-[#666666] font-semibold rounded flex items-center justify-center gap-1 
-                       btn-lifted transition-colors cursor-pointer hover:border-primary hover:border-2">
+                       transition-colors cursor-pointer hover:border-[#007BFF] hover:bg-[#F8F9FA] hover:border-2">
               {!selectedCustomer && <UserCheck size={14} />}
               {selectedCustomer ? selectedCustomer.name : 'Walk In Customer'}
             </button>
@@ -5972,9 +5972,9 @@ const RunningOrders = () => {
                     setShowDeleteCartModal(true);
                   }}
                   disabled={cartItems.length === 0 || isModifyingOrder}
-                  className={`bg-red-700 flex justify-center items-center gap-2 text-white  w-[100%] btn-lifted h-10 px-1  text-[13px] font-semibold rounded  ${cartItems.length > 0 && !isModifyingOrder
+                  className={`bg-red-700 flex justify-center items-center gap-2 text-white  w-[100%] h-10 px-1  text-[13px] font-semibold rounded  ${cartItems.length > 0 && !isModifyingOrder
                       ? 'bg-[#c81118] hover:bg-red-700 cursor-pointer'
-                      : 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gray-400 cursor-pointer hover:border-[#007BFF] hover:border-2'
                     }`}>
                   <Trash2 size={14} />
                   Delete
