@@ -173,6 +173,43 @@ function initDatabase() {
     } catch (e) {
       console.warn('Could not verify/add salary_payments tracking columns:', e.message);
     }
+
+    // Create reservations table
+    try {
+      const createReservationsTable = `
+        CREATE TABLE IF NOT EXISTS reservations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          customer_id INTEGER NOT NULL,
+          customer_name TEXT NOT NULL,
+          customer_phone TEXT,
+          customer_email TEXT,
+          reservation_date DATE NOT NULL,
+          start_time TIME NOT NULL,
+          end_time TIME,
+          duration DECIMAL(3,1),
+          party_size INTEGER,
+          table_id INTEGER,
+          table_preference TEXT DEFAULT 'any',
+          is_table_preferred BOOLEAN DEFAULT 0,
+          status TEXT DEFAULT 'pending',
+          special_notes TEXT,
+          hotel_id INTEGER NOT NULL,
+          added_by INTEGER,
+          is_synchronized BOOLEAN DEFAULT 0,
+          is_deleted BOOLEAN DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME,
+          FOREIGN KEY (customer_id) REFERENCES customer(id),
+          FOREIGN KEY (table_id) REFERENCES restaurant_table(id),
+          FOREIGN KEY (hotel_id) REFERENCES hotel(id),
+          FOREIGN KEY (added_by) REFERENCES employee(id)
+        )
+      `;
+      db.exec(createReservationsTable);
+      console.log('Reservations table created/verified successfully');
+    } catch (e) {
+      console.warn('Could not create reservations table:', e.message);
+    }
     
     db.close();
     console.log('Database initialization completed');
