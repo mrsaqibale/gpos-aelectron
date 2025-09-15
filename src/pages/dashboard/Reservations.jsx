@@ -12,6 +12,7 @@ const Reservations = () => {
     const [showNewReservationModal, setShowNewReservationModal] = useState(false)
     const [reservationToDelete, setReservationToDelete] = useState(null)
     const [reservationToEdit, setReservationToEdit] = useState(null)
+    const [viewReservation, setViewReservation] = useState(null)
     const { alertState, showError, showSuccess, hideAlert } = useCustomAlert()
 
     // Load reservations from database
