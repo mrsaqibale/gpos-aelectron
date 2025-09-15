@@ -5336,6 +5336,7 @@ const RunningOrders = () => {
                   // Calculate time elapsed (static calculation, no auto-update)
                   const orderTime = new Date(order.placedAt);
                   const diffMs = currentTime - orderTime;
+                  const diffMins = Math.floor(diffMs / (1000 * 60));
                   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
                   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                   let timeAgo;
@@ -5343,8 +5344,10 @@ const RunningOrders = () => {
                     timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
                   } else if (diffHours > 0) {
                     timeAgo = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                  } else if (diffMins > 0) {
+                    timeAgo = `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
                   } else {
-                    timeAgo = 'Today';
+                    timeAgo = 'Just now';
                   }
 
                   // Get order type styling
