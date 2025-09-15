@@ -123,7 +123,7 @@ const Reservations = () => {
 
     // Check if reservation can be edited
     const canEditReservation = (reservation) => {
-        return reservation.status !== 'cancelled' && reservation.status !== 'completed'
+        return reservation.status === 'confirmed'
     }
 
     const statusBadge = (status) => {
@@ -132,9 +132,6 @@ const Reservations = () => {
         )
         if (status === 'completed') return (
             <span className="px-2 py-2 text-xs rounded bg-blue-100 text-blue-700">COMPLETED</span>
-        )
-        if (status === 'pending') return (
-            <span className="px-2 py-2 text-xs rounded bg-yellow-100 text-yellow-700">PENDING</span>
         )
         return (
             <span className="px-2 py-2 text-xs rounded bg-gray-100 text-gray-700">CANCELLED</span>
@@ -165,7 +162,7 @@ const Reservations = () => {
                         { id: 'today', label: 'Today' },
                         { id: 'upcoming', label: 'Upcoming' },
                         { id: 'confirmed', label: 'Confirmed' },
-                        { id: 'pending', label: 'Pending' },
+                        { id: 'completed', label: 'Completed' },
                         { id: 'cancelled', label: 'Cancelled' },
                     ].map(t => (
                         <button
@@ -252,6 +249,13 @@ const Reservations = () => {
                                                                 Cancel
                                                             </button>
                                                         </>
+                                                    ) : res.status === 'completed' ? (
+                                                        <button
+                                                            onClick={() => updateReservationStatus(res.id, 'cancelled')}
+                                                            className="px-3 py-1 rounded bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
+                                                        >
+                                                            Cancel
+                                                        </button>
                                                     ) : null}
                                                     <button
                                                         onClick={() => handleRequestDelete(res)}
