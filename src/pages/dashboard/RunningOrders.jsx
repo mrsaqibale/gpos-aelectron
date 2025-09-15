@@ -5302,7 +5302,7 @@ const RunningOrders = () => {
                 className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg p-2 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
               >
                 <RefreshCw size={12} />
-                Refresh Active
+                Refresh
               </button>
             </div>
 
