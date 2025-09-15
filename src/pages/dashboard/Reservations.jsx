@@ -184,67 +184,83 @@ const Reservations = () => {
                         <div className="text-gray-500">Loading reservations...</div>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="overflow-auto">
                         {filtered.length === 0 ? (
-                            <div className="text-center py-8 text-gray-500">
-                                No reservations found
-                            </div>
+                            <div className="text-center py-8 text-gray-500">No reservations found</div>
                         ) : (
-                            filtered.map(res => (
-                                <div key={res.id} className={`reservation-item ${res.status} p-4 border border-gray-200 rounded-lg`}>
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex-1">
-                                            <div className="text-sm font-semibold text-gray-800">{res.customer_name}</div>
-                                            <div className="text-lg font-bold text-gray-800 mt-1">
-                                                {res.table_no ? `Table ${res.table_no}` : 'No table assigned'}
-                                                {res.floor_name && <span className="text-sm text-gray-500 ml-2">({res.floor_name})</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-sm text-gray-700 mt-2">
-                                        {res.start_time} - {res.end_time}
-                                        <div className="text-gray-500">{new Date(res.reservation_date).toLocaleDateString()}</div>
-                                    </div>
-                                    <div className="text-sm text-gray-700">{res.party_size} people</div>
-                                    {res.special_notes && (
-                                        <div className="text-sm text-gray-600 mt-1">
-                                            <strong>Notes:</strong> {res.special_notes}
-                                        </div>
-                                    )}
-                                    <div className="mt-2">{statusBadge(res.status)}</div>
-                                    <div className="flex items-center gap-2 mt-3">
-                                        {canEditReservation(res) && (
-                                            <button 
-                                                onClick={() => setReservationToEdit(res)}
-                                                className="px-3 py-1 rounded cursor-pointer bg-[#007bff] text-white text-sm hover:bg-[#0056b3]"
-                                            >
-                                                Edit
-                                            </button>
-                                        )}
-                                        {res.status === 'pending' ? (
-                                            <button 
-                                                onClick={() => updateReservationStatus(res.id, 'confirmed')}
-                                                className="px-3 py-1 rounded cursor-pointer bg-[#28a745] text-white text-sm hover:bg-[#1e7e34]"
-                                            >
-                                                Confirm
-                                            </button>
-                                        ) : res.status === 'confirmed' ? (
-                                            <button 
-                                                onClick={() => updateReservationStatus(res.id, 'cancelled')}
-                                                className="px-3 py-1 rounded cursor-pointer bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
-                                            >
-                                                Cancel
-                                            </button>
-                                        ) : null}
-                                        <button 
-                                            onClick={() => handleRequestDelete(res)} 
-                                            className="px-3 py-1 rounded cursor-pointer bg-[#6c757d] text-white text-sm hover:bg-[#545b62]"
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Party</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                                        <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {filtered.map(res => (
+                                        <tr key={res.id} className="hover:bg-gray-50">
+                                            <td className="px-3 py-2 text-sm text-gray-800 font-medium">{res.customer_name}</td>
+                                            <td className="px-3 py-2 text-sm text-gray-700">{new Date(res.reservation_date).toLocaleDateString()}</td>
+                                            <td className="px-3 py-2 text-sm text-gray-700">{res.start_time} - {res.end_time}</td>
+                                            <td className="px-3 py-2 text-sm text-gray-700">
+                                                {res.table_no ? `Table ${res.table_no}` : 'No table'}
+                                                {res.floor_name && <span className="text-xs text-gray-500 ml-1">({res.floor_name})</span>}
+                                            </td>
+                                            <td className="px-3 py-2 text-sm text-gray-700">{res.party_size}</td>
+                                            <td className="px-3 py-2 text-sm">{statusBadge(res.status)}</td>
+                                            <td className="px-3 py-2 text-sm text-gray-700">
+                                                {res.special_notes ?
+                                                    (res.special_notes.length > 10 ? `${res.special_notes.slice(0, 10)}...` : res.special_notes)
+                                                    : '-'}
+                                            </td>
+                                            <td className="px-3 py-2 text-sm">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => setViewReservation(res)}
+                                                        className="px-3 py-1 rounded bg-gray-200 text-gray-800 text-sm hover:bg-gray-300"
+                                                    >
+                                                        View
+                                                    </button>
+                                                    {canEditReservation(res) && (
+                                                        <button
+                                                            onClick={() => setReservationToEdit(res)}
+                                                            className="px-3 py-1 rounded bg-[#007bff] text-white text-sm hover:bg-[#0056b3]"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                    )}
+                                                    {res.status === 'pending' ? (
+                                                        <button
+                                                            onClick={() => updateReservationStatus(res.id, 'confirmed')}
+                                                            className="px-3 py-1 rounded bg-[#28a745] text-white text-sm hover:bg-[#1e7e34]"
+                                                        >
+                                                            Confirm
+                                                        </button>
+                                                    ) : res.status === 'confirmed' ? (
+                                                        <button
+                                                            onClick={() => updateReservationStatus(res.id, 'cancelled')}
+                                                            className="px-3 py-1 rounded bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    ) : null}
+                                                    <button
+                                                        onClick={() => handleRequestDelete(res)}
+                                                        className="px-3 py-1 rounded bg-[#6c757d] text-white text-sm hover:bg-[#545b62]"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         )}
                     </div>
                 )}
@@ -279,6 +295,59 @@ const Reservations = () => {
                 onClose={() => setShowNewReservationModal(false)}
                 onCreate={handleReservationCreated}
             />
+
+            {/* View Reservation Modal */}
+            {viewReservation && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => setViewReservation(null)}></div>
+                    <div className="relative w-full max-w-lg bg-white rounded-lg shadow-xl overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 bg-primary">
+                            <h3 className="text-white font-semibold">Reservation Details</h3>
+                            <button onClick={() => setViewReservation(null)} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/15">
+                                <X className="w-5 h-5 text-white" />
+                            </button>
+                        </div>
+                        <div className="p-4 space-y-2 text-sm text-gray-800">
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <div className="text-gray-500">Customer</div>
+                                    <div className="font-medium">{viewReservation.customer_name || '-'}</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-500">Date</div>
+                                    <div className="font-medium">{viewReservation.reservation_date ? new Date(viewReservation.reservation_date).toLocaleDateString() : '-'}</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-500">Time</div>
+                                    <div className="font-medium">{viewReservation.start_time} - {viewReservation.end_time}</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-500">Party Size</div>
+                                    <div className="font-medium">{viewReservation.party_size || '-'}</div>
+                                </div>
+                                <div className="col-span-2">
+                                    <div className="text-gray-500">Table</div>
+                                    <div className="font-medium">
+                                        {viewReservation.table_no ? `Table ${viewReservation.table_no}` : 'No table'}
+                                        {viewReservation.floor_name && <span className="text-xs text-gray-500 ml-1">({viewReservation.floor_name})</span>}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-500">Status</div>
+                                    <div className="mt-1">{statusBadge(viewReservation.status)}</div>
+                                </div>
+                                <div className="col-span-2">
+                                    <div className="text-gray-500">Notes</div>
+                                    <div className="font-medium whitespace-pre-wrap">{viewReservation.special_notes || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 p-4 border-t">
+                            <button onClick={() => setViewReservation(null)} className="px-4 py-2 rounded bg-gray-500 text-white">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Custom Alert */}
             <CustomAlert
