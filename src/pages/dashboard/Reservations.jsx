@@ -130,6 +130,9 @@ const Reservations = () => {
         if (status === 'confirmed') return (
             <span className="px-2 py-2 text-xs rounded bg-green-100 text-green-700">CONFIRMED</span>
         )
+        if (status === 'completed') return (
+            <span className="px-2 py-2 text-xs rounded bg-blue-100 text-blue-700">COMPLETED</span>
+        )
         if (status === 'pending') return (
             <span className="px-2 py-2 text-xs rounded bg-yellow-100 text-yellow-700">PENDING</span>
         )
@@ -234,20 +237,21 @@ const Reservations = () => {
                                                             Edit
                                                         </button>
                                                     )}
-                                                    {res.status === 'pending' ? (
-                                                        <button
-                                                            onClick={() => updateReservationStatus(res.id, 'confirmed')}
-                                                            className="px-3 py-1 rounded bg-[#28a745] text-white text-sm hover:bg-[#1e7e34]"
-                                                        >
-                                                            Confirm
-                                                        </button>
-                                                    ) : res.status === 'confirmed' ? (
-                                                        <button
-                                                            onClick={() => updateReservationStatus(res.id, 'cancelled')}
-                                                            className="px-3 py-1 rounded bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
-                                                        >
-                                                            Cancel
-                                                        </button>
+                                                    {res.status === 'confirmed' ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => updateReservationStatus(res.id, 'completed')}
+                                                                className="px-3 py-1 rounded bg-[#28a745] text-white text-sm hover:bg-[#1e7e34]"
+                                                            >
+                                                                Complete
+                                                            </button>
+                                                            <button
+                                                                onClick={() => updateReservationStatus(res.id, 'cancelled')}
+                                                                className="px-3 py-1 rounded bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </>
                                                     ) : null}
                                                     <button
                                                         onClick={() => handleRequestDelete(res)}
