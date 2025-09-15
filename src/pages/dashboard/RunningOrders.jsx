@@ -5641,7 +5641,7 @@ const RunningOrders = () => {
                     }`}
                 >
                   <Eye size={14} />
-                  ORDER DETAILS
+                  Details
                 </button>
                 <button 
                   onClick={async () => {
@@ -5666,7 +5666,7 @@ const RunningOrders = () => {
                   }
                 >
                   <Edit size={14} />
-                  MODIFY ORDER
+                  Modify
                 </button>
               </div>
                 <button 
