@@ -353,8 +353,8 @@ const RunningOrders = () => {
   // Cart Details Modal State
   const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
 
-  // Static time for order time display (no auto-update)
-  const [currentTime] = useState(new Date());
+  // Time reference for order time display (updates every minute only)
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Cancel Order Modal State
   const [showCancelOrderModal, setShowCancelOrderModal] = useState(false);
@@ -465,7 +465,26 @@ const RunningOrders = () => {
     updateDraftCount(currentDraftOrders.length);
   }, [currentDraftOrders, updateDraftCount]);
 
-  // Removed real-time timer - time display is now static
+  // Minute-based timer: updates only the time labels once per minute
+  useEffect(() => {
+    // Align the first tick to the start of next minute to avoid drift
+    const now = new Date();
+    const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+
+    const startTimeout = setTimeout(() => {
+      setCurrentTime(new Date());
+      const interval = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 60000);
+      // Store interval on the timeout closure for cleanup
+      (startTimeout).interval = interval;
+    }, msUntilNextMinute);
+
+    return () => {
+      if ((startTimeout).interval) clearInterval((startTimeout).interval);
+      clearTimeout(startTimeout);
+    };
+  }, []);
 
   // Auto-cleanup duplicates when cart changes - REMOVED to prevent infinite loops
 
