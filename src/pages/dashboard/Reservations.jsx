@@ -6,6 +6,7 @@ import useCustomAlert from '../../hooks/useCustomAlert'
 import CustomAlert from '../../components/CustomAlert'
 
 const Reservations = () => {
+    const navigate = useNavigate()
     const [activeTab, setActiveTab] = useState('all')
     const [reservations, setReservations] = useState([])
     const [loading, setLoading] = useState(false)
@@ -148,13 +149,21 @@ const Reservations = () => {
                         <CalendarDays size={18} className="text-primary" />
                         <h2 className="text-lg font-semibold text-gray-800">Reservations</h2>
                     </div>
-                    <button 
-                        onClick={handleNewReservation}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                        <Plus size={16} />
-                        New Reservation
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={handleNewReservation}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            <Plus size={16} />
+                            New Reservation
+                        </button>
+                        <button 
+                            onClick={() => navigate('/dashboard/sales')}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            Sales Screen
+                        </button>
+                    </div>
                 </div>
                     {/* Tabs */}
                 <div className="flex items-center gap-2 mb-3">
