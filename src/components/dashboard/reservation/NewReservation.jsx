@@ -212,7 +212,7 @@ const NewReservation = ({ isOpen, onClose, onCreate }) => {
         table_id: selectedTable || null,
         table_preference: form.tablePreference,
         is_table_preferred: form.tablePreference === 'customerrequired',
-        status: 'pending',
+        status: 'confirmed',
         special_notes: form.notes,
         hotel_id: 1,
         added_by: 1 // Default employee ID
