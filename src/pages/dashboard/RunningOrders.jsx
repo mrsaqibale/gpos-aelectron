@@ -353,8 +353,8 @@ const RunningOrders = () => {
   // Cart Details Modal State
   const [showCartDetailsModal, setShowCartDetailsModal] = useState(false);
 
-  // Real-time timer for order time display
-  const [currentTime, setCurrentTime] = useState(new Date());
+  // Static time for order time display (no auto-update)
+  const [currentTime] = useState(new Date());
 
   // Cancel Order Modal State
   const [showCancelOrderModal, setShowCancelOrderModal] = useState(false);
@@ -465,14 +465,7 @@ const RunningOrders = () => {
     updateDraftCount(currentDraftOrders.length);
   }, [currentDraftOrders, updateDraftCount]);
 
-  // Real-time timer for order time display
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000); // Update every second
-
-    return () => clearInterval(timer);
-  }, []);
+  // Removed real-time timer - time display is now static
 
   // Auto-cleanup duplicates when cart changes - REMOVED to prevent infinite loops
 
@@ -853,16 +846,7 @@ const RunningOrders = () => {
     fetchFloors(); // Add this line to fetch floors on component mount
     fetchExistingOrders(); // Load active orders from database
     fetchDraftOrders(); // Load draft orders from database
-    // Poll every 10s for new/updated active orders
-    const interval = setInterval(() => {
-      try {
-        fetchExistingOrders();
-        fetchDraftOrders(); // Also refresh draft orders
-      } catch (e) {
-        console.error('Auto-refresh active orders failed:', e);
-      }
-    }, 10000);
-    return () => clearInterval(interval);
+    // Removed auto-refresh - orders only update when user clicks refresh button
   }, []);
 
   // Debug floors state
@@ -5349,18 +5333,18 @@ const RunningOrders = () => {
                     return order.orderNumber.toString().toLowerCase().includes(searchTerm);
                   })
                   .map((order) => {
-                  // Calculate time elapsed using real-time currentTime
+                  // Calculate time elapsed (static calculation, no auto-update)
                   const orderTime = new Date(order.placedAt);
                   const diffMs = currentTime - orderTime;
-                  const diffMins = Math.floor(diffMs / (1000 * 60));
-                  const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
+                  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                   let timeAgo;
-                  if (diffMins > 0) {
-                    timeAgo = `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-                  } else if (diffSecs > 0) {
-                    timeAgo = `${diffSecs} sec${diffSecs > 1 ? 's' : ''} ago`;
+                  if (diffDays > 0) {
+                    timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                  } else if (diffHours > 0) {
+                    timeAgo = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
                   } else {
-                    timeAgo = 'Just now';
+                    timeAgo = 'Today';
                   }
 
                   // Get order type styling
