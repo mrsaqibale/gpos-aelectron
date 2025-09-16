@@ -483,71 +483,69 @@ const ApplicationSettings = () => {
                   </div>
 
                   {/* Description & Logo */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h3 className="text-base font-semibold text-gray-800 mb-4">Description & Logo</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-                      {/* Description card */}
-                      <div className="flex flex-col">
+                  <div className="bg-white border border-gray-200 rounded-lg p-5">
+                    <h3 className="text-base font-semibold text-gray-900 mb-5">Description & Logo</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                      {/* Description column (2/3) */}
+                      <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <div className="relative flex-1">
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
                           <textarea
                             rows={8}
                             value={businessInfo.description}
                             onChange={(e) => handleBusinessInfoChange("description", e.target.value)}
                             maxLength={600}
-                            placeholder="Describe your business..."
-                            className="w-full h-full min-h-[180px] px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y"
+                            placeholder="Tell customers what makes your place special..."
+                            className="w-full min-h-[180px] px-4 py-3 outline-none border-0 focus:ring-2 focus:ring-primary"
                           />
-                          <div className="mt-1 text-xs text-gray-500 flex justify-between">
-                            <span>Tip: Keep it friendly and concise.</span>
+                          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+                            <span>Tip: Friendly, clear, and under 600 characters.</span>
                             <span>{businessInfo.description?.length || 0}/600</span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Logo uploader card */}
+                      {/* Logo column (1/3) */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Business Logo</label>
-                        <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col gap-3 bg-gray-50">
-                          <div className="flex items-center gap-4">
-                            <div className="w-28 h-28 rounded-md border border-gray-200 bg-white flex items-center justify-center overflow-hidden shadow-sm">
+                        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="aspect-square w-32 md:w-36 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shadow-sm">
                               {businessInfo.logoPreview ? (
                                 <img src={businessInfo.logoPreview} alt="Logo" className="w-full h-full object-contain" />
                               ) : (
-                                <span className="text-xs text-gray-400">No logo uploaded</span>
+                                <span className="text-xs text-gray-400">No logo</span>
                               )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-600 mb-2 truncate">
-                                {businessInfo.logoFile?.name || "No file chosen"}
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                <input
-                                  ref={fileInputRef}
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={handleLogoChange}
-                                />
+                            <p className="text-xs text-gray-500 h-4 truncate w-full text-center">
+                              {businessInfo.logoFile?.name || "No file chosen"}
+                            </p>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleLogoChange}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleLogoButtonClick}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                              >
+                                <Upload size={16} /> Upload
+                              </button>
+                              {businessInfo.logoPreview && (
                                 <button
-                                  onClick={handleLogoButtonClick}
-                                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                                  onClick={() => handleBusinessInfoChange("logoPreview", "")}
+                                  className="inline-flex items-center gap-2 px-3 py-2 bg-white text-gray-700 border border-gray-200 rounded-md hover:bg-gray-100"
                                 >
-                                  <Upload size={16} /> Upload Logo
+                                  Remove
                                 </button>
-                                {businessInfo.logoPreview && (
-                                  <button
-                                    onClick={() => handleBusinessInfoChange("logoPreview", "")}
-                                    className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                                  >
-                                    Remove
-                                  </button>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500 mt-2">
-                                Recommended: Square image, at least 256×256px. PNG with transparent background works best.
-                              </p>
+                              )}
                             </div>
+                            <p className="text-[11px] text-gray-500 text-center">
+                              Use a square image (≥ 256×256). PNG with transparent background looks best.
+                            </p>
                           </div>
                         </div>
                       </div>
