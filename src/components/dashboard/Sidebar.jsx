@@ -143,7 +143,7 @@ const Sidebar = ({ navigationItems }) => {
 
       {/* Desktop Sidebar */}
       <div 
-        className={`hidden lg:block h-full rounded-l-xl rounded-r-xl overflow-hidden flex-shrink-0`}
+        className={`hidden lg:block h-full overflow-hidden flex-shrink-0`}
         style={{
           width: isOpen ? "200px" : "60px",
           transition: "width 300ms cubic-bezier(0.4, 0, 0.2, 1)",
