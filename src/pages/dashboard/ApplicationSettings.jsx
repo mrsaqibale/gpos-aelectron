@@ -651,25 +651,7 @@ const ApplicationSettings = () => {
                     </select>
                   </div>
 
-                  {/* Tax Rate */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tax Rate (%)
-                    </label>
-                    <select
-                      value={businessSettings.taxRate}
-                      onChange={(e) => handleBusinessSettingChange("taxRate", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <option value="0">0</option>
-                      <option value="5">5</option>
-                      <option value="10">10</option>
-                      <option value="15">15</option>
-                      <option value="20">20</option>
-                      <option value="23">23</option>
-                      <option value="25">25</option>
-                    </select>
-                  </div>
+                  {/* Removed simple Tax Rate per request */}
 
                   {/* Standard Tax */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
