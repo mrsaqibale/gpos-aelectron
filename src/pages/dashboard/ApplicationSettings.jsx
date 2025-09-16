@@ -483,11 +483,11 @@ const ApplicationSettings = () => {
                   </div>
 
                   {/* Description & Logo */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-5">
+                  <div className="bg-white border border-gray-200 rounded-lg p-5 md:col-span-2">
                     <h3 className="text-base font-semibold text-gray-900 mb-5">Description & Logo</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                       {/* Description column (2/3) */}
-                      <div className="md:col-span-2">
+                      <div className="lg:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                         <div className="rounded-lg border border-gray-200 overflow-hidden">
                           <textarea
@@ -506,7 +506,7 @@ const ApplicationSettings = () => {
                       </div>
 
                       {/* Logo column (1/3) */}
-                      <div>
+                      <div className="lg:col-span-1">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Business Logo</label>
                         <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
                           <div className="flex flex-col items-center gap-3">
