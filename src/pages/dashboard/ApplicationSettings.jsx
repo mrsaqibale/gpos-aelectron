@@ -480,6 +480,53 @@ const ApplicationSettings = () => {
                         </select>
                       </div>
                     </div>
+
+                    <div className="mt-6 pt-6 border-t border-gray-200" />
+
+                    <h3 className="text-base font-semibold text-gray-800 mb-4">Address & Location</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                        <input
+                          type="text"
+                          value={businessInfo.address}
+                          onChange={(e) => handleBusinessInfoChange("address", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
+                        <input
+                          type="text"
+                          value={businessInfo.latitude}
+                          onChange={(e) => handleBusinessInfoChange("latitude", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
+                        <input
+                          type="text"
+                          value={businessInfo.longitude}
+                          onChange={(e) => handleBusinessInfoChange("longitude", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      <button
+                        onClick={handleGetCurrentLocation}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                      >
+                        <MapPin size={16} /> Get Current Location
+                      </button>
+                      <button
+                        onClick={handleOpenInMaps}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                      >
+                        <MapPin size={16} /> Open in Maps
+                      </button>
+                    </div>
                   </div>
 
                   {/* Description & Logo */}
@@ -552,53 +599,7 @@ const ApplicationSettings = () => {
                     </div>
                   </div>
 
-                  {/* Address & Location */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4 md:col-span-2">
-                    <h3 className="text-base font-semibold text-gray-800 mb-4">Address & Location</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                        <input
-                          type="text"
-                          value={businessInfo.address}
-                          onChange={(e) => handleBusinessInfoChange("address", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
-                        <input
-                          type="text"
-                          value={businessInfo.latitude}
-                          onChange={(e) => handleBusinessInfoChange("latitude", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
-                        <input
-                          type="text"
-                          value={businessInfo.longitude}
-                          onChange={(e) => handleBusinessInfoChange("longitude", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-3 mt-4">
-                      <button
-                        onClick={handleGetCurrentLocation}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-                      >
-                        <MapPin size={16} /> Get Current Location
-                      </button>
-                      <button
-                        onClick={handleOpenInMaps}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                      >
-                        <MapPin size={16} /> Open in Maps
-                      </button>
-                    </div>
-                  </div>
+                  {/* Removed separate Address & Location card by merging above */}
                 </>
               ) : activeTab === "finance" ? (
                 // Finance & Tax Settings
