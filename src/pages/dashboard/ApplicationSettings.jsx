@@ -440,7 +440,140 @@ const ApplicationSettings = () => {
 
                      {/* Settings Grid */}
                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-              {activeTab === "finance" ? (
+              {activeTab === "businessInfo" ? (
+                <>
+                  {/* Basic Information */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 md:col-span-2">
+                    <h3 className="text-base font-semibold text-gray-800 mb-4">Basic Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                        <input
+                          type="text"
+                          value={businessInfo.businessName}
+                          onChange={(e) => handleBusinessInfoChange("businessName", e.target.value)}
+                          placeholder="Enter business name"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input
+                          type="text"
+                          value={businessInfo.phoneNumber}
+                          onChange={(e) => handleBusinessInfoChange("phoneNumber", e.target.value)}
+                          placeholder="Enter phone number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                        <select
+                          value={businessInfo.country}
+                          onChange={(e) => handleBusinessInfoChange("country", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        >
+                          <option value="Ireland">Ireland</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="United States">United States</option>
+                          <option value="Germany">Germany</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description & Logo */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-base font-semibold text-gray-800 mb-4">Description & Logo</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea
+                          rows={6}
+                          value={businessInfo.description}
+                          onChange={(e) => handleBusinessInfoChange("description", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Business Logo</label>
+                        <div className="flex items-center gap-4">
+                          <div className="w-24 h-24 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+                            {businessInfo.logoPreview ? (
+                              <img src={businessInfo.logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs text-gray-400">No logo uploaded</span>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleLogoChange}
+                            />
+                            <button
+                              onClick={handleLogoButtonClick}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                            >
+                              <Upload size={16} /> Upload Logo
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Address & Location */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 md:col-span-2">
+                    <h3 className="text-base font-semibold text-gray-800 mb-4">Address & Location</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                        <input
+                          type="text"
+                          value={businessInfo.address}
+                          onChange={(e) => handleBusinessInfoChange("address", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
+                        <input
+                          type="text"
+                          value={businessInfo.latitude}
+                          onChange={(e) => handleBusinessInfoChange("latitude", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
+                        <input
+                          type="text"
+                          value={businessInfo.longitude}
+                          onChange={(e) => handleBusinessInfoChange("longitude", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      <button
+                        onClick={handleGetCurrentLocation}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                      >
+                        <MapPin size={16} /> Get Current Location
+                      </button>
+                      <button
+                        onClick={handleOpenInMaps}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                      >
+                        <MapPin size={16} /> Open in Maps
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : activeTab === "finance" ? (
                 // Finance & Tax Settings
                 <>
                   {/* Business Name */}
