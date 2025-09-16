@@ -30,6 +30,7 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   padding: 8px; /* Restore original padding */
+  padding-left: 0; /* Sidebar flush to the left */
   background-color: var(--color-dashboardBackground, #f0f8ff);
 }
 
@@ -39,6 +40,7 @@ html, body {
   display: flex;
   flex-direction: column;
   padding: 6px; 
+  padding-left: 0; /* Sidebar flush to the left */
 }
 
 .dashboard-main {
