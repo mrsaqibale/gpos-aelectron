@@ -79,6 +79,21 @@ const ApplicationSettings = () => {
     sunday: { open: "12:00", close: "23:59" },
   });
 
+  // Business Information state
+  const [businessInfo, setBusinessInfo] = useState({
+    businessName: "Restaurant Name",
+    phoneNumber: "",
+    country: "Ireland",
+    description:
+      "Welcome to our restaurant! We serve delicious food with excellent service in a warm and welcoming atmosphere.",
+    logoFile: null,
+    logoPreview: "",
+    address: "123 Main Street, Dublin, Ireland",
+    latitude: "53.3498",
+    longitude: "-6.2603",
+  });
+  const fileInputRef = useRef(null);
+
   // Schedule modal state
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [editingDay, setEditingDay] = useState(null);
@@ -89,6 +104,11 @@ const ApplicationSettings = () => {
   const [deletingDay, setDeletingDay] = useState(null);
 
   const navigationTabs = [
+    {
+      id: "businessInfo",
+      label: "Business Information",
+      icon: <Store size={16} />,
+    },
     {
       id: "appearance",
       label: "Appearance",
@@ -142,6 +162,54 @@ const ApplicationSettings = () => {
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleBusinessInfoChange = (key, value) => {
+    setBusinessInfo(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const fileInputRef = fileInputRef; // keep ref usage consistent
+
+  const handleLogoButtonClick = () => {
+    fileInputRef?.current?.click();
+  };
+
+  const handleLogoChange = (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const previewUrl = URL.createObjectURL(file);
+    setBusinessInfo(prev => ({ ...prev, logoFile: file, logoPreview: previewUrl }));
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      console.warn("Geolocation not supported");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setBusinessInfo(prev => ({
+          ...prev,
+          latitude: String(latitude.toFixed(6)),
+          longitude: String(longitude.toFixed(6))
+        }));
+      },
+      (err) => {
+        console.warn("Geolocation error:", err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const handleOpenInMaps = () => {
+    const { latitude, longitude, address } = businessInfo;
+    const q = address ? encodeURIComponent(address) : `${latitude},${longitude}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${q}`;
+    window.open(url, "_blank");
   };
 
   const handleScheduleSettingChange = (day, type, value) => {
