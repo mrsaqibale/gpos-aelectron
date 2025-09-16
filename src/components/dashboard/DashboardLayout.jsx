@@ -282,7 +282,7 @@ const DashboardLayout = () => {
         )}
         
         <div className="dashboard-content">
-          <div className={`flex ${shouldHideSidebar? "h-full" : "h-full"} overflow-hidden rounded-xl`}>
+          <div className={`flex ${shouldHideSidebar? "h-full" : "h-full"} overflow-hidden`}>
             {/* Conditionally render Sidebar */}
             {!shouldHideSidebar && <Sidebar navigationItems={navigationItems} />}
             
