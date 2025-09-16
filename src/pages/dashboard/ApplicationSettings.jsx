@@ -171,8 +171,6 @@ const ApplicationSettings = () => {
     }));
   };
 
-  const fileInputRef = fileInputRef; // keep ref usage consistent
-
   const handleLogoButtonClick = () => {
     fileInputRef?.current?.click();
   };
@@ -391,7 +389,12 @@ const ApplicationSettings = () => {
              </button>
              <div>
                                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  {activeTab === "finance" ? (
+                  {activeTab === "businessInfo" ? (
+                    <>
+                      <Store size={24} className="text-primary" />
+                      Business Information
+                    </>
+                  ) : activeTab === "finance" ? (
                     <>
                       <Building size={24} className="text-primary" />
                       Business Configuration
@@ -419,7 +422,9 @@ const ApplicationSettings = () => {
                   )}
                 </h1>
                 <p className="text-gray-500 text-sm mt-1">
-                  {activeTab === "finance" 
+                  {activeTab === "businessInfo" 
+                    ? "Configure your business details and location information"
+                    : activeTab === "finance" 
                     ? "Set up business-specific settings."
                     : activeTab === "order"
                     ? "Configure order processing and delivery settings."
