@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -20,6 +20,7 @@ import {
   Edit,
   Trash,
   Square,
+  Upload,
 } from "lucide-react";
 
 const ApplicationSettings = () => {
