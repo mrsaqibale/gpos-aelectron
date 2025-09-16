@@ -969,47 +969,10 @@ const ApplicationSettings = () => {
                      </select>
                    </div>
 
-                   {/* Cashier Can Delete Order */}
-                   <div className="bg-white border border-gray-200 rounded-lg p-4">
-                     <div className="flex items-center gap-2 mb-2">
-                       <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                         <Trash2 size={12} className="text-white" />
-                       </div>
-                       <label className="block text-sm font-medium text-gray-700">
-                         Cashier Can Delete Order
-                       </label>
-                     </div>
-                     <select
-                       value={orderSettings.cashierCanDeleteOrder}
-                       onChange={(e) => handleOrderSettingChange("cashierCanDeleteOrder", e.target.value)}
-                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-primary font-medium"
-                     >
-                       <option value="No">No</option>
-                       <option value="Yes">Yes</option>
-                     </select>
-                   </div>
-
-                   {/* Cancellation Reason Required */}
-                   <div className="bg-white border border-gray-200 rounded-lg p-4">
-                     <div className="flex items-center gap-2 mb-2">
-                       <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                         <ClipboardList size={12} className="text-white" />
-                       </div>
-                       <label className="block text-sm font-medium text-gray-700">
-                         Cancellation Reason Required
-                       </label>
-                     </div>
-                     <select
-                       value={orderSettings.cancellationReasonRequired}
-                       onChange={(e) => handleOrderSettingChange("cancellationReasonRequired", e.target.value)}
-                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-primary font-medium"
-                     >
-                       <option value="No">No</option>
-                       <option value="Yes">Yes</option>
-                                             </select>
-                      </div>
-                    </>
-                  ) : activeTab === "delivery" ? (
+                   {/* Removed Cashier Can Delete Order and Cancellation Reason Required per request */}
+                  
+                  </>
+                ) : activeTab === "delivery" ? (
                     // Delivery Management Settings
                     <>
                       {/* Free Delivery In (KM) */}
