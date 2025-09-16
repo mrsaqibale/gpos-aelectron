@@ -36,11 +36,12 @@ const ApplicationSettings = () => {
   });
 
   const [businessSettings, setBusinessSettings] = useState({
-    businessName: "Restaurant Name",
     currency: "Euro (€)",
     currencySymbolPosition: "Right (123€)",
     digitAfterDecimalPoint: "2",
     taxRate: "23",
+    standardTax: "23",
+    foodTax: "0",
     timeZone: "Ireland Dublin",
     timeFormat: "12 hour",
   });
@@ -57,9 +58,7 @@ const ApplicationSettings = () => {
     inStoreOrders: true,
     takeawayOrders: true,
     deliveryOrders: true,
-    cashierCanCancelOrder: "No",
-    cashierCanDeleteOrder: "Yes",
-    cancellationReasonRequired: "Yes",
+    cashierCanCancelOrder: "No"
   });
 
   const [deliverySettings, setDeliverySettings] = useState({
@@ -604,21 +603,7 @@ const ApplicationSettings = () => {
               ) : activeTab === "finance" ? (
                 // Finance & Tax Settings
                 <>
-                  {/* Business Name */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Business Name
-                    </label>
-                    <select
-                      value={businessSettings.businessName}
-                      onChange={(e) => handleBusinessSettingChange("businessName", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <option value="Restaurant Name">Restaurant Name</option>
-                      <option value="Cafe Name">Cafe Name</option>
-                      <option value="Bar Name">Bar Name</option>
-                    </select>
-                  </div>
+                  {/* Removed Business Name per request */}
 
                   {/* Currency */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -686,6 +671,36 @@ const ApplicationSettings = () => {
                       <option value="23">23</option>
                       <option value="25">25</option>
                     </select>
+                  </div>
+
+                  {/* Standard Tax */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Standard Tax (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={businessSettings.standardTax}
+                      onChange={(e) => handleBusinessSettingChange("standardTax", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Food Tax */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Food Tax (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={businessSettings.foodTax}
+                      onChange={(e) => handleBusinessSettingChange("foodTax", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
                   </div>
 
                   {/* Time Zone */}
