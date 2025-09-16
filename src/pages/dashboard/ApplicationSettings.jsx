@@ -315,9 +315,7 @@ const ApplicationSettings = () => {
         inStoreOrders: true,
         takeawayOrders: true,
         deliveryOrders: true,
-        cashierCanCancelOrder: "No",
-        cashierCanDeleteOrder: "Yes",
-        cancellationReasonRequired: "Yes",
+        cashierCanCancelOrder: "No"
       });
     } else if (activeTab === "delivery") {
       setDeliverySettings({
