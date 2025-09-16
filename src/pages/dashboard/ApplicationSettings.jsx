@@ -485,40 +485,69 @@ const ApplicationSettings = () => {
                   {/* Description & Logo */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <h3 className="text-base font-semibold text-gray-800 mb-4">Description & Logo</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                      {/* Description card */}
+                      <div className="flex flex-col">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <textarea
-                          rows={6}
-                          value={businessInfo.description}
-                          onChange={(e) => handleBusinessInfoChange("description", e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        />
+                        <div className="relative flex-1">
+                          <textarea
+                            rows={8}
+                            value={businessInfo.description}
+                            onChange={(e) => handleBusinessInfoChange("description", e.target.value)}
+                            maxLength={600}
+                            placeholder="Describe your business..."
+                            className="w-full h-full min-h-[180px] px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y"
+                          />
+                          <div className="mt-1 text-xs text-gray-500 flex justify-between">
+                            <span>Tip: Keep it friendly and concise.</span>
+                            <span>{businessInfo.description?.length || 0}/600</span>
+                          </div>
+                        </div>
                       </div>
+
+                      {/* Logo uploader card */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Business Logo</label>
-                        <div className="flex items-center gap-4">
-                          <div className="w-24 h-24 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
-                            {businessInfo.logoPreview ? (
-                              <img src={businessInfo.logoPreview} alt="Logo" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-xs text-gray-400">No logo uploaded</span>
-                            )}
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleLogoChange}
-                            />
-                            <button
-                              onClick={handleLogoButtonClick}
-                              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-                            >
-                              <Upload size={16} /> Upload Logo
-                            </button>
+                        <div className="border border-gray-200 rounded-lg p-4 h-full flex flex-col gap-3 bg-gray-50">
+                          <div className="flex items-center gap-4">
+                            <div className="w-28 h-28 rounded-md border border-gray-200 bg-white flex items-center justify-center overflow-hidden shadow-sm">
+                              {businessInfo.logoPreview ? (
+                                <img src={businessInfo.logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                              ) : (
+                                <span className="text-xs text-gray-400">No logo uploaded</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-600 mb-2 truncate">
+                                {businessInfo.logoFile?.name || "No file chosen"}
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                <input
+                                  ref={fileInputRef}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={handleLogoChange}
+                                />
+                                <button
+                                  onClick={handleLogoButtonClick}
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                                >
+                                  <Upload size={16} /> Upload Logo
+                                </button>
+                                {businessInfo.logoPreview && (
+                                  <button
+                                    onClick={() => handleBusinessInfoChange("logoPreview", "")}
+                                    className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-2">
+                                Recommended: Square image, at least 256×256px. PNG with transparent background works best.
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
