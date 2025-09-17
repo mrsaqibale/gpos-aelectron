@@ -125,6 +125,21 @@ export function upsertSettings(settingsData) {
 
     // Normalize keys from renderer to DB column names
     // Business Information
+    const toNum = (v) => {
+      if (v === undefined || v === null || v === '') return null;
+      const n = Number(v);
+      return Number.isNaN(n) ? null : n;
+    };
+    const toInt = (v) => {
+      if (v === undefined || v === null || v === '') return null;
+      const n = parseInt(v, 10);
+      return Number.isNaN(n) ? null : n;
+    };
+    const toBoolInt = (v, def=false) => {
+      const b = typeof v === 'boolean' ? v : (v === 'true' ? true : (v === 'false' ? false : (v ?? def)));
+      return b ? 1 : 0;
+    };
+
     const data = {
       business_name: settingsData.business_name ?? settingsData.businessName ?? null,
       phone_number: settingsData.phone_number ?? settingsData.phoneNumber ?? null,
@@ -133,35 +148,35 @@ export function upsertSettings(settingsData) {
       logo_file: settingsData.logo_file ?? null,
       logo_preview: settingsData.logo_preview ?? null,
       address: settingsData.address ?? null,
-      latitude: settingsData.latitude ?? null,
-      longitude: settingsData.longitude ?? null,
+      latitude: toNum(settingsData.latitude),
+      longitude: toNum(settingsData.longitude),
       // Finance & Tax
       currency: settingsData.currency ?? null,
       currency_symbol_position: settingsData.currency_symbol_position ?? settingsData.currencySymbolPosition ?? null,
-      digit_after_decimal_point: settingsData.digit_after_decimal_point ?? settingsData.digitAfterDecimalPoint ?? null,
-      tax_rate: settingsData.tax_rate ?? settingsData.taxRate ?? null,
-      standard_tax: settingsData.standard_tax ?? settingsData.standardTax ?? null,
-      food_tax: settingsData.food_tax ?? settingsData.foodTax ?? null,
+      digit_after_decimal_point: toInt(settingsData.digit_after_decimal_point ?? settingsData.digitAfterDecimalPoint),
+      tax_rate: toNum(settingsData.tax_rate ?? settingsData.taxRate),
+      standard_tax: toNum(settingsData.standard_tax ?? settingsData.standardTax),
+      food_tax: toNum(settingsData.food_tax ?? settingsData.foodTax),
       time_zone: settingsData.time_zone ?? settingsData.timeZone ?? null,
       time_format: settingsData.time_format ?? settingsData.timeFormat ?? null,
       // Order Configuration
-      minimum_order_amount: settingsData.minimum_order_amount ?? settingsData.minimumOrderAmount ?? null,
+      minimum_order_amount: toNum(settingsData.minimum_order_amount ?? settingsData.minimumOrderAmount),
       order_place_setting: settingsData.order_place_setting ?? settingsData.orderPlaceSetting ?? null,
-      delivery_min_time: settingsData.delivery_min_time ?? settingsData.deliveryMinTime ?? null,
-      delivery_max_time: settingsData.delivery_max_time ?? settingsData.deliveryMaxTime ?? null,
+      delivery_min_time: toInt(settingsData.delivery_min_time ?? settingsData.deliveryMinTime),
+      delivery_max_time: toInt(settingsData.delivery_max_time ?? settingsData.deliveryMaxTime),
       delivery_unit: settingsData.delivery_unit ?? settingsData.deliveryUnit ?? null,
-      dine_in_time: settingsData.dine_in_time ?? settingsData.dineInTime ?? null,
+      dine_in_time: toInt(settingsData.dine_in_time ?? settingsData.dineInTime),
       dine_in_unit: settingsData.dine_in_unit ?? settingsData.dineInUnit ?? null,
-      dine_in_orders: settingsData.dine_in_orders ?? settingsData.dineInOrders ?? null,
-      in_store_orders: settingsData.in_store_orders ?? settingsData.inStoreOrders ?? null,
-      takeaway_orders: settingsData.takeaway_orders ?? settingsData.takeawayOrders ?? null,
-      delivery_orders: settingsData.delivery_orders ?? settingsData.deliveryOrders ?? null,
+      dine_in_orders: toBoolInt(settingsData.dine_in_orders ?? settingsData.dineInOrders, true),
+      in_store_orders: toBoolInt(settingsData.in_store_orders ?? settingsData.inStoreOrders, true),
+      takeaway_orders: toBoolInt(settingsData.takeaway_orders ?? settingsData.takeawayOrders, true),
+      delivery_orders: toBoolInt(settingsData.delivery_orders ?? settingsData.deliveryOrders, true),
       cashier_can_cancel_order: settingsData.cashier_can_cancel_order ?? settingsData.cashierCanCancelOrder ?? null,
       // Delivery Management
-      free_delivery_in: settingsData.free_delivery_in ?? settingsData.freeDeliveryIn ?? null,
-      delivery_fee_per_km: settingsData.delivery_fee_per_km ?? settingsData.deliveryFeePerKm ?? null,
-      maximum_delivery_range: settingsData.maximum_delivery_range ?? settingsData.maximumDeliveryRange ?? null,
-      minimum_delivery_order_amount: settingsData.minimum_delivery_order_amount ?? settingsData.minimumDeliveryOrderAmount ?? null,
+      free_delivery_in: toNum(settingsData.free_delivery_in ?? settingsData.freeDeliveryIn),
+      delivery_fee_per_km: toNum(settingsData.delivery_fee_per_km ?? settingsData.deliveryFeePerKm),
+      maximum_delivery_range: toNum(settingsData.maximum_delivery_range ?? settingsData.maximumDeliveryRange),
+      minimum_delivery_order_amount: toNum(settingsData.minimum_delivery_order_amount ?? settingsData.minimumDeliveryOrderAmount),
       // Schedule
       monday_open: settingsData.monday_open ?? settingsData?.schedule?.monday?.open ?? settingsData?.monday?.open ?? null,
       monday_close: settingsData.monday_close ?? settingsData?.schedule?.monday?.close ?? settingsData?.monday?.close ?? null,
@@ -181,10 +196,10 @@ export function upsertSettings(settingsData) {
       default_theme: settingsData.default_theme ?? settingsData.defaultTheme ?? null,
       select_keyboard: settingsData.select_keyboard ?? settingsData.selectKeyboard ?? null,
       select_order_bell: settingsData.select_order_bell ?? settingsData.selectOrderBell ?? null,
-      auto_save_interval: settingsData.auto_save_interval ?? settingsData.autoSaveInterval ?? null,
-      sound_alert: settingsData.sound_alert ?? settingsData.soundAlert ?? null,
-      notifications: settingsData.notifications ?? null,
-      isSyncronized: settingsData.isSyncronized ?? 0,
+      auto_save_interval: toInt(settingsData.auto_save_interval ?? settingsData.autoSaveInterval),
+      sound_alert: toBoolInt(settingsData.sound_alert ?? settingsData.soundAlert, false),
+      notifications: toBoolInt(settingsData.notifications, true),
+      isSyncronized: toBoolInt(settingsData.isSyncronized, false),
     };
 
     if (existing) {
