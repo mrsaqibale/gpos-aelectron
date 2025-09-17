@@ -9,8 +9,9 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    const devPath = path.join(__dirname, '../../../', relativePath);
-    const prodPath = path.join(__dirname, '../../../../', relativePath);
+    // Match hotel model resolution: src/database/<file> in dev
+    const devPath = path.join(__dirname, '../../', relativePath);
+    const prodPath = path.join(__dirname, '../../../', relativePath);
     if (fs.existsSync(devPath)) {
       return devPath;
     } else if (fs.existsSync(prodPath)) {
@@ -20,7 +21,7 @@ const getDynamicPath = (relativePath) => {
     }
   } catch (error) {
     console.error(`Failed to resolve path: ${relativePath}`, error);
-    return path.join(__dirname, '../../../', relativePath);
+    return path.join(__dirname, '../../', relativePath);
   }
 };
 
