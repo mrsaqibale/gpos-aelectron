@@ -222,6 +222,15 @@ const POSLogin = () => {
             localStorage.setItem('currentEmployee', JSON.stringify(result.data));
           }
           
+          // Reload app settings after successful login
+          try {
+            if (window.appSettings && typeof window.appSettings.reloadSettings === 'function') {
+              await window.appSettings.reloadSettings();
+            }
+          } catch (e) {
+            console.warn('Could not reload app settings on login:', e);
+          }
+
           // Navigate to dashboard and trigger Check-In popup there
           sessionStorage.setItem('triggerCheckIn', 'true');
           navigate('/dashboard');

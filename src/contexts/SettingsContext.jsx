@@ -34,6 +34,16 @@ export const SettingsProvider = ({ children }) => {
     reloadSettings: loadSettings,
   };
 
+  // Expose a minimal global to allow imperative reloads from places like login/settings page
+  useEffect(() => {
+    window.appSettings = {
+      reloadSettings: loadSettings,
+      get current() {
+        return settings;
+      },
+    };
+  }, [loadSettings, settings]);
+
   return (
     <SettingsContext.Provider value={value}>
       {children}
