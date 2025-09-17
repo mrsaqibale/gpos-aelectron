@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
+import useCustomAlert from "../../hooks/useCustomAlert";
+import CustomAlert from "../../components/CustomAlert";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -28,6 +30,7 @@ const ApplicationSettings = () => {
   const [activeTab, setActiveTab] = useState("finance");
   const [isLoading, setIsLoading] = useState(false);
   const latestSettingsRef = useRef(null);
+  const { alertState, showSuccess, showError, hideAlert } = useCustomAlert();
   const [settings, setSettings] = useState({
     defaultTheme: "Blue Theme",
     selectKeyboard: "System Keyboard",
@@ -435,8 +438,12 @@ const ApplicationSettings = () => {
       notifications: settings.notifications,
     };
 
-    await window.settingsAPI.upsert(payload);
-    // Reload from DB after save per requirement
+    const result = await window.settingsAPI.upsert(payload);
+    if (result?.success) {
+      showSuccess('Settings updated successfully!', { duration: 1500 });
+    } else {
+      showError(result?.message || 'Failed to update settings');
+    }
     await loadSettingsFromDb();
   };
 
@@ -447,6 +454,13 @@ const ApplicationSettings = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <CustomAlert 
+        message={alertState.message}
+        isVisible={alertState.isVisible}
+        onClose={hideAlert}
+        duration={alertState.duration}
+        type={alertState.type}
+      />
       {/* Navigation Tabs */}
       <div className="bg-white flex justify-center rounded-lg shadow-sm mb-6">
         <div className="flex items-center p-2 ">
