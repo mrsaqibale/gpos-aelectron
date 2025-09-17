@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Keyboard from 'react-simple-keyboard';
 import 'react-simple-keyboard/build/css/index.css';
 import { X } from 'lucide-react';
+import { useKeyboardSetting } from '../hooks/useKeyboardSetting';
 
 const VirtualKeyboard = ({ 
   isVisible, 
