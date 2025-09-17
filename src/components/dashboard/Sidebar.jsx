@@ -63,6 +63,7 @@ const Sidebar = ({ navigationItems }) => {
                 e.target.style.backgroundColor = isActive ? 'rgba(255, 255, 255, 0.055)' : 'transparent';
               }}
               onClick={() => {
+                playButtonSound();
                 if (windowWidth < 1024) {
                   toggleMobileMenu();
                 }
@@ -86,7 +87,10 @@ const Sidebar = ({ navigationItems }) => {
       {/* Logout Button */}
       <div className="px-4 mb-6 cursor-pointer">
         <button
-          onClick={handleLogout}
+          onClick={() => {
+            playButtonSound();
+            handleLogout();
+          }}
           className="w-full flex items-center cursor-pointer gap-2 py-3 text-gray-100"
         >
           <LogOut size={20} />

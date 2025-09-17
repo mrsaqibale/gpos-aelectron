@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { SidebarContext } from './DashboardLayout';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useButtonSound } from '../../hooks/useButtonSound';
 
 const Header = ({ 
   onRecallClick,
@@ -16,6 +17,7 @@ const Header = ({
   const { toggleMobileMenu, windowWidth } = useContext(SidebarContext);
   const navigate = useNavigate();
   const location = useLocation();
+  const { playButtonSound } = useButtonSound();
   
   // Get logged-in user data
   const [user, setUser] = useState({
@@ -170,7 +172,10 @@ const Header = ({
           {/* Mobile Menu Button */}
           {windowWidth < 1024 && (
             <button
-              onClick={toggleMobileMenu}
+              onClick={() => {
+                playButtonSound();
+                toggleMobileMenu();
+              }}
               className="p-1 hover:bg-gray-100 rounded-lg"
             >
               <Menu size={24} className="text-gray-600" />
