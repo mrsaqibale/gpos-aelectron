@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { updateButtonSoundSettings, initializeButtonSoundHandler, cleanupButtonSoundHandler } from '../utils/buttonSoundHandler';
 
 const SettingsContext = createContext(null);
 
