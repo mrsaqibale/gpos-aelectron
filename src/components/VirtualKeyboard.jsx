@@ -16,6 +16,12 @@ const VirtualKeyboard = ({
 }) => {
   const [keyboardInput, setKeyboardInput] = useState('');
   const [capsLock, setCapsLock] = useState(false);
+  const { shouldShowVirtualKeyboard } = useKeyboardSetting();
+
+  // Don't render if virtual keyboard is disabled
+  if (!shouldShowVirtualKeyboard()) {
+    return null;
+  }
 
   // Reset keyboard input when activeInput changes
   useEffect(() => {
