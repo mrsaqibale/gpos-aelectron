@@ -334,3 +334,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 
 
+
+// Settings API
+contextBridge.exposeInMainWorld('settingsAPI', {
+  get: () => ipcRenderer.invoke('settings:get'),
+  upsert: (data) => ipcRenderer.invoke('settings:upsert', data),
+  checkTable: () => ipcRenderer.invoke('settings:checkTable'),
+});
