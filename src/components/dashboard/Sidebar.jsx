@@ -7,12 +7,14 @@ import {
 } from "lucide-react";
 import { SidebarContext } from './DashboardLayout';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useButtonSound } from '../../hooks/useButtonSound';
 
 const Sidebar = ({ navigationItems }) => {
   const [logoutLoading, setLogoutLoading] = useState(false);
   const { isOpen, toggleSidebar, isMobileMenuOpen, toggleMobileMenu, windowWidth } =
     useContext(SidebarContext);
   const { themeColors } = useTheme();
+  const { playButtonSound } = useButtonSound();
 
   // Handle logout (frontend only)
   const handleLogout = async () => {
