@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -26,6 +26,8 @@ import {
 const ApplicationSettings = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("finance");
+  const [isLoading, setIsLoading] = useState(false);
+  const latestSettingsRef = useRef(null);
   const [settings, setSettings] = useState({
     defaultTheme: "Blue Theme",
     selectKeyboard: "System Keyboard",
@@ -67,6 +69,100 @@ const ApplicationSettings = () => {
     maximumDeliveryRange: "15",
     minimumDeliveryOrderAmount: "20.00",
   });
+
+  // Load settings from DB and populate state
+  const mapDbToState = (db) => {
+    // Business Info
+    setBusinessInfo({
+      businessName: db?.business_name || "Restaurant Name",
+      phoneNumber: db?.phone_number || "",
+      country: db?.country || "Ireland",
+      description: db?.description || "Welcome to our restaurant! We serve delicious food with excellent service in a warm and welcoming atmosphere.",
+      logoFile: null,
+      logoPreview: db?.logo_preview || "",
+      address: db?.address || "123 Main Street, Dublin, Ireland",
+      latitude: db?.latitude != null ? String(db.latitude) : "53.3498",
+      longitude: db?.longitude != null ? String(db.longitude) : "-6.2603",
+    });
+
+    // Business (Finance & Tax)
+    setBusinessSettings({
+      currency: db?.currency || "Euro (€)",
+      currencySymbolPosition: db?.currency_symbol_position || "Right (123€)",
+      digitAfterDecimalPoint: db?.digit_after_decimal_point != null ? String(db.digit_after_decimal_point) : "2",
+      taxRate: db?.tax_rate != null ? String(db.tax_rate) : "23",
+      standardTax: db?.standard_tax != null ? String(db.standard_tax) : "23",
+      foodTax: db?.food_tax != null ? String(db.food_tax) : "0",
+      timeZone: db?.time_zone || "Ireland Dublin",
+      timeFormat: db?.time_format || "12 hour",
+    });
+
+    // Order
+    setOrderSettings({
+      minimumOrderAmount: db?.minimum_order_amount != null ? String(db.minimum_order_amount) : "10.00",
+      orderPlaceSetting: db?.order_place_setting || "Both",
+      deliveryMinTime: db?.delivery_min_time != null ? String(db.delivery_min_time) : "25",
+      deliveryMaxTime: db?.delivery_max_time != null ? String(db.delivery_max_time) : "45",
+      deliveryUnit: db?.delivery_unit || "Minute",
+      dineInTime: db?.dine_in_time != null ? String(db.dine_in_time) : "0",
+      dineInUnit: db?.dine_in_unit || "Minutes",
+      dineInOrders: Boolean(db?.dine_in_orders ?? true),
+      inStoreOrders: Boolean(db?.in_store_orders ?? true),
+      takeawayOrders: Boolean(db?.takeaway_orders ?? true),
+      deliveryOrders: Boolean(db?.delivery_orders ?? true),
+      cashierCanCancelOrder: db?.cashier_can_cancel_order || "No",
+    });
+
+    // Delivery
+    setDeliverySettings({
+      freeDeliveryIn: db?.free_delivery_in != null ? String(db.free_delivery_in) : "5",
+      deliveryFeePerKm: db?.delivery_fee_per_km != null ? String(db.delivery_fee_per_km) : "2.50",
+      maximumDeliveryRange: db?.maximum_delivery_range != null ? String(db.maximum_delivery_range) : "15",
+      minimumDeliveryOrderAmount: db?.minimum_delivery_order_amount != null ? String(db.minimum_delivery_order_amount) : "20.00",
+    });
+
+    // Schedule
+    setScheduleSettings({
+      monday: { open: db?.monday_open || "12:00", close: db?.monday_close || "23:59" },
+      tuesday: { open: db?.tuesday_open || "12:00", close: db?.tuesday_close || "23:59" },
+      wednesday: { open: db?.wednesday_open || "12:00", close: db?.wednesday_close || "23:59" },
+      thursday: { open: db?.thursday_open || "12:00", close: db?.thursday_close || "23:59" },
+      friday: { open: db?.friday_open || "12:00", close: db?.friday_close || "23:59" },
+      saturday: { open: db?.saturday_open || "12:00", close: db?.saturday_close || "23:59" },
+      sunday: { open: db?.sunday_open || "12:00", close: db?.sunday_close || "23:59" },
+    });
+
+    // Appearance
+    setSettings({
+      defaultTheme: db?.default_theme || "Blue Theme",
+      selectKeyboard: db?.select_keyboard || "System Keyboard",
+      selectOrderBell: db?.select_order_bell || "Bell 1",
+      autoSaveInterval: db?.auto_save_interval != null ? String(db.auto_save_interval) : "5",
+      soundAlert: Boolean(db?.sound_alert ?? false),
+      notifications: Boolean(db?.notifications ?? true),
+    });
+  };
+
+  const loadSettingsFromDb = async () => {
+    try {
+      setIsLoading(true);
+      const res = await window.settingsAPI.get();
+      if (res?.success) {
+        latestSettingsRef.current = res.data || null;
+        if (res.data) {
+          mapDbToState(res.data);
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Load on mount and whenever tab changes per requirement
+    loadSettingsFromDb();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const [scheduleSettings, setScheduleSettings] = useState({
     monday: { open: "12:00", close: "23:59" },
@@ -276,74 +372,77 @@ const ApplicationSettings = () => {
     setDeletingDay(null);
   };
 
-  const handleSave = () => {
-    // Save settings logic here
-    if (activeTab === "finance") {
-      console.log("Business settings saved:", businessSettings);
-    } else if (activeTab === "order") {
-      console.log("Order settings saved:", orderSettings);
-    } else if (activeTab === "delivery") {
-      console.log("Delivery settings saved:", deliverySettings);
-    } else if (activeTab === "schedule") {
-      console.log("Schedule settings saved:", scheduleSettings);
-    } else {
-      console.log("Settings saved:", settings);
-    }
+  const handleSave = async () => {
+    // Collect all data and upsert to DB
+    const payload = {
+      // Business Information
+      businessName: businessInfo.businessName,
+      phoneNumber: businessInfo.phoneNumber,
+      country: businessInfo.country,
+      description: businessInfo.description,
+      logo_preview: businessInfo.logoPreview,
+      address: businessInfo.address,
+      latitude: businessInfo.latitude,
+      longitude: businessInfo.longitude,
+      // Business Settings
+      currency: businessSettings.currency,
+      currencySymbolPosition: businessSettings.currencySymbolPosition,
+      digitAfterDecimalPoint: businessSettings.digitAfterDecimalPoint,
+      taxRate: businessSettings.taxRate,
+      standardTax: businessSettings.standardTax,
+      foodTax: businessSettings.foodTax,
+      timeZone: businessSettings.timeZone,
+      timeFormat: businessSettings.timeFormat,
+      // Order Settings
+      minimumOrderAmount: orderSettings.minimumOrderAmount,
+      orderPlaceSetting: orderSettings.orderPlaceSetting,
+      deliveryMinTime: orderSettings.deliveryMinTime,
+      deliveryMaxTime: orderSettings.deliveryMaxTime,
+      deliveryUnit: orderSettings.deliveryUnit,
+      dineInTime: orderSettings.dineInTime,
+      dineInUnit: orderSettings.dineInUnit,
+      dineInOrders: orderSettings.dineInOrders,
+      inStoreOrders: orderSettings.inStoreOrders,
+      takeawayOrders: orderSettings.takeawayOrders,
+      deliveryOrders: orderSettings.deliveryOrders,
+      cashierCanCancelOrder: orderSettings.cashierCanCancelOrder,
+      // Delivery Settings
+      freeDeliveryIn: deliverySettings.freeDeliveryIn,
+      deliveryFeePerKm: deliverySettings.deliveryFeePerKm,
+      maximumDeliveryRange: deliverySettings.maximumDeliveryRange,
+      minimumDeliveryOrderAmount: deliverySettings.minimumDeliveryOrderAmount,
+      // Schedule
+      monday_open: scheduleSettings.monday.open,
+      monday_close: scheduleSettings.monday.close,
+      tuesday_open: scheduleSettings.tuesday.open,
+      tuesday_close: scheduleSettings.tuesday.close,
+      wednesday_open: scheduleSettings.wednesday.open,
+      wednesday_close: scheduleSettings.wednesday.close,
+      thursday_open: scheduleSettings.thursday.open,
+      thursday_close: scheduleSettings.thursday.close,
+      friday_open: scheduleSettings.friday.open,
+      friday_close: scheduleSettings.friday.close,
+      saturday_open: scheduleSettings.saturday.open,
+      saturday_close: scheduleSettings.saturday.close,
+      sunday_open: scheduleSettings.sunday.open,
+      sunday_close: scheduleSettings.sunday.close,
+      // Appearance
+      defaultTheme: settings.defaultTheme,
+      selectKeyboard: settings.selectKeyboard,
+      selectOrderBell: settings.selectOrderBell,
+      autoSaveInterval: settings.autoSaveInterval,
+      soundAlert: settings.soundAlert,
+      notifications: settings.notifications,
+    };
+
+    await window.settingsAPI.upsert(payload);
+    // Reload from DB after save per requirement
+    await loadSettingsFromDb();
   };
 
-  const handleReset = () => {
-    if (activeTab === "finance") {
-      setBusinessSettings({
-        businessName: "Restaurant Name",
-        currency: "Euro (€)",
-        currencySymbolPosition: "Right (123€)",
-        digitAfterDecimalPoint: "2",
-        taxRate: "23",
-        timeZone: "Ireland Dublin",
-        timeFormat: "12 hour",
-      });
-    } else if (activeTab === "order") {
-      setOrderSettings({
-        minimumOrderAmount: "10.00",
-        orderPlaceSetting: "Both",
-        deliveryMinTime: "25",
-        deliveryMaxTime: "45",
-        deliveryUnit: "Minute",
-        dineInTime: "0",
-        dineInUnit: "Minutes",
-        dineInOrders: true,
-        inStoreOrders: true,
-        takeawayOrders: true,
-        deliveryOrders: true,
-        cashierCanCancelOrder: "No"
-      });
-    } else if (activeTab === "delivery") {
-      setDeliverySettings({
-        freeDeliveryIn: "5",
-        deliveryFeePerKm: "2.50",
-        maximumDeliveryRange: "15",
-        minimumDeliveryOrderAmount: "20.00",
-      });
-    } else if (activeTab === "schedule") {
-      setScheduleSettings({
-        monday: { open: "12:00", close: "23:59" },
-        tuesday: { open: "12:00", close: "23:59" },
-        wednesday: { open: "12:00", close: "23:59" },
-        thursday: { open: "12:00", close: "23:59" },
-        friday: { open: "12:00", close: "23:59" },
-        saturday: { open: "12:00", close: "23:59" },
-        sunday: { open: "12:00", close: "23:59" },
-      });
-    } else {
-      setSettings({
-        defaultTheme: "Blue Theme",
-        selectKeyboard: "System Keyboard",
-        selectOrderBell: "Bell 1",
-        autoSaveInterval: "5",
-        soundAlert: false,
-        notifications: true,
-      });
-    }
+  const handleReset = async () => {
+    // Reload from DB, discarding unsaved changes, per requirement
+    await loadSettingsFromDb();
   };
 
   return (
