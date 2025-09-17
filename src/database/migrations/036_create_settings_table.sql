@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS settings (
     auto_save_interval INTEGER,
     sound_alert BOOLEAN,
     notifications BOOLEAN,
+    isSyncronized BOOLEAN DEFAULT 0,
 
     -- Timestamps
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
