@@ -100,7 +100,31 @@ const RunningOrders = () => {
   const { updateDraftCount } = useDraftCount();
   const { addNotification } = useNotifications();
   const { playButtonSound } = useButtonSound();
-  const { shouldShowOrderType } = useOrderTypeSettings();
+  const { shouldShowOrderType, orderTypeSettings } = useOrderTypeSettings();
+
+  // Helper function to get the first available order type
+  const getFirstAvailableOrderType = () => {
+    if (shouldShowOrderType('instore')) return 'In Store';
+    if (shouldShowOrderType('table')) return 'Table';
+    if (shouldShowOrderType('collection')) return 'Collection';
+    if (shouldShowOrderType('delivery')) return 'Delivery';
+    return null; // No order types available
+  };
+
+  // Helper function to validate order type selection
+  const validateOrderTypeSelection = () => {
+    if (!selectedOrderType) {
+      const firstAvailable = getFirstAvailableOrderType();
+      if (firstAvailable) {
+        showError(`Please select an order type first. Available options: ${firstAvailable}`);
+        return false;
+      } else {
+        showError('No order types are available. Please check your settings.');
+        return false;
+      }
+    }
+    return true;
+  };
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -2494,6 +2518,11 @@ const RunningOrders = () => {
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
       showError('Please add items to cart before placing order');
+      return;
+    }
+
+    // Validate order type selection
+    if (!validateOrderTypeSelection()) {
       return;
     }
 
