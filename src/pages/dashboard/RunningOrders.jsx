@@ -6006,9 +6006,8 @@ const RunningOrders = () => {
                     }`}>
                   <Trash2 size={14} />
                   Delete
-            </button>
-
-
+              </button>
+            </div>
           </div>
 
           {/* Items table */}
