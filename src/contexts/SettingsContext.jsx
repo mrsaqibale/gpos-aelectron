@@ -13,7 +13,10 @@ export const SettingsProvider = ({ children }) => {
       setIsLoading(true);
       const result = await window.settingsAPI?.get();
       if (result?.success) {
-        setSettings(result.data || null);
+        const newSettings = result.data || null;
+        setSettings(newSettings);
+        // Update button sound handler with new settings
+        updateButtonSoundSettings(newSettings);
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
