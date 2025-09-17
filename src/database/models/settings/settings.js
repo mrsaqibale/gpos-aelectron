@@ -240,6 +240,14 @@ export function upsertSettings(settingsData) {
     };
 
     if (existing) {
+      // Handle logo upload if provided
+      if (settingsData.logoFile && settingsData.originalLogoFilename) {
+        const storedPath = saveLogoFile(settingsData.logoFile, settingsData.originalLogoFilename);
+        if (storedPath) {
+          data.logo_file = storedPath;
+          data.logo_preview = null;
+        }
+      }
       const entries = Object.entries(data).filter(([, v]) => v !== undefined);
       const fields = entries.map(([k]) => `${k} = ?`);
       const values = entries.map(([, v]) => v);
@@ -248,6 +256,14 @@ export function upsertSettings(settingsData) {
       const result = stmt.run(...values, existing.id);
       return { success: result.changes > 0, message: result.changes > 0 ? 'Settings updated' : 'No changes applied', changes: result.changes };
     } else {
+      // Handle logo upload on insert
+      if (settingsData.logoFile && settingsData.originalLogoFilename) {
+        const storedPath = saveLogoFile(settingsData.logoFile, settingsData.originalLogoFilename);
+        if (storedPath) {
+          data.logo_file = storedPath;
+          data.logo_preview = null;
+        }
+      }
       const entries = Object.entries(data).filter(([, v]) => v !== undefined);
       const cols = entries.map(([k]) => k);
       const placeholders = cols.map(() => '?').join(', ');

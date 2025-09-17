@@ -82,7 +82,7 @@ const ApplicationSettings = () => {
       country: db?.country || "Ireland",
       description: db?.description || "Welcome to our restaurant! We serve delicious food with excellent service in a warm and welcoming atmosphere.",
       logoFile: null,
-      logoPreview: db?.logo_preview || "",
+      logoPreview: db?.logo_file ? `local-file://${db.logo_file}` : (db?.logo_preview || ""),
       address: db?.address || "123 Main Street, Dublin, Ireland",
       latitude: db?.latitude != null ? String(db.latitude) : "53.3498",
       longitude: db?.longitude != null ? String(db.longitude) : "-6.2603",
@@ -276,8 +276,12 @@ const ApplicationSettings = () => {
   const handleLogoChange = (event) => {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    setBusinessInfo(prev => ({ ...prev, logoFile: file, logoPreview: previewUrl }));
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result; // base64 data URL
+      setBusinessInfo(prev => ({ ...prev, logoFile: dataUrl, logoPreview: dataUrl }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleGetCurrentLocation = () => {
@@ -384,6 +388,8 @@ const ApplicationSettings = () => {
       country: businessInfo.country,
       description: businessInfo.description,
       logo_preview: businessInfo.logoPreview,
+      // When a new logo is selected, send it as base64 + original filename
+      ...(businessInfo.logoFile ? { logoFile: businessInfo.logoFile, originalLogoFilename: businessInfo.logoFile.name || 'logo.png' } : {}),
       address: businessInfo.address,
       latitude: businessInfo.latitude,
       longitude: businessInfo.longitude,
@@ -669,7 +675,7 @@ const ApplicationSettings = () => {
                           <div className="flex flex-col items-center gap-3">
                             <div className="aspect-square w-32 md:w-36 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shadow-sm">
                               {businessInfo.logoPreview ? (
-                                <img src={businessInfo.logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                    <img src={businessInfo.logoPreview} alt="Logo" className="w-full h-full object-contain" />
                               ) : (
                                 <span className="text-xs text-gray-400">No logo</span>
                               )}
@@ -682,7 +688,7 @@ const ApplicationSettings = () => {
                               type="file"
                               accept="image/*"
                               className="hidden"
-                              onChange={handleLogoChange}
+                  onChange={handleLogoChange}
                             />
                             <div className="flex gap-2">
                               <button
