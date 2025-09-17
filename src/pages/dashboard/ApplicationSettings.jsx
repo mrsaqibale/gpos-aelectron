@@ -447,6 +447,13 @@ const ApplicationSettings = () => {
     const result = await window.settingsAPI.upsert(payload);
     if (result?.success) {
       showSuccess('Settings updated successfully!', { duration: 1500 });
+      try {
+        if (window.appSettings && typeof window.appSettings.reloadSettings === 'function') {
+          await window.appSettings.reloadSettings();
+        }
+      } catch (e) {
+        console.warn('Could not reload app settings after save:', e);
+      }
     } else {
       showError(result?.message || 'Failed to update settings');
     }
