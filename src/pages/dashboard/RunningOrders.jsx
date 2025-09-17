@@ -5319,7 +5319,10 @@ const RunningOrders = () => {
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-gray-800">Active Orders</h2>
               <button 
-                onClick={fetchExistingOrders}
+                onClick={() => {
+                  playButtonSound();
+                  fetchExistingOrders();
+                }}
                 className="text-[#715af3] text-[11px] font-bold bg-white border border-gray-300 rounded-lg p-2 cursor-pointer hover:text-blue-800 flex items-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150"
               >
                 <RefreshCw size={12} />
@@ -6160,7 +6163,10 @@ const RunningOrders = () => {
               {/* Primary Action Buttons */}
               <div className="grid grid-cols-7 gap-3 mb-3">
                 <button
-                  onClick={handlePlaceOrder}
+                  onClick={() => {
+                    playButtonSound();
+                    handlePlaceOrder();
+                  }}
                   className="col-span-2 bg-[#fb8b02] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#e67a00] transition-colors"
                 >
                   <ShoppingCart size={16} />
