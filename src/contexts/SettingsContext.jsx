@@ -29,6 +29,13 @@ export const SettingsProvider = ({ children }) => {
   // Initial load once when provider mounts
   useEffect(() => {
     loadSettings();
+    // Initialize button sound handler
+    initializeButtonSoundHandler();
+    
+    // Cleanup on unmount
+    return () => {
+      cleanupButtonSoundHandler();
+    };
   }, [loadSettings]);
 
   const value = {
