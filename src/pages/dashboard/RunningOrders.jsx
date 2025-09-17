@@ -5900,60 +5900,64 @@ const RunningOrders = () => {
                 Table
               </button>
             )}
-            <button
-              onClick={() => {
-                // Prevent order type change when modifying an existing order
-                if (isModifyingOrder) {
-                  showWarning('Cannot change order type while modifying an existing order');
-                  return;
-                }
-                setSelectedOrderType('Collection');
-                // Clear table selections when switching to non-table order type
-                setSelectedTable('');
-                setSelectedPersons('');
-                setReservedTables([]);
-                // Open customer search modal
-                setShowCustomerSearchModal(true);
-              }}
-              disabled={isModifyingOrder}
-              className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
-                      transition-colors cursor-pointer ${isModifyingOrder
-                           ? (selectedOrderType === 'Collection' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
-                           : selectedOrderType === 'Collection' 
-                           ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
-                       }`}>
-              <Package size={14} />
-              Collection
-            </button>
-            <button
-              onClick={() => {
-                // Prevent order type change when modifying an existing order
-                if (isModifyingOrder) {
-                  showWarning('Cannot change order type while modifying an existing order');
-                  return;
-                }
-                setSelectedOrderType('Delivery');
-                // Clear table selections when switching to non-table order type
-                setSelectedTable('');
-                setSelectedPersons('');
-                setReservedTables([]);
-                // Clear schedule when switching away from Collection
-                setSelectedScheduleDateTime('');
-                // Open customer search modal
-                setShowCustomerSearchModal(true);
-              }}
-              disabled={isModifyingOrder}
-              className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
-                       transition-colors cursor-pointer ${isModifyingOrder
-                           ? (selectedOrderType === 'Delivery' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
-                           : selectedOrderType === 'Delivery' 
-                           ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
-                       }`}>
-              <Truck size={14} />
-              Delivery
-            </button>
+            {shouldShowOrderType('collection') && (
+              <button
+                onClick={() => {
+                  // Prevent order type change when modifying an existing order
+                  if (isModifyingOrder) {
+                    showWarning('Cannot change order type while modifying an existing order');
+                    return;
+                  }
+                  setSelectedOrderType('Collection');
+                  // Clear table selections when switching to non-table order type
+                  setSelectedTable('');
+                  setSelectedPersons('');
+                  setReservedTables([]);
+                  // Open customer search modal
+                  setShowCustomerSearchModal(true);
+                }}
+                disabled={isModifyingOrder}
+                className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
+                        transition-colors cursor-pointer ${isModifyingOrder
+                             ? (selectedOrderType === 'Collection' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
+                             : selectedOrderType === 'Collection' 
+                             ? 'bg-primary text-white' 
+                             : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
+                         }`}>
+                <Package size={14} />
+                Collection
+              </button>
+            )}
+            {shouldShowOrderType('delivery') && (
+              <button
+                onClick={() => {
+                  // Prevent order type change when modifying an existing order
+                  if (isModifyingOrder) {
+                    showWarning('Cannot change order type while modifying an existing order');
+                    return;
+                  }
+                  setSelectedOrderType('Delivery');
+                  // Clear table selections when switching to non-table order type
+                  setSelectedTable('');
+                  setSelectedPersons('');
+                  setReservedTables([]);
+                  // Clear schedule when switching away from Collection
+                  setSelectedScheduleDateTime('');
+                  // Open customer search modal
+                  setShowCustomerSearchModal(true);
+                }}
+                disabled={isModifyingOrder}
+                className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
+                         transition-colors cursor-pointer ${isModifyingOrder
+                             ? (selectedOrderType === 'Delivery' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
+                             : selectedOrderType === 'Delivery' 
+                             ? 'bg-primary text-white' 
+                             : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
+                         }`}>
+                <Truck size={14} />
+                Delivery
+              </button>
+            )}
             <button 
               onClick={handleOpenScheduleModal}
               className={`px-3 py-1.5 h-10 text-base text-[#666666] font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
@@ -8136,10 +8140,10 @@ const RunningOrders = () => {
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="In Store">In Store</option>
-                    <option value="Collection">Collection</option>
-                    <option value="Delivery">Delivery</option>
-                    <option value="Table">Table</option>
+                    {shouldShowOrderType('instore') && <option value="In Store">In Store</option>}
+                    {shouldShowOrderType('collection') && <option value="Collection">Collection</option>}
+                    {shouldShowOrderType('delivery') && <option value="Delivery">Delivery</option>}
+                    {shouldShowOrderType('table') && <option value="Table">Table</option>}
                   </select>
                 </div>
 
