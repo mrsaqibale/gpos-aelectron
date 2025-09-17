@@ -9,8 +9,11 @@ export const updateButtonSoundSettings = (newSettings) => {
 // Function to play button sound based on settings
 const playButtonSound = () => {
   try {
+    // Get settings from global context if available
+    const currentSettings = window.appSettings?.current || settings;
+    
     // Check if sound alerts are enabled in settings
-    const soundAlertEnabled = settings?.sound_alert === 1 || settings?.sound_alert === true;
+    const soundAlertEnabled = currentSettings?.sound_alert === 1 || currentSettings?.sound_alert === true;
     
     if (!soundAlertEnabled) {
       return; // Don't play sound if disabled

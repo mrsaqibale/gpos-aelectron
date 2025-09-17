@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
-import { useSettings } from '../contexts/SettingsContext';
 
 export const useButtonSound = () => {
-  const { settings } = useSettings();
-
   const playButtonSound = useCallback(() => {
     try {
+      // Get settings from global context if available
+      const settings = window.appSettings?.current;
+      
       // Check if sound alerts are enabled in settings
       const soundAlertEnabled = settings?.sound_alert === 1 || settings?.sound_alert === true;
       
@@ -21,7 +21,7 @@ export const useButtonSound = () => {
     } catch (error) {
       console.log('Button sound creation failed:', error);
     }
-  }, [settings]);
+  }, []);
 
   return { playButtonSound };
 };
