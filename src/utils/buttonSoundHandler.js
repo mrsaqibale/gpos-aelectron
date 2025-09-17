@@ -56,11 +56,7 @@ const handleButtonClick = (event) => {
                    target.parentElement?.classList.contains('cursor-pointer');
   
   if (isButton) {
-    console.log('Button click detected:', target.tagName, target.className, target);
     playButtonSound();
-  } else {
-    // Debug: log what we're clicking on
-    console.log('Non-button click:', target.tagName, target.className, target);
   }
 };
 
