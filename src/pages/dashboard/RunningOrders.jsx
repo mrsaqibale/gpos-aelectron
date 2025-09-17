@@ -86,6 +86,7 @@ import AssignRider from '../../components/AssignRider';
 import UpdateOrderStatus from '../../components/UpdateOrderStatus';
 import { useDraftCount } from '../../contexts/DraftContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { useButtonSound } from '../../hooks/useButtonSound';
 import FinalizeSaleModal from '../../components/FinalizeSaleModal';
 import MergeTableModal from '../../components/dashboard/table/MergeTableModal';
 import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsModalbox';
@@ -97,6 +98,7 @@ const RunningOrders = () => {
   const { alertState, showSuccess, showError, showWarning, showInfo, hideAlert } = useCustomAlert();
   const { updateDraftCount } = useDraftCount();
   const { addNotification } = useNotifications();
+  const { playButtonSound } = useButtonSound();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);

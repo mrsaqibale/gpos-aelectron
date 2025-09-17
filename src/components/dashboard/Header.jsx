@@ -187,7 +187,10 @@ const Header = ({
             {buttonsToShow.map((button, index) => (
               <div key={index} className="relative group">
                 <button
-                  onClick={button.onClick}
+                  onClick={() => {
+                    playButtonSound();
+                    button.onClick();
+                  }}
                   className="p-2 bg-primary cursor-pointer text-white hover:bg-primary/90 rounded-lg flex items-center justify-center relative"
                 >
                   {button.icon}
@@ -239,7 +242,10 @@ const Header = ({
 
             {/* Logout Button */}
             <button
-              onClick={handleLogout}
+              onClick={() => {
+                playButtonSound();
+                handleLogout();
+              }}
               className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
               title="Logout"
             >
@@ -250,7 +256,10 @@ const Header = ({
           {/* Back Button - Show on all routes except the main dashboard */}
           {showBackButton && (
             <button
-              onClick={handleBack}
+              onClick={() => {
+                playButtonSound();
+                handleBack();
+              }}
               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-primary text-white cursor-pointer rounded-lg transition-colors duration-200 border border-gray-200"
             >
               <ArrowLeft size={16} />
