@@ -23,6 +23,7 @@ import ApplicationSettings from './pages/dashboard/ApplicationSettings.jsx'
 import ChangePassword from './pages/dashboard/ChangePassword.jsx'
 import Reports from './pages/dashboard/Reports.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
+import { SettingsProvider } from './contexts/SettingsContext.jsx'
 import { DraftProvider } from './contexts/DraftContext.jsx'
 import { RiderProvider } from './contexts/RiderContext.jsx'
 import { NotificationProvider } from './contexts/NotificationContext.jsx'
@@ -47,7 +48,7 @@ const ErrorBoundary = ({ children }) => {
 const router = createHashRouter([
   {
     path: '/',
-    element: <ErrorBoundary><ThemeProvider><DraftProvider><RiderProvider><NotificationProvider><App /></NotificationProvider></RiderProvider></DraftProvider></ThemeProvider></ErrorBoundary>,
+    element: <ErrorBoundary><ThemeProvider><SettingsProvider><DraftProvider><RiderProvider><NotificationProvider><App /></NotificationProvider></RiderProvider></DraftProvider></SettingsProvider></ThemeProvider></ErrorBoundary>,
     children: [
       { index: true, element: <ErrorBoundary><WelcomeScreen /></ErrorBoundary> },
       {
