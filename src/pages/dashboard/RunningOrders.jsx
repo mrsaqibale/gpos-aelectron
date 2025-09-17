@@ -5875,29 +5875,31 @@ const RunningOrders = () => {
                 In Store
               </button>
             )}
-            <button
-              onClick={() => {
-                // Prevent order type change when modifying an existing order
-                if (isModifyingOrder) {
-                  showWarning('Cannot change order type while modifying an existing order');
-                  return;
-                }
-                setSelectedOrderType('Table');
-                // Clear schedule when switching away from Collection
-                setSelectedScheduleDateTime('');
-                setShowTableModal(true);
-              }}
-              disabled={isModifyingOrder}
-              className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
-                      transition-colors cursor-pointer ${isModifyingOrder
-                           ? (selectedOrderType === 'Table' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
-                           : selectedOrderType === 'Table' 
-                           ? 'bg-primary text-white' 
-                           : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
-                       }`}>
-              <TableIcon size={14} />
-              Table
-            </button>
+            {shouldShowOrderType('table') && (
+              <button
+                onClick={() => {
+                  // Prevent order type change when modifying an existing order
+                  if (isModifyingOrder) {
+                    showWarning('Cannot change order type while modifying an existing order');
+                    return;
+                  }
+                  setSelectedOrderType('Table');
+                  // Clear schedule when switching away from Collection
+                  setSelectedScheduleDateTime('');
+                  setShowTableModal(true);
+                }}
+                disabled={isModifyingOrder}
+                className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
+                        transition-colors cursor-pointer ${isModifyingOrder
+                             ? (selectedOrderType === 'Table' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
+                             : selectedOrderType === 'Table' 
+                             ? 'bg-primary text-white' 
+                             : 'bg-white hover:border-primary hover:border-2 hover:bg-[#F8F9FA]'
+                         }`}>
+                <TableIcon size={14} />
+                Table
+              </button>
+            )}
             <button
               onClick={() => {
                 // Prevent order type change when modifying an existing order
