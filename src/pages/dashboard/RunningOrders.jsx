@@ -1115,7 +1115,7 @@ const RunningOrders = () => {
 
     // Play sound when adding to cart
     try {
-      const audio = new Audio('/src/assets/ping.mp3');
+      const audio = new Audio('./src/assets/newProductAdd.mp3');
       audio.play().catch(error => {
         console.log('Audio play failed:', error);
       });
@@ -2023,7 +2023,7 @@ const RunningOrders = () => {
       return;
     }
     try {
-      const audio = new Audio('/src/assets/ping.mp3');
+      const audio = new Audio('./src/assets/newProductAdd.mp3');
       audio.play().catch(error => {
         console.log('Audio play failed:', error);
       });
@@ -7787,7 +7787,7 @@ const RunningOrders = () => {
               <button
                 onClick={() => {
                   try {
-                    const audio = new Audio('/src/assets/ping.mp3');
+                    const audio = new Audio('./src/assets/newProductAdd.mp3');
                     audio.play().catch(error => {
                       console.log('Audio play failed:', error);
                     });
