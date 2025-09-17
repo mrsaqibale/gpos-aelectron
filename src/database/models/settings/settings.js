@@ -27,6 +27,16 @@ const getDynamicPath = (relativePath) => {
 
 const dbPath = getDynamicPath('pos.db');
 const db = new Database(dbPath);
+const uploadsDir = getDynamicPath('uploads');
+const settingsImagesDir = path.join(uploadsDir, 'settings');
+
+// Ensure uploads/settings directory exists
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(settingsImagesDir)) {
+  fs.mkdirSync(settingsImagesDir, { recursive: true });
+}
 
 function ensureSettingsTable() {
   try {
@@ -94,6 +104,32 @@ function ensureSettingsTable() {
     db.exec(createSql);
   } catch (err) {
     console.error('Failed ensuring settings table:', err);
+  }
+}
+
+function saveLogoFile(base64OrPath, originalFilename) {
+  try {
+    const timestamp = Date.now();
+    const ext = path.extname(originalFilename || 'image.png') || '.png';
+    const filename = `logo_${timestamp}${ext}`;
+    const filePath = path.join(settingsImagesDir, filename);
+
+    if (base64OrPath && typeof base64OrPath === 'string' && base64OrPath.startsWith('data:image')) {
+      const base64Data = base64OrPath.split(',')[1];
+      const buffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(filePath, buffer);
+    } else if (base64OrPath && typeof base64OrPath === 'string') {
+      if (fs.existsSync(base64OrPath)) {
+        fs.copyFileSync(base64OrPath, filePath);
+      } else {
+        const buffer = Buffer.from(base64OrPath, 'base64');
+        fs.writeFileSync(filePath, buffer);
+      }
+    }
+    return `uploads/settings/${filename}`;
+  } catch (err) {
+    console.error('Error saving settings logo:', err);
+    return null;
   }
 }
 
@@ -204,18 +240,18 @@ export function upsertSettings(settingsData) {
     };
 
     if (existing) {
-      // Update existing row
-      const fields = Object.keys(data).map((k) => `${k} = ?`);
-      const values = Object.values(data);
+      const entries = Object.entries(data).filter(([, v]) => v !== undefined);
+      const fields = entries.map(([k]) => `${k} = ?`);
+      const values = entries.map(([, v]) => v);
       const sql = `UPDATE settings SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
       const stmt = db.prepare(sql);
       const result = stmt.run(...values, existing.id);
-      return { success: true, message: 'Settings updated', changes: result.changes };
+      return { success: result.changes > 0, message: result.changes > 0 ? 'Settings updated' : 'No changes applied', changes: result.changes };
     } else {
-      // Insert new row
-      const cols = Object.keys(data);
+      const entries = Object.entries(data).filter(([, v]) => v !== undefined);
+      const cols = entries.map(([k]) => k);
       const placeholders = cols.map(() => '?').join(', ');
-      const values = Object.values(data);
+      const values = entries.map(([, v]) => v);
       const sql = `INSERT INTO settings (${cols.join(', ')}) VALUES (${placeholders})`;
       const stmt = db.prepare(sql);
       const info = stmt.run(...values);
