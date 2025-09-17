@@ -26,6 +26,7 @@ const { registerOrderDetailsIpcHandlers } = require('./ipchandler/orderDetails.c
 const { registerCouponIpcHandlers } = require('./ipchandler/coupon.cjs');
 const { registerVoucherIpcHandlers } = require('./ipchandler/voucher.cjs');
 const { registerHotelIpcHandlers } = require('./ipchandler/hotel.cjs');
+const { registerSettingsIpcHandlers } = require('./ipchandler/settings.cjs');
 
 // Import new attendance management IPC handlers
 require('./ipchandler/attendance.cjs');
@@ -176,6 +177,7 @@ app.whenReady().then(async () => {
   registerCouponIpcHandlers();
   registerVoucherIpcHandlers();
   registerHotelIpcHandlers();
+  registerSettingsIpcHandlers();
   
   // Initialize database tables
   initDatabase();
