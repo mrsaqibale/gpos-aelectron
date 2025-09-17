@@ -87,6 +87,7 @@ import UpdateOrderStatus from '../../components/UpdateOrderStatus';
 import { useDraftCount } from '../../contexts/DraftContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useButtonSound } from '../../hooks/useButtonSound';
+import { useOrderTypeSettings } from '../../hooks/useOrderTypeSettings';
 import FinalizeSaleModal from '../../components/FinalizeSaleModal';
 import MergeTableModal from '../../components/dashboard/table/MergeTableModal';
 import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsModalbox';
