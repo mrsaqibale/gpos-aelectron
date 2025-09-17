@@ -126,12 +126,6 @@ const RunningOrders = () => {
 
   // Helper function to validate order type selection
   const validateOrderTypeSelection = () => {
-    console.log('Validating order type selection:', {
-      selectedOrderType,
-      isValid: isOrderTypeValid(selectedOrderType),
-      orderTypeSettings
-    });
-    
     if (!selectedOrderType || !isOrderTypeValid(selectedOrderType)) {
       const availableTypes = [];
       if (shouldShowOrderType('instore')) availableTypes.push('In Store');
@@ -920,30 +914,11 @@ const RunningOrders = () => {
     // Removed auto-refresh - orders only update when user clicks refresh button
   }, []);
 
-  // Auto-select first available order type when component loads or settings change
+  // Clear invalid order type selection when settings change (but don't auto-select)
   useEffect(() => {
-    const firstAvailable = getFirstAvailableOrderType();
-    
-    console.log('Order type useEffect triggered:', {
-      selectedOrderType,
-      firstAvailable,
-      orderTypeSettings,
-      isValid: isOrderTypeValid(selectedOrderType)
-    });
-    
-    // If no order type is selected, select the first available
-    if (!selectedOrderType && firstAvailable) {
-      console.log('Setting first available order type:', firstAvailable);
-      setSelectedOrderType(firstAvailable);
-    }
-    // If current selection is no longer available, select the first available
-    else if (selectedOrderType && !isOrderTypeValid(selectedOrderType)) {
-      console.log('Current order type is invalid, switching to:', firstAvailable);
-      if (firstAvailable) {
-        setSelectedOrderType(firstAvailable);
-      } else {
-        setSelectedOrderType(null);
-      }
+    // If current selection is no longer available, clear it (but don't auto-select)
+    if (selectedOrderType && !isOrderTypeValid(selectedOrderType)) {
+      setSelectedOrderType(null);
     }
   }, [orderTypeSettings, selectedOrderType]);
 
