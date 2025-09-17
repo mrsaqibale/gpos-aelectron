@@ -114,9 +114,14 @@ const RunningOrders = () => {
   // Helper function to validate order type selection
   const validateOrderTypeSelection = () => {
     if (!selectedOrderType) {
-      const firstAvailable = getFirstAvailableOrderType();
-      if (firstAvailable) {
-        showError(`Please select an order type first. Available options: ${firstAvailable}`);
+      const availableTypes = [];
+      if (shouldShowOrderType('instore')) availableTypes.push('In Store');
+      if (shouldShowOrderType('table')) availableTypes.push('Table');
+      if (shouldShowOrderType('collection')) availableTypes.push('Collection');
+      if (shouldShowOrderType('delivery')) availableTypes.push('Delivery');
+      
+      if (availableTypes.length > 0) {
+        showError(`Please select an order type first. Available options: ${availableTypes.join(', ')}`);
         return false;
       } else {
         showError('No order types are available. Please check your settings.');
@@ -895,6 +900,16 @@ const RunningOrders = () => {
     fetchDraftOrders(); // Load draft orders from database
     // Removed auto-refresh - orders only update when user clicks refresh button
   }, []);
+
+  // Auto-select first available order type when component loads or settings change
+  useEffect(() => {
+    if (!selectedOrderType) {
+      const firstAvailable = getFirstAvailableOrderType();
+      if (firstAvailable) {
+        setSelectedOrderType(firstAvailable);
+      }
+    }
+  }, [orderTypeSettings, selectedOrderType]);
 
   // Debug floors state
   useEffect(() => {
@@ -3729,6 +3744,11 @@ const RunningOrders = () => {
   const handlePayment = async () => {
     if (cartItems.length === 0) {
       showError('Please add items to cart before proceeding to payment');
+      return;
+    }
+
+    // Validate order type selection
+    if (!validateOrderTypeSelection()) {
       return;
     }
 
