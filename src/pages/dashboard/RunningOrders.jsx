@@ -5847,32 +5847,34 @@ const RunningOrders = () => {
           )}
           <div className="grid grid-cols-4 gap-2 px-2 py-2 flex-shrink-0">
             {/* Tabs row */}
-            <button
-              onClick={() => {
-                // Prevent order type change when modifying an existing order
-                if (isModifyingOrder) {
-                  showWarning('Cannot change order type while modifying an existing order');
-                  return;
-                }
-                setSelectedOrderType('In Store');
-                // Clear table selections when switching to non-table order type
-                setSelectedTable('');
-                setSelectedPersons('');
-                setReservedTables([]);
-                // Clear schedule when switching away from Collection
-                setSelectedScheduleDateTime('');
-              }}
-              disabled={isModifyingOrder}
-              className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
-                      transition-colors cursor-pointer ${isModifyingOrder
-                           ? (selectedOrderType === 'In Store' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
-                           : selectedOrderType === 'In Store' 
-                           ? 'bg-primary text-white' 
-                           : 'bg-white hover:bg-[#F8F9FA] hover:border-primary hover:border-2'
-                       }`}>
-              <Store size={14} />
-              In Store
-            </button>
+            {shouldShowOrderType('instore') && (
+              <button
+                onClick={() => {
+                  // Prevent order type change when modifying an existing order
+                  if (isModifyingOrder) {
+                    showWarning('Cannot change order type while modifying an existing order');
+                    return;
+                  }
+                  setSelectedOrderType('In Store');
+                  // Clear table selections when switching to non-table order type
+                  setSelectedTable('');
+                  setSelectedPersons('');
+                  setReservedTables([]);
+                  // Clear schedule when switching away from Collection
+                  setSelectedScheduleDateTime('');
+                }}
+                disabled={isModifyingOrder}
+                className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
+                        transition-colors cursor-pointer ${isModifyingOrder
+                             ? (selectedOrderType === 'In Store' ? 'bg-primary text-white cursor-not-allowed' : 'bg-gray-300 text-gray-500 cursor-not-allowed')
+                             : selectedOrderType === 'In Store' 
+                             ? 'bg-primary text-white' 
+                             : 'bg-white hover:bg-[#F8F9FA] hover:border-primary hover:border-2'
+                         }`}>
+                <Store size={14} />
+                In Store
+              </button>
+            )}
             <button
               onClick={() => {
                 // Prevent order type change when modifying an existing order
