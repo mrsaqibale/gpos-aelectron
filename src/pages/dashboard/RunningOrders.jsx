@@ -100,6 +100,7 @@ const RunningOrders = () => {
   const { updateDraftCount } = useDraftCount();
   const { addNotification } = useNotifications();
   const { playButtonSound } = useButtonSound();
+  const { shouldShowOrderType } = useOrderTypeSettings();
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
