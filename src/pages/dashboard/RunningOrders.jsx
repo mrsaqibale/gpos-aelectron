@@ -111,9 +111,28 @@ const RunningOrders = () => {
     return null; // No order types available
   };
 
+  // Helper function to check if a selected order type is still valid
+  const isOrderTypeValid = (orderType) => {
+    if (!orderType) return false;
+    const typeMap = {
+      'In Store': 'instore',
+      'Table': 'table',
+      'Collection': 'collection',
+      'Delivery': 'delivery'
+    };
+    const key = typeMap[orderType];
+    return key ? shouldShowOrderType(key) : false;
+  };
+
   // Helper function to validate order type selection
   const validateOrderTypeSelection = () => {
-    if (!selectedOrderType) {
+    console.log('Validating order type selection:', {
+      selectedOrderType,
+      isValid: isOrderTypeValid(selectedOrderType),
+      orderTypeSettings
+    });
+    
+    if (!selectedOrderType || !isOrderTypeValid(selectedOrderType)) {
       const availableTypes = [];
       if (shouldShowOrderType('instore')) availableTypes.push('In Store');
       if (shouldShowOrderType('table')) availableTypes.push('Table');
@@ -401,8 +420,8 @@ const RunningOrders = () => {
   const [conversionPersons, setConversionPersons] = useState('');
   const [conversionFloor, setConversionFloor] = useState('');
 
-  // Order Type State
-  const [selectedOrderType, setSelectedOrderType] = useState('In Store');
+  // Order Type State - Initialize with null, will be set by useEffect
+  const [selectedOrderType, setSelectedOrderType] = useState(null);
   const [isSinglePayMode, setIsSinglePayMode] = useState(false);
   const [isModifyingOrder, setIsModifyingOrder] = useState(false);
   const [modifyingOrderId, setModifyingOrderId] = useState(null);
@@ -903,10 +922,27 @@ const RunningOrders = () => {
 
   // Auto-select first available order type when component loads or settings change
   useEffect(() => {
-    if (!selectedOrderType) {
-      const firstAvailable = getFirstAvailableOrderType();
+    const firstAvailable = getFirstAvailableOrderType();
+    
+    console.log('Order type useEffect triggered:', {
+      selectedOrderType,
+      firstAvailable,
+      orderTypeSettings,
+      isValid: isOrderTypeValid(selectedOrderType)
+    });
+    
+    // If no order type is selected, select the first available
+    if (!selectedOrderType && firstAvailable) {
+      console.log('Setting first available order type:', firstAvailable);
+      setSelectedOrderType(firstAvailable);
+    }
+    // If current selection is no longer available, select the first available
+    else if (selectedOrderType && !isOrderTypeValid(selectedOrderType)) {
+      console.log('Current order type is invalid, switching to:', firstAvailable);
       if (firstAvailable) {
         setSelectedOrderType(firstAvailable);
+      } else {
+        setSelectedOrderType(null);
       }
     }
   }, [orderTypeSettings, selectedOrderType]);
