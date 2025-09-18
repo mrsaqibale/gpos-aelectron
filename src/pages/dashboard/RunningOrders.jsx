@@ -2440,6 +2440,28 @@ const RunningOrders = () => {
     }
   };
 
+  // Handle pizza food selection
+  const handlePizzaFoodSelect = async (foodId) => {
+    try {
+      const selectedFood = pizzaFoods.find(food => food.id === parseInt(foodId));
+      if (selectedFood) {
+        setSelectedPizzaFood(selectedFood);
+        
+        // Fetch ingredients for this pizza
+        const result = await window.myAPI.getFoodIngredients(foodId);
+        if (result.success) {
+          setPizzaIngredients(result.data || []);
+        } else {
+          console.error('Failed to fetch pizza ingredients:', result.message);
+          setPizzaIngredients([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error selecting pizza food:', error);
+      showError('Error loading pizza ingredients');
+    }
+  };
+
   const handleCloseSplitPizzaModal = () => {
     setShowSplitPizzaModal(false);
     setPizzaSlices(2);
