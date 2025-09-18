@@ -322,6 +322,10 @@ const RunningOrders = () => {
   const [pizzaIngredientsBySlice, setPizzaIngredientsBySlice] = useState({});
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [customIngredients, setCustomIngredients] = useState([]);
+  
+  // State for slice-specific pizza selection and ingredients
+  const [selectedPizzaPerSlice, setSelectedPizzaPerSlice] = useState({});
+  const [ingredientsPerSlice, setIngredientsPerSlice] = useState({});
 
   // Schedule Order Modal State
   const [showScheduleModal, setShowScheduleModal] = useState(false);
@@ -2421,6 +2425,8 @@ const RunningOrders = () => {
     setCustomIngredientInput('');
     setIngredientSuggestions([]);
     setShowIngredientSuggestions(false);
+    setSelectedPizzaPerSlice({});
+    setIngredientsPerSlice({});
     await fetchPizzaFoods();
   };
 
@@ -2440,25 +2446,35 @@ const RunningOrders = () => {
     }
   };
 
-  // Handle pizza food selection
-  const handlePizzaFoodSelect = async (foodId) => {
+  // Handle pizza food selection for a specific slice
+  const handleSlicePizzaSelect = async (sliceIndex, foodId) => {
     try {
       const selectedFood = pizzaFoods.find(food => food.id === parseInt(foodId));
       if (selectedFood) {
-        setSelectedPizzaFood(selectedFood);
+        // Update pizza selection for this slice
+        setSelectedPizzaPerSlice(prev => ({
+          ...prev,
+          [sliceIndex]: selectedFood
+        }));
         
         // Fetch ingredients for this pizza
         const result = await window.myAPI.getFoodIngredients(foodId);
         if (result.success) {
-          setPizzaIngredients(result.data || []);
+          setIngredientsPerSlice(prev => ({
+            ...prev,
+            [sliceIndex]: result.data || []
+          }));
         } else {
           console.error('Failed to fetch pizza ingredients:', result.message);
-          setPizzaIngredients([]);
+          setIngredientsPerSlice(prev => ({
+            ...prev,
+            [sliceIndex]: []
+          }));
         }
       }
     } catch (error) {
-      console.error('Error selecting pizza food:', error);
-      showError('Error loading pizza ingredients');
+      console.error('Error selecting pizza for slice:', error);
+      showError('Error loading pizza ingredients for slice');
     }
   };
 
