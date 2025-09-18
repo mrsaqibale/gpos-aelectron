@@ -7045,6 +7045,68 @@ const RunningOrders = () => {
                     </div>
                   )}
                     </div>
+                    
+                    {/* Custom Ingredients Section */}
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Add Custom Ingredients:</h4>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={customIngredientInput}
+                          onChange={(e) => handleCustomIngredientInput(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                          placeholder="Type ingredient name..."
+                        />
+                        
+                        {/* Ingredient suggestions dropdown */}
+                        {showIngredientSuggestions && ingredientSuggestions.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                            {ingredientSuggestions.map((ingredient) => (
+                              <button
+                                key={ingredient.id}
+                                onClick={() => handleIngredientSuggestionSelect(ingredient)}
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                              >
+                                {ingredient.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={handleAddCustomIngredient}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                        >
+                          Add Ingredient
+                        </button>
+                      </div>
+                      
+                      {/* Display selected ingredients */}
+                      {pizzaIngredients.length > 0 && (
+                        <div className="mt-3">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Selected Ingredients:</h5>
+                          <div className="flex flex-wrap gap-2">
+                            {pizzaIngredients.map((ingredient) => (
+                              <span
+                                key={ingredient.id}
+                                className="bg-primary text-white px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                              >
+                                {ingredient.name}
+                                <button
+                                  onClick={() => setPizzaIngredients(prev => prev.filter(ing => ing.id !== ingredient.id))}
+                                  className="text-white hover:text-red-200"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
                     <div className="mt-2">
                   <label htmlFor="customPizzaNote" className="block text-sm font-medium text-gray-700 mb-1">
                     Add a custom note (optional)
