@@ -320,8 +320,6 @@ const RunningOrders = () => {
   // New state for pizza integration
   const [selectedPizzaFlavors, setSelectedPizzaFlavors] = useState({});
   const [pizzaIngredientsBySlice, setPizzaIngredientsBySlice] = useState({});
-  const [customIngredientInput, setCustomIngredientInput] = useState('');
-  const [ingredientSuggestions, setIngredientSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [customIngredients, setCustomIngredients] = useState([]);
 
