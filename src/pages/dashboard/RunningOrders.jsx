@@ -309,6 +309,15 @@ const RunningOrders = () => {
   const [pizzaPrice, setPizzaPrice] = useState('');
   const [pizzaNote, setPizzaNote] = useState('');
 
+  // New state for pizza integration
+  const [pizzaFoods, setPizzaFoods] = useState([]);
+  const [selectedPizzaFlavors, setSelectedPizzaFlavors] = useState({});
+  const [pizzaIngredients, setPizzaIngredients] = useState({});
+  const [customIngredientInput, setCustomIngredientInput] = useState('');
+  const [ingredientSuggestions, setIngredientSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [customIngredients, setCustomIngredients] = useState([]);
+
   // Schedule Order Modal State
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedScheduleTime, setSelectedScheduleTime] = useState('');
