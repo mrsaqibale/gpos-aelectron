@@ -6997,20 +6997,17 @@ const RunningOrders = () => {
                              index === 12 ? 'Thirteenth' : index === 13 ? 'Fourteenth' : index === 14 ? 'Fifteenth' : 'Sixteenth'} Half:
                       </label>
                           <select 
-                            value={selectedFlavors[index] || ''}
-                            onChange={(e) => handleFlavorChange(index, e.target.value)}
+                            value={selectedPizzaFlavors[index] || ''}
+                            onChange={(e) => setSelectedPizzaFlavors(prev => ({...prev, [index]: e.target.value}))}
                             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ${index === 1 ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' : 'border-gray-300'
                             }`}
                           >
-                            <option value="">Select flavor...</option>
-                            <option value="margherita">Margherita</option>
-                            <option value="pepperoni">Pepperoni</option>
-                            <option value="hawaiian">Hawaiian</option>
-                            <option value="vegetarian">Vegetarian</option>
-                            <option value="bbq-chicken">BBQ Chicken</option>
-                            <option value="meat-lovers">Meat Lovers</option>
-                            <option value="supreme">Supreme</option>
-                            <option value="buffalo-chicken">Buffalo Chicken</option>
+                            <option value="">Select ingredient...</option>
+                            {pizzaIngredients.map((ingredient) => (
+                              <option key={ingredient.id} value={ingredient.id}>
+                                {ingredient.name}
+                              </option>
+                            ))}
                           </select>
                       </div>
                       ))}
