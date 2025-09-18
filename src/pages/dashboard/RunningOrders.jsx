@@ -265,6 +265,7 @@ const RunningOrders = () => {
   const [runningOrdersSearchQuery, setRunningOrdersSearchQuery] = useState('');
   const [filteredFoods, setFilteredFoods] = useState([]);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Coupon Modal State
   const [showCouponModal, setShowCouponModal] = useState(false);
