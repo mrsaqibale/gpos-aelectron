@@ -134,6 +134,11 @@ const VirtualKeyboard = ({
     return null;
   }
 
+  // Don't render if virtual keyboard is disabled
+  if (!shouldShowVirtualKeyboard()) {
+    return null;
+  }
+
   return (
     <div className="fixed bottom-0 left-[15%] right-[15%] z-50 bg-white border-t border-gray-200 shadow-lg">
       <div className="p-4 bg-gray-50">
