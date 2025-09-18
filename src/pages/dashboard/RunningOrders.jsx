@@ -2416,7 +2416,28 @@ const RunningOrders = () => {
     setCompletedBatches([]);
     setSelectedFlavors({}); // Reset selected flavors
     setCurrentIngredients([]); // Reset current ingredients
+    setSelectedPizzaFood(null);
+    setPizzaIngredients([]);
+    setCustomIngredientInput('');
+    setIngredientSuggestions([]);
+    setShowIngredientSuggestions(false);
     await fetchPizzaFoods();
+  };
+
+  // Fetch pizza foods from database
+  const fetchPizzaFoods = async () => {
+    try {
+      const result = await window.myAPI.getPizzaFoods();
+      if (result.success) {
+        setPizzaFoods(result.data || []);
+      } else {
+        console.error('Failed to fetch pizza foods:', result.message);
+        showError('Failed to load pizza options');
+      }
+    } catch (error) {
+      console.error('Error fetching pizza foods:', error);
+      showError('Error loading pizza options');
+    }
   };
 
   const handleCloseSplitPizzaModal = () => {
