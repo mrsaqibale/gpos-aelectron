@@ -4580,7 +4580,7 @@ const RunningOrders = () => {
       return sum + (parseFloat(item.totalPrice) || 0);
     }, 0);
     
-    const tax = subtotal * 0.1; // 10% tax
+    const tax = calculateTaxAmount(subtotal); // Calculate tax using settings
     
     // Calculate discount
     let discount = 0;
@@ -6304,7 +6304,7 @@ const RunningOrders = () => {
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-medium text-gray-700 mb-2">Tax (13.5%)</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">Tax ({getTaxRate().toFixed(1)}%)</div>
                     <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
                       €{calculateCartTax().toFixed(2)}
                     </div>
