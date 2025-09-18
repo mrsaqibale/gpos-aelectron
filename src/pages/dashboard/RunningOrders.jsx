@@ -2315,6 +2315,20 @@ const RunningOrders = () => {
     setFoodQuantity(1);
   };
 
+  // Get tax rate from settings
+  const getTaxRate = () => {
+    // Use food_tax if available, otherwise fall back to standard_tax, then default to 0
+    const foodTax = parseFloat(settings?.food_tax) || 0;
+    const standardTax = parseFloat(settings?.standard_tax) || 0;
+    return foodTax > 0 ? foodTax : standardTax;
+  };
+
+  // Calculate tax for a specific amount
+  const calculateTaxAmount = (amount) => {
+    const taxRate = getTaxRate();
+    return (amount * taxRate) / 100;
+  };
+
   // Calculate cart totals
   const calculateCartSubtotal = () => {
     return cartItems.reduce((total, item) => total + item.totalPrice, 0);
@@ -2322,7 +2336,7 @@ const RunningOrders = () => {
 
   const calculateCartTax = () => {
     const subtotal = calculateCartSubtotal();
-    return subtotal * 0.135; // 13.5% tax rate
+    return calculateTaxAmount(subtotal);
   };
 
   const calculateCartDiscount = () => {
@@ -2808,7 +2822,7 @@ const RunningOrders = () => {
         delivery_charge: 0, // Can be calculated for delivery
         additional_charge: 0, // Set to 0 since cartCharge is not in schema
         discount_amount: discount,
-        tax_percentage: 13.5, // 13.5% tax rate
+        tax_percentage: getTaxRate(), // Use tax rate from settings
         scheduled: selectedScheduleDateTime ? 1 : 0, // Set to 1 if scheduled
         schedule_at: selectedScheduleDateTime || null, // Add scheduled time
         failed: 0, // Convert boolean to integer for SQLite
@@ -2883,7 +2897,7 @@ const RunningOrders = () => {
       const orderDetailsArray = cartItems.map(item => {
         // Calculate item-specific totals
         const itemSubtotal = item.totalPrice;
-        const itemTax = itemSubtotal * 0.135; // 13.5% tax
+        const itemTax = calculateTaxAmount(itemSubtotal); // Calculate tax using settings
         const itemDiscount = 0; // Individual item discount if any
 
         // Prepare variations and addons as JSON
@@ -3402,7 +3416,7 @@ const RunningOrders = () => {
         delivery_charge: 0,
         additional_charge: 0,
         discount_amount: discount,
-        tax_percentage: 13.5,
+        tax_percentage: getTaxRate(),
         scheduled: 0,
         schedule_at: null,
         failed: 0,
@@ -4307,7 +4321,7 @@ const RunningOrders = () => {
     setSplitBills(prev => prev.map(split => {
       if (split.id === splitBillId) {
         const subtotal = split.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-        const tax = subtotal * 0.135; // 13.5% tax
+        const tax = calculateTaxAmount(subtotal); // Calculate tax using settings
         const total = subtotal + tax + (split.charge || 0) + (split.tips || 0) - (split.discount || 0);
 
         return {
@@ -4352,7 +4366,7 @@ const RunningOrders = () => {
   const recalculateSplitBillTotals = () => {
     setSplitBills(prev => prev.map(split => {
       const subtotal = split.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-      const tax = subtotal * 0.135; // 13.5% tax
+      const tax = calculateTaxAmount(subtotal); // Calculate tax using settings
       const total = subtotal + tax + (split.charge || 0) + (split.tips || 0) - (split.discount || 0);
 
       return {
