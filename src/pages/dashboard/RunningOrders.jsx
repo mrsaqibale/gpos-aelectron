@@ -88,6 +88,7 @@ import { useDraftCount } from '../../contexts/DraftContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useButtonSound } from '../../hooks/useButtonSound';
 import { useOrderTypeSettings } from '../../hooks/useOrderTypeSettings';
+import { useSettings } from '../../contexts/SettingsContext';
 import FinalizeSaleModal from '../../components/FinalizeSaleModal';
 import MergeTableModal from '../../components/dashboard/table/MergeTableModal';
 import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsModalbox';
@@ -101,6 +102,7 @@ const RunningOrders = () => {
   const { addNotification } = useNotifications();
   const { playButtonSound } = useButtonSound();
   const { shouldShowOrderType, orderTypeSettings } = useOrderTypeSettings();
+  const { settings } = useSettings();
 
   // Helper function to get the first available order type
   const getFirstAvailableOrderType = () => {
