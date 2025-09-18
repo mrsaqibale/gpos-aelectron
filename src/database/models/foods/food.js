@@ -619,7 +619,23 @@ export function getFoodImage(imagePath) {
   }
 } 
 
-
-
-
+// Get all foods with isPizza = 1
+export function getPizzaFoods() {
+  try {
+    const stmt = db.prepare(`
+      SELECT * FROM food 
+      WHERE isPizza = 1 AND status = 1 AND isdeleted = 0
+      ORDER BY position ASC, name ASC
+    `);
+    
+    const foods = stmt.all();
+    
+    return {
+      success: true,
+      data: foods
+    };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
 
