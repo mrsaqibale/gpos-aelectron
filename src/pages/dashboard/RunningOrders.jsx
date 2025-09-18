@@ -6918,19 +6918,10 @@ const RunningOrders = () => {
                 {/* Top Section - Order Details */}
                 <div className="grid grid-cols-4 gap-4 mb-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pizza Base:</label>
-                    <select 
-                      value={selectedPizzaFood?.id || ''}
-                      onChange={(e) => handlePizzaFoodSelect(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-                    >
-                      <option value="">Select pizza base...</option>
-                      {pizzaFoods.map((food) => (
-                        <option key={food.id} value={food.id}>
-                          {food.name} - €{food.price}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Food Type:</label>
+                    <div className="bg-gray-100 rounded-lg px-3 py-2 text-center">
+                      <span className="text-sm font-medium text-gray-800">Pizza</span>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Size:</label>
