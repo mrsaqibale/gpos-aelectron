@@ -1178,14 +1178,18 @@ const RunningOrders = () => {
 
     setIsAddingToCart(true);
 
-    // Play sound when adding to cart
-    try {
-      const audio = new Audio('./src/assets/newProductAdd.mp3');
-      audio.play().catch(error => {
-        console.log('Audio play failed:', error);
-      });
-    } catch (error) {
-      console.log('Audio creation failed:', error);
+    // Play sound when adding to cart (with cooldown to prevent multiple sounds)
+    const now = Date.now();
+    if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
+      try {
+        const audio = new Audio('./src/assets/newProductAdd.mp3');
+        audio.play().catch(error => {
+          console.log('Audio play failed:', error);
+        });
+        setLastSoundTime(now);
+      } catch (error) {
+        console.log('Audio creation failed:', error);
+      }
     }
 
     console.log('Adding to cart:', {
@@ -2102,14 +2106,18 @@ const RunningOrders = () => {
       clearTimeout(quantityUpdateTimeout);
     }
 
-    // Play sound immediately for user feedback
-    try {
-      const audio = new Audio('./src/assets/newProductAdd.mp3');
-      audio.play().catch(error => {
-        console.log('Audio play failed:', error);
-      });
-    } catch (error) {
-      console.log('Audio creation failed:', error);
+    // Play sound only if enough time has passed since last sound (prevent rapid sounds)
+    const now = Date.now();
+    if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
+      try {
+        const audio = new Audio('./src/assets/newProductAdd.mp3');
+        audio.play().catch(error => {
+          console.log('Audio play failed:', error);
+        });
+        setLastSoundTime(now);
+      } catch (error) {
+        console.log('Audio creation failed:', error);
+      }
     }
 
     // Debounce the actual quantity update
