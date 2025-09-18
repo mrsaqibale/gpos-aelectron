@@ -1156,6 +1156,12 @@ const RunningOrders = () => {
 
   // Handle add to cart
   const handleAddToCart = () => {
+    // Prevent multiple simultaneous executions
+    if (isAddingToCart) {
+      console.log('Already adding item to cart, ignoring click');
+      return;
+    }
+
     // Check if order type is selected
     if (!selectedOrderType) {
       showError('Select the Order Type First');
@@ -1167,6 +1173,8 @@ const RunningOrders = () => {
       showError('Please complete all required selections before adding to cart');
       return;
     }
+
+    setIsAddingToCart(true);
 
     // Play sound when adding to cart
     try {
