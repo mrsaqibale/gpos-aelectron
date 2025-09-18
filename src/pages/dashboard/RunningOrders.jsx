@@ -1426,6 +1426,20 @@ const RunningOrders = () => {
           setCartItemId(prev => prev + 1);
           console.log('Added food without variations directly to cart (fallback):', foodItem?.name || 'Unknown Food');
 
+          // Play sound for new item (with cooldown to prevent multiple sounds)
+          const now = Date.now();
+          if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
+            try {
+              const audio = new Audio('./src/assets/newProductAdd.mp3');
+              audio.play().catch(error => {
+                console.log('Audio play failed:', error);
+              });
+              setLastSoundTime(now);
+            } catch (error) {
+              console.log('Audio creation failed:', error);
+            }
+          }
+
           // Show success alert
           showSuccess(`${foodItem?.name || 'Unknown Food'} added to cart!`);
         }
@@ -1450,10 +1464,24 @@ const RunningOrders = () => {
           return newCart;
         });
         setCartItemId(prev => prev + 1);
-                  console.log('Added food without variations directly to cart (error fallback):', foodItem?.name || 'Unknown Food');
+        console.log('Added food without variations directly to cart (error fallback):', foodItem?.name || 'Unknown Food');
 
-          // Show success alert
-          showSuccess(`${foodItem?.name || 'Unknown Food'} added to cart!`);
+        // Play sound for new item (with cooldown to prevent multiple sounds)
+        const now = Date.now();
+        if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
+          try {
+            const audio = new Audio('./src/assets/newProductAdd.mp3');
+            audio.play().catch(error => {
+              console.log('Audio play failed:', error);
+            });
+            setLastSoundTime(now);
+          } catch (error) {
+            console.log('Audio creation failed:', error);
+          }
+        }
+
+        // Show success alert
+        showSuccess(`${foodItem?.name || 'Unknown Food'} added to cart!`);
       } finally {
         setFoodDetailsLoading(false);
         setIsAddingToCart(false);
