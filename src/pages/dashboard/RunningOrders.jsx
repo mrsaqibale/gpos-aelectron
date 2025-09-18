@@ -267,6 +267,7 @@ const RunningOrders = () => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [quantityUpdateTimeout, setQuantityUpdateTimeout] = useState(null);
+  const [lastSoundTime, setLastSoundTime] = useState(0);
 
   // Coupon Modal State
   const [showCouponModal, setShowCouponModal] = useState(false);
@@ -7906,14 +7907,6 @@ const RunningOrders = () => {
               </button>
               <button
                 onClick={() => {
-                  try {
-                    const audio = new Audio('./src/assets/newProductAdd.mp3');
-                    audio.play().catch(error => {
-                      console.log('Audio play failed:', error);
-                    });
-                  } catch (error) {
-                    console.log('Audio creation failed:', error);
-                  }
                   clearCart();
                   setShowDeleteCartModal(false);
                 }}
