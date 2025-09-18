@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld('myAPI', {
   searchFoodsByName: (name, restaurantId) => ipcRenderer.invoke('food:searchByName', name, restaurantId),
   deleteFoodImage: (foodId) => ipcRenderer.invoke('food:deleteImage', foodId),
   getFoodImage: (imagePath) => ipcRenderer.invoke('food:getImage', imagePath),
+  getPizzaFoods: () => ipcRenderer.invoke('food:getPizzaFoods'),
   getFoodIngredients: (foodId) => ipcRenderer.invoke('food:getIngredients', foodId),
   updateFoodIngredients: (foodId, ingredientIds) => ipcRenderer.invoke('food:updateIngredients', foodId, ingredientIds),
   processFoodIngredients: (foodId, categoryId, ingredientNames) => ipcRenderer.invoke('food:processIngredients', foodId, categoryId, ingredientNames),
