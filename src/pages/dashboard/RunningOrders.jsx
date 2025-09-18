@@ -2401,7 +2401,7 @@ const RunningOrders = () => {
   };
 
   // Split Pizza Modal Functions
-  const handleOpenSplitPizzaModal = () => {
+  const handleOpenSplitPizzaModal = async () => {
     setShowSplitPizzaModal(true);
     // Reset to all available ingredients when opening the modal
     setSelectedIngredients([...availableIngredients]);
@@ -2411,6 +2411,7 @@ const RunningOrders = () => {
     setCompletedBatches([]);
     setSelectedFlavors({}); // Reset selected flavors
     setCurrentIngredients([]); // Reset current ingredients
+    await fetchPizzaFoods();
   };
 
   const handleCloseSplitPizzaModal = () => {
