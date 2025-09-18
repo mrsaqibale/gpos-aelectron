@@ -2462,6 +2462,50 @@ const RunningOrders = () => {
     }
   };
 
+  // Handle custom ingredient input with suggestions
+  const handleCustomIngredientInput = async (value) => {
+    setCustomIngredientInput(value);
+    
+    if (value.length >= 2) {
+      try {
+        const result = await window.myAPI.searchIngredientsByName(value);
+        if (result.success) {
+          setIngredientSuggestions(result.data || []);
+          setShowIngredientSuggestions(true);
+        }
+      } catch (error) {
+        console.error('Error fetching ingredient suggestions:', error);
+        setIngredientSuggestions([]);
+        setShowIngredientSuggestions(false);
+      }
+    } else {
+      setIngredientSuggestions([]);
+      setShowIngredientSuggestions(false);
+    }
+  };
+
+  // Handle ingredient suggestion selection
+  const handleIngredientSuggestionSelect = (ingredient) => {
+    setCustomIngredientInput(ingredient.name);
+    setShowIngredientSuggestions(false);
+    setIngredientSuggestions([]);
+  };
+
+  // Add custom ingredient
+  const handleAddCustomIngredient = () => {
+    if (customIngredientInput.trim()) {
+      const newIngredient = {
+        id: `custom_${Date.now()}`,
+        name: customIngredientInput.trim(),
+        isCustom: true
+      };
+      setPizzaIngredients(prev => [...prev, newIngredient]);
+      setCustomIngredientInput('');
+      setShowIngredientSuggestions(false);
+      setIngredientSuggestions([]);
+    }
+  };
+
   const handleCloseSplitPizzaModal = () => {
     setShowSplitPizzaModal(false);
     setPizzaSlices(2);
