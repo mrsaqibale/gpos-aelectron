@@ -1297,6 +1297,12 @@ const RunningOrders = () => {
       return;
     }
     
+    // Prevent multiple simultaneous executions
+    if (isAddingToCart) {
+      console.log('Already adding item to cart, ignoring click');
+      return;
+    }
+    
     console.log('Food item clicked:', foodItem);
 
     // Check if order type is selected
@@ -1316,6 +1322,7 @@ const RunningOrders = () => {
       // Show success alert
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
+      setIsAddingToCart(true);
       // If food is not in cart, fetch detailed food data to check for variations
       console.log('Fetching detailed food data for:', foodItem?.name || 'Unknown Food');
       setFoodDetailsLoading(true);
