@@ -2095,6 +2095,13 @@ const RunningOrders = () => {
       removeCartItem(itemId);
       return;
     }
+
+    // Clear existing timeout
+    if (quantityUpdateTimeout) {
+      clearTimeout(quantityUpdateTimeout);
+    }
+
+    // Play sound immediately for user feedback
     try {
       const audio = new Audio('./src/assets/newProductAdd.mp3');
       audio.play().catch(error => {
@@ -2103,6 +2110,12 @@ const RunningOrders = () => {
     } catch (error) {
       console.log('Audio creation failed:', error);
     }
+
+    // Debounce the actual quantity update
+    const timeout = setTimeout(() => {
+      setQuantityUpdateTimeout(null);
+    }, 100); // 100ms debounce
+    setQuantityUpdateTimeout(timeout);
 
     setCartItems(prev => prev.map(item => {
       if (item.id === itemId) {
