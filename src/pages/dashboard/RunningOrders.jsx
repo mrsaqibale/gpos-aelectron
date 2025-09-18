@@ -6542,12 +6542,12 @@ const RunningOrders = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-800">Sub Total:</span>
-                        <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / 1.13).toFixed(2) : '0.00'}</span>
+                        <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / (1 + getTaxRate()/100)).toFixed(2) : '0.00'}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-800">Tax:</span>
                         <span className="text-sm font-bold text-gray-800">
-                          €{selectedPlacedOrder ? (selectedPlacedOrder.total * 0.135 / 1.135).toFixed(2) : '0.00'}
+                          €{selectedPlacedOrder ? (selectedPlacedOrder.total * getTaxRate()/100 / (1 + getTaxRate()/100)).toFixed(2) : '0.00'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
