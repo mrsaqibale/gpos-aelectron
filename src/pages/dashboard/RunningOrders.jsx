@@ -318,9 +318,8 @@ const RunningOrders = () => {
   const [showIngredientSuggestions, setShowIngredientSuggestions] = useState(false);
 
   // New state for pizza integration
-  const [pizzaFoods, setPizzaFoods] = useState([]);
   const [selectedPizzaFlavors, setSelectedPizzaFlavors] = useState({});
-  const [pizzaIngredients, setPizzaIngredients] = useState({});
+  const [pizzaIngredientsBySlice, setPizzaIngredientsBySlice] = useState({});
   const [customIngredientInput, setCustomIngredientInput] = useState('');
   const [ingredientSuggestions, setIngredientSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
