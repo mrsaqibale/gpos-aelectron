@@ -266,6 +266,7 @@ const RunningOrders = () => {
   const [filteredFoods, setFilteredFoods] = useState([]);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [quantityUpdateTimeout, setQuantityUpdateTimeout] = useState(null);
 
   // Coupon Modal State
   const [showCouponModal, setShowCouponModal] = useState(false);
@@ -1242,6 +1243,7 @@ const RunningOrders = () => {
     setSelectedVariations({});
     setSelectedAdons([]);
     setFoodQuantity(1); // Reset quantity
+    setIsAddingToCart(false);
   };
 
   // Check if food item is already in cart (without variations)
