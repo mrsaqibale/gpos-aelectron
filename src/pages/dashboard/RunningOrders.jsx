@@ -2506,6 +2506,58 @@ const RunningOrders = () => {
     }
   };
 
+  // Save custom pizza to cart
+  const handleSaveCustomPizza = () => {
+    if (!selectedPizzaFood) {
+      showError('Please select a pizza base');
+      return;
+    }
+
+    if (pizzaIngredients.length === 0) {
+      showError('Please add at least one ingredient');
+      return;
+    }
+
+    const customPrice = parseFloat(pizzaPrice) || selectedPizzaFood.price;
+    const tax = calculateTaxAmount(customPrice);
+    const totalPrice = customPrice + tax;
+
+    // Create custom pizza item
+    const customPizzaItem = {
+      id: `custom_pizza_${Date.now()}`,
+      foodId: selectedPizzaFood.id,
+      name: `${selectedPizzaFood.name} (Custom)`,
+      price: customPrice,
+      tax: tax,
+      totalPrice: totalPrice,
+      quantity: 1,
+      variations: {},
+      adons: [],
+      ingredients: pizzaIngredients,
+      slices: pizzaSlices,
+      sliceIngredients: selectedPizzaFlavors,
+      customNote: pizzaNote,
+      isCustomPizza: true
+    };
+
+    // Add to cart
+    setCartItems(prev => [...prev, customPizzaItem]);
+    
+    // Play sound
+    try {
+      const audio = new Audio('./src/assets/newProductAdd.mp3');
+      audio.play().catch(error => console.log('Audio play failed:', error));
+    } catch (error) {
+      console.log('Audio creation failed:', error);
+    }
+
+    // Show success message
+    showSuccess('Custom pizza added to cart!');
+    
+    // Close modal
+    handleCloseSplitPizzaModal();
+  };
+
   const handleCloseSplitPizzaModal = () => {
     setShowSplitPizzaModal(false);
     setPizzaSlices(2);
