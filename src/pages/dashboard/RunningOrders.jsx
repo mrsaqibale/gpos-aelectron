@@ -7004,15 +7004,15 @@ const RunningOrders = () => {
                              index === 12 ? 'Thirteenth' : index === 13 ? 'Fourteenth' : index === 14 ? 'Fifteenth' : 'Sixteenth'} Half:
                       </label>
                           <select 
-                            value={selectedPizzaFlavors[index] || ''}
-                            onChange={(e) => setSelectedPizzaFlavors(prev => ({...prev, [index]: e.target.value}))}
+                            value={selectedPizzaPerSlice[index]?.id || ''}
+                            onChange={(e) => handleSlicePizzaSelect(index, e.target.value)}
                             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm ${index === 1 ? 'border-blue-500 focus:ring-blue-500 focus:border-blue-500' : 'border-gray-300'
                             }`}
                           >
-                            <option value="">Select ingredient...</option>
-                            {pizzaIngredients.map((ingredient) => (
-                              <option key={ingredient.id} value={ingredient.id}>
-                                {ingredient.name}
+                            <option value="">Select pizza...</option>
+                            {pizzaFoods.map((food) => (
+                              <option key={food.id} value={food.id}>
+                                {food.name} - €{food.price}
                               </option>
                             ))}
                           </select>
