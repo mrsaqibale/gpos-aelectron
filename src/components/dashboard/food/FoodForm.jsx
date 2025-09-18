@@ -19,7 +19,7 @@ const FoodForm = ({ food, onSubmit }) => {
     position: '',
     price: '',
     tax: '',
-    tax_type: 'percentage',
+    tax_type: 'custom',
     discount: '',
     discount_type: 'percentage',
     available_time_starts: '',
@@ -346,7 +346,7 @@ const FoodForm = ({ food, onSubmit }) => {
         position: food.position || '',
         price: food.price || '',
         tax: food.tax || '',
-        tax_type: food.tax_type || 'percentage',
+        tax_type: (food.tax_type && ['food','standard','custom'].includes(String(food.tax_type))) ? food.tax_type : 'custom',
         discount: food.discount || '',
         discount_type: food.discount_type || 'percentage',
         available_time_starts: food.available_time_starts || '',
@@ -364,6 +364,13 @@ const FoodForm = ({ food, onSubmit }) => {
         recommended: food.recommended === 1 || food.recommended === true || false,
         variations: food.variations || []
       });
+
+      // Initialize tax source from existing record if present
+      if (food.tax_type && ['food','standard','custom'].includes(String(food.tax_type))) {
+        setTaxSource(food.tax_type);
+      } else {
+        setTaxSource('custom');
+      }
 
       // Load image preview
       if (food.image) {
@@ -453,15 +460,19 @@ const FoodForm = ({ food, onSubmit }) => {
     settings?.standard_tax ?? settings?.standardTax ?? settings?.standard_tax_percentage ?? settings?.standardTaxPercent ?? 0
   );
 
-  // When tax type or settings or taxSource changes and source is not custom, sync the tax value
+  // When taxSource or settings change and source is not custom, sync the tax value
   useEffect(() => {
     if (taxSource === 'food') {
       setFormData(prev => ({ ...prev, tax: isNaN(foodTaxFromSettings) ? '' : foodTaxFromSettings }));
     } else if (taxSource === 'standard') {
       setFormData(prev => ({ ...prev, tax: isNaN(standardTaxFromSettings) ? '' : standardTaxFromSettings }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taxSource, foodTaxFromSettings, standardTaxFromSettings, formData.tax_type]);
+  }, [taxSource, foodTaxFromSettings, standardTaxFromSettings]);
+
+  // Always store tax source in tax_type for DB
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, tax_type: taxSource }));
+  }, [taxSource]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -1506,8 +1517,8 @@ const FoodForm = ({ food, onSubmit }) => {
                       onChange={(e) => setTaxSource(e.target.value)}
                       className={`${getInputClasses('tax_source')} appearance-none pr-8`}
                     >
-                      <option value="food">{`Food Tax ${!isNaN(foodTaxFromSettings) ? `(${foodTaxFromSettings}${formData.tax_type === 'percentage' ? '%' : '€'})` : ''}`}</option>
-                      <option value="standard">{`Standard Tax ${!isNaN(standardTaxFromSettings) ? `(${standardTaxFromSettings}${formData.tax_type === 'percentage' ? '%' : '€'})` : ''}`}</option>
+                      <option value="food">{`Food Tax ${!isNaN(foodTaxFromSettings) ? `(${foodTaxFromSettings}%)` : ''}`}</option>
+                      <option value="standard">{`Standard Tax ${!isNaN(standardTaxFromSettings) ? `(${standardTaxFromSettings}%)` : ''}`}</option>
                       <option value="custom">Custom</option>
                     </select>
                     <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -1516,7 +1527,7 @@ const FoodForm = ({ food, onSubmit }) => {
 
                 {/* Tax Value */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{`Tax ${formData.tax_type === 'percentage' ? '(%)' : '(€)'}`}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax (%)</label>
                   <input
                     type="number"
                     name="tax"
@@ -1531,24 +1542,7 @@ const FoodForm = ({ food, onSubmit }) => {
                   />
                 </div>
 
-                {/* Tax Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax Type</label>
-                  <div className="relative">
-                    <select
-                      name="tax_type"
-                      value={formData.tax_type}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('tax_type')}
-                      onBlur={() => setFocusedField('')}
-                      className={`${getInputClasses('tax_type')} appearance-none pr-8`}
-                    >
-                      <option value="percentage">Percentage</option>
-                      <option value="fixed">Fixed Amount</option>
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
+                {/* Removed Tax Type dropdown; tax_type now stores tax source (food|standard|custom) */}
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
