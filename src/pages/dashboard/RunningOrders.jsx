@@ -1178,19 +1178,7 @@ const RunningOrders = () => {
 
     setIsAddingToCart(true);
 
-    // Play sound when adding to cart (with cooldown to prevent multiple sounds)
-    const now = Date.now();
-    if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
-      try {
-        const audio = new Audio('./src/assets/newProductAdd.mp3');
-        audio.play().catch(error => {
-          console.log('Audio play failed:', error);
-        });
-        setLastSoundTime(now);
-      } catch (error) {
-        console.log('Audio creation failed:', error);
-      }
-    }
+    // Sound will be played by updateCartItemQuantity function when needed
 
     console.log('Adding to cart:', {
       food: selectedFood,
@@ -1237,6 +1225,20 @@ const RunningOrders = () => {
       });
       setCartItemId(prev => prev + 1);
       console.log('Added new item to cart:', selectedFood.name);
+
+      // Play sound for new item (with cooldown to prevent multiple sounds)
+      const now = Date.now();
+      if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
+        try {
+          const audio = new Audio('./src/assets/newProductAdd.mp3');
+          audio.play().catch(error => {
+            console.log('Audio play failed:', error);
+          });
+          setLastSoundTime(now);
+        } catch (error) {
+          console.log('Audio creation failed:', error);
+        }
+      }
 
       // Show success alert
       showSuccess(`${selectedFood.name} added to cart!`);
@@ -1383,6 +1385,20 @@ const RunningOrders = () => {
             });
             setCartItemId(prev => prev + 1);
             console.log('Added food without variations directly to cart:', result.data.name);
+
+            // Play sound for new item (with cooldown to prevent multiple sounds)
+            const now = Date.now();
+            if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
+              try {
+                const audio = new Audio('./src/assets/newProductAdd.mp3');
+                audio.play().catch(error => {
+                  console.log('Audio play failed:', error);
+                });
+                setLastSoundTime(now);
+              } catch (error) {
+                console.log('Audio creation failed:', error);
+              }
+            }
 
             // Show success alert
             showSuccess(`${result.data.name} added to cart!`);
