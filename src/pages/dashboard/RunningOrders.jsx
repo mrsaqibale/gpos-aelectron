@@ -1425,6 +1425,7 @@ const RunningOrders = () => {
           showSuccess(`${foodItem?.name || 'Unknown Food'} added to cart!`);
       } finally {
         setFoodDetailsLoading(false);
+        setIsAddingToCart(false);
       }
     }
   };
