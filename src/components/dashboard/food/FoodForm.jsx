@@ -41,6 +41,8 @@ const FoodForm = ({ food, onSubmit }) => {
   });
 
   const [imagePreview, setImagePreview] = useState(null);
+  // Tax source: 'food', 'standard', 'custom'
+  const [taxSource, setTaxSource] = useState('custom');
   const [errors, setErrors] = useState({});
   const [focusedField, setFocusedField] = useState('');
 
@@ -441,6 +443,25 @@ const FoodForm = ({ food, onSubmit }) => {
     }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
+
+  // Read tax values from global settings (with tolerant keys)
+  const settings = typeof window !== 'undefined' ? (window.appSettings?.current || {}) : {};
+  const foodTaxFromSettings = Number(
+    settings?.food_tax ?? settings?.foodTax ?? settings?.food_tax_percentage ?? settings?.foodTaxPercent ?? 0
+  );
+  const standardTaxFromSettings = Number(
+    settings?.standard_tax ?? settings?.standardTax ?? settings?.standard_tax_percentage ?? settings?.standardTaxPercent ?? 0
+  );
+
+  // When tax type or settings or taxSource changes and source is not custom, sync the tax value
+  useEffect(() => {
+    if (taxSource === 'food') {
+      setFormData(prev => ({ ...prev, tax: isNaN(foodTaxFromSettings) ? '' : foodTaxFromSettings }));
+    } else if (taxSource === 'standard') {
+      setFormData(prev => ({ ...prev, tax: isNaN(standardTaxFromSettings) ? '' : standardTaxFromSettings }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taxSource, foodTaxFromSettings, standardTaxFromSettings, formData.tax_type]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -1475,9 +1496,27 @@ const FoodForm = ({ food, onSubmit }) => {
                 {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* Tax Source */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax (%)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax Source</label>
+                  <div className="relative">
+                    <select
+                      value={taxSource}
+                      onChange={(e) => setTaxSource(e.target.value)}
+                      className={`${getInputClasses('tax_source')} appearance-none pr-8`}
+                    >
+                      <option value="food">{`Food Tax ${!isNaN(foodTaxFromSettings) ? `(${foodTaxFromSettings}${formData.tax_type === 'percentage' ? '%' : '€'})` : ''}`}</option>
+                      <option value="standard">{`Standard Tax ${!isNaN(standardTaxFromSettings) ? `(${standardTaxFromSettings}${formData.tax_type === 'percentage' ? '%' : '€'})` : ''}`}</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Tax Value */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{`Tax ${formData.tax_type === 'percentage' ? '(%)' : '(€)'}`}</label>
                   <input
                     type="number"
                     name="tax"
@@ -1485,11 +1524,14 @@ const FoodForm = ({ food, onSubmit }) => {
                     onChange={handleChange}
                     onFocus={() => setFocusedField('tax')}
                     onBlur={() => setFocusedField('')}
-                    className={getInputClasses('tax')}
+                    className={`${getInputClasses('tax')} ${taxSource !== 'custom' ? 'opacity-50 cursor-not-allowed' : ''}`}
                     step="0.01"
                     min="0"
+                    disabled={taxSource !== 'custom'}
                   />
                 </div>
+
+                {/* Tax Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tax Type</label>
                   <div className="relative">
