@@ -6958,12 +6958,11 @@ const RunningOrders = () => {
                                   {ingredient.name || ingredient}
                                   <button
                                     onClick={() => {
-                                      // Remove from default ingredients by filtering them out
-                                      const updatedIngredients = defaultIngredients.filter((_, index) => index !== idx);
-                                      // Update the ingredients for this slice
-                                      setIngredientsPerSlice(prev => ({
+                                      // Add to removed ingredients list for this slice
+                                      const ingredientToRemove = ingredient.name || ingredient;
+                                      setRemovedDefaultIngredients(prev => ({
                                         ...prev,
-                                        [selectedIndex]: updatedIngredients
+                                        [selectedIndex]: [...(prev[selectedIndex] || []), { name: ingredientToRemove }]
                                       }));
                                     }}
                                     className="text-blue-800 hover:text-red-600"
