@@ -1245,7 +1245,7 @@ const RunningOrders = () => {
   // Check if food item is already in cart (without variations)
   const isFoodInCart = (foodItem) => {
     return cartItems.find(item =>
-      item.food.id === foodItem.id &&
+      item.food?.id === foodItem.id &&
       JSON.stringify(item.variations) === JSON.stringify({})
     );
   };
@@ -1253,7 +1253,7 @@ const RunningOrders = () => {
   // Check if food item with specific variations is already in cart
   const isFoodWithVariationsInCart = (foodItem, variations, adons = []) => {
     return cartItems.find(item =>
-      item.food.id === foodItem.id &&
+      item.food?.id === foodItem.id &&
       JSON.stringify(item.variations) === JSON.stringify(variations) &&
       JSON.stringify(item.adons || []) === JSON.stringify(adons)
     );
@@ -1261,7 +1261,7 @@ const RunningOrders = () => {
 
   // Check if any food item with the same ID exists in cart (regardless of variations)
   const isAnyFoodInCart = (foodItem) => {
-    return cartItems.find(item => item.food.id === foodItem.id);
+    return cartItems.find(item => item.food?.id === foodItem.id);
   };
 
   // Clean up duplicate items in cart by merging quantities
@@ -1272,7 +1272,7 @@ const RunningOrders = () => {
       console.log('Before cleanup - Cart items:', prevItems);
 
       prevItems.forEach(item => {
-        const key = `${item.food.id}-${JSON.stringify(item.variations)}`;
+        const key = `${item.food?.id || 'unknown'}-${JSON.stringify(item.variations)}`;
         console.log('Processing item:', item.food?.name || 'Unknown Food', 'with key:', key);
 
         if (itemMap.has(key)) {
@@ -2162,7 +2162,7 @@ const RunningOrders = () => {
     setCartItems(prev => prev.map(item => {
       if (item.id === itemId) {
         // Recalculate total price based on new quantity
-        const basePrice = item.food.price || 0;
+        const basePrice = item.food?.price || 0;
         let variationPrice = 0;
 
         // Calculate variation prices (same logic as calculateTotalPrice)
@@ -3024,11 +3024,11 @@ const RunningOrders = () => {
         // Prepare food details as JSON (including food info, variations, addons)
         const foodDetails = JSON.stringify({
           food: {
-            id: item.food.id,
+            id: item.food?.id || 0,
             name: item.food?.name || 'Unknown Food',
-            description: item.food.description,
-            price: item.food.price,
-            image: item.food.image
+            description: item.food?.description || '',
+            price: item.food?.price || 0,
+            image: item.food?.image || null
           },
           variations: item.variations,
           addons: item.adons,
@@ -3037,9 +3037,9 @@ const RunningOrders = () => {
         });
 
         return {
-          food_id: item.food.id,
+          food_id: item.food?.id || 0,
           order_id: orderId,
-          price: item.food.price,
+          price: item.food?.price || 0,
           food_details: foodDetails,
           item_note: null, // Can be added later
           variation: variations,
@@ -3572,7 +3572,7 @@ const RunningOrders = () => {
       // Prepare order details data for the draft items
       const orderDetailsArray = cartItems
         .filter(item => {
-          const isValid = item && item.food && item.food.id && item.quantity && item.food.price;
+          const isValid = item && item.food && item.food?.id && item.quantity && item.food?.price;
           if (!isValid) {
             console.warn('Filtered out invalid cart item:', item);
           }
@@ -3581,9 +3581,9 @@ const RunningOrders = () => {
         .map(item => {
           const orderDetail = {
             order_id: orderId,
-            food_id: item.food.id,
+            food_id: item.food?.id || 0,
             quantity: item.quantity,
-            price: item.food.price, // Use food.price instead of item.price
+            price: item.food?.price || 0, // Use food.price instead of item.price
             food_details: item.food?.name || null, // Add food name as food_details
             item_note: null, // No notes field in cart items
             variation: item.variations ? JSON.stringify(item.variations) : null, // Use 'variation' instead of 'variations'
@@ -4339,7 +4339,7 @@ const RunningOrders = () => {
           return {
             ...split,
             items: split.items.map(i =>
-              i.food.id === item.food.id
+              i.food?.id === item.food?.id
                 ? { ...i, quantity: (i.quantity || 0) + 1, totalPrice: ((i.totalPrice || 0) / (i.quantity || 1)) * ((i.quantity || 0) + 1) }
                 : i
             )
@@ -4374,7 +4374,7 @@ const RunningOrders = () => {
             return {
               ...split,
               items: split.items.map(i =>
-                i.food.id === item.food.id
+                i.food?.id === item.food?.id
                   ? { ...i, quantity: (i.quantity || 0) - 1, totalPrice: ((i.totalPrice || 0) / (i.quantity || 1)) * ((i.quantity || 0) - 1) }
                   : i
               )
@@ -6604,7 +6604,7 @@ const RunningOrders = () => {
                           {splitItems.map((item) => (
                             <tr key={item.id} className="border-t border-gray-100">
                               <td className="px-3 py-2 text-sm text-gray-800">
-                                <span className="truncate">{item.food.name}</span>
+                                <span className="truncate">{item.food?.name || 'Unknown Food'}</span>
                               </td>
                               <td className="px-3 py-2 text-sm text-center text-gray-600">
                                 €{(item.totalPrice / item.quantity).toFixed(2)}
@@ -8111,7 +8111,7 @@ const RunningOrders = () => {
                     {cartItems.slice(0, 5).map((item, index) => (
                       <div key={item.id} className="flex items-center justify-between text-sm">
                         <span className="text-gray-600 truncate flex-1">
-                          {index + 1}. {item.food.name}
+                          {index + 1}. {item.food?.name || 'Unknown Food'}
                         </span>
                         <span className="text-gray-500 ml-2">
                           Qty: {item.quantity}
