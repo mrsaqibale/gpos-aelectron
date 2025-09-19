@@ -311,6 +311,9 @@ const RunningOrders = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [customIngredients, setCustomIngredients] = useState([]);
   
+  // Track removed default ingredients per slice
+  const [removedDefaultIngredients, setRemovedDefaultIngredients] = useState({});
+  
   // State for slice-specific pizza selection and ingredients
   const [selectedPizzaPerSlice, setSelectedPizzaPerSlice] = useState({});
   const [ingredientsPerSlice, setIngredientsPerSlice] = useState({});
@@ -6930,7 +6933,15 @@ const RunningOrders = () => {
                         // Find which flavor is currently selected
                         const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
                         const selectedPizza = selectedIndex ? selectedPizzaPerSlice[selectedIndex] : null;
-                        const defaultIngredients = selectedPizza ? getIngredientsForSelectedSlice(parseInt(selectedIndex)) : [];
+                        const allDefaultIngredients = selectedPizza ? getIngredientsForSelectedSlice(parseInt(selectedIndex)) : [];
+                        
+                        // Filter out removed default ingredients
+                        const removedForThisSlice = removedDefaultIngredients[selectedIndex] || [];
+                        const defaultIngredients = allDefaultIngredients.filter(ingredient => 
+                          !removedForThisSlice.some(removed => 
+                            (removed.name || removed) === (ingredient.name || ingredient)
+                          )
+                        );
                         
                         // Combine default ingredients with custom ingredients
                         const allIngredients = [...defaultIngredients, ...pizzaIngredients];
@@ -6938,13 +6949,27 @@ const RunningOrders = () => {
                         if (selectedPizza && allIngredients.length > 0) {
                           return (
                             <div className="flex flex-wrap gap-2">
-                              {/* Default ingredients */}
+                              {/* Default ingredients with cross buttons */}
                               {defaultIngredients.map((ingredient, idx) => (
                                 <span
                                   key={`default-${idx}`}
-                                  className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                                  className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1"
                                 >
                                   {ingredient.name || ingredient}
+                                  <button
+                                    onClick={() => {
+                                      // Remove from default ingredients by filtering them out
+                                      const updatedIngredients = defaultIngredients.filter((_, index) => index !== idx);
+                                      // Update the ingredients for this slice
+                                      setIngredientsPerSlice(prev => ({
+                                        ...prev,
+                                        [selectedIndex]: updatedIngredients
+                                      }));
+                                    }}
+                                    className="text-blue-800 hover:text-red-600"
+                                  >
+                                    <X size={10} />
+                                  </button>
                                 </span>
                               ))}
                               
