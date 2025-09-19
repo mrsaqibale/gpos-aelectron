@@ -2606,12 +2606,12 @@ const RunningOrders = () => {
   };
 
 
-  // Different colors for each slice
+  // Different colors for each slice - default dark yellow, then specific colors when selected
   const sliceColors = [
-    "#FF6B6B", // Red
-    "#4ECDC4", // Teal
-    "#45B7D1", // Blue
-    "#96CEB4"  // Green
+    "#B8860B", // Dark Goldenrod (default)
+    "#8B4513", // Saddle Brown
+    "#2F4F4F", // Dark Slate Gray
+    "#8B008B"  // Dark Magenta
   ];
 
   const renderPizzaSlices = () => {
@@ -2632,15 +2632,12 @@ const RunningOrders = () => {
       // Create large arc flag (1 if angle > 180 degrees, 0 otherwise)
       const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
 
-      // Determine fill color - use different color for each slice, darker when pizza is selected
-      let fillColor = sliceColors[i] || "#FFD700"; // Use slice-specific color or default gold
+      // Determine fill color - default dark yellow, change when pizza is selected
+      let fillColor = "#B8860B"; // Default dark yellow
       
       if (hasPizzaSelected) {
-        // Make the color darker when pizza is selected
-        fillColor = sliceColors[i] || "#22C55E";
-      } else {
-        // Lighter version when no pizza selected
-        fillColor = sliceColors[i] + "80" || "#FFD700"; // Add transparency
+        // Use slice-specific color when pizza is selected
+        fillColor = sliceColors[i] || "#B8860B";
       }
 
       slices.push(
