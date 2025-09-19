@@ -314,6 +314,9 @@ const RunningOrders = () => {
   // Track removed default ingredients per slice
   const [removedDefaultIngredients, setRemovedDefaultIngredients] = useState({});
   
+  // Track ingredients per flavor (both default and custom)
+  const [flavorIngredients, setFlavorIngredients] = useState({}); // { flavorIndex: { default: [], custom: [] } }
+  
   // State for slice-specific pizza selection and ingredients
   const [selectedPizzaPerSlice, setSelectedPizzaPerSlice] = useState({});
   const [ingredientsPerSlice, setIngredientsPerSlice] = useState({});
@@ -6951,11 +6954,11 @@ const RunningOrders = () => {
                         if (selectedPizza && allIngredients.length > 0) {
                           return (
                             <div className="flex flex-wrap gap-2">
-                              {/* Default ingredients with cross buttons */}
+                              {/* Default ingredients with same design as custom */}
                               {defaultIngredients.map((ingredient, idx) => (
                                 <span
                                   key={`default-${idx}`}
-                                  className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-1"
+                                  className="bg-primary text-white px-3 py-1 rounded-full text-sm flex items-center gap-1"
                                 >
                                   {ingredient.name || ingredient}
                                   <button
@@ -6967,14 +6970,14 @@ const RunningOrders = () => {
                                         [selectedIndex]: [...(prev[selectedIndex] || []), { name: ingredientToRemove }]
                                       }));
                                     }}
-                                    className="text-blue-800 hover:text-red-600"
+                                    className="text-white hover:text-red-200"
                                   >
                                     <X size={10} />
                                   </button>
                                 </span>
                               ))}
                               
-                              {/* Custom ingredients */}
+                              {/* Custom ingredients - same design */}
                               {pizzaIngredients.map((ingredient, idx) => (
                                 <span
                                   key={`custom-${ingredient.id}`}
