@@ -472,8 +472,12 @@ const FoodForm = ({ food, onSubmit }) => {
       setFormData(prev => ({ ...prev, tax: isNaN(foodTaxFromSettings) ? '' : foodTaxFromSettings }));
     } else if (taxSource === 'standard') {
       setFormData(prev => ({ ...prev, tax: isNaN(standardTaxFromSettings) ? '' : standardTaxFromSettings }));
+    } else if (taxSource === 'delivery') {
+      setFormData(prev => ({ ...prev, tax: isNaN(deliveryTaxFromSettings) ? '' : deliveryTaxFromSettings }));
+    } else if (taxSource === 'service') {
+      setFormData(prev => ({ ...prev, tax: isNaN(serviceTaxFromSettings) ? '' : serviceTaxFromSettings }));
     }
-  }, [taxSource, foodTaxFromSettings, standardTaxFromSettings]);
+  }, [taxSource, foodTaxFromSettings, standardTaxFromSettings, deliveryTaxFromSettings, serviceTaxFromSettings]);
 
   // Always store tax source in tax_type for DB
   useEffect(() => {
@@ -1525,6 +1529,8 @@ const FoodForm = ({ food, onSubmit }) => {
                     >
                       <option value="food">{`Food Tax ${!isNaN(foodTaxFromSettings) ? `(${foodTaxFromSettings}%)` : ''}`}</option>
                       <option value="standard">{`Standard Tax ${!isNaN(standardTaxFromSettings) ? `(${standardTaxFromSettings}%)` : ''}`}</option>
+                      <option value="delivery">{`Delivery Tax ${!isNaN(deliveryTaxFromSettings) ? `(${deliveryTaxFromSettings}%)` : ''}`}</option>
+                      <option value="service">{`Service Tax ${!isNaN(serviceTaxFromSettings) ? `(${serviceTaxFromSettings}%)` : ''}`}</option>
                       <option value="custom">Custom</option>
                     </select>
                     <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
