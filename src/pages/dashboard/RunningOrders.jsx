@@ -6900,9 +6900,9 @@ const RunningOrders = () => {
                   <div className="bg-white border border-gray-200 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Select Flavors</h3>
                     
-                    {/* Two flavor selections side by side */}
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                      {Array.from({ length: Math.min(pizzaSlices, 2) }, (_, index) => (
+                    {/* Flavor selections - show all selected splits */}
+                    <div className={`grid gap-4 mb-6 ${pizzaSlices === 2 ? 'grid-cols-2' : pizzaSlices === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      {Array.from({ length: pizzaSlices }, (_, index) => (
                         <div key={index}>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Flavor {index + 1}:
@@ -6923,24 +6923,44 @@ const RunningOrders = () => {
                       ))}
                     </div>
 
-                    {/* Show ingredients of selected flavor */}
+                    {/* Show ingredients of selected flavor + custom ingredients */}
                     <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Flavor Ingredients:</h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Ingredients:</h4>
                       {(() => {
                         // Find which flavor is currently selected
                         const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
                         const selectedPizza = selectedIndex ? selectedPizzaPerSlice[selectedIndex] : null;
-                        const ingredients = selectedPizza ? getIngredientsForSelectedSlice(parseInt(selectedIndex)) : [];
+                        const defaultIngredients = selectedPizza ? getIngredientsForSelectedSlice(parseInt(selectedIndex)) : [];
                         
-                        if (selectedPizza && ingredients.length > 0) {
+                        // Combine default ingredients with custom ingredients
+                        const allIngredients = [...defaultIngredients, ...pizzaIngredients];
+                        
+                        if (selectedPizza && allIngredients.length > 0) {
                           return (
                             <div className="flex flex-wrap gap-2">
-                              {ingredients.map((ingredient, idx) => (
+                              {/* Default ingredients */}
+                              {defaultIngredients.map((ingredient, idx) => (
                                 <span
-                                  key={idx}
+                                  key={`default-${idx}`}
                                   className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
                                 >
                                   {ingredient.name || ingredient}
+                                </span>
+                              ))}
+                              
+                              {/* Custom ingredients */}
+                              {pizzaIngredients.map((ingredient, idx) => (
+                                <span
+                                  key={`custom-${ingredient.id}`}
+                                  className="bg-primary text-white px-3 py-1 rounded-full text-sm flex items-center gap-1"
+                                >
+                                  {ingredient.name}
+                                  <button
+                                    onClick={() => setPizzaIngredients(prev => prev.filter(ing => ing.id !== ingredient.id))}
+                                    className="text-white hover:text-red-200"
+                                  >
+                                    <X size={10} />
+                                  </button>
                                 </span>
                               ))}
                             </div>
@@ -6993,28 +7013,6 @@ const RunningOrders = () => {
                       )}
                     </div>
 
-                    {/* Display all selected custom ingredients */}
-                    {pizzaIngredients.length > 0 && (
-                      <div className="mt-4">
-                        <h5 className="text-sm font-medium text-gray-700 mb-2">Custom Ingredients:</h5>
-                        <div className="flex flex-wrap gap-2">
-                          {pizzaIngredients.map((ingredient) => (
-                            <span
-                              key={ingredient.id}
-                              className="bg-primary text-white px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                            >
-                              {ingredient.name}
-                              <button
-                                onClick={() => setPizzaIngredients(prev => prev.filter(ing => ing.id !== ingredient.id))}
-                                className="text-white hover:text-red-200"
-                              >
-                                <X size={12} />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
 
