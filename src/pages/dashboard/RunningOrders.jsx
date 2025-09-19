@@ -2424,15 +2424,32 @@ const RunningOrders = () => {
         // Fetch ingredients for this pizza
         const result = await window.myAPI.getFoodIngredients(foodId);
         if (result.success) {
+          const ingredients = result.data || [];
           setIngredientsPerSlice(prev => ({
             ...prev,
-            [sliceIndex]: result.data || []
+            [sliceIndex]: ingredients
+          }));
+          
+          // Initialize flavor ingredients with default ingredients
+          setFlavorIngredients(prev => ({
+            ...prev,
+            [sliceIndex]: {
+              default: ingredients,
+              custom: []
+            }
           }));
         } else {
           console.error('Failed to fetch pizza ingredients:', result.message);
           setIngredientsPerSlice(prev => ({
             ...prev,
             [sliceIndex]: []
+          }));
+          setFlavorIngredients(prev => ({
+            ...prev,
+            [sliceIndex]: {
+              default: [],
+              custom: []
+            }
           }));
         }
       }
@@ -6965,18 +6982,15 @@ const RunningOrders = () => {
                         // Get stored ingredients for this flavor
                         const storedIngredients = flavorIngredients[selectedIndex] || { default: [], custom: [] };
                         
-                        // Get fresh default ingredients for this pizza
-                        const freshDefaultIngredients = getIngredientsForSelectedSlice(parseInt(selectedIndex));
-                        
-                        // Combine fresh defaults with stored custom ingredients
-                        const allIngredients = [...freshDefaultIngredients, ...storedIngredients.custom];
+                        // Use stored ingredients (which include both default and custom)
+                        const allIngredients = [...storedIngredients.default, ...storedIngredients.custom];
                         
                         if (allIngredients.length > 0) {
                           return (
                             <div className="flex flex-wrap gap-2">
                               {/* All ingredients with same design */}
                               {allIngredients.map((ingredient, idx) => {
-                                const isDefault = idx < freshDefaultIngredients.length;
+                                const isDefault = idx < storedIngredients.default.length;
                                 const ingredientName = ingredient.name || ingredient;
                                 
                                 return (
@@ -6989,7 +7003,7 @@ const RunningOrders = () => {
                                       onClick={() => {
                                         if (isDefault) {
                                           // Remove from default ingredients
-                                          const updatedDefaults = freshDefaultIngredients.filter((_, index) => index !== idx);
+                                          const updatedDefaults = storedIngredients.default.filter((_, index) => index !== idx);
                                           setFlavorIngredients(prev => ({
                                             ...prev,
                                             [selectedIndex]: {
@@ -6999,7 +7013,7 @@ const RunningOrders = () => {
                                           }));
                                         } else {
                                           // Remove from custom ingredients
-                                          const customIdx = idx - freshDefaultIngredients.length;
+                                          const customIdx = idx - storedIngredients.default.length;
                                           const updatedCustom = storedIngredients.custom.filter((_, index) => index !== customIdx);
                                           setFlavorIngredients(prev => ({
                                             ...prev,
