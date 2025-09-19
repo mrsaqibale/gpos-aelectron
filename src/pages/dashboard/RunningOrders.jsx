@@ -2486,34 +2486,37 @@ const RunningOrders = () => {
 
   // Save custom pizza to cart
   const handleSaveCustomPizza = () => {
-    if (!selectedPizzaFood) {
-      showError('Please select a pizza base');
+    if (!pizzaPrice || pizzaPrice <= 0) {
+      showError('Please enter a valid price for the pizza');
       return;
     }
 
-    if (pizzaIngredients.length === 0) {
-      showError('Please add at least one ingredient');
+    // Validate that at least one slice has a pizza selected
+    const hasSelectedPizza = Object.keys(selectedPizzaPerSlice).some(sliceIndex => selectedPizzaPerSlice[sliceIndex]);
+    if (!hasSelectedPizza) {
+      showError('Please select at least one pizza type for the slices');
       return;
     }
 
-    const customPrice = parseFloat(pizzaPrice) || selectedPizzaFood.price;
+    const customPrice = parseFloat(pizzaPrice);
     const tax = calculateTaxAmount(customPrice);
     const totalPrice = customPrice + tax;
 
-    // Create custom pizza item
+    // Create custom pizza item with all slice data
     const customPizzaItem = {
       id: `custom_pizza_${Date.now()}`,
-      foodId: selectedPizzaFood.id,
-      name: `${selectedPizzaFood.name} (Custom)`,
+      name: `Custom Pizza (${pizzaSize}" - ${pizzaSlices} halves)`,
       price: customPrice,
       tax: tax,
       totalPrice: totalPrice,
       quantity: 1,
       variations: {},
       adons: [],
-      ingredients: pizzaIngredients,
       slices: pizzaSlices,
-      sliceIngredients: selectedPizzaFlavors,
+      size: pizzaSize,
+      selectedPizzas: selectedPizzaPerSlice,
+      sliceIngredients: ingredientsPerSlice,
+      sliceColors: sliceColors,
       customNote: pizzaNote,
       isCustomPizza: true
     };
@@ -2530,7 +2533,7 @@ const RunningOrders = () => {
     }
 
     // Show success message
-    showSuccess('Custom pizza added to cart!');
+    showSuccess(`Custom ${pizzaSize}" pizza with ${pizzaSlices} halves added to cart!`);
     
     // Close modal
     handleCloseSplitPizzaModal();
@@ -2547,6 +2550,7 @@ const RunningOrders = () => {
     setShowIngredientSuggestions(false);
     setCurrentIngredients([]);
     setPizzaPrice('');
+    setPizzaSize('12');
     setPizzaNote('');
   };
 
