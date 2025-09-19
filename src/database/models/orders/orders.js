@@ -56,8 +56,10 @@ export function createOrder(orderData) {
         delivery_instruction, unavailable_item_note, additional_charge,
         partially_paid_amount, order_proof, cash_back_id, extra_packaging_amount,
         table_details, isdeleted, issyncronized, ready_date, draft_name, isreported,
-        ontheway, waiter, order_number, placed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ontheway, waiter, order_number, placed_at, delivery_tax_percentage,
+        delivery_tax_amount, food_tax_amount, service_tax_amount, service_tax_percentage,
+        service_name, payment_method1_amount, payment_method2, payment_method2_amount
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     // Count the placeholders
@@ -129,7 +131,16 @@ export function createOrder(orderData) {
       orderData.ontheway || null,
       orderData.waiter || null,
       orderData.order_number || null,
-      orderData.placed_at || null
+      orderData.placed_at || null,
+      orderData.delivery_tax_percentage || 0,
+      orderData.delivery_tax_amount || 0,
+      orderData.food_tax_amount || 0,
+      orderData.service_tax_amount || 0,
+      orderData.service_tax_percentage || 0,
+      orderData.service_name || null,
+      orderData.payment_method1_amount || 0,
+      orderData.payment_method2 || null,
+      orderData.payment_method2_amount || 0
     ];
     
     console.log('Number of values:', values.length);
