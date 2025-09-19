@@ -324,32 +324,7 @@ const RunningOrders = () => {
   const [customTime, setCustomTime] = useState('');
   const [useCustomTime, setUseCustomTime] = useState(false);
 
-  // Flavor to ingredients mapping
-  const flavorIngredients = {
-    margherita: ['Mozzarella', 'Tomato Sauce', 'Basil', 'Olive Oil'],
-    pepperoni: ['Mozzarella', 'Tomato Sauce', 'Pepperoni', 'Oregano'],
-    hawaiian: ['Mozzarella', 'Tomato Sauce', 'Ham', 'Pineapple'],
-    vegetarian: ['Mozzarella', 'Tomato Sauce', 'Mushrooms', 'Bell Peppers', 'Onions', 'Spinach'],
-    'bbq-chicken': ['Mozzarella', 'BBQ Sauce', 'Chicken', 'Red Onions', 'Cilantro'],
-    'meat-lovers': ['Mozzarella', 'Tomato Sauce', 'Pepperoni', 'Sausage', 'Bacon', 'Ham'],
-    supreme: ['Mozzarella', 'Tomato Sauce', 'Pepperoni', 'Sausage', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives'],
-    'buffalo-chicken': ['Mozzarella', 'Buffalo Sauce', 'Chicken', 'Red Onions', 'Ranch Drizzle']
-  };
 
-  // Flavor to color mapping
-  const flavorColors = {
-    margherita: '#FF6B6B',      // Red
-    pepperoni: '#FF8E53',       // Orange
-    hawaiian: '#FFD93D',        // Yellow
-    vegetarian: '#6BCF7F',      // Green
-    'bbq-chicken': '#8B4513',   // Brown
-    'meat-lovers': '#DC143C',   // Crimson
-    supreme: '#9370DB',         // Purple
-    'buffalo-chicken': '#FF4500' // Orange Red
-  };
-
-  // State for tracking selected flavors for each slice
-  const [selectedFlavors, setSelectedFlavors] = useState({});
 
   // Split Bill Modal State
   const [showSplitBillModal, setShowSplitBillModal] = useState(false);
@@ -2587,18 +2562,6 @@ const RunningOrders = () => {
 
 
 
-  // Handle flavor selection for each slice
-  const handleFlavorChange = (sliceIndex, flavor) => {
-    setSelectedFlavors(prev => ({
-      ...prev,
-      [sliceIndex]: flavor
-    }));
-  };
-
-  // Get ingredients for a specific flavor
-  const getIngredientsForFlavor = (flavor) => {
-    return flavorIngredients[flavor] || [];
-  };
 
   // Get ingredients for selected slice/half
   const getIngredientsForSelectedSlice = (sliceIndex) => {
@@ -2645,8 +2608,7 @@ const RunningOrders = () => {
     for (let i = 0; i < pizzaSlices; i++) {
       const startAngle = i * angleStep;
       const endAngle = (i + 1) * angleStep;
-      const isSelected = selectedSlices.includes(i);
-      const isCompleted = completedSlices.includes(i);
+      const hasPizzaSelected = selectedPizzaPerSlice[i]; // Check if pizza is selected for this slice
 
       // Calculate the slice path
       const x1 = 100 + 80 * Math.cos(startAngle * Math.PI / 180);
@@ -2657,31 +2619,15 @@ const RunningOrders = () => {
       // Create large arc flag (1 if angle > 180 degrees, 0 otherwise)
       const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
 
-      // Determine fill color based on state
+      // Determine fill color based on pizza selection
       let fillColor = "#FFD700"; // Default gold
-      const hasFlavorSelected = selectedFlavors[i]; // Check if flavor is selected for this slice
       
-      if (isCompleted) {
-        fillColor = "#22C55E"; // Green for completed
-      } else if (isSelected) {
-        fillColor = "#E6C200"; // Darker gold for selected
-      } else if (hasFlavorSelected) {
-        // Use the specific flavor color
-        fillColor = flavorColors[hasFlavorSelected] || "#D4AF37"; // Fallback to darker yellow if flavor not found
+      if (hasPizzaSelected) {
+        fillColor = "#22C55E"; // Green for selected pizza
       }
 
       slices.push(
         <g key={i}>
-          {/* Invisible clickable area - only if not completed */}
-          {!isCompleted && (
-            <path
-              d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-              fill="transparent"
-              stroke="none"
-              style={{ cursor: 'pointer' }}
-              onClick={() => handleSliceClick(i)}
-            />
-          )}
           {/* Visible slice */}
           <path
             d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
@@ -2689,10 +2635,8 @@ const RunningOrders = () => {
             stroke="#FF8C00"
             strokeWidth="2"
             style={{ 
-              cursor: isCompleted ? 'default' : 'pointer',
               transition: 'fill 0.3s ease-in-out'
             }}
-            onClick={() => !isCompleted && handleSliceClick(i)}
           />
         </g>
       );
