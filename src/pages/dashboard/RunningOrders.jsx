@@ -431,7 +431,7 @@ const RunningOrders = () => {
     onKeyboardKeyPress,
     resetKeyboardInputs,
     hideKeyboard
-  } = useVirtualKeyboard(['searchQuery', 'runningOrdersSearchQuery', 'couponCode']);
+  } = useVirtualKeyboard(['searchQuery', 'runningOrdersSearchQuery', 'couponCode', 'customIngredientInput', 'pizzaNote']);
 
   // Separate state for numeric keyboard
   const [numericActiveInput, setNumericActiveInput] = useState('');
@@ -1995,6 +1995,10 @@ const RunningOrders = () => {
       setCouponCode(input);
     } else if (inputName === 'discountAmount') {
       setDiscountAmount(input);
+    } else if (inputName === 'customIngredientInput') {
+      setCustomIngredientInput(input);
+    } else if (inputName === 'pizzaNote') {
+      setPizzaNote(input);
     }
   };
 
@@ -7137,8 +7141,20 @@ const RunningOrders = () => {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          value={customIngredientInput}
+                          value={virtualKeyboardActiveInput === 'customIngredientInput' ? virtualKeyboardInput : customIngredientInput}
                           onChange={(e) => handleCustomIngredientInput(e.target.value)}
+                          onFocus={(e) => {
+                            // Show virtual keyboard if enabled in settings
+                            if (settings?.selectKeyboard === 'GBoard') {
+                              handleInputFocus(e, 'customIngredientInput');
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // Hide virtual keyboard if it was shown
+                            if (settings?.selectKeyboard === 'GBoard') {
+                              handleCustomInputBlur(e, 'customIngredientInput');
+                            }
+                          }}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               handleAddCustomIngredient();
@@ -7174,7 +7190,31 @@ const RunningOrders = () => {
                   </div>
                 </div>
 
-                
+                {/* Note Field */}
+                <div className="mb-6">
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Order Note</h3>
+                    <textarea
+                      value={virtualKeyboardActiveInput === 'pizzaNote' ? virtualKeyboardInput : pizzaNote}
+                      onChange={(e) => setPizzaNote(e.target.value)}
+                      onFocus={(e) => {
+                        // Show virtual keyboard if enabled in settings
+                        if (settings?.selectKeyboard === 'GBoard') {
+                          handleInputFocus(e, 'pizzaNote');
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Hide virtual keyboard if it was shown
+                        if (settings?.selectKeyboard === 'GBoard') {
+                          handleCustomInputBlur(e, 'pizzaNote');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm resize-none"
+                      rows={3}
+                      placeholder="Add any special instructions or notes for this pizza order..."
+                    />
+                  </div>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 justify-end mt-6 pt-4 border-t border-gray-200">
