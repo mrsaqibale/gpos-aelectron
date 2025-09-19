@@ -42,7 +42,10 @@ const Invoice = ({
 
   const calculateTax = () => {
     const subtotal = calculateSubtotal();
-    return (subtotal * 0.135 / 1.135); // 13.5% VAT
+    // Get tax rate from settings, fallback to 13.5% VAT
+    const settings = typeof window !== 'undefined' ? (window.appSettings?.current || {}) : {};
+    const taxRate = parseFloat(settings?.standard_tax || settings?.food_tax || 13.5);
+    return (subtotal * taxRate / 100);
   };
 
   const calculateTotal = () => {
