@@ -51,9 +51,14 @@ const Invoice = ({
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
-    const deliveryCharge = order.orderType === 'Delivery' ? 2.00 : 0;
-    const serviceFee = order.orderType === 'Delivery' ? 0.75 : 0;
-    const bagFee = 0.22;
+    
+    // Get delivery and service settings
+    const settings = typeof window !== 'undefined' ? (window.appSettings?.current || {}) : {};
+    const deliveryFeePerKm = parseFloat(settings?.delivery_fee_per_km || 2.00);
+    const serviceFee = order.orderType === 'Delivery' ? 0.75 : 0; // This could be made configurable too
+    const bagFee = 0.22; // This could be made configurable too
+    
+    const deliveryCharge = order.orderType === 'Delivery' ? deliveryFeePerKm : 0;
     
     return subtotal + tax + deliveryCharge + serviceFee + bagFee;
   };

@@ -51,10 +51,16 @@ const PrintableInvoice = ({
 	// Derived totals if not fully provided
 	const computed = useMemo(() => {
 		const subtotal = totals?.subtotal ?? items.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
+		
+		// Get settings for calculations
+		const settings = typeof window !== 'undefined' ? (window.appSettings?.current || {}) : {};
+		const taxRate = parseFloat(settings?.standard_tax || settings?.food_tax || 13.5);
+		const deliveryFeePerKm = parseFloat(settings?.delivery_fee_per_km || 2.0);
+		
 		const bagFee = totals?.bagFee ?? 0.22;
 		const serviceFee = totals?.serviceFee ?? (meta.orderType === 'Delivery' ? 0.75 : 0);
-		const deliveryCharge = totals?.deliveryCharge ?? (meta.orderType === 'Delivery' ? 2.0 : 0);
-		const tax = totals?.tax ?? ((subtotal * 0.135) / 1.135);
+		const deliveryCharge = totals?.deliveryCharge ?? (meta.orderType === 'Delivery' ? deliveryFeePerKm : 0);
+		const tax = totals?.tax ?? (subtotal * taxRate / 100);
 		const total = totals?.total ?? (subtotal + bagFee + serviceFee + deliveryCharge + tax);
 		return { subtotal, bagFee, serviceFee, deliveryCharge, tax, total };
 	}, [items, meta.orderType, totals]);
