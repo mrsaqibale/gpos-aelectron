@@ -2425,6 +2425,9 @@ const RunningOrders = () => {
           [sliceIndex]: selectedFood
         }));
         
+        // Automatically select this flavor for ingredient editing
+        setSelectedFlavorForEditing(sliceIndex);
+        
         // Fetch ingredients for this pizza
         const result = await window.myAPI.getFoodIngredients(foodId);
         if (result.success) {
@@ -2511,10 +2514,8 @@ const RunningOrders = () => {
       return;
     }
 
-    // Find which flavor is currently selected
-    const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
-    
-    if (!selectedIndex) {
+    // Check if a flavor is selected for editing
+    if (selectedFlavorForEditing === null) {
       showError('Please select a flavor first');
       return;
     }
@@ -2529,12 +2530,12 @@ const RunningOrders = () => {
     setFlavorIngredients(prev => {
       const updated = {
         ...prev,
-        [selectedIndex]: {
-          default: prev[selectedIndex]?.default || [],
-          custom: [...(prev[selectedIndex]?.custom || []), newIngredient]
+        [selectedFlavorForEditing]: {
+          default: prev[selectedFlavorForEditing]?.default || [],
+          custom: [...(prev[selectedFlavorForEditing]?.custom || []), newIngredient]
         }
       };
-      console.log(`Added custom ingredient "${newIngredient.name}" to slice ${selectedIndex}. Updated ingredients:`, updated[selectedIndex]);
+      console.log(`Added custom ingredient "${newIngredient.name}" to slice ${selectedFlavorForEditing}. Updated ingredients:`, updated[selectedFlavorForEditing]);
       return updated;
     });
     
