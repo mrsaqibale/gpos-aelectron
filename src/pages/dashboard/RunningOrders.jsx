@@ -2609,6 +2609,7 @@ const RunningOrders = () => {
     setPizzaNote('');
     setRemovedDefaultIngredients({});
     setFlavorIngredients({});
+    console.log('Pizza modal closed - all state reset');
   };
 
 
@@ -2633,16 +2634,9 @@ const RunningOrders = () => {
     return [];
   };
 
-  // Get all unique ingredients from all selected slices
-  const getAllSelectedIngredients = () => {
-    const allIngredients = new Set();
-    Object.keys(selectedPizzaPerSlice).forEach(sliceIndex => {
-      const ingredients = getIngredientsForSelectedSlice(parseInt(sliceIndex));
-      ingredients.forEach(ingredient => {
-        allIngredients.add(ingredient.name || ingredient);
-      });
-    });
-    return Array.from(allIngredients).sort(); // Sort alphabetically
+  // Get saved ingredients for a specific slice (user's modifications)
+  const getSavedIngredientsForSlice = (sliceIndex) => {
+    return flavorIngredients[sliceIndex] || { default: [], custom: [] };
   };
 
   // State to track current ingredients for better reactivity
@@ -2651,16 +2645,6 @@ const RunningOrders = () => {
   // Order Details Modal State
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
 
-  // Update ingredients whenever pizza selection changes
-  useEffect(() => {
-    const ingredients = getAllSelectedIngredients();
-    setCurrentIngredients(ingredients);
-  }, [selectedPizzaPerSlice, ingredientsPerSlice]);
-
-  // Handle removing an ingredient from current ingredients list
-  const handleRemoveCurrentIngredient = (ingredientToRemove) => {
-    setCurrentIngredients(prev => prev.filter(ingredient => ingredient !== ingredientToRemove));
-  };
 
 
   // Different colors for each slice - default dark yellow, then specific colors when selected
@@ -6961,7 +6945,8 @@ const RunningOrders = () => {
                     <div className={`grid gap-4 mb-6 ${pizzaSlices === 2 ? 'grid-cols-2' : pizzaSlices === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                       {Array.from({ length: pizzaSlices }, (_, index) => {
                         const isCurrentlySelected = Object.keys(selectedPizzaPerSlice).find(idx => selectedPizzaPerSlice[idx]) === index.toString();
-                        const hasSavedIngredients = flavorIngredients[index] && (flavorIngredients[index].default.length > 0 || flavorIngredients[index].custom.length > 0);
+                        const savedIngredients = getSavedIngredientsForSlice(index);
+                        const hasSavedIngredients = savedIngredients.default.length > 0 || savedIngredients.custom.length > 0;
                         
                         return (
                           <div key={index} className={`p-3 rounded-lg border-2 transition-colors ${
@@ -6993,7 +6978,7 @@ const RunningOrders = () => {
                             </select>
                             {hasSavedIngredients && (
                               <div className="mt-2 text-xs text-gray-600">
-                                {flavorIngredients[index].default.length + flavorIngredients[index].custom.length} ingredients
+                                {savedIngredients.default.length + savedIngredients.custom.length} ingredients
                               </div>
                             )}
                           </div>
@@ -7013,7 +6998,8 @@ const RunningOrders = () => {
                         </h4>
                         {(() => {
                           const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
-                          const hasSavedIngredients = selectedIndex && flavorIngredients[selectedIndex] && (flavorIngredients[selectedIndex].default.length > 0 || flavorIngredients[selectedIndex].custom.length > 0);
+                          const savedIngredients = selectedIndex ? getSavedIngredientsForSlice(selectedIndex) : { default: [], custom: [] };
+                          const hasSavedIngredients = savedIngredients.default.length > 0 || savedIngredients.custom.length > 0;
                           
                           if (hasSavedIngredients) {
                             return (
@@ -7052,7 +7038,7 @@ const RunningOrders = () => {
                         }
                         
                         // Get stored ingredients for this flavor (this contains the user's saved modifications)
-                        const storedIngredients = flavorIngredients[selectedIndex] || { default: [], custom: [] };
+                        const storedIngredients = getSavedIngredientsForSlice(selectedIndex);
                         
                         // Use stored ingredients (which include both default and custom)
                         const allIngredients = [...storedIngredients.default, ...storedIngredients.custom];
