@@ -291,19 +291,6 @@ const RunningOrders = () => {
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
   const [pizzaSlices, setPizzaSlices] = useState(4);
-  const [selectedIngredients, setSelectedIngredients] = useState([
-    'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives',
-    'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
-  ]);
-  const [selectedSlices, setSelectedSlices] = useState([]);
-  const [completedSlices, setCompletedSlices] = useState([]);
-  const [sliceIngredients, setSliceIngredients] = useState({});
-  const [currentSliceSelection, setCurrentSliceSelection] = useState([]);
-  const [completedBatches, setCompletedBatches] = useState([]);
-  const [availableIngredients] = useState([
-    'Pepperoni', 'Mushrooms', 'Bell Peppers', 'Onions', 'Olives',
-    'Sausage', 'Bacon', 'Ham', 'Pineapple', 'Spinach'
-  ]);
 
   // Add state for pizza price
   const [pizzaPrice, setPizzaPrice] = useState('');
@@ -2412,21 +2399,16 @@ const RunningOrders = () => {
   // Split Pizza Modal Functions
   const handleOpenSplitPizzaModal = async () => {
     setShowSplitPizzaModal(true);
-    // Reset to all available ingredients when opening the modal
-    setSelectedIngredients([...availableIngredients]);
-    setCompletedSlices([]);
-    setSliceIngredients({});
-    setCurrentSliceSelection([]);
-    setCompletedBatches([]);
-    setSelectedFlavors({}); // Reset selected flavors
-    setCurrentIngredients([]); // Reset current ingredients
-    setSelectedPizzaFood(null);
+    setPizzaSlices(2);
+    setSelectedPizzaPerSlice({});
+    setIngredientsPerSlice({});
     setPizzaIngredients([]);
     setCustomIngredientInput('');
     setIngredientSuggestions([]);
     setShowIngredientSuggestions(false);
-    setSelectedPizzaPerSlice({});
-    setIngredientsPerSlice({});
+    setCurrentIngredients([]);
+    setPizzaPrice('');
+    setPizzaNote('');
     await fetchPizzaFoods();
   };
 
@@ -2478,15 +2460,19 @@ const RunningOrders = () => {
     }
   };
 
-  // Handle custom ingredient input with suggestions
+  // Handle custom ingredient input with alphabetical suggestions
   const handleCustomIngredientInput = async (value) => {
     setCustomIngredientInput(value);
     
-    if (value.length >= 2) {
+    if (value.length >= 1) {
       try {
         const result = await window.myAPI.searchIngredientsByName(value);
         if (result.success) {
-          setIngredientSuggestions(result.data || []);
+          // Sort suggestions alphabetically
+          const sortedSuggestions = (result.data || []).sort((a, b) => 
+            a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+          );
+          setIngredientSuggestions(sortedSuggestions);
           setShowIngredientSuggestions(true);
         }
       } catch (error) {
@@ -2577,40 +2563,17 @@ const RunningOrders = () => {
   const handleCloseSplitPizzaModal = () => {
     setShowSplitPizzaModal(false);
     setPizzaSlices(2);
-    setSelectedSlices([]);
-    setCompletedSlices([]);
-    setSliceIngredients({});
-    setCurrentSliceSelection([]);
-    setCompletedBatches([]);
-    setSelectedFlavors({}); // Reset selected flavors
-    setCurrentIngredients([]); // Reset current ingredients
-    // Don't reset selectedIngredients here - keep user's selection
+    setSelectedPizzaPerSlice({});
+    setIngredientsPerSlice({});
+    setPizzaIngredients([]);
+    setCustomIngredientInput('');
+    setIngredientSuggestions([]);
+    setShowIngredientSuggestions(false);
+    setCurrentIngredients([]);
+    setPizzaPrice('');
+    setPizzaNote('');
   };
 
-  const handleAddSliceIngredients = () => {
-    if (selectedSlices.length > 0) {
-      // Add selected slices to completed slices
-      setCompletedSlices(prev => [...prev, ...selectedSlices]);
-
-      // Save ingredients for these slices
-      const newSliceIngredients = { ...sliceIngredients };
-      selectedSlices.forEach(sliceIndex => {
-        newSliceIngredients[sliceIndex] = [...selectedIngredients];
-      });
-      setSliceIngredients(newSliceIngredients);
-
-      // Create a new batch with current slices and ingredients
-      const newBatch = {
-        slices: [...selectedSlices],
-        ingredients: [...selectedIngredients]
-      };
-      setCompletedBatches(prev => [...prev, newBatch]);
-
-      // Clear current selection
-      setSelectedSlices([]);
-      setSelectedIngredients([...availableIngredients]);
-    }
-  };
 
 
 
@@ -2623,24 +2586,6 @@ const RunningOrders = () => {
 
 
 
-  const handleRemoveIngredient = (ingredient) => {
-    setSelectedIngredients(selectedIngredients.filter(item => item !== ingredient));
-  };
-
-  const handleSliceClick = (sliceIndex) => {
-    // Don't allow selecting completed slices
-    if (completedSlices.includes(sliceIndex)) {
-      return;
-    }
-
-    setSelectedSlices(prev => {
-      if (prev.includes(sliceIndex)) {
-        return prev.filter(index => index !== sliceIndex);
-      } else {
-        return [...prev, sliceIndex];
-      }
-    });
-  };
 
   // Handle flavor selection for each slice
   const handleFlavorChange = (sliceIndex, flavor) => {
@@ -2655,17 +2600,24 @@ const RunningOrders = () => {
     return flavorIngredients[flavor] || [];
   };
 
-  // Get all unique ingredients from all selected flavors
+  // Get ingredients for selected slice/half
+  const getIngredientsForSelectedSlice = (sliceIndex) => {
+    if (selectedPizzaPerSlice[sliceIndex] && ingredientsPerSlice[sliceIndex]) {
+      return ingredientsPerSlice[sliceIndex];
+    }
+    return [];
+  };
+
+  // Get all unique ingredients from all selected slices
   const getAllSelectedIngredients = () => {
     const allIngredients = new Set();
-    Object.values(selectedFlavors).forEach(flavor => {
-      if (flavor && flavorIngredients[flavor]) {
-        flavorIngredients[flavor].forEach(ingredient => {
-          allIngredients.add(ingredient);
-        });
-      }
+    Object.keys(selectedPizzaPerSlice).forEach(sliceIndex => {
+      const ingredients = getIngredientsForSelectedSlice(parseInt(sliceIndex));
+      ingredients.forEach(ingredient => {
+        allIngredients.add(ingredient.name || ingredient);
+      });
     });
-    return Array.from(allIngredients).sort(); // Sort for consistent display
+    return Array.from(allIngredients).sort(); // Sort alphabetically
   };
 
   // State to track current ingredients for better reactivity
@@ -2674,24 +2626,17 @@ const RunningOrders = () => {
   // Order Details Modal State
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
 
-  // Update ingredients whenever flavors change
+  // Update ingredients whenever pizza selection changes
   useEffect(() => {
     const ingredients = getAllSelectedIngredients();
     setCurrentIngredients(ingredients);
-  }, [selectedFlavors]);
+  }, [selectedPizzaPerSlice, ingredientsPerSlice]);
 
   // Handle removing an ingredient from current ingredients list
   const handleRemoveCurrentIngredient = (ingredientToRemove) => {
     setCurrentIngredients(prev => prev.filter(ingredient => ingredient !== ingredientToRemove));
   };
 
-  // Handle adding custom note
-  const handleAddCustomNote = () => {
-    if (pizzaNote.trim()) {
-      setCurrentIngredients(prev => [...prev, pizzaNote.trim()]);
-      setPizzaNote('');
-    }
-  };
 
   const renderPizzaSlices = () => {
     const slices = [];
@@ -6940,16 +6885,6 @@ const RunningOrders = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Size:</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm">
-                      <option value="7">7"</option>
-                      <option value="10">10"</option>
-                      <option value="12">12"</option>
-                      <option value="14">14"</option>
-
-                    </select>
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">No. of Splits:</label>
                     <select 
                         value={pizzaSlices}
@@ -7019,38 +6954,42 @@ const RunningOrders = () => {
                       </div>
                       ))}
                     </div>
+                    {/* Show ingredients per slice */}
                     <div className='mt-4'>
-                  <div className="flex flex-wrap gap-2">
-                    {currentIngredients.length > 0 ? (
-                      currentIngredients.map((ingredient) => (
-                        <button
-                          key={ingredient}
-                              className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 hover:bg-primary/90"
-                            >
-                              <span>{ingredient}</span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveCurrentIngredient(ingredient);
-                                }}
-                                className="w-4 h-4 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                                title={`Remove ${ingredient}`}
-                              >
-                                <X size={12} className="text-white" />
-                              </button>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="text-gray-500 text-sm italic">
-                        Select flavors from the dropdowns above to see available ingredients
-                      </div>
-                    )}
-                  </div>
-                  {currentIngredients.length > 0 && (
-                    <div className="mt-3 text-xs text-gray-600">
-                      Showing ingredients from {Object.values(selectedFlavors).filter(f => f).length} selected flavor(s)
-                    </div>
-                  )}
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Available Ingredients:</h4>
+                      {Object.keys(selectedPizzaPerSlice).length > 0 ? (
+                        Object.keys(selectedPizzaPerSlice).map(sliceIndex => {
+                          const sliceNum = parseInt(sliceIndex);
+                          const ingredients = getIngredientsForSelectedSlice(sliceNum);
+                          const sliceName = sliceNum === 0 ? 'First' : sliceNum === 1 ? 'Second' : sliceNum === 2 ? 'Third' : sliceNum === 3 ? 'Fourth' : `${sliceNum + 1}th`;
+                          
+                          return (
+                            <div key={sliceIndex} className="mb-3">
+                              <div className="text-xs font-medium text-gray-600 mb-1">
+                                {sliceName} Half - {selectedPizzaPerSlice[sliceIndex]?.name}
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {ingredients.length > 0 ? (
+                                  ingredients.map((ingredient, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs"
+                                    >
+                                      {ingredient.name || ingredient}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-gray-400 text-xs">No ingredients available</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-gray-500 text-sm italic">
+                          Select pizza types from the dropdowns above to see available ingredients
+                        </div>
+                      )}
                     </div>
                     
                     {/* Custom Ingredients Section */}
@@ -7114,37 +7053,6 @@ const RunningOrders = () => {
                       )}
                     </div>
                     
-                    <div className="mt-2">
-                  <label htmlFor="customPizzaNote" className="block text-sm font-medium text-gray-700 mb-1">
-                    Add a custom note (optional)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      id="customPizzaNote"
-                      name="customPizzaNote"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="E.g. No onions, extra cheese..."
-                      value={pizzaNote || ''}
-                      onChange={e => setPizzaNote(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddCustomNote();
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={handleAddCustomNote}
-                      disabled={!pizzaNote.trim()}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${pizzaNote.trim()
-                          ? 'bg-primary text-white hover:bg-primary/90' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
                   </div>
                 </div>
 
@@ -7159,7 +7067,7 @@ const RunningOrders = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={handleCloseSplitPizzaModal}
+                    onClick={handleSaveCustomPizza}
                     className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Add to Order
