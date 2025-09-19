@@ -6931,73 +6931,77 @@ const RunningOrders = () => {
                       ))}
                     </div>
 
-                    {/* Show ingredients of selected flavor + custom ingredients */}
+                    {/* Show ingredients per flavor - separate tracking */}
                     <div className="mb-4">
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Ingredients:</h4>
                       {(() => {
                         // Find which flavor is currently selected
                         const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
                         const selectedPizza = selectedIndex ? selectedPizzaPerSlice[selectedIndex] : null;
-                        const allDefaultIngredients = selectedPizza ? getIngredientsForSelectedSlice(parseInt(selectedIndex)) : [];
                         
-                        // Filter out removed default ingredients
-                        const removedForThisSlice = removedDefaultIngredients[selectedIndex] || [];
-                        const defaultIngredients = allDefaultIngredients.filter(ingredient => 
-                          !removedForThisSlice.some(removed => 
-                            (removed.name || removed) === (ingredient.name || ingredient)
-                          )
-                        );
+                        if (!selectedPizza) {
+                          return <div className="text-gray-400 text-sm">Select a flavor above to see ingredients</div>;
+                        }
                         
-                        // Combine default ingredients with custom ingredients
-                        const allIngredients = [...defaultIngredients, ...pizzaIngredients];
+                        // Get stored ingredients for this flavor
+                        const storedIngredients = flavorIngredients[selectedIndex] || { default: [], custom: [] };
                         
-                        if (selectedPizza && allIngredients.length > 0) {
+                        // Get fresh default ingredients for this pizza
+                        const freshDefaultIngredients = getIngredientsForSelectedSlice(parseInt(selectedIndex));
+                        
+                        // Combine fresh defaults with stored custom ingredients
+                        const allIngredients = [...freshDefaultIngredients, ...storedIngredients.custom];
+                        
+                        if (allIngredients.length > 0) {
                           return (
                             <div className="flex flex-wrap gap-2">
-                              {/* Default ingredients with same design as custom */}
-                              {defaultIngredients.map((ingredient, idx) => (
-                                <span
-                                  key={`default-${idx}`}
-                                  className="bg-primary text-white px-3 py-1 rounded-full text-sm flex items-center gap-1"
-                                >
-                                  {ingredient.name || ingredient}
-                                  <button
-                                    onClick={() => {
-                                      // Add to removed ingredients list for this slice
-                                      const ingredientToRemove = ingredient.name || ingredient;
-                                      setRemovedDefaultIngredients(prev => ({
-                                        ...prev,
-                                        [selectedIndex]: [...(prev[selectedIndex] || []), { name: ingredientToRemove }]
-                                      }));
-                                    }}
-                                    className="text-white hover:text-red-200"
+                              {/* All ingredients with same design */}
+                              {allIngredients.map((ingredient, idx) => {
+                                const isDefault = idx < freshDefaultIngredients.length;
+                                const ingredientName = ingredient.name || ingredient;
+                                
+                                return (
+                                  <span
+                                    key={`${selectedIndex}-${idx}`}
+                                    className="bg-primary text-white px-3 py-1 rounded-full text-sm flex items-center gap-1"
                                   >
-                                    <X size={10} />
-                                  </button>
-                                </span>
-                              ))}
-                              
-                              {/* Custom ingredients - same design */}
-                              {pizzaIngredients.map((ingredient, idx) => (
-                                <span
-                                  key={`custom-${ingredient.id}`}
-                                  className="bg-primary text-white px-3 py-1 rounded-full text-sm flex items-center gap-1"
-                                >
-                                  {ingredient.name}
-                                  <button
-                                    onClick={() => setPizzaIngredients(prev => prev.filter(ing => ing.id !== ingredient.id))}
-                                    className="text-white hover:text-red-200"
-                                  >
-                                    <X size={10} />
-                                  </button>
-                                </span>
-                              ))}
+                                    {ingredientName}
+                                    <button
+                                      onClick={() => {
+                                        if (isDefault) {
+                                          // Remove from default ingredients
+                                          const updatedDefaults = freshDefaultIngredients.filter((_, index) => index !== idx);
+                                          setFlavorIngredients(prev => ({
+                                            ...prev,
+                                            [selectedIndex]: {
+                                              ...prev[selectedIndex],
+                                              default: updatedDefaults
+                                            }
+                                          }));
+                                        } else {
+                                          // Remove from custom ingredients
+                                          const customIdx = idx - freshDefaultIngredients.length;
+                                          const updatedCustom = storedIngredients.custom.filter((_, index) => index !== customIdx);
+                                          setFlavorIngredients(prev => ({
+                                            ...prev,
+                                            [selectedIndex]: {
+                                              ...prev[selectedIndex],
+                                              custom: updatedCustom
+                                            }
+                                          }));
+                                        }
+                                      }}
+                                      className="text-white hover:text-red-200"
+                                    >
+                                      <X size={10} />
+                                    </button>
+                                  </span>
+                                );
+                              })}
                             </div>
                           );
-                        } else if (selectedPizza) {
-                          return <div className="text-gray-400 text-sm">No ingredients available for this pizza</div>;
                         } else {
-                          return <div className="text-gray-400 text-sm">Select a flavor above to see ingredients</div>;
+                          return <div className="text-gray-400 text-sm">No ingredients available for this pizza</div>;
                         }
                       })()}
                     </div>
