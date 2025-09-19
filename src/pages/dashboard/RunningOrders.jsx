@@ -2502,7 +2502,7 @@ const RunningOrders = () => {
     const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
     
     if (!selectedIndex) {
-      alert('Please select a flavor first');
+      showError('Please select a flavor first');
       return;
     }
 
@@ -2516,7 +2516,7 @@ const RunningOrders = () => {
     setFlavorIngredients(prev => ({
       ...prev,
       [selectedIndex]: {
-        ...prev[selectedIndex],
+        default: prev[selectedIndex]?.default || [],
         custom: [...(prev[selectedIndex]?.custom || []), newIngredient]
       }
     }));
