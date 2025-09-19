@@ -2477,17 +2477,36 @@ const RunningOrders = () => {
 
   // Add custom ingredient
   const handleAddCustomIngredient = () => {
-    if (customIngredientInput.trim()) {
-      const newIngredient = {
-        id: `custom_${Date.now()}`,
-        name: customIngredientInput.trim(),
-        isCustom: true
-      };
-      setPizzaIngredients(prev => [...prev, newIngredient]);
-      setCustomIngredientInput('');
-      setShowIngredientSuggestions(false);
-      setIngredientSuggestions([]);
+    if (!customIngredientInput.trim()) {
+      return;
     }
+
+    // Find which flavor is currently selected
+    const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
+    
+    if (!selectedIndex) {
+      alert('Please select a flavor first');
+      return;
+    }
+
+    const newIngredient = {
+      id: `custom_${Date.now()}`,
+      name: customIngredientInput.trim(),
+      isCustom: true
+    };
+
+    // Add to the current flavor's custom ingredients
+    setFlavorIngredients(prev => ({
+      ...prev,
+      [selectedIndex]: {
+        ...prev[selectedIndex],
+        custom: [...(prev[selectedIndex]?.custom || []), newIngredient]
+      }
+    }));
+    
+    setCustomIngredientInput('');
+    setShowIngredientSuggestions(false);
+    setIngredientSuggestions([]);
   };
 
   // Save custom pizza to cart
@@ -2521,9 +2540,8 @@ const RunningOrders = () => {
       slices: pizzaSlices,
       size: pizzaSize,
       selectedPizzas: selectedPizzaPerSlice,
-      sliceIngredients: ingredientsPerSlice,
+      flavorIngredients: flavorIngredients,
       sliceColors: sliceColors,
-      removedIngredients: removedDefaultIngredients,
       customNote: pizzaNote,
       isCustomPizza: true
     };
@@ -2560,6 +2578,7 @@ const RunningOrders = () => {
     setPizzaSize('12');
     setPizzaNote('');
     setRemovedDefaultIngredients({});
+    setFlavorIngredients({});
   };
 
 
