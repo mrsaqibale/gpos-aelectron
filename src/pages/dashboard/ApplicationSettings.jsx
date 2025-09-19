@@ -47,6 +47,8 @@ const ApplicationSettings = () => {
     taxRate: "23",
     standardTax: "23",
     foodTax: "0",
+    deliveryTax: "0",
+    serviceTax: "0",
     timeZone: "Ireland Dublin",
     timeFormat: "12 hour",
   });
@@ -96,6 +98,8 @@ const ApplicationSettings = () => {
       taxRate: db?.tax_rate != null ? String(db.tax_rate) : "23",
       standardTax: db?.standard_tax != null ? String(db.standard_tax) : "23",
       foodTax: db?.food_tax != null ? String(db.food_tax) : "0",
+      deliveryTax: db?.delivery_tax != null ? String(db.delivery_tax) : "0",
+      serviceTax: db?.service_tax != null ? String(db.service_tax) : "0",
       timeZone: db?.time_zone || "Ireland Dublin",
       timeFormat: db?.time_format || "12 hour",
     });
@@ -400,6 +404,8 @@ const ApplicationSettings = () => {
       taxRate: businessSettings.taxRate,
       standardTax: businessSettings.standardTax,
       foodTax: businessSettings.foodTax,
+      deliveryTax: businessSettings.deliveryTax,
+      serviceTax: businessSettings.serviceTax,
       timeZone: businessSettings.timeZone,
       timeFormat: businessSettings.timeFormat,
       // Order Settings
@@ -805,6 +811,36 @@ const ApplicationSettings = () => {
                       step="0.01"
                       value={businessSettings.foodTax}
                       onChange={(e) => handleBusinessSettingChange("foodTax", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Delivery Tax */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Delivery Tax (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={businessSettings.deliveryTax}
+                      onChange={(e) => handleBusinessSettingChange("deliveryTax", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Service Tax */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Service Tax (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={businessSettings.serviceTax}
+                      onChange={(e) => handleBusinessSettingChange("serviceTax", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     />
                   </div>

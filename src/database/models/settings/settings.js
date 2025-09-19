@@ -58,6 +58,8 @@ function ensureSettingsTable() {
         tax_rate NUMERIC,
         standard_tax NUMERIC,
         food_tax NUMERIC,
+        delivery_tax NUMERIC,
+        service_tax NUMERIC,
         time_zone TEXT,
         time_format TEXT,
         minimum_order_amount NUMERIC,
@@ -194,6 +196,8 @@ export function upsertSettings(settingsData) {
       tax_rate: toNum(settingsData.tax_rate ?? settingsData.taxRate),
       standard_tax: toNum(settingsData.standard_tax ?? settingsData.standardTax),
       food_tax: toNum(settingsData.food_tax ?? settingsData.foodTax),
+      delivery_tax: toNum(settingsData.delivery_tax ?? settingsData.deliveryTax),
+      service_tax: toNum(settingsData.service_tax ?? settingsData.serviceTax),
       time_zone: settingsData.time_zone ?? settingsData.timeZone ?? null,
       time_format: settingsData.time_format ?? settingsData.timeFormat ?? null,
       // Order Configuration

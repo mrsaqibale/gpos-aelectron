@@ -459,6 +459,12 @@ const FoodForm = ({ food, onSubmit }) => {
   const standardTaxFromSettings = Number(
     settings?.standard_tax ?? settings?.standardTax ?? settings?.standard_tax_percentage ?? settings?.standardTaxPercent ?? 0
   );
+  const deliveryTaxFromSettings = Number(
+    settings?.delivery_tax ?? settings?.deliveryTax ?? settings?.delivery_tax_percentage ?? settings?.deliveryTaxPercent ?? 0
+  );
+  const serviceTaxFromSettings = Number(
+    settings?.service_tax ?? settings?.serviceTax ?? settings?.service_tax_percentage ?? settings?.serviceTaxPercent ?? 0
+  );
 
   // When taxSource or settings change and source is not custom, sync the tax value
   useEffect(() => {
