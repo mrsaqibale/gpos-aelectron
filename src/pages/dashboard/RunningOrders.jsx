@@ -1273,7 +1273,7 @@ const RunningOrders = () => {
 
       prevItems.forEach(item => {
         const key = `${item.food.id}-${JSON.stringify(item.variations)}`;
-        console.log('Processing item:', item.food.name, 'with key:', key);
+        console.log('Processing item:', item.food?.name || 'Unknown Food', 'with key:', key);
 
         if (itemMap.has(key)) {
           // Merge quantities
@@ -1284,7 +1284,7 @@ const RunningOrders = () => {
         } else {
           // Add new item
           itemMap.set(key, { ...item });
-          console.log('Added new item to map:', item.food.name);
+          console.log('Added new item to map:', item.food?.name || 'Unknown Food');
         }
       });
 
@@ -3025,7 +3025,7 @@ const RunningOrders = () => {
         const foodDetails = JSON.stringify({
           food: {
             id: item.food.id,
-            name: item.food.name,
+            name: item.food?.name || 'Unknown Food',
             description: item.food.description,
             price: item.food.price,
             image: item.food.image
@@ -3584,7 +3584,7 @@ const RunningOrders = () => {
             food_id: item.food.id,
             quantity: item.quantity,
             price: item.food.price, // Use food.price instead of item.price
-            food_details: item.food.name || null, // Add food name as food_details
+            food_details: item.food?.name || null, // Add food name as food_details
             item_note: null, // No notes field in cart items
             variation: item.variations ? JSON.stringify(item.variations) : null, // Use 'variation' instead of 'variations'
             add_ons: item.adons ? JSON.stringify(item.adons) : null, // Use 'add_ons' instead of 'adons'
@@ -5757,7 +5757,7 @@ const RunningOrders = () => {
                               <div key={index} className="flex justify-between items-start text-sm">
                                 <div className="flex-1">
                                   <div className="flex items-center">
-                                    <span className="font-medium text-gray-800">{item.food.name}</span>
+                                    <span className="font-medium text-gray-800">{item.food?.name || 'Unknown Food'}</span>
                                     <span className="text-blue-600 ml-2">x{item.quantity}</span>
                                   </div>
                                   
@@ -6310,7 +6310,7 @@ const RunningOrders = () => {
                         
                         <td className="text-gray-800 text-sm">
                           <div className="flex flex-col">
-                            <span className="font-medium">{item.food.name}</span>
+                            <span className="font-medium">{item.food?.name || 'Unknown Food'}</span>
                             
                             {/* Show variations if any */}
                             {item.variations && Object.keys(item.variations).length > 0 && (
