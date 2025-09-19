@@ -2430,14 +2430,23 @@ const RunningOrders = () => {
             [sliceIndex]: ingredients
           }));
           
-          // Initialize flavor ingredients with default ingredients
-          setFlavorIngredients(prev => ({
-            ...prev,
-            [sliceIndex]: {
-              default: ingredients,
-              custom: []
-            }
-          }));
+          // Check if we already have saved ingredients for this slice
+          const existingFlavorIngredients = flavorIngredients[sliceIndex];
+          
+          if (existingFlavorIngredients && existingFlavorIngredients.default.length > 0) {
+            // If we have saved ingredients, keep them (user has already modified this slice)
+            console.log(`Keeping saved ingredients for slice ${sliceIndex}:`, existingFlavorIngredients);
+          } else {
+            // Initialize with fresh default ingredients only if no saved data exists
+            setFlavorIngredients(prev => ({
+              ...prev,
+              [sliceIndex]: {
+                default: ingredients,
+                custom: []
+              }
+            }));
+            console.log(`Initialized fresh ingredients for slice ${sliceIndex}:`, ingredients);
+          }
         } else {
           console.error('Failed to fetch pizza ingredients:', result.message);
           setIngredientsPerSlice(prev => ({
@@ -2513,13 +2522,17 @@ const RunningOrders = () => {
     };
 
     // Add to the current flavor's custom ingredients
-    setFlavorIngredients(prev => ({
-      ...prev,
-      [selectedIndex]: {
-        default: prev[selectedIndex]?.default || [],
-        custom: [...(prev[selectedIndex]?.custom || []), newIngredient]
-      }
-    }));
+    setFlavorIngredients(prev => {
+      const updated = {
+        ...prev,
+        [selectedIndex]: {
+          default: prev[selectedIndex]?.default || [],
+          custom: [...(prev[selectedIndex]?.custom || []), newIngredient]
+        }
+      };
+      console.log(`Added custom ingredient "${newIngredient.name}" to slice ${selectedIndex}. Updated ingredients:`, updated[selectedIndex]);
+      return updated;
+    });
     
     setCustomIngredientInput('');
     setShowIngredientSuggestions(false);
@@ -6946,30 +6959,89 @@ const RunningOrders = () => {
                     
                     {/* Flavor selections - show all selected splits */}
                     <div className={`grid gap-4 mb-6 ${pizzaSlices === 2 ? 'grid-cols-2' : pizzaSlices === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                      {Array.from({ length: pizzaSlices }, (_, index) => (
-                        <div key={index}>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Flavor {index + 1}:
-                          </label>
-                          <select 
-                            value={selectedPizzaPerSlice[index]?.id || ''}
-                            onChange={(e) => handleSlicePizzaSelect(index, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-                          >
-                            <option value="">Select pizza...</option>
-                            {pizzaFoods.map((food) => (
-                              <option key={food.id} value={food.id}>
-                                {food.name} - €{food.price}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
+                      {Array.from({ length: pizzaSlices }, (_, index) => {
+                        const isCurrentlySelected = Object.keys(selectedPizzaPerSlice).find(idx => selectedPizzaPerSlice[idx]) === index.toString();
+                        const hasSavedIngredients = flavorIngredients[index] && (flavorIngredients[index].default.length > 0 || flavorIngredients[index].custom.length > 0);
+                        
+                        return (
+                          <div key={index} className={`p-3 rounded-lg border-2 transition-colors ${
+                            isCurrentlySelected 
+                              ? 'border-blue-500 bg-blue-50' 
+                              : hasSavedIngredients 
+                                ? 'border-green-300 bg-green-50' 
+                                : 'border-gray-200 bg-white'
+                          }`}>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Flavor {index + 1}:
+                              {hasSavedIngredients && (
+                                <span className="ml-2 text-xs text-green-600 font-normal">
+                                  (Modified)
+                                </span>
+                              )}
+                            </label>
+                            <select 
+                              value={selectedPizzaPerSlice[index]?.id || ''}
+                              onChange={(e) => handleSlicePizzaSelect(index, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                            >
+                              <option value="">Select pizza...</option>
+                              {pizzaFoods.map((food) => (
+                                <option key={food.id} value={food.id}>
+                                  {food.name} - €{food.price}
+                                </option>
+                              ))}
+                            </select>
+                            {hasSavedIngredients && (
+                              <div className="mt-2 text-xs text-gray-600">
+                                {flavorIngredients[index].default.length + flavorIngredients[index].custom.length} ingredients
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {/* Show ingredients per flavor - separate tracking */}
                     <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Ingredients:</h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-gray-700">
+                          Ingredients for {(() => {
+                            const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
+                            const selectedPizza = selectedIndex ? selectedPizzaPerSlice[selectedIndex] : null;
+                            return selectedPizza ? `Flavor ${parseInt(selectedIndex) + 1} (${selectedPizza.name})` : 'Selected Flavor';
+                          })()}:
+                        </h4>
+                        {(() => {
+                          const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
+                          const hasSavedIngredients = selectedIndex && flavorIngredients[selectedIndex] && (flavorIngredients[selectedIndex].default.length > 0 || flavorIngredients[selectedIndex].custom.length > 0);
+                          
+                          if (hasSavedIngredients) {
+                            return (
+                              <button
+                                onClick={() => {
+                                  const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
+                                  if (selectedIndex) {
+                                    // Reset to original ingredients
+                                    const originalIngredients = ingredientsPerSlice[selectedIndex] || [];
+                                    setFlavorIngredients(prev => ({
+                                      ...prev,
+                                      [selectedIndex]: {
+                                        default: originalIngredients,
+                                        custom: []
+                                      }
+                                    }));
+                                    console.log(`Reset ingredients for slice ${selectedIndex} to original:`, originalIngredients);
+                                  }
+                                }}
+                                className="text-xs text-red-600 hover:text-red-800 underline"
+                              >
+                                Reset to Original
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
                       {(() => {
                         // Find which flavor is currently selected
                         const selectedIndex = Object.keys(selectedPizzaPerSlice).find(index => selectedPizzaPerSlice[index]);
@@ -6979,7 +7051,7 @@ const RunningOrders = () => {
                           return <div className="text-gray-400 text-sm">Select a flavor above to see ingredients</div>;
                         }
                         
-                        // Get stored ingredients for this flavor
+                        // Get stored ingredients for this flavor (this contains the user's saved modifications)
                         const storedIngredients = flavorIngredients[selectedIndex] || { default: [], custom: [] };
                         
                         // Use stored ingredients (which include both default and custom)
@@ -7011,6 +7083,7 @@ const RunningOrders = () => {
                                               default: updatedDefaults
                                             }
                                           }));
+                                          console.log(`Removed default ingredient "${ingredientName}" from slice ${selectedIndex}. Updated defaults:`, updatedDefaults);
                                         } else {
                                           // Remove from custom ingredients
                                           const customIdx = idx - storedIngredients.default.length;
@@ -7022,6 +7095,7 @@ const RunningOrders = () => {
                                               custom: updatedCustom
                                             }
                                           }));
+                                          console.log(`Removed custom ingredient "${ingredientName}" from slice ${selectedIndex}. Updated custom:`, updatedCustom);
                                         }
                                       }}
                                       className="text-white hover:text-red-200"
