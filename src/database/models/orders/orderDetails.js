@@ -45,8 +45,9 @@ export function createOrderDetail(orderDetailData) {
       INSERT INTO order_details (
         food_id, order_id, price, food_details, item_note, variation,
         add_ons, discount_on_food, discount_type, quantity,
-        tax_amount, total_add_on_price, issynicronized, isdeleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        tax_amount, total_add_on_price, issynicronized, isdeleted,
+        iscreateyourown, isopen
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const values = [
@@ -63,7 +64,9 @@ export function createOrderDetail(orderDetailData) {
       orderDetailData.tax_amount || 0,
       orderDetailData.total_add_on_price || 0,
       (orderDetailData.issynicronized || false) ? 1 : 0,
-      (orderDetailData.isdeleted || false) ? 1 : 0
+      (orderDetailData.isdeleted || false) ? 1 : 0,
+      (orderDetailData.iscreateyourown || false) ? 1 : 0,
+      (orderDetailData.isopen || false) ? 1 : 0
     ];
     
     const info = stmt.run(...values);
