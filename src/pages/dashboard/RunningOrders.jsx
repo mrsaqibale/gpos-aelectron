@@ -6949,25 +6949,52 @@ const RunningOrders = () => {
                         const hasSavedIngredients = savedIngredients.default.length > 0 || savedIngredients.custom.length > 0;
                         
                         return (
-                          <div key={index} className={`p-3 rounded-lg border-2 transition-colors ${
-                            isCurrentlySelected 
-                              ? 'border-blue-500 bg-blue-50' 
-                              : hasSavedIngredients 
-                                ? 'border-green-300 bg-green-50' 
-                                : 'border-gray-200 bg-white'
-                          }`}>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <div 
+                            key={index} 
+                            className={`p-4 rounded-xl border-3 transition-all duration-200 cursor-pointer transform ${
+                              isCurrentlySelected 
+                                ? 'border-blue-600 bg-blue-100 shadow-lg scale-105 ring-2 ring-blue-200' 
+                                : hasSavedIngredients 
+                                  ? 'border-green-400 bg-green-50 hover:border-green-500 hover:shadow-md' 
+                                  : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm'
+                            }`}
+                            onClick={() => {
+                              // Auto-select this flavor when clicked
+                              if (!isCurrentlySelected) {
+                                // Clear other selections and select this one
+                                const newSelection = {};
+                                newSelection[index] = selectedPizzaPerSlice[index] || null;
+                                setSelectedPizzaPerSlice(newSelection);
+                              }
+                            }}
+                          >
+                            <label className="block text-sm font-semibold mb-2 ${
+                              isCurrentlySelected 
+                                ? 'text-blue-800' 
+                                : hasSavedIngredients 
+                                  ? 'text-green-700' 
+                                  : 'text-gray-700'
+                            }">
                               Flavor {index + 1}:
                               {hasSavedIngredients && (
                                 <span className="ml-2 text-xs text-green-600 font-normal">
                                   (Modified)
                                 </span>
                               )}
+                              {isCurrentlySelected && (
+                                <span className="ml-2 text-xs text-blue-600 font-bold">
+                                  (Selected)
+                                </span>
+                              )}
                             </label>
                             <select 
                               value={selectedPizzaPerSlice[index]?.id || ''}
                               onChange={(e) => handleSlicePizzaSelect(index, e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm transition-colors ${
+                                isCurrentlySelected
+                                  ? 'border-blue-400 focus:ring-blue-300 focus:border-blue-500 bg-blue-50'
+                                  : 'border-gray-300 focus:ring-primary focus:border-primary bg-white'
+                              }`}
                             >
                               <option value="">Select pizza...</option>
                               {pizzaFoods.map((food) => (
@@ -6977,7 +7004,9 @@ const RunningOrders = () => {
                               ))}
                             </select>
                             {hasSavedIngredients && (
-                              <div className="mt-2 text-xs text-gray-600">
+                              <div className={`mt-2 text-xs ${
+                                isCurrentlySelected ? 'text-blue-600' : 'text-gray-600'
+                              }`}>
                                 {savedIngredients.default.length + savedIngredients.custom.length} ingredients
                               </div>
                             )}
