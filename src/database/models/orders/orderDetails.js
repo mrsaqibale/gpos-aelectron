@@ -93,8 +93,9 @@ export function createMultipleOrderDetails(orderDetailsArray) {
       INSERT INTO order_details (
         food_id, order_id, price, food_details, item_note, variation,
         add_ons, discount_on_food, discount_type, quantity,
-        tax_amount, total_add_on_price, issynicronized, isdeleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        tax_amount, total_add_on_price, issynicronized, isdeleted,
+        iscreateyourown, isopen
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const insertMany = db.transaction((details) => {
@@ -114,7 +115,9 @@ export function createMultipleOrderDetails(orderDetailsArray) {
           detail.tax_amount || 0,
           detail.total_add_on_price || 0,
           (detail.issynicronized || false) ? 1 : 0,
-          (detail.isdeleted || false) ? 1 : 0
+          (detail.isdeleted || false) ? 1 : 0,
+          (detail.iscreateyourown || false) ? 1 : 0,
+          (detail.isopen || false) ? 1 : 0
         ];
         
         console.log('Order detail values:', values);
