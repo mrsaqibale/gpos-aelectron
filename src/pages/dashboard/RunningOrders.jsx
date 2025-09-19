@@ -2602,17 +2602,17 @@ const RunningOrders = () => {
   };
 
 
+  // Different colors for each slice
+  const sliceColors = [
+    "#FF6B6B", // Red
+    "#4ECDC4", // Teal
+    "#45B7D1", // Blue
+    "#96CEB4"  // Green
+  ];
+
   const renderPizzaSlices = () => {
     const slices = [];
     const angleStep = 360 / pizzaSlices;
-    
-    // Different colors for each slice
-    const sliceColors = [
-      "#FF6B6B", // Red
-      "#4ECDC4", // Teal
-      "#45B7D1", // Blue
-      "#96CEB4"  // Green
-    ];
 
     for (let i = 0; i < pizzaSlices; i++) {
       const startAngle = i * angleStep;
@@ -6923,103 +6923,108 @@ const RunningOrders = () => {
                       </div>
                       ))}
                     </div>
-                    {/* Show ingredients per slice */}
+                    {/* Unified Ingredients Display per slice */}
                     <div className='mt-4'>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Available Ingredients:</h4>
-                      {Object.keys(selectedPizzaPerSlice).length > 0 ? (
-                        Object.keys(selectedPizzaPerSlice).map(sliceIndex => {
-                          const sliceNum = parseInt(sliceIndex);
-                          const ingredients = getIngredientsForSelectedSlice(sliceNum);
-                          const sliceName = sliceNum === 0 ? 'First' : sliceNum === 1 ? 'Second' : sliceNum === 2 ? 'Third' : sliceNum === 3 ? 'Fourth' : `${sliceNum + 1}th`;
-                          
-                          return (
-                            <div key={sliceIndex} className="mb-3">
-                              <div className="text-xs font-medium text-gray-600 mb-1">
-                                {sliceName} Half - {selectedPizzaPerSlice[sliceIndex]?.name}
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                {ingredients.length > 0 ? (
-                                  ingredients.map((ingredient, idx) => (
-                                    <span
-                                      key={idx}
-                                      className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs"
-                                    >
-                                      {ingredient.name || ingredient}
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span className="text-gray-400 text-xs">No ingredients available</span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="text-gray-500 text-sm italic">
-                          Select pizza types from the dropdowns above to see available ingredients
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Custom Ingredients Section */}
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Add Custom Ingredients:</h4>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={customIngredientInput}
-                          onChange={(e) => handleCustomIngredientInput(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-                          placeholder="Type ingredient name..."
-                        />
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Ingredients per Half:</h4>
+                      {Array.from({ length: pizzaSlices }, (_, sliceIndex) => {
+                        const sliceNum = sliceIndex;
+                        const sliceName = sliceNum === 0 ? 'First' : sliceNum === 1 ? 'Second' : sliceNum === 2 ? 'Third' : sliceNum === 3 ? 'Fourth' : `${sliceNum + 1}th`;
+                        const selectedPizza = selectedPizzaPerSlice[sliceIndex];
+                        const existingIngredients = getIngredientsForSelectedSlice(sliceNum);
+                        const customIngredients = ingredientsPerSlice[sliceIndex] || [];
                         
-                        {/* Ingredient suggestions dropdown */}
-                        {showIngredientSuggestions && ingredientSuggestions.length > 0 && (
-                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                            {ingredientSuggestions.map((ingredient) => (
-                              <button
-                                key={ingredient.id}
-                                onClick={() => handleIngredientSuggestionSelect(ingredient)}
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
-                              >
-                                {ingredient.name}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={handleAddCustomIngredient}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-                        >
-                          Add Ingredient
-                        </button>
-                      </div>
-                      
-                      {/* Display selected ingredients */}
-                      {pizzaIngredients.length > 0 && (
-                        <div className="mt-3">
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Selected Ingredients:</h5>
-                          <div className="flex flex-wrap gap-2">
-                            {pizzaIngredients.map((ingredient) => (
-                              <span
-                                key={ingredient.id}
-                                className="bg-primary text-white px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                              >
-                                {ingredient.name}
+                        // Combine existing and custom ingredients
+                        const allIngredients = [...existingIngredients, ...customIngredients];
+                        
+                        return (
+                          <div key={sliceIndex} className="mb-4 p-3 border border-gray-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                <div 
+                                  className="w-4 h-4 rounded-full" 
+                                  style={{ backgroundColor: sliceColors[sliceIndex] || "#FFD700" }}
+                                ></div>
+                                {sliceName} Half {selectedPizza ? `- ${selectedPizza.name}` : '(Select pizza type)'}
+                              </div>
+                              {selectedPizza && (
                                 <button
-                                  onClick={() => setPizzaIngredients(prev => prev.filter(ing => ing.id !== ingredient.id))}
-                                  className="text-white hover:text-red-200"
+                                  onClick={() => setIngredientsPerSlice(prev => ({
+                                    ...prev,
+                                    [sliceIndex]: []
+                                  }))}
+                                  className="text-xs text-red-600 hover:text-red-800"
                                 >
-                                  <X size={12} />
+                                  Clear All
                                 </button>
-                              </span>
-                            ))}
+                              )}
+                            </div>
+                            
+                            {selectedPizza ? (
+                              <div className="space-y-2">
+                                {/* Show all ingredients (existing + custom) with remove buttons */}
+                                {allIngredients.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {allIngredients.map((ingredient, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="bg-primary text-white px-3 py-1 rounded-full text-xs flex items-center gap-1"
+                                      >
+                                        {ingredient.name || ingredient}
+                                        <button
+                                          onClick={() => {
+                                            // Remove from custom ingredients if it's custom, otherwise just hide from display
+                                            if (customIngredients.includes(ingredient)) {
+                                              setIngredientsPerSlice(prev => ({
+                                                ...prev,
+                                                [sliceIndex]: (prev[sliceIndex] || []).filter(ing => ing !== ingredient)
+                                              }));
+                                            }
+                                          }}
+                                          className="text-white hover:text-red-200 ml-1"
+                                        >
+                                          <X size={10} />
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-gray-400 text-xs">No ingredients selected</div>
+                                )}
+                                
+                                {/* Add custom ingredient for this slice */}
+                                <div className="flex gap-2 mt-2">
+                                  <input
+                                    type="text"
+                                    value={customIngredientInput}
+                                    onChange={(e) => handleCustomIngredientInput(e.target.value)}
+                                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                                    placeholder={`Add ingredient for ${sliceName.toLowerCase()} half...`}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      if (customIngredientInput.trim()) {
+                                        const newIngredient = { name: customIngredientInput.trim() };
+                                        setIngredientsPerSlice(prev => ({
+                                          ...prev,
+                                          [sliceIndex]: [...(prev[sliceIndex] || []), newIngredient]
+                                        }));
+                                        setCustomIngredientInput('');
+                                      }
+                                    }}
+                                    className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-gray-400 text-xs italic">
+                                Select a pizza type above to manage ingredients for this half
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )}
+                        );
+                      })}
                     </div>
                     
                   </div>
