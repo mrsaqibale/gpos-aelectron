@@ -111,7 +111,7 @@ const FoodList = () => {
           price: food.price || 0,
           type: food.veg === 1 ? 'Veg' : 'Non-Veg',
           recommended: false, // This field might need to be added to the database
-          status: food.status === 'active' || food.status === 1 || food.status === true,
+          status: food.status === 1,
           stock: food.stock_type || (food.item_stock > 0 ? 'limited' : 'unlimited'),
           position: food.position || 0
         }));

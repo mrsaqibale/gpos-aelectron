@@ -14,7 +14,7 @@ const FoodForm = ({ food, onSubmit }) => {
     subcategory_id: '',
     veg: '', // 0 for Non-Veg, 1 for Veg
     isPizza: false, // New field for pizza toggle
-    status: 'active',
+    status: 1,
     restaurant_id: 1,
     position: '',
     price: '',

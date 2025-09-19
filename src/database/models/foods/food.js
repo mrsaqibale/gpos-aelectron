@@ -51,6 +51,18 @@ export function errorResponse(message) {
   return { success: false, message };
 }
 
+// Helper function to normalize status values
+function normalizeStatus(status) {
+  if (status === 'active' || status === true || status === 'true') {
+    return 1;
+  }
+  if (status === 'inactive' || status === false || status === 'false') {
+    return 0;
+  }
+  // If it's already an integer, return as is
+  return status === 1 ? 1 : 0;
+}
+
 // Helper function to save image file
 function saveImageFile(imageData, foodId, originalFilename) {
   try {
@@ -118,7 +130,7 @@ export function createFood(foodData) {
       foodData.available_time_starts || null,
       foodData.available_time_ends || null,
       foodData.veg || 0,
-      foodData.status || 'active',
+      normalizeStatus(foodData.status),
       foodData.restaurant_id || 1,
       foodData.position || 0,
       now,
@@ -322,6 +334,9 @@ export function updateFood(id, { foodData, variations = [] }) {
             value = null;
           } else if (typeof value === 'boolean') {
             value = value ? 1 : 0;
+          } else if (key === 'status') {
+            // Normalize status to integer
+            value = normalizeStatus(value);
           } else if (typeof value === 'object') {
             // Skip complex objects - they should be handled separately
             continue;
@@ -624,7 +639,7 @@ export function getPizzaFoods() {
   try {
     const stmt = db.prepare(`
       SELECT * FROM food 
-      WHERE isPizza = 1 AND (status = 1 OR status = 'active') AND isdeleted = 0
+      WHERE isPizza = 1 AND status = 1 AND isdeleted = 0
       ORDER BY position ASC, name ASC
     `);
     
