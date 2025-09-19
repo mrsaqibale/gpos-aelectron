@@ -624,7 +624,7 @@ export function getPizzaFoods() {
   try {
     const stmt = db.prepare(`
       SELECT * FROM food 
-      WHERE isPizza = 1 AND status = 1 AND isdeleted = 0
+      WHERE isPizza = 1 AND (status = 1 OR status = 'active') AND isdeleted = 0
       ORDER BY position ASC, name ASC
     `);
     
