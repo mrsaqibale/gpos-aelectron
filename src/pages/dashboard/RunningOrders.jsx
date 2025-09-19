@@ -292,8 +292,9 @@ const RunningOrders = () => {
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
   const [pizzaSlices, setPizzaSlices] = useState(4);
 
-  // Add state for pizza price
+  // Add state for pizza price and size
   const [pizzaPrice, setPizzaPrice] = useState('');
+  const [pizzaSize, setPizzaSize] = useState('12'); // Default to 12 inch
   const [pizzaNote, setPizzaNote] = useState('');
   
   // Pizza foods and ingredients state
