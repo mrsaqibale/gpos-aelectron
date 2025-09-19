@@ -2520,6 +2520,7 @@ const RunningOrders = () => {
       selectedPizzas: selectedPizzaPerSlice,
       sliceIngredients: ingredientsPerSlice,
       sliceColors: sliceColors,
+      removedIngredients: removedDefaultIngredients,
       customNote: pizzaNote,
       isCustomPizza: true
     };
@@ -2555,6 +2556,7 @@ const RunningOrders = () => {
     setPizzaPrice('');
     setPizzaSize('12');
     setPizzaNote('');
+    setRemovedDefaultIngredients({});
   };
 
 
