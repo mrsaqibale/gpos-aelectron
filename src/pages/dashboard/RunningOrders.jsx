@@ -2605,6 +2605,14 @@ const RunningOrders = () => {
   const renderPizzaSlices = () => {
     const slices = [];
     const angleStep = 360 / pizzaSlices;
+    
+    // Different colors for each slice
+    const sliceColors = [
+      "#FF6B6B", // Red
+      "#4ECDC4", // Teal
+      "#45B7D1", // Blue
+      "#96CEB4"  // Green
+    ];
 
     for (let i = 0; i < pizzaSlices; i++) {
       const startAngle = i * angleStep;
@@ -2620,11 +2628,15 @@ const RunningOrders = () => {
       // Create large arc flag (1 if angle > 180 degrees, 0 otherwise)
       const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
 
-      // Determine fill color based on pizza selection
-      let fillColor = "#FFD700"; // Default gold
+      // Determine fill color - use different color for each slice, darker when pizza is selected
+      let fillColor = sliceColors[i] || "#FFD700"; // Use slice-specific color or default gold
       
       if (hasPizzaSelected) {
-        fillColor = "#22C55E"; // Green for selected pizza
+        // Make the color darker when pizza is selected
+        fillColor = sliceColors[i] || "#22C55E";
+      } else {
+        // Lighter version when no pizza selected
+        fillColor = sliceColors[i] + "80" || "#FFD700"; // Add transparency
       }
 
       slices.push(
