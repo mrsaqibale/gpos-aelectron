@@ -341,7 +341,7 @@ const FoodForm = ({ food, onSubmit }) => {
         subcategory_id: food.subcategory_id || '',
         veg: food.veg || 0,
         isPizza: food.isPizza === 1 || food.isPizza === true || false,
-        status: food.status || 'active',
+        status: food.status === 1 ? 1 : 0,
         restaurant_id: food.restaurant_id || 1,
         position: food.position || '',
         price: food.price || '',
