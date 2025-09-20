@@ -2052,6 +2052,10 @@ const RunningOrders = () => {
       setCustomIngredientInput(input);
     } else if (inputName === 'pizzaNote') {
       setPizzaNote(input);
+    } else if (inputName === 'customFoodName') {
+      setCustomFoodName(input);
+    } else if (inputName === 'customFoodNote') {
+      setCustomFoodNote(input);
     }
   };
 
