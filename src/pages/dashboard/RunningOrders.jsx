@@ -2257,7 +2257,9 @@ const RunningOrders = () => {
   const removeCartItem = (itemId) => {
     // Get the item name before removing it for the alert message
     const itemToRemove = cartItems.find(item => item.id === itemId);
-    const itemName = itemToRemove ? itemToRemove.food.name : 'Item';
+    const itemName = itemToRemove ? 
+      (itemToRemove.isCustomPizza ? 'Split Pizza' : itemToRemove.food.name) : 
+      'Item';
 
     // Remove the item from cart
     setCartItems(prev => prev.filter(item => item.id !== itemId));
