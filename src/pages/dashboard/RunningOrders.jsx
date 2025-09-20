@@ -268,13 +268,13 @@ const RunningOrders = () => {
         
         // Regular food item
         return {
-          id: nowBase + idx,
-          food: item.food,
-          variations: item.variations || {},
-          adons: item.adons || [],
-          quantity: item.quantity || 1,
-          totalPrice: item.totalPrice || 0,
-          addedAt: new Date().toISOString()
+        id: nowBase + idx,
+        food: item.food,
+        variations: item.variations || {},
+        adons: item.adons || [],
+        quantity: item.quantity || 1,
+        totalPrice: item.totalPrice || 0,
+        addedAt: new Date().toISOString()
         };
       });
       setCartItems(cartItems);
@@ -2655,18 +2655,18 @@ const RunningOrders = () => {
   const handleOpenSplitPizzaModal = async () => {
     // Only reset state if we're not editing an existing item
     if (!editingCartItem) {
-      setPizzaSlices(2);
-      setSelectedPizzaPerSlice({});
-      setIngredientsPerSlice({});
-      setPizzaIngredients([]);
-      setCustomIngredientInput('');
-      setIngredientSuggestions([]);
-      setShowIngredientSuggestions(false);
-      setCurrentIngredients([]);
-      setPizzaPrice('');
+    setPizzaSlices(2);
+    setSelectedPizzaPerSlice({});
+    setIngredientsPerSlice({});
+    setPizzaIngredients([]);
+    setCustomIngredientInput('');
+    setIngredientSuggestions([]);
+    setShowIngredientSuggestions(false);
+    setCurrentIngredients([]);
+    setPizzaPrice('');
       setPizzaSize('12');
-      setPizzaNote('');
-      setSelectedFlavorForEditing(null);
+    setPizzaNote('');
+    setSelectedFlavorForEditing(null);
       setFlavorIngredients({});
       setRemovedDefaultIngredients({});
     }
@@ -2866,17 +2866,17 @@ const RunningOrders = () => {
       showSuccess(`Custom ${pizzaSize}" pizza with ${pizzaSlices} halves updated!`);
     } else {
       // Add new custom pizza to cart
-      setCartItems(prev => [...prev, customPizzaItem]);
-      
-      // Play sound
-      try {
-        const audio = new Audio('./src/assets/newProductAdd.mp3');
-        audio.play().catch(error => console.log('Audio play failed:', error));
-      } catch (error) {
-        console.log('Audio creation failed:', error);
-      }
-      
-      showSuccess(`Custom ${pizzaSize}" pizza with ${pizzaSlices} halves added to cart!`);
+    setCartItems(prev => [...prev, customPizzaItem]);
+    
+    // Play sound
+    try {
+      const audio = new Audio('./src/assets/newProductAdd.mp3');
+      audio.play().catch(error => console.log('Audio play failed:', error));
+    } catch (error) {
+      console.log('Audio creation failed:', error);
+    }
+
+    showSuccess(`Custom ${pizzaSize}" pizza with ${pizzaSlices} halves added to cart!`);
     }
     
     // Reset editing state
@@ -6574,12 +6574,12 @@ const RunningOrders = () => {
                 <span className="font-semibold text-gray-800 text-[16px]">🍽 Food &amp; Categories</span>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={handleOpenSplitPizzaModal}
-                  className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
-                >
-                  Create Your Own
-                </button>
+              <button
+                onClick={handleOpenSplitPizzaModal}
+                className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
+              >
+                Create Your Own
+              </button>
                 <button
                   onClick={handleOpenOrderModal}
                   className="bg-[#4CAF50] hover:bg-[#45a049] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
@@ -7762,7 +7762,7 @@ const RunningOrders = () => {
           <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
               {/* Header */}
-              <div className="bg-[#4CAF50] text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
+              <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">
                   {editingCustomFood ? 'Edit Open Food' : 'Open Order'}
                 </h2>
@@ -7786,7 +7786,10 @@ const RunningOrders = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
                     placeholder="Enter food name"
                     onFocus={(e) => {
+                      console.log('Custom food name field focused');
+                      console.log('Settings selectKeyboard:', settings?.selectKeyboard);
                       if (settings?.selectKeyboard === 'GBoard') {
+                        console.log('Calling handleInputFocus for customFoodName');
                         handleInputFocus(e, 'customFoodName');
                       }
                     }}
@@ -7909,7 +7912,7 @@ const RunningOrders = () => {
                     className="px-6 py-2 bg-[#4CAF50] text-white rounded-lg hover:bg-[#45a049] transition-colors"
                   >
                     {editingCustomFood ? 'Update Food' : 'Add to Order'}
-                  </button>
+                          </button>
                 </div>
               </div>
             </div>
