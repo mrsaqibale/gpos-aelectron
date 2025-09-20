@@ -315,13 +315,6 @@ const RunningOrders = () => {
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
-  
-  // Debug modal state changes
-  useEffect(() => {
-    console.log('=== MODAL STATE CHANGED ===');
-    console.log('showSplitPizzaModal:', showSplitPizzaModal);
-    console.log('editingCartItem:', editingCartItem);
-  }, [showSplitPizzaModal, editingCartItem]);
   const [pizzaSlices, setPizzaSlices] = useState(4);
 
   // Add state for pizza price and size
@@ -2280,12 +2273,10 @@ const RunningOrders = () => {
     console.log('=== EDIT BUTTON CLICKED ===');
     console.log('Editing cart item:', cartItem);
     console.log('Is custom pizza:', cartItem.isCustomPizza);
+    console.log('Item keys:', Object.keys(cartItem));
     
-    // Simple test alert
-    alert('Edit button clicked! Item: ' + (cartItem.isCustomPizza ? 'Custom Pizza' : 'Regular Item'));
-    
-    // Check if it's a custom pizza
-    if (cartItem.isCustomPizza) {
+    // Check if it's a custom pizza - also check for other indicators
+    if (cartItem.isCustomPizza || cartItem.slices || cartItem.size || cartItem.selectedPizzas) {
       console.log('=== CUSTOM PIZZA DETECTED ===');
       console.log('Editing custom pizza:', cartItem);
       
@@ -2301,7 +2292,6 @@ const RunningOrders = () => {
       // Set pizza selection and ingredients
       setSelectedPizzaPerSlice(cartItem.selectedPizzas || {});
       setFlavorIngredients(cartItem.flavorIngredients || {});
-      setSliceColors(cartItem.sliceColors || []);
       
       console.log('Set pizza data for editing:', {
         slices: cartItem.slices || 4,
@@ -2309,8 +2299,7 @@ const RunningOrders = () => {
         size: cartItem.size || '12',
         note: cartItem.customNote || '',
         selectedPizzas: cartItem.selectedPizzas || {},
-        flavorIngredients: cartItem.flavorIngredients || {},
-        sliceColors: cartItem.sliceColors || []
+        flavorIngredients: cartItem.flavorIngredients || {}
       });
       
       // Open pizza modal
@@ -2318,7 +2307,6 @@ const RunningOrders = () => {
       setShowSplitPizzaModal(true);
       console.log('Opening split pizza modal for editing');
       console.log('Modal should now be visible');
-      alert('Modal should open now!');
       return;
     }
     
