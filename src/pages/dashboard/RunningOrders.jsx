@@ -7781,7 +7781,7 @@ const RunningOrders = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Food Name:</label>
                     <input
                       type="text"
-                      value={activeInput === 'customFoodName' ? keyboardInput : customFoodName}
+                      value={virtualKeyboardActiveInput === 'customFoodName' ? virtualKeyboardInput : customFoodName}
                       onChange={(e) => setCustomFoodName(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                       placeholder="Enter food name"
@@ -7815,7 +7815,7 @@ const RunningOrders = () => {
                   <div className="relative mb-3">
                     <input
                       type="text"
-                      value={activeInput === 'customIngredientInput' ? keyboardInput : customIngredientInput}
+                      value={virtualKeyboardActiveInput === 'customIngredientInput' ? virtualKeyboardInput : customIngredientInput}
                       onChange={handleCustomIngredientInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                       placeholder="Type ingredient name..."
@@ -7865,7 +7865,7 @@ const RunningOrders = () => {
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Note:</label>
                   <textarea
-                    value={activeInput === 'customFoodNote' ? keyboardInput : customFoodNote}
+                    value={virtualKeyboardActiveInput === 'customFoodNote' ? virtualKeyboardInput : customFoodNote}
                     onChange={(e) => setCustomFoodNote(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                     rows="3"
@@ -9549,12 +9549,12 @@ const RunningOrders = () => {
       <VirtualKeyboard
         isVisible={showKeyboard}
         onClose={() => hideKeyboard()}
-        activeInput={activeInput}
+        activeInput={virtualKeyboardActiveInput}
         onInputChange={(input, inputName) => {
           updateFieldFromKeyboard(inputName, input);
         }}
         onInputBlur={handleInputBlur}
-        inputValue={getValueForActiveInput(activeInput)}
+        inputValue={getValueForActiveInput(virtualKeyboardActiveInput)}
       />
 
       {/* Finalize Sale Modal */}
