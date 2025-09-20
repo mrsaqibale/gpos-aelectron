@@ -2233,6 +2233,29 @@ const RunningOrders = () => {
   // Handle editing cart item
   const handleEditCartItem = async (cartItem) => {
     console.log('Editing cart item:', cartItem);
+    
+    // Check if it's a custom pizza
+    if (cartItem.isCustomPizza) {
+      // Handle custom pizza editing
+      setEditingCartItem(cartItem);
+      
+      // Set pizza modal state with existing data
+      setPizzaSlices(cartItem.slices || 4);
+      setPizzaPrice(cartItem.price.toString());
+      setPizzaSize(cartItem.size || '12');
+      setPizzaNote(cartItem.customNote || '');
+      
+      // Set pizza selection and ingredients
+      setSelectedPizzaPerSlice(cartItem.selectedPizzas || {});
+      setFlavorIngredients(cartItem.flavorIngredients || {});
+      setSliceColors(cartItem.sliceColors || []);
+      
+      // Open pizza modal
+      setShowSplitPizzaModal(true);
+      return;
+    }
+    
+    // Handle regular food item editing
     setEditingCartItem(cartItem);
     setSelectedFood(cartItem.food);
     
@@ -2568,12 +2591,12 @@ const RunningOrders = () => {
 
     // Create custom pizza item with all slice data
     const customPizzaItem = {
-      id: `custom_pizza_${Date.now()}`,
+      id: editingCartItem ? editingCartItem.id : `custom_pizza_${Date.now()}`,
       name: `Custom Pizza (${pizzaSize}" - ${pizzaSlices} halves)`,
       price: customPrice,
       tax: tax,
       totalPrice: totalPrice,
-      quantity: 1,
+      quantity: editingCartItem ? editingCartItem.quantity : 1,
       variations: {},
       adons: [],
       slices: pizzaSlices,
@@ -2585,19 +2608,29 @@ const RunningOrders = () => {
       isCustomPizza: true
     };
 
-    // Add to cart
-    setCartItems(prev => [...prev, customPizzaItem]);
-    
-    // Play sound
-    try {
-      const audio = new Audio('./src/assets/newProductAdd.mp3');
-      audio.play().catch(error => console.log('Audio play failed:', error));
-    } catch (error) {
-      console.log('Audio creation failed:', error);
+    if (editingCartItem) {
+      // Update existing custom pizza in cart
+      setCartItems(prev => prev.map(item => 
+        item.id === editingCartItem.id ? customPizzaItem : item
+      ));
+      showSuccess(`Custom ${pizzaSize}" pizza with ${pizzaSlices} halves updated!`);
+    } else {
+      // Add new custom pizza to cart
+      setCartItems(prev => [...prev, customPizzaItem]);
+      
+      // Play sound
+      try {
+        const audio = new Audio('./src/assets/newProductAdd.mp3');
+        audio.play().catch(error => console.log('Audio play failed:', error));
+      } catch (error) {
+        console.log('Audio creation failed:', error);
+      }
+      
+      showSuccess(`Custom ${pizzaSize}" pizza with ${pizzaSlices} halves added to cart!`);
     }
-
-    // Show success message
-    showSuccess(`Custom ${pizzaSize}" pizza with ${pizzaSlices} halves added to cart!`);
+    
+    // Reset editing state
+    setEditingCartItem(null);
     
     // Close modal
     handleCloseSplitPizzaModal();
@@ -3024,6 +3057,43 @@ const RunningOrders = () => {
         const itemTax = calculateTaxAmount(itemSubtotal); // Calculate tax using settings
         const itemDiscount = 0; // Individual item discount if any
 
+        // Handle custom pizza items differently
+        if (item.isCustomPizza) {
+          // For custom pizzas, create special food details
+          const customPizzaDetails = JSON.stringify({
+            type: 'custom_pizza',
+            name: 'Split Pizza',
+            size: item.size,
+            slices: item.slices,
+            price: item.price,
+            note: item.customNote,
+            selectedPizzas: item.selectedPizzas,
+            flavorIngredients: item.flavorIngredients,
+            sliceColors: item.sliceColors
+          });
+
+          return {
+            order_id: orderId,
+            food_id: 0, // No specific food ID for custom pizzas
+            quantity: item.quantity,
+            price: item.price,
+            food_details: customPizzaDetails,
+            item_note: item.customNote,
+            variation: null,
+            add_ons: null,
+            ingredients: JSON.stringify(item.flavorIngredients),
+            discount_on_food: 0,
+            discount_type: null,
+            tax_amount: itemTax,
+            total_add_on_price: 0,
+            issynicronized: 0,
+            isdeleted: 0,
+            iscreateyourown: 1, // Mark as custom pizza
+            isopen: 0
+          };
+        }
+
+        // Handle regular food items
         // Prepare variations and addons as JSON
         const variations = Object.keys(item.variations).length > 0 ? JSON.stringify(item.variations) : null;
         const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
@@ -3579,6 +3649,16 @@ const RunningOrders = () => {
       // Prepare order details data for the draft items
       const orderDetailsArray = cartItems
         .filter(item => {
+          // For custom pizzas, check different validation criteria
+          if (item.isCustomPizza) {
+            const isValid = item && item.quantity && item.price;
+            if (!isValid) {
+              console.warn('Filtered out invalid custom pizza item:', item);
+            }
+            return isValid;
+          }
+          
+          // For regular items, check food ID and price
           const isValid = item && item.food && item.food?.id && item.quantity && item.food?.price;
           if (!isValid) {
             console.warn('Filtered out invalid cart item:', item);
@@ -3586,6 +3666,44 @@ const RunningOrders = () => {
           return isValid;
         })
         .map(item => {
+          // Handle custom pizza items
+          if (item.isCustomPizza) {
+            const customPizzaDetails = JSON.stringify({
+              type: 'custom_pizza',
+              name: 'Split Pizza',
+              size: item.size,
+              slices: item.slices,
+              price: item.price,
+              note: item.customNote,
+              selectedPizzas: item.selectedPizzas,
+              flavorIngredients: item.flavorIngredients,
+              sliceColors: item.sliceColors
+            });
+
+            const orderDetail = {
+              order_id: orderId,
+              food_id: 0, // No specific food ID for custom pizzas
+              quantity: item.quantity,
+              price: item.price,
+              food_details: customPizzaDetails,
+              item_note: item.customNote,
+              variation: null,
+              add_ons: null,
+              ingredients: JSON.stringify(item.flavorIngredients),
+              discount_on_food: 0,
+              discount_type: null,
+              tax_amount: calculateTaxAmount(item.price),
+              total_add_on_price: 0,
+              issynicronized: 0,
+              isdeleted: 0,
+              iscreateyourown: 1, // Mark as custom pizza
+              isopen: 0
+            };
+            console.log('Created custom pizza order detail object:', orderDetail);
+            return orderDetail;
+          }
+
+          // Handle regular food items
           const orderDetail = {
             order_id: orderId,
             food_id: item.food?.id || 0,
