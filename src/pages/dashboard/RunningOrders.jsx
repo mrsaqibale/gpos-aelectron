@@ -315,6 +315,13 @@ const RunningOrders = () => {
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
+  
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('=== MODAL STATE CHANGED ===');
+    console.log('showSplitPizzaModal:', showSplitPizzaModal);
+    console.log('editingCartItem:', editingCartItem);
+  }, [showSplitPizzaModal, editingCartItem]);
   const [pizzaSlices, setPizzaSlices] = useState(4);
 
   // Add state for pizza price and size
@@ -2270,10 +2277,13 @@ const RunningOrders = () => {
 
   // Handle editing cart item
   const handleEditCartItem = async (cartItem) => {
+    console.log('=== EDIT BUTTON CLICKED ===');
     console.log('Editing cart item:', cartItem);
+    console.log('Is custom pizza:', cartItem.isCustomPizza);
     
     // Check if it's a custom pizza
     if (cartItem.isCustomPizza) {
+      console.log('=== CUSTOM PIZZA DETECTED ===');
       console.log('Editing custom pizza:', cartItem);
       
       // Handle custom pizza editing
@@ -2301,8 +2311,10 @@ const RunningOrders = () => {
       });
       
       // Open pizza modal
+      console.log('=== SETTING MODAL TO TRUE ===');
       setShowSplitPizzaModal(true);
       console.log('Opening split pizza modal for editing');
+      console.log('Modal should now be visible');
       return;
     }
     
