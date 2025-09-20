@@ -346,6 +346,7 @@ const RunningOrders = () => {
   const [showIngredientSuggestions, setShowIngredientSuggestions] = useState(false);
   const [ingredientSuggestions, setIngredientSuggestions] = useState([]);
   const [editingCustomFood, setEditingCustomFood] = useState(null);
+  const [allIngredients, setAllIngredients] = useState([]);
 
   // Add state for pizza price and size
   const [pizzaPrice, setPizzaPrice] = useState('');
@@ -483,7 +484,7 @@ const RunningOrders = () => {
     onKeyboardKeyPress,
     resetKeyboardInputs,
     hideKeyboard
-  } = useVirtualKeyboard(['searchQuery', 'runningOrdersSearchQuery', 'couponCode', 'customIngredientInput', 'pizzaNote']);
+  } = useVirtualKeyboard(['searchQuery', 'runningOrdersSearchQuery', 'couponCode', 'customIngredientInput', 'pizzaNote', 'customFoodName', 'customFoodNote']);
 
   // Separate state for numeric keyboard
   const [numericActiveInput, setNumericActiveInput] = useState('');
@@ -2324,6 +2325,8 @@ const RunningOrders = () => {
         note: cartItem.customFoodNote || '',
         ingredients: cartItem.customFoodIngredients || []
       });
+      console.log('Raw cartItem.customFoodNote:', cartItem.customFoodNote);
+      console.log('Setting customFoodNote to:', cartItem.customFoodNote || '');
       
       // Open custom food modal
       console.log('=== SETTING CUSTOM FOOD MODAL TO TRUE ===');
@@ -2520,8 +2523,21 @@ const RunningOrders = () => {
     }
   };
 
+  // Fetch all ingredients for custom food
+  const fetchAllIngredients = async () => {
+    try {
+      const result = await window.myAPI.getAllIngredients();
+      if (result.success) {
+        setAllIngredients(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching ingredients:', error);
+      setAllIngredients([]);
+    }
+  };
+
   // Open Order Modal Functions
-  const handleOpenOrderModal = () => {
+  const handleOpenOrderModal = async () => {
     if (!editingCustomFood) {
       // Reset state for new custom food
       setCustomFoodName('');
@@ -2532,6 +2548,9 @@ const RunningOrders = () => {
       setShowIngredientSuggestions(false);
       setIngredientSuggestions([]);
     }
+    
+    // Fetch ingredients when opening modal
+    await fetchAllIngredients();
     setShowOpenOrderModal(true);
   };
 
@@ -2597,11 +2616,15 @@ const RunningOrders = () => {
     const value = e.target.value;
     setCustomIngredientInput(value);
     
+    console.log('Ingredient input changed:', value);
+    console.log('All ingredients available:', allIngredients.length);
+    
     if (value.length > 0) {
       // Filter ingredients based on input
       const filtered = allIngredients.filter(ingredient =>
         ingredient.name.toLowerCase().includes(value.toLowerCase())
       );
+      console.log('Filtered ingredients:', filtered);
       setIngredientSuggestions(filtered);
       setShowIngredientSuggestions(true);
     } else {
@@ -2611,8 +2634,13 @@ const RunningOrders = () => {
   };
 
   const handleAddCustomIngredient = (ingredient) => {
+    console.log('Adding ingredient:', ingredient);
     if (!customFoodIngredients.find(ing => ing.id === ingredient.id)) {
-      setCustomFoodIngredients(prev => [...prev, ingredient]);
+      setCustomFoodIngredients(prev => {
+        const newIngredients = [...prev, ingredient];
+        console.log('Updated ingredients:', newIngredients);
+        return newIngredients;
+      });
     }
     setCustomIngredientInput('');
     setShowIngredientSuggestions(false);
