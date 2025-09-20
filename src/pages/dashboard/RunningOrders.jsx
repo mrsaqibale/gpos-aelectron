@@ -2274,6 +2274,8 @@ const RunningOrders = () => {
     
     // Check if it's a custom pizza
     if (cartItem.isCustomPizza) {
+      console.log('Editing custom pizza:', cartItem);
+      
       // Handle custom pizza editing
       setEditingCartItem(cartItem);
       
@@ -2288,8 +2290,19 @@ const RunningOrders = () => {
       setFlavorIngredients(cartItem.flavorIngredients || {});
       setSliceColors(cartItem.sliceColors || []);
       
+      console.log('Set pizza data for editing:', {
+        slices: cartItem.slices || 4,
+        price: cartItem.price.toString(),
+        size: cartItem.size || '12',
+        note: cartItem.customNote || '',
+        selectedPizzas: cartItem.selectedPizzas || {},
+        flavorIngredients: cartItem.flavorIngredients || {},
+        sliceColors: cartItem.sliceColors || []
+      });
+      
       // Open pizza modal
       setShowSplitPizzaModal(true);
+      console.log('Opening split pizza modal for editing');
       return;
     }
     
@@ -2448,18 +2461,25 @@ const RunningOrders = () => {
 
   // Split Pizza Modal Functions
   const handleOpenSplitPizzaModal = async () => {
+    // Only reset state if we're not editing an existing item
+    if (!editingCartItem) {
+      setPizzaSlices(2);
+      setSelectedPizzaPerSlice({});
+      setIngredientsPerSlice({});
+      setPizzaIngredients([]);
+      setCustomIngredientInput('');
+      setIngredientSuggestions([]);
+      setShowIngredientSuggestions(false);
+      setCurrentIngredients([]);
+      setPizzaPrice('');
+      setPizzaSize('12');
+      setPizzaNote('');
+      setSelectedFlavorForEditing(null);
+      setFlavorIngredients({});
+      setRemovedDefaultIngredients({});
+    }
+    
     setShowSplitPizzaModal(true);
-    setPizzaSlices(2);
-    setSelectedPizzaPerSlice({});
-    setIngredientsPerSlice({});
-    setPizzaIngredients([]);
-    setCustomIngredientInput('');
-    setIngredientSuggestions([]);
-    setShowIngredientSuggestions(false);
-    setCurrentIngredients([]);
-    setPizzaPrice('');
-    setPizzaNote('');
-    setSelectedFlavorForEditing(null);
     await fetchPizzaFoods();
   };
 
@@ -2690,6 +2710,10 @@ const RunningOrders = () => {
     setRemovedDefaultIngredients({});
     setFlavorIngredients({});
     setSelectedFlavorForEditing(null);
+    
+    // Reset editing state when closing modal
+    setEditingCartItem(null);
+    
     console.log('Pizza modal closed - all state reset');
   };
 
@@ -7063,7 +7087,9 @@ const RunningOrders = () => {
             <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
               {/* Header */}
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
-                <h2 className="text-xl font-bold">Split Pizza</h2>
+                <h2 className="text-xl font-bold">
+                  {editingCartItem ? 'Edit Split Pizza' : 'Split Pizza'}
+                </h2>
                 <button
                   onClick={handleCloseSplitPizzaModal}
                   className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
@@ -7417,8 +7443,8 @@ const RunningOrders = () => {
                     onClick={handleSaveCustomPizza}
                     className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Add to Order
-                          </button>
+                    {editingCartItem ? 'Update Pizza' : 'Add to Order'}
+                  </button>
                 </div>
               </div>
             </div>
