@@ -7854,7 +7854,10 @@ const RunningOrders = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                       placeholder="Type ingredient name..."
                       onFocus={(e) => {
+                        console.log('Custom ingredient input field focused');
+                        console.log('Settings selectKeyboard:', settings?.selectKeyboard);
                         if (settings?.selectKeyboard === 'GBoard') {
+                          console.log('Calling handleInputFocus for customIngredientInput');
                           handleInputFocus(e, 'customIngredientInput');
                         }
                       }}
