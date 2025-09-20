@@ -247,6 +247,25 @@ const RunningOrders = () => {
           };
         }
         
+        // Check if it's a custom food item
+        if (item.isCustomFood) {
+          return {
+            id: nowBase + idx,
+            name: item.name,
+            price: item.price,
+            tax: item.tax,
+            totalPrice: item.totalPrice,
+            quantity: item.quantity || 1,
+            variations: {},
+            adons: [],
+            customFoodName: item.customFoodName,
+            customFoodNote: item.customFoodNote,
+            customFoodIngredients: item.customFoodIngredients,
+            isCustomFood: true,
+            addedAt: new Date().toISOString()
+          };
+        }
+        
         // Regular food item
         return {
           id: nowBase + idx,
@@ -337,9 +356,6 @@ const RunningOrders = () => {
   const [pizzaFoods, setPizzaFoods] = useState([]);
   const [selectedPizzaFood, setSelectedPizzaFood] = useState(null);
   const [pizzaIngredients, setPizzaIngredients] = useState([]);
-  const [customIngredientInput, setCustomIngredientInput] = useState('');
-  const [ingredientSuggestions, setIngredientSuggestions] = useState([]);
-  const [showIngredientSuggestions, setShowIngredientSuggestions] = useState(false);
 
   // New state for pizza integration
   const [selectedPizzaFlavors, setSelectedPizzaFlavors] = useState({});
@@ -2741,8 +2757,8 @@ const RunningOrders = () => {
     setIngredientSuggestions([]);
   };
 
-  // Add custom ingredient
-  const handleAddCustomIngredient = () => {
+  // Add custom ingredient for pizza
+  const handleAddPizzaCustomIngredient = () => {
     if (!customIngredientInput.trim()) {
       return;
     }
@@ -5571,6 +5587,25 @@ const RunningOrders = () => {
           };
         }
         
+        // Check if it's a custom food item
+        if (item.isCustomFood) {
+          return {
+            id: Date.now() + index, // Generate unique IDs
+            name: item.name,
+            price: item.price,
+            tax: item.tax,
+            totalPrice: item.totalPrice,
+            quantity: item.quantity,
+            variations: {},
+            adons: [],
+            customFoodName: item.customFoodName,
+            customFoodNote: item.customFoodNote,
+            customFoodIngredients: item.customFoodIngredients,
+            isCustomFood: true,
+            addedAt: new Date().toISOString()
+          };
+        }
+        
         // Parse variations and addons from JSON if they're strings
         let variations = {};
         let adons = [];
@@ -7615,7 +7650,7 @@ const RunningOrders = () => {
                           }}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
-                              handleAddCustomIngredient();
+                              handleAddPizzaCustomIngredient();
                             }
                           }}
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
@@ -7687,6 +7722,165 @@ const RunningOrders = () => {
                     className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     {editingCartItem ? 'Update Pizza' : 'Add to Order'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Open Order (Custom Food) Modal */}
+        {showOpenOrderModal && (
+          <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="bg-[#4CAF50] text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
+                <h2 className="text-xl font-bold">
+                  {editingCustomFood ? 'Edit Open Food' : 'Open Order'}
+                </h2>
+                <button
+                  onClick={handleCloseOpenOrderModal}
+                  className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 flex-1 overflow-y-auto">
+                {/* Food Name */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Food Name:</label>
+                  <input
+                    type="text"
+                    value={customFoodName}
+                    onChange={(e) => setCustomFoodName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
+                    placeholder="Enter food name"
+                    onFocus={(e) => {
+                      if (settings?.selectKeyboard === 'GBoard') {
+                        handleInputFocus(e, 'customFoodName');
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (settings?.selectKeyboard === 'GBoard') {
+                        handleCustomInputBlur(e, 'customFoodName');
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Food Price */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price:</label>
+                  <div className="flex items-center">
+                    <input
+                      type="text"
+                      value={customFoodPrice}
+                      onChange={(e) => setCustomFoodPrice(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
+                      placeholder="0.00"
+                    />
+                    <span className="ml-2 text-sm font-medium text-gray-800">€</span>
+                  </div>
+                </div>
+
+                {/* Food Note */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Note:</label>
+                  <textarea
+                    value={customFoodNote}
+                    onChange={(e) => setCustomFoodNote(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
+                    rows="3"
+                    placeholder="Enter any special notes or instructions"
+                    onFocus={(e) => {
+                      if (settings?.selectKeyboard === 'GBoard') {
+                        handleInputFocus(e, 'customFoodNote');
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (settings?.selectKeyboard === 'GBoard') {
+                        handleCustomInputBlur(e, 'customFoodNote');
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Ingredients Section */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ingredients:</label>
+                  
+                  {/* Ingredient Input */}
+                  <div className="relative mb-3">
+                    <input
+                      type="text"
+                      value={customIngredientInput}
+                      onChange={handleCustomIngredientInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
+                      placeholder="Type ingredient name..."
+                      onFocus={(e) => {
+                        if (settings?.selectKeyboard === 'GBoard') {
+                          handleInputFocus(e, 'customIngredientInput');
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (settings?.selectKeyboard === 'GBoard') {
+                          handleCustomInputBlur(e, 'customIngredientInput');
+                        }
+                      }}
+                    />
+                    
+                    {/* Ingredient Suggestions */}
+                    {showIngredientSuggestions && ingredientSuggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                        {ingredientSuggestions.map((ingredient) => (
+                          <button
+                            key={ingredient.id}
+                            onClick={() => handleAddCustomIngredient(ingredient)}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b border-gray-100 last:border-b-0"
+                          >
+                            {ingredient.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected Ingredients */}
+                  {customFoodIngredients.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {customFoodIngredients.map((ingredient) => (
+                        <span
+                          key={ingredient.id}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-[#4CAF50] text-white text-sm rounded-full"
+                        >
+                          {ingredient.name}
+                          <button
+                            onClick={() => handleRemoveCustomIngredient(ingredient.id)}
+                            className="ml-1 hover:bg-white hover:bg-opacity-20 rounded-full p-0.5"
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 justify-end mt-6 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={handleCloseOpenOrderModal}
+                    className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveCustomFood}
+                    className="px-6 py-2 bg-[#4CAF50] text-white rounded-lg hover:bg-[#45a049] transition-colors"
+                  >
+                    {editingCustomFood ? 'Update Food' : 'Add to Order'}
                   </button>
                 </div>
               </div>
