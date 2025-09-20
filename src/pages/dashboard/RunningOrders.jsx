@@ -6688,6 +6688,18 @@ const RunningOrders = () => {
                               </div>
                             )}
                             
+                            {/* Show custom food details */}
+                            {item.isCustomFood && (
+                              <div className="text-xs text-gray-600 mt-1">
+                                <div>Name: {item.customFoodName}</div>
+                                {item.customFoodNote && <div>Note: {item.customFoodNote}</div>}
+                                {item.customFoodIngredients && item.customFoodIngredients.length > 0 && (
+                                  <div>Ingredients: {item.customFoodIngredients.map(ing => ing.name).join(', ')}</div>
+                                )}
+                                <div>Price: €{item.price.toFixed(2)}</div>
+                              </div>
+                            )}
+                            
                             {/* Show variations if any */}
                             {item.variations && Object.keys(item.variations).length > 0 && (
                               <div className="text-xs text-gray-600 mt-1">
