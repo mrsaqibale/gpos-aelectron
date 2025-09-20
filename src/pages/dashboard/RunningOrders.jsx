@@ -6321,6 +6321,15 @@ const RunningOrders = () => {
                               {item.isCustomPizza ? 'Split Pizza' : (item.food?.name || 'Unknown Food')}
                             </span>
                             
+                            {/* Show custom pizza details */}
+                            {item.isCustomPizza && (
+                              <div className="text-xs text-gray-600 mt-1">
+                                <div>{item.size}" - {item.slices} halves</div>
+                                {item.customNote && <div>Note: {item.customNote}</div>}
+                                <div>Price: €{item.price.toFixed(2)}</div>
+                              </div>
+                            )}
+                            
                             {/* Show variations if any */}
                             {item.variations && Object.keys(item.variations).length > 0 && (
                               <div className="text-xs text-gray-600 mt-1">
