@@ -6582,7 +6582,7 @@ const RunningOrders = () => {
               </button>
                 <button
                   onClick={handleOpenOrderModal}
-                  className="bg-[#4CAF50] hover:bg-[#45a049] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
+                  className="bg-primary hover:bg-primaryLight cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
                 >
                   Open Order
                 </button>
@@ -7783,7 +7783,7 @@ const RunningOrders = () => {
                     type="text"
                     value={customFoodName}
                     onChange={(e) => setCustomFoodName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                     placeholder="Enter food name"
                     onFocus={(e) => {
                       console.log('Custom food name field focused');
@@ -7809,7 +7809,7 @@ const RunningOrders = () => {
                       type="text"
                       value={customFoodPrice}
                       onChange={(e) => setCustomFoodPrice(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                       placeholder="0.00"
                     />
                     <span className="ml-2 text-sm font-medium text-gray-800">€</span>
@@ -7822,11 +7822,14 @@ const RunningOrders = () => {
                   <textarea
                     value={customFoodNote}
                     onChange={(e) => setCustomFoodNote(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                     rows="3"
                     placeholder="Enter any special notes or instructions"
                     onFocus={(e) => {
+                      console.log('Custom food note field focused');
+                      console.log('Settings selectKeyboard:', settings?.selectKeyboard);
                       if (settings?.selectKeyboard === 'GBoard') {
+                        console.log('Calling handleInputFocus for customFoodNote');
                         handleInputFocus(e, 'customFoodNote');
                       }
                     }}
@@ -7848,7 +7851,7 @@ const RunningOrders = () => {
                       type="text"
                       value={customIngredientInput}
                       onChange={handleCustomIngredientInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                       placeholder="Type ingredient name..."
                       onFocus={(e) => {
                         if (settings?.selectKeyboard === 'GBoard') {
@@ -7884,7 +7887,7 @@ const RunningOrders = () => {
                       {customFoodIngredients.map((ingredient) => (
                         <span
                           key={ingredient.id}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-[#4CAF50] text-white text-sm rounded-full"
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-primary text-white text-sm rounded-full"
                         >
                           {ingredient.name}
                           <button
@@ -7909,7 +7912,7 @@ const RunningOrders = () => {
                   </button>
                   <button
                     onClick={handleSaveCustomFood}
-                    className="px-6 py-2 bg-[#4CAF50] text-white rounded-lg hover:bg-[#45a049] transition-colors"
+                    className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primaryLight transition-colors"
                   >
                     {editingCustomFood ? 'Update Food' : 'Add to Order'}
                           </button>
