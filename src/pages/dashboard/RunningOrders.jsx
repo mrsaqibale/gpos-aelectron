@@ -317,6 +317,17 @@ const RunningOrders = () => {
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
   const [pizzaSlices, setPizzaSlices] = useState(4);
 
+  // Open Order (Custom Food) Modal State
+  const [showOpenOrderModal, setShowOpenOrderModal] = useState(false);
+  const [customFoodName, setCustomFoodName] = useState('');
+  const [customFoodPrice, setCustomFoodPrice] = useState('');
+  const [customFoodNote, setCustomFoodNote] = useState('');
+  const [customFoodIngredients, setCustomFoodIngredients] = useState([]);
+  const [customIngredientInput, setCustomIngredientInput] = useState('');
+  const [showIngredientSuggestions, setShowIngredientSuggestions] = useState(false);
+  const [ingredientSuggestions, setIngredientSuggestions] = useState([]);
+  const [editingCustomFood, setEditingCustomFood] = useState(null);
+
   // Add state for pizza price and size
   const [pizzaPrice, setPizzaPrice] = useState('');
   const [pizzaSize, setPizzaSize] = useState('12'); // Default to 12 inch
@@ -2461,6 +2472,109 @@ const RunningOrders = () => {
     if (itemCount > 0) {
       showSuccess(`All ${itemCount} item${itemCount === 1 ? '' : 's'} removed from cart!`);
     }
+  };
+
+  // Open Order Modal Functions
+  const handleOpenOrderModal = () => {
+    if (!editingCustomFood) {
+      // Reset state for new custom food
+      setCustomFoodName('');
+      setCustomFoodPrice('');
+      setCustomFoodNote('');
+      setCustomFoodIngredients([]);
+      setCustomIngredientInput('');
+      setShowIngredientSuggestions(false);
+      setIngredientSuggestions([]);
+    }
+    setShowOpenOrderModal(true);
+  };
+
+  const handleCloseOpenOrderModal = () => {
+    setShowOpenOrderModal(false);
+    setCustomFoodName('');
+    setCustomFoodPrice('');
+    setCustomFoodNote('');
+    setCustomFoodIngredients([]);
+    setCustomIngredientInput('');
+    setShowIngredientSuggestions(false);
+    setIngredientSuggestions([]);
+    setEditingCustomFood(null);
+  };
+
+  const handleSaveCustomFood = () => {
+    // Validation
+    if (!customFoodName.trim()) {
+      showError('Please enter a food name');
+      return;
+    }
+    if (!customFoodPrice || parseFloat(customFoodPrice) <= 0) {
+      showError('Please enter a valid price');
+      return;
+    }
+
+    const customPrice = parseFloat(customFoodPrice);
+    const tax = calculateTaxAmount(customPrice);
+    const totalPrice = customPrice + tax;
+
+    const customFoodItem = {
+      id: editingCustomFood ? editingCustomFood.id : `custom_food_${Date.now()}`,
+      name: `Open Food - ${customFoodName}`,
+      price: customPrice,
+      tax: tax,
+      totalPrice: totalPrice,
+      quantity: editingCustomFood ? editingCustomFood.quantity : 1,
+      variations: {},
+      adons: [],
+      customFoodName: customFoodName,
+      customFoodNote: customFoodNote,
+      customFoodIngredients: customFoodIngredients,
+      isCustomFood: true
+    };
+
+    if (editingCustomFood) {
+      setCartItems(prev => prev.map(item =>
+        item.id === editingCustomFood.id ? customFoodItem : item
+      ));
+      showSuccess(`Custom food "${customFoodName}" updated!`);
+    } else {
+      setCartItems(prev => [...prev, customFoodItem]);
+      playButtonSound();
+      showSuccess(`Custom food "${customFoodName}" added to order!`);
+    }
+    
+    setEditingCustomFood(null);
+    handleCloseOpenOrderModal();
+  };
+
+  // Handle ingredient input for custom food
+  const handleCustomIngredientInputChange = (e) => {
+    const value = e.target.value;
+    setCustomIngredientInput(value);
+    
+    if (value.length > 0) {
+      // Filter ingredients based on input
+      const filtered = allIngredients.filter(ingredient =>
+        ingredient.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setIngredientSuggestions(filtered);
+      setShowIngredientSuggestions(true);
+    } else {
+      setShowIngredientSuggestions(false);
+      setIngredientSuggestions([]);
+    }
+  };
+
+  const handleAddCustomIngredient = (ingredient) => {
+    if (!customFoodIngredients.find(ing => ing.id === ingredient.id)) {
+      setCustomFoodIngredients(prev => [...prev, ingredient]);
+    }
+    setCustomIngredientInput('');
+    setShowIngredientSuggestions(false);
+    setIngredientSuggestions([]);
+  };
+
+  const handleRemoveCustomIngredient = (ingredientId) => {
+    setCustomFoodIngredients(prev => prev.filter(ing => ing.id !== ingredientId));
   };
 
   // Split Pizza Modal Functions
@@ -6293,12 +6407,20 @@ const RunningOrders = () => {
                 
                 <span className="font-semibold text-gray-800 text-[16px]">🍽 Food &amp; Categories</span>
               </div>
-              <button
-                onClick={handleOpenSplitPizzaModal}
-                className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
-              >
-                Create Your Own
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleOpenSplitPizzaModal}
+                  className="bg-[#e53943] hover:bg-[#c62836] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
+                >
+                  Create Your Own
+                </button>
+                <button
+                  onClick={handleOpenOrderModal}
+                  className="bg-[#4CAF50] hover:bg-[#45a049] cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
+                >
+                  Open Order
+                </button>
+              </div>
             </div>
             {/* Category buttons */}
             <div className="flex flex-wrap gap-1.5">
