@@ -7664,18 +7664,9 @@ const RunningOrders = () => {
                           type="text"
                           value={virtualKeyboardActiveInput === 'customIngredientInput' ? virtualKeyboardInput : customIngredientInput}
                           onChange={(e) => handleCustomIngredientInput(e.target.value)}
-                          onFocus={(e) => {
-                            // Show virtual keyboard if enabled in settings
-                            if (settings?.selectKeyboard === 'GBoard') {
-                              handleInputFocus(e, 'customIngredientInput');
-                            }
-                          }}
-                          onBlur={(e) => {
-                            // Hide virtual keyboard if it was shown
-                            if (settings?.selectKeyboard === 'GBoard') {
-                              handleCustomInputBlur(e, 'customIngredientInput');
-                            }
-                          }}
+                          onFocus={(e) => handleAnyInputFocus(e, 'customIngredientInput', customIngredientInput)}
+                          onClick={(e) => handleAnyInputClick(e, 'customIngredientInput', customIngredientInput)}
+                          onBlur={(e) => handleCustomInputBlur(e, 'customIngredientInput')}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               handleAddPizzaCustomIngredient();
@@ -7718,18 +7709,9 @@ const RunningOrders = () => {
                     <textarea
                       value={virtualKeyboardActiveInput === 'pizzaNote' ? virtualKeyboardInput : pizzaNote}
                       onChange={(e) => setPizzaNote(e.target.value)}
-                      onFocus={(e) => {
-                        // Show virtual keyboard if enabled in settings
-                        if (settings?.selectKeyboard === 'GBoard') {
-                          handleInputFocus(e, 'pizzaNote');
-                        }
-                      }}
-                      onBlur={(e) => {
-                        // Hide virtual keyboard if it was shown
-                        if (settings?.selectKeyboard === 'GBoard') {
-                          handleCustomInputBlur(e, 'pizzaNote');
-                        }
-                      }}
+                      onFocus={(e) => handleAnyInputFocus(e, 'pizzaNote', pizzaNote)}
+                      onClick={(e) => handleAnyInputClick(e, 'pizzaNote', pizzaNote)}
+                      onBlur={(e) => handleCustomInputBlur(e, 'pizzaNote')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm resize-none"
                       rows={3}
                       placeholder="Add any special instructions or notes for this pizza order..."
@@ -7810,24 +7792,14 @@ const RunningOrders = () => {
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Note:</label>
                   <textarea
-                    value={customFoodNote}
+                    value={virtualKeyboardActiveInput === 'customFoodNote' ? virtualKeyboardInput : customFoodNote}
                     onChange={(e) => setCustomFoodNote(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                     rows="3"
                     placeholder="Enter any special notes or instructions"
-                    onFocus={(e) => {
-                      console.log('Custom food note field focused');
-                      console.log('Settings selectKeyboard:', settings?.selectKeyboard);
-                      if (settings?.selectKeyboard === 'GBoard') {
-                        console.log('Calling handleInputFocus for customFoodNote');
-                        handleInputFocus(e, 'customFoodNote');
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (settings?.selectKeyboard === 'GBoard') {
-                        handleCustomInputBlur(e, 'customFoodNote');
-                      }
-                    }}
+                    onFocus={(e) => handleAnyInputFocus(e, 'customFoodNote', customFoodNote)}
+                    onClick={(e) => handleAnyInputClick(e, 'customFoodNote', customFoodNote)}
+                    onBlur={(e) => handleCustomInputBlur(e, 'customFoodNote')}
                   />
                 </div>
 
@@ -7839,23 +7811,13 @@ const RunningOrders = () => {
                   <div className="relative mb-3">
                     <input
                       type="text"
-                      value={customIngredientInput}
+                      value={virtualKeyboardActiveInput === 'customIngredientInput' ? virtualKeyboardInput : customIngredientInput}
                       onChange={handleCustomIngredientInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                       placeholder="Type ingredient name..."
-                      onFocus={(e) => {
-                        console.log('Custom ingredient input field focused');
-                        console.log('Settings selectKeyboard:', settings?.selectKeyboard);
-                        if (settings?.selectKeyboard === 'GBoard') {
-                          console.log('Calling handleInputFocus for customIngredientInput');
-                          handleInputFocus(e, 'customIngredientInput');
-                        }
-                      }}
-                      onBlur={(e) => {
-                        if (settings?.selectKeyboard === 'GBoard') {
-                          handleCustomInputBlur(e, 'customIngredientInput');
-                        }
-                      }}
+                      onFocus={(e) => handleAnyInputFocus(e, 'customIngredientInput', customIngredientInput)}
+                      onClick={(e) => handleAnyInputClick(e, 'customIngredientInput', customIngredientInput)}
+                      onBlur={(e) => handleCustomInputBlur(e, 'customIngredientInput')}
                     />
                     
                     {/* Ingredient Suggestions */}
