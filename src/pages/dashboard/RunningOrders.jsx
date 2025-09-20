@@ -2281,6 +2281,9 @@ const RunningOrders = () => {
     console.log('Editing cart item:', cartItem);
     console.log('Is custom pizza:', cartItem.isCustomPizza);
     
+    // Simple test alert
+    alert('Edit button clicked! Item: ' + (cartItem.isCustomPizza ? 'Custom Pizza' : 'Regular Item'));
+    
     // Check if it's a custom pizza
     if (cartItem.isCustomPizza) {
       console.log('=== CUSTOM PIZZA DETECTED ===');
@@ -2315,6 +2318,7 @@ const RunningOrders = () => {
       setShowSplitPizzaModal(true);
       console.log('Opening split pizza modal for editing');
       console.log('Modal should now be visible');
+      alert('Modal should open now!');
       return;
     }
     
