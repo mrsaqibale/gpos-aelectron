@@ -2204,8 +2204,8 @@ const RunningOrders = () => {
 
     setCartItems(prev => prev.map(item => {
       if (item.id === itemId) {
-        // Handle custom pizza items
-        if (item.isCustomPizza) {
+        // Handle custom pizza and custom food items
+        if (item.isCustomPizza || item.isCustomFood) {
           const newTotalPrice = item.price * newQuantity;
           return {
             ...item,
@@ -2269,7 +2269,9 @@ const RunningOrders = () => {
     // Get the item name before removing it for the alert message
     const itemToRemove = cartItems.find(item => item.id === itemId);
     const itemName = itemToRemove ? 
-      (itemToRemove.isCustomPizza ? 'Split Pizza' : itemToRemove.food.name) : 
+      (itemToRemove.isCustomPizza ? 'Split Pizza' : 
+       itemToRemove.isCustomFood ? 'Open Food' : 
+       itemToRemove.food.name) : 
       'Item';
 
     // Remove the item from cart
@@ -3301,6 +3303,37 @@ const RunningOrders = () => {
           };
         }
 
+        // Handle custom food items
+        if (item.isCustomFood) {
+          const customFoodDetails = JSON.stringify({
+            type: 'custom_food',
+            name: item.customFoodName,
+            price: item.price,
+            note: item.customFoodNote,
+            ingredients: item.customFoodIngredients
+          });
+
+          return {
+            order_id: orderId,
+            food_id: 0, // No specific food ID for custom foods
+            quantity: item.quantity,
+            price: item.price,
+            food_details: customFoodDetails,
+            item_note: item.customFoodNote,
+            variation: null,
+            add_ons: null,
+            ingredients: JSON.stringify(item.customFoodIngredients),
+            discount_on_food: 0,
+            discount_type: null,
+            tax_amount: itemTax,
+            total_add_on_price: 0,
+            issynicronized: 0,
+            isdeleted: 0,
+            iscreateyourown: 0,
+            isopen: 1 // Mark as open order
+          };
+        }
+
         // Handle regular food items
         // Prepare variations and addons as JSON
         const variations = Object.keys(item.variations).length > 0 ? JSON.stringify(item.variations) : null;
@@ -3866,6 +3899,15 @@ const RunningOrders = () => {
             return isValid;
           }
           
+          // For custom foods, check different validation criteria
+          if (item.isCustomFood) {
+            const isValid = item && item.quantity && item.price && item.customFoodName;
+            if (!isValid) {
+              console.warn('Filtered out invalid custom food item:', item);
+            }
+            return isValid;
+          }
+          
           // For regular items, check food ID and price
           const isValid = item && item.food && item.food?.id && item.quantity && item.food?.price;
           if (!isValid) {
@@ -3908,6 +3950,39 @@ const RunningOrders = () => {
               isopen: 0
             };
             console.log('Created custom pizza order detail object:', orderDetail);
+            return orderDetail;
+          }
+
+          // Handle custom food items
+          if (item.isCustomFood) {
+            const customFoodDetails = JSON.stringify({
+              type: 'custom_food',
+              name: item.customFoodName,
+              price: item.price,
+              note: item.customFoodNote,
+              ingredients: item.customFoodIngredients
+            });
+
+            const orderDetail = {
+              order_id: orderId,
+              food_id: 0, // No specific food ID for custom foods
+              quantity: item.quantity,
+              price: item.price,
+              food_details: customFoodDetails,
+              item_note: item.customFoodNote,
+              variation: null,
+              add_ons: null,
+              ingredients: JSON.stringify(item.customFoodIngredients),
+              discount_on_food: 0,
+              discount_type: null,
+              tax_amount: calculateTaxAmount(item.price),
+              total_add_on_price: 0,
+              issynicronized: 0,
+              isdeleted: 0,
+              iscreateyourown: 0,
+              isopen: 1 // Mark as open order
+            };
+            console.log('Created custom food order detail object:', orderDetail);
             return orderDetail;
           }
 
