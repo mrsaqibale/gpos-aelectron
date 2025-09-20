@@ -7807,36 +7807,21 @@ const RunningOrders = () => {
                   </div>
                 </div>
 
-                {/* Food Note */}
+                {/* Second Row: Ingredients Section */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Note:</label>
-                  <textarea
-                    value={virtualKeyboardActiveInput === 'customFoodNote' ? virtualKeyboardInput : customFoodNote}
-                    onChange={(e) => setCustomFoodNote(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-                    rows="3"
-                    placeholder="Enter any special notes or instructions"
-                    onFocus={(e) => handleAnyInputFocus(e, 'customFoodNote', customFoodNote)}
-                    onClick={(e) => handleAnyInputClick(e, 'customFoodNote', customFoodNote)}
-                    onBlur={(e) => handleCustomInputBlur(e, 'customFoodNote')}
-                  />
-                </div>
-
-                {/* Ingredients Section */}
-                <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Ingredients:</label>
                   
                   {/* Ingredient Input */}
                   <div className="relative mb-3">
                     <input
                       type="text"
-                      value={virtualKeyboardActiveInput === 'customIngredientInput' ? virtualKeyboardInput : customIngredientInput}
+                      value={activeInput === 'customIngredientInput' ? keyboardInput : customIngredientInput}
                       onChange={handleCustomIngredientInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                       placeholder="Type ingredient name..."
                       onFocus={(e) => handleAnyInputFocus(e, 'customIngredientInput', customIngredientInput)}
                       onClick={(e) => handleAnyInputClick(e, 'customIngredientInput', customIngredientInput)}
-                      onBlur={(e) => handleCustomInputBlur(e, 'customIngredientInput')}
+                      onBlur={handleInputBlur}
                     />
                     
                     {/* Ingredient Suggestions */}
@@ -7874,6 +7859,21 @@ const RunningOrders = () => {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Last Row: Food Note */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Note:</label>
+                  <textarea
+                    value={activeInput === 'customFoodNote' ? keyboardInput : customFoodNote}
+                    onChange={(e) => setCustomFoodNote(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+                    rows="3"
+                    placeholder="Enter any special notes or instructions"
+                    onFocus={(e) => handleAnyInputFocus(e, 'customFoodNote', customFoodNote)}
+                    onClick={(e) => handleAnyInputClick(e, 'customFoodNote', customFoodNote)}
+                    onBlur={handleInputBlur}
+                  />
                 </div>
 
                 {/* Action Buttons */}
