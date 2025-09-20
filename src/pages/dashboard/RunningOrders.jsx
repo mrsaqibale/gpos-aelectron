@@ -224,15 +224,40 @@ const RunningOrders = () => {
     const nowBase = Date.now();
     if (o.items && Array.isArray(o.items)) {
       console.log('Loading items into cart:', o.items);
-      const cartItems = o.items.map((item, idx) => ({
-        id: nowBase + idx,
-        food: item.food,
-        variations: item.variations || {},
-        adons: item.adons || [],
-        quantity: item.quantity || 1,
-        totalPrice: item.totalPrice || 0,
-        addedAt: new Date().toISOString()
-      }));
+      const cartItems = o.items.map((item, idx) => {
+        // Check if it's a custom pizza item
+        if (item.isCustomPizza) {
+          return {
+            id: nowBase + idx,
+            name: item.name,
+            price: item.price,
+            tax: item.tax,
+            totalPrice: item.totalPrice,
+            quantity: item.quantity || 1,
+            variations: {},
+            adons: [],
+            slices: item.slices,
+            size: item.size,
+            selectedPizzas: item.selectedPizzas,
+            flavorIngredients: item.flavorIngredients,
+            sliceColors: item.sliceColors,
+            customNote: item.customNote,
+            isCustomPizza: true,
+            addedAt: new Date().toISOString()
+          };
+        }
+        
+        // Regular food item
+        return {
+          id: nowBase + idx,
+          food: item.food,
+          variations: item.variations || {},
+          adons: item.adons || [],
+          quantity: item.quantity || 1,
+          totalPrice: item.totalPrice || 0,
+          addedAt: new Date().toISOString()
+        };
+      });
       setCartItems(cartItems);
       setCartItemId(nowBase + (o.items.length || 0) + 1);
     }
@@ -2168,6 +2193,17 @@ const RunningOrders = () => {
 
     setCartItems(prev => prev.map(item => {
       if (item.id === itemId) {
+        // Handle custom pizza items
+        if (item.isCustomPizza) {
+          const newTotalPrice = item.price * newQuantity;
+          return {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: newTotalPrice
+          };
+        }
+        
+        // Handle regular food items
         // Recalculate total price based on new quantity
         const basePrice = item.food?.price || 0;
         let variationPrice = 0;
