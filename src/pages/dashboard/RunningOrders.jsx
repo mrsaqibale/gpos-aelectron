@@ -5266,6 +5266,28 @@ const RunningOrders = () => {
       const cartItemsFromOrder = selectedPlacedOrder.items.map((item, index) => {
         console.log('Processing item:', item);
         
+        // Check if it's a custom pizza item
+        if (item.isCustomPizza) {
+          return {
+            id: Date.now() + index, // Generate unique IDs
+            name: item.name,
+            price: item.price,
+            tax: item.tax,
+            totalPrice: item.totalPrice,
+            quantity: item.quantity,
+            variations: {},
+            adons: [],
+            slices: item.slices,
+            size: item.size,
+            selectedPizzas: item.selectedPizzas,
+            flavorIngredients: item.flavorIngredients,
+            sliceColors: item.sliceColors,
+            customNote: item.customNote,
+            isCustomPizza: true,
+            addedAt: new Date().toISOString()
+          };
+        }
+        
         // Parse variations and addons from JSON if they're strings
         let variations = {};
         let adons = [];
