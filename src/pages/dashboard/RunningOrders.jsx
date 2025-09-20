@@ -6317,7 +6317,9 @@ const RunningOrders = () => {
                         
                         <td className="text-gray-800 text-sm">
                           <div className="flex flex-col">
-                            <span className="font-medium">{item.food?.name || 'Unknown Food'}</span>
+                            <span className="font-medium">
+                              {item.isCustomPizza ? 'Split Pizza' : (item.food?.name || 'Unknown Food')}
+                            </span>
                             
                             {/* Show variations if any */}
                             {item.variations && Object.keys(item.variations).length > 0 && (
