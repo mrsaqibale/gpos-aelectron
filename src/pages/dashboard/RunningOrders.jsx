@@ -6585,7 +6585,7 @@ const RunningOrders = () => {
                   className="bg-primary hover:bg-primaryLight cursor-pointer text-white font-medium rounded-lg px-5 h-12 text-sm transition-colors"
                 >
                   Open Order
-                </button>
+              </button>
               </div>
             </div>
             {/* Category buttons */}
@@ -7781,23 +7781,13 @@ const RunningOrders = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Food Name:</label>
                   <input
                     type="text"
-                    value={customFoodName}
+                    value={virtualKeyboardActiveInput === 'customFoodName' ? virtualKeyboardInput : customFoodName}
                     onChange={(e) => setCustomFoodName(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
                     placeholder="Enter food name"
-                    onFocus={(e) => {
-                      console.log('Custom food name field focused');
-                      console.log('Settings selectKeyboard:', settings?.selectKeyboard);
-                      if (settings?.selectKeyboard === 'GBoard') {
-                        console.log('Calling handleInputFocus for customFoodName');
-                        handleInputFocus(e, 'customFoodName');
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (settings?.selectKeyboard === 'GBoard') {
-                        handleCustomInputBlur(e, 'customFoodName');
-                      }
-                    }}
+                    onFocus={(e) => handleAnyInputFocus(e, 'customFoodName', customFoodName)}
+                    onClick={(e) => handleAnyInputClick(e, 'customFoodName', customFoodName)}
+                    onBlur={(e) => handleCustomInputBlur(e, 'customFoodName')}
                   />
                 </div>
 
