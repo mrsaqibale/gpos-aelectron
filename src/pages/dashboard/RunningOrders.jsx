@@ -2286,6 +2286,34 @@ const RunningOrders = () => {
     console.log('Is custom pizza:', cartItem.isCustomPizza);
     console.log('Item keys:', Object.keys(cartItem));
     
+    // Check if it's a custom food item
+    if (cartItem.isCustomFood) {
+      console.log('=== CUSTOM FOOD DETECTED ===');
+      console.log('Editing custom food:', cartItem);
+      
+      // Handle custom food editing
+      setEditingCustomFood(cartItem);
+      
+      // Set custom food modal state with existing data
+      setCustomFoodName(cartItem.customFoodName || '');
+      setCustomFoodPrice(cartItem.price.toString());
+      setCustomFoodNote(cartItem.customFoodNote || '');
+      setCustomFoodIngredients(cartItem.customFoodIngredients || []);
+      
+      console.log('Set custom food data for editing:', {
+        name: cartItem.customFoodName || '',
+        price: cartItem.price.toString(),
+        note: cartItem.customFoodNote || '',
+        ingredients: cartItem.customFoodIngredients || []
+      });
+      
+      // Open custom food modal
+      console.log('=== SETTING CUSTOM FOOD MODAL TO TRUE ===');
+      setShowOpenOrderModal(true);
+      console.log('Opening custom food modal for editing');
+      return;
+    }
+    
     // Check if it's a custom pizza - also check for other indicators
     if (cartItem.isCustomPizza || cartItem.slices || cartItem.size || cartItem.selectedPizzas) {
       console.log('=== CUSTOM PIZZA DETECTED ===');
@@ -6646,7 +6674,9 @@ const RunningOrders = () => {
                         <td className="text-gray-800 text-sm">
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {item.isCustomPizza ? 'Split Pizza' : (item.food?.name || 'Unknown Food')}
+                              {item.isCustomPizza ? 'Split Pizza' : 
+                               item.isCustomFood ? 'Open Food' : 
+                               (item.food?.name || 'Unknown Food')}
                             </span>
                             
                             {/* Show custom pizza details */}
