@@ -2,21 +2,12 @@ const { ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
+const { getDatabasePath } = require('../../src/database/database-service.cjs');
 
 // Dynamic path resolution for both development and production
 const getDbPath = () => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../src/database/pos.db');
-    const prodPath = path.join(__dirname, '../../database/pos.db');
-    
-    if (fs.existsSync(devPath)) {
-      return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
-    } else {
-      throw new Error(`Database not found at either ${devPath} or ${prodPath}`);
-    }
+    return getDatabasePath();
   } catch (error) {
     console.error('Failed to resolve database path:', error);
     throw error;
@@ -57,8 +48,7 @@ const getDbPath = () => {
 // Get leave requests by employee ID
 ipcMain.handle('leave-request-get-by-employee', async (event, { employeeId, status }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT lr.*, e.fname, e.lname, e.roll, e.employee_id
@@ -76,8 +66,9 @@ ipcMain.handle('leave-request-get-by-employee', async (event, { employeeId, stat
     
     query += ' ORDER BY lr.created_at DESC';
     
-    const result = await db.all(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(...params);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -89,8 +80,7 @@ ipcMain.handle('leave-request-get-by-employee', async (event, { employeeId, stat
 // Get leave request by ID
 ipcMain.handle('leave-request-get-by-id', async (event, id) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       SELECT lr.*, e.fname, e.lname, e.roll, e.employee_id
@@ -99,8 +89,9 @@ ipcMain.handle('leave-request-get-by-id', async (event, id) => {
       WHERE lr.id = ? AND lr.isdeleted = 0
     `;
     
-    const result = await db.get(query, [id]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.get(id);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -112,8 +103,7 @@ ipcMain.handle('leave-request-get-by-id', async (event, id) => {
 // Get all leave requests with filters
 ipcMain.handle('leave-request-get-all', async (event, filters = {}) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT lr.*, e.fname, e.lname, e.roll, e.employee_id
@@ -141,8 +131,9 @@ ipcMain.handle('leave-request-get-all', async (event, filters = {}) => {
     
     query += ' ORDER BY lr.created_at DESC';
     
-    const result = await db.all(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(...params);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -154,8 +145,7 @@ ipcMain.handle('leave-request-get-all', async (event, filters = {}) => {
 // Get pending leave requests
 ipcMain.handle('leave-request-get-pending', async (event) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       SELECT lr.*, e.fname, e.lname, e.roll, e.employee_id
@@ -165,8 +155,9 @@ ipcMain.handle('leave-request-get-pending', async (event) => {
       ORDER BY lr.created_at ASC
     `;
     
-    const result = await db.all(query);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all();
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -178,8 +169,7 @@ ipcMain.handle('leave-request-get-pending', async (event) => {
 // Get approved leave requests
 ipcMain.handle('leave-request-get-approved', async (event, { startDate, endDate }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT lr.*, e.fname, e.lname, e.roll, e.employee_id
@@ -196,8 +186,9 @@ ipcMain.handle('leave-request-get-approved', async (event, { startDate, endDate 
     
     query += ' ORDER BY lr.start_date ASC';
     
-    const result = await db.all(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(...params);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -209,8 +200,7 @@ ipcMain.handle('leave-request-get-approved', async (event, { startDate, endDate 
 // Get rejected leave requests
 ipcMain.handle('leave-request-get-rejected', async (event) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       SELECT lr.*, e.fname, e.lname, e.roll, e.employee_id
@@ -220,8 +210,9 @@ ipcMain.handle('leave-request-get-rejected', async (event) => {
       ORDER BY lr.created_at DESC
     `;
     
-    const result = await db.all(query);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all();
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -233,8 +224,7 @@ ipcMain.handle('leave-request-get-rejected', async (event) => {
 // Update leave request
 ipcMain.handle('leave-request-update', async (event, { id, updateData }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const fields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
     const values = Object.values(updateData);
@@ -246,8 +236,9 @@ ipcMain.handle('leave-request-update', async (event, { id, updateData }) => {
       WHERE id = ?
     `;
     
-    const result = await db.run(query, values);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.run(...values);
+    db.close();
     
     return { success: true, changes: result.changes };
   } catch (error) {
@@ -259,8 +250,7 @@ ipcMain.handle('leave-request-update', async (event, { id, updateData }) => {
 // Approve leave request
 ipcMain.handle('leave-request-approve', async (event, { id, approvedBy, approvedAt }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       UPDATE leave_requests 
@@ -268,8 +258,9 @@ ipcMain.handle('leave-request-approve', async (event, { id, approvedBy, approved
       WHERE id = ?
     `;
     
-    const result = await db.run(query, [approvedBy, approvedAt, new Date().toISOString(), id]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.run(approvedBy, approvedAt, new Date().toISOString(), id);
+    db.close();
     
     return { success: true, changes: result.changes };
   } catch (error) {
@@ -281,8 +272,7 @@ ipcMain.handle('leave-request-approve', async (event, { id, approvedBy, approved
 // Reject leave request
 ipcMain.handle('leave-request-reject', async (event, { id, rejectedBy, rejectionReason, rejectedAt }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       UPDATE leave_requests 
@@ -290,8 +280,9 @@ ipcMain.handle('leave-request-reject', async (event, { id, rejectedBy, rejection
       WHERE id = ?
     `;
     
-    const result = await db.run(query, [rejectedBy, rejectionReason, new Date().toISOString(), id]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.run(rejectedBy, rejectionReason, new Date().toISOString(), id);
+    db.close();
     
     return { success: true, changes: result.changes };
   } catch (error) {
@@ -303,8 +294,7 @@ ipcMain.handle('leave-request-reject', async (event, { id, rejectedBy, rejection
 // Delete leave request (soft delete)
 ipcMain.handle('leave-request-delete', async (event, id) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       UPDATE leave_requests 
@@ -312,8 +302,9 @@ ipcMain.handle('leave-request-delete', async (event, id) => {
       WHERE id = ?
     `;
     
-    const result = await db.run(query, [id]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.run(id);
+    db.close();
     
     return { success: true, changes: result.changes };
   } catch (error) {
@@ -325,8 +316,7 @@ ipcMain.handle('leave-request-delete', async (event, id) => {
 // Get leave requests by date range
 ipcMain.handle('leave-request-get-by-date-range', async (event, { startDate, endDate, status }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT lr.*, e.fname, e.lname, e.roll, e.employee_id
@@ -344,8 +334,9 @@ ipcMain.handle('leave-request-get-by-date-range', async (event, { startDate, end
     
     query += ' ORDER BY lr.start_date ASC';
     
-    const result = await db.all(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(...params);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -357,8 +348,7 @@ ipcMain.handle('leave-request-get-by-date-range', async (event, { startDate, end
 // Get leave requests by type
 ipcMain.handle('leave-request-get-by-type', async (event, { leaveType, startDate, endDate }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT lr.*, e.fname, e.lname, e.roll, e.employee_id
@@ -376,8 +366,9 @@ ipcMain.handle('leave-request-get-by-type', async (event, { leaveType, startDate
     
     query += ' ORDER BY lr.start_date ASC';
     
-    const result = await db.all(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(...params);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -389,8 +380,7 @@ ipcMain.handle('leave-request-get-by-type', async (event, { leaveType, startDate
 // Get leave statistics
 ipcMain.handle('leave-request-get-statistics', async (event, { startDate, endDate }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT 
@@ -413,8 +403,9 @@ ipcMain.handle('leave-request-get-statistics', async (event, { startDate, endDat
     
     query += ' GROUP BY leave_type ORDER BY type_count DESC';
     
-    const result = await db.all(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(...params);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -426,8 +417,7 @@ ipcMain.handle('leave-request-get-statistics', async (event, { startDate, endDat
 // Get employee leave balance
 ipcMain.handle('leave-request-get-employee-balance', async (event, { employeeId, year }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const targetYear = year || new Date().getFullYear();
     
@@ -442,8 +432,9 @@ ipcMain.handle('leave-request-get-employee-balance', async (event, { employeeId,
       GROUP BY leave_type
     `;
     
-    const result = await db.all(query, [employeeId, targetYear.toString()]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(employeeId, targetYear.toString());
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -455,8 +446,7 @@ ipcMain.handle('leave-request-get-employee-balance', async (event, { employeeId,
 // Check if employee has overlapping leave requests
 ipcMain.handle('leave-request-check-overlapping', async (event, { employeeId, startDate, endDate, excludeId }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT COUNT(*) as count
@@ -476,8 +466,9 @@ ipcMain.handle('leave-request-check-overlapping', async (event, { employeeId, st
       params.push(excludeId);
     }
     
-    const result = await db.get(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.get(...params);
+    db.close();
     
     return { 
       success: true, 
@@ -495,8 +486,7 @@ ipcMain.handle('leave-request-check-overlapping', async (event, { employeeId, st
 // Get leave requests summary by month
 ipcMain.handle('leave-request-get-monthly-summary', async (event, { month, year }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const monthYear = `${year}-${month.toString().padStart(2, '0')}`;
     
@@ -511,8 +501,9 @@ ipcMain.handle('leave-request-get-monthly-summary', async (event, { month, year 
       WHERE strftime("%Y-%m", start_date) = ? AND isdeleted = 0
     `;
     
-    const result = await db.get(query, [monthYear]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.get(monthYear);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {

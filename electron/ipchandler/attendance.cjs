@@ -2,21 +2,12 @@ const { ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
+const { getDatabasePath } = require('../../src/database/database-service.cjs');
 
 // Dynamic path resolution for both development and production
 const getDbPath = () => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../src/database/pos.db');
-    const prodPath = path.join(__dirname, '../../database/pos.db');
-    
-    if (fs.existsSync(devPath)) {
-      return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
-    } else {
-      throw new Error(`Database not found at either ${devPath} or ${prodPath}`);
-    }
+    return getDatabasePath();
   } catch (error) {
     console.error('Failed to resolve database path:', error);
     throw error;
