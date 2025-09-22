@@ -1,36 +1,11 @@
-const path = require('path');
-const fs = require('fs');
-const Database = require('better-sqlite3');
+const { initializeDatabase } = require('../src/database/database-service.cjs');
 
 function initDatabase() {
   try {
-    // Check if we're in development or production
-    // In built app, __dirname will be inside app.asar, so we check for that
-    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../src/database/pos.db'));
+    // Initialize the database connection
+    const db = initializeDatabase();
     
-    let dbPath;
-    if (isDev) {
-      // Development mode - use src/database path
-      dbPath = path.join(__dirname, '../src/database/pos.db');
-      console.log('Development mode: Using src/database path');
-    } else {
-      // Production mode - use resources/database path
-      dbPath = path.join(process.resourcesPath, 'database/pos.db');
-      console.log('Production mode: Using resources/database path');
-    }
-    
-    console.log('Database path:', dbPath);
-    
-    // Ensure the directory exists
-    const dbDir = path.dirname(dbPath);
-    if (!fs.existsSync(dbDir)) {
-      console.log('Creating database directory:', dbDir);
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
-    
-    const db = new Database(dbPath);
-    
-    console.log('Initializing database...');
+    console.log('Initializing database tables...');
     
     // Create variation table if it doesn't exist
     const createVariationTable = `
@@ -280,7 +255,6 @@ function initDatabase() {
       console.warn('Could not create settings table:', e.message);
     }
     
-    db.close();
     console.log('Database initialization completed');
     
   } catch (error) {
