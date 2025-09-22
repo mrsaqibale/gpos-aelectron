@@ -98,6 +98,7 @@ const FinalizeSaleModal = ({
   setCurrentOrderForInvoice,
   // Modify order payment props
   isModifyingOrder,
+  modifyingOrderId,
   modifyingOrderPaymentInfo,
   showPayLaterButton,
   setShowPayLaterButton,
@@ -900,10 +901,18 @@ const FinalizeSaleModal = ({
                     payment_method: null
                   };
                   
-                  // Get the modifying order ID from the parent component
-                  // This would need to be passed as a prop or handled differently
-                  // For now, we'll show a success message
-                  showSuccess('Order updated with new amount. Payment status set to pending.');
+                  // Update the order with the new total amount and set payment status to pending
+                  if (modifyingOrderId) {
+                    const updateResult = await window.myAPI.updateOrder(modifyingOrderId, paymentUpdates);
+                    if (!updateResult.success) {
+                      showError('Failed to update order: ' + updateResult.message);
+                      return;
+                    }
+                    showSuccess('Order updated with new amount. Payment status set to pending.');
+                  } else {
+                    showError('Order ID not found. Cannot update order.');
+                    return;
+                  }
                   
                   onClose();
                   setIsSinglePayMode(false);
