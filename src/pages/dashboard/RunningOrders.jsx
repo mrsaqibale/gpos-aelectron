@@ -467,6 +467,9 @@ const RunningOrders = () => {
   const [isSinglePayMode, setIsSinglePayMode] = useState(false);
   const [isModifyingOrder, setIsModifyingOrder] = useState(false);
   const [modifyingOrderId, setModifyingOrderId] = useState(null);
+  const [modifyingOrderPaymentInfo, setModifyingOrderPaymentInfo] = useState(null);
+  const [showPayLaterButton, setShowPayLaterButton] = useState(false);
+  const [hasResetPayment, setHasResetPayment] = useState(false);
   const [selectedNewOrderStatus, setSelectedNewOrderStatus] = useState('New'); // Track status for new orders
 
   // Use the custom hook for keyboard functionality
@@ -5585,6 +5588,24 @@ const RunningOrders = () => {
       return;
     }
 
+    // Check if order is paid and has valid status for modification
+    if (selectedPlacedOrder.payment_status === 'paid') {
+      const orderStatus = selectedPlacedOrder.status?.toLowerCase();
+      const orderType = selectedPlacedOrder.orderType?.toLowerCase();
+      
+      // Check if order status allows modification
+      const isStatusValid = (orderType === 'table' || orderType === 'collection' || orderType === 'instore') 
+        ? orderStatus !== 'completed' 
+        : (orderType === 'delivery' 
+          ? orderStatus !== 'on_the_way' && orderStatus !== 'delivered' && orderStatus !== 'completed'
+          : true);
+      
+      if (!isStatusValid) {
+        showError('Cannot modify order: Order status does not allow modification');
+        return;
+      }
+    }
+
     // Clear current cart first
     setCartItems([]);
     setAppliedCoupon(null);
@@ -5784,6 +5805,20 @@ const RunningOrders = () => {
     // Set modification flags
     setIsModifyingOrder(true);
     setModifyingOrderId(selectedPlacedOrder.databaseId);
+    
+    // Store payment information if order is paid
+    if (selectedPlacedOrder.payment_status === 'paid') {
+      setModifyingOrderPaymentInfo({
+        payment_method: selectedPlacedOrder.payment_method,
+        paid_amount: selectedPlacedOrder.order_amount || 0
+      });
+      setShowPayLaterButton(false);
+      setHasResetPayment(false);
+    } else {
+      setModifyingOrderPaymentInfo(null);
+      setShowPayLaterButton(false);
+      setHasResetPayment(false);
+    }
     
     // Don't remove the order from placed orders - keep it there
     // setPlacedOrders(prev => prev.filter(order => order.id !== selectedPlacedOrder.id));
