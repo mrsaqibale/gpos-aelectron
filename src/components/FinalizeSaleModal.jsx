@@ -107,6 +107,13 @@ const FinalizeSaleModal = ({
 }) => {
   if (!isOpen) return null;
 
+  // Set payment method when modifying a paid order
+  React.useEffect(() => {
+    if (isModifyingOrder && modifyingOrderPaymentInfo && modifyingOrderPaymentInfo.payment_method) {
+      setSelectedPaymentMethod(modifyingOrderPaymentInfo.payment_method);
+    }
+  }, [isModifyingOrder, modifyingOrderPaymentInfo, setSelectedPaymentMethod]);
+
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
