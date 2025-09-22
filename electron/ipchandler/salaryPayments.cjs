@@ -2,21 +2,12 @@ const { ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
+const { getDatabasePath } = require('../../src/database/database-service.cjs');
 
 // Dynamic path resolution for both development and production
 const getDbPath = () => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../src/database/pos.db');
-    const prodPath = path.join(__dirname, '../../database/pos.db');
-    
-    if (fs.existsSync(devPath)) {
-      return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
-    } else {
-      throw new Error(`Database not found at either ${devPath} or ${prodPath}`);
-    }
+    return getDatabasePath();
   } catch (error) {
     console.error('Failed to resolve database path:', error);
     throw error;
@@ -124,8 +115,7 @@ const getDbPath = () => {
 // Get salary payments by date range
 ipcMain.handle('salary-payment-get-by-date-range', async (event, { startDate, endDate }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
@@ -135,8 +125,9 @@ ipcMain.handle('salary-payment-get-by-date-range', async (event, { startDate, en
       ORDER BY sp.payment_date DESC, e.fname
     `;
     
-    const result = await db.all(query, [startDate, endDate]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(startDate, endDate);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -148,8 +139,7 @@ ipcMain.handle('salary-payment-get-by-date-range', async (event, { startDate, en
 // Get salary payment by ID
 ipcMain.handle('salary-payment-get-by-id', async (event, id) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
@@ -158,8 +148,9 @@ ipcMain.handle('salary-payment-get-by-id', async (event, id) => {
       WHERE sp.id = ? AND sp.isdeleted = 0
     `;
     
-    const result = await db.get(query, [id]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.get(id);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -171,8 +162,7 @@ ipcMain.handle('salary-payment-get-by-id', async (event, id) => {
 // Update salary payment record
 ipcMain.handle('salary-payment-update', async (event, { id, updateData }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const fields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
     const values = Object.values(updateData);
@@ -184,8 +174,9 @@ ipcMain.handle('salary-payment-update', async (event, { id, updateData }) => {
       WHERE id = ?
     `;
     
-    const result = await db.run(query, values);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.run(...values);
+    db.close();
     
     return { success: true, changes: result.changes };
   } catch (error) {
@@ -197,8 +188,7 @@ ipcMain.handle('salary-payment-update', async (event, { id, updateData }) => {
 // Delete salary payment record (soft delete)
 ipcMain.handle('salary-payment-delete', async (event, id) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       UPDATE salary_payments 
@@ -206,8 +196,9 @@ ipcMain.handle('salary-payment-delete', async (event, id) => {
       WHERE id = ?
     `;
     
-    const result = await db.run(query, [id]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.run(id);
+    db.close();
     
     return { success: true, changes: result.changes };
   } catch (error) {
@@ -219,8 +210,7 @@ ipcMain.handle('salary-payment-delete', async (event, id) => {
 // Get total salary paid to employee
 ipcMain.handle('salary-payment-get-total-paid', async (event, { employeeId, startDate, endDate }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT SUM(amount) as total_paid, COUNT(*) as payment_count
@@ -235,8 +225,9 @@ ipcMain.handle('salary-payment-get-total-paid', async (event, { employeeId, star
       params.push(startDate, endDate);
     }
     
-    const result = await db.get(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.get(...params);
+    db.close();
     
     return { 
       success: true, 
@@ -254,8 +245,7 @@ ipcMain.handle('salary-payment-get-total-paid', async (event, { employeeId, star
 // Get salary payment statistics
 ipcMain.handle('salary-payment-get-statistics', async (event, { startDate, endDate }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT 
@@ -273,8 +263,9 @@ ipcMain.handle('salary-payment-get-statistics', async (event, { startDate, endDa
       params.push(startDate, endDate);
     }
     
-    const result = await db.get(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.get(...params);
+    db.close();
     
     return {
       success: true,
@@ -294,8 +285,7 @@ ipcMain.handle('salary-payment-get-statistics', async (event, { startDate, endDa
 // Get pending salary payments
 ipcMain.handle('salary-payment-get-pending', async (event) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     // Get employees with pending salary: earned from attendance minus total paid
     const query = `
@@ -322,8 +312,9 @@ ipcMain.handle('salary-payment-get-pending', async (event) => {
       ORDER BY remaining DESC
     `;
     
-    const result = await db.all(query);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all();
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -335,8 +326,7 @@ ipcMain.handle('salary-payment-get-pending', async (event) => {
 // Get salary payment history for employee
 ipcMain.handle('salary-payment-get-history', async (event, { employeeId, limit }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
@@ -347,8 +337,9 @@ ipcMain.handle('salary-payment-get-history', async (event, { employeeId, limit }
       LIMIT ?
     `;
     
-    const result = await db.all(query, [employeeId, limit || 50]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(employeeId, limit || 50);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -360,8 +351,7 @@ ipcMain.handle('salary-payment-get-history', async (event, { employeeId, limit }
 // Get salary payments by payment method
 ipcMain.handle('salary-payment-get-by-method', async (event, { method, startDate, endDate }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT sp.*, e.fname, e.lname, e.roll, e.id AS employee_id
@@ -379,8 +369,9 @@ ipcMain.handle('salary-payment-get-by-method', async (event, { method, startDate
     
     query += ' ORDER BY sp.payment_date DESC';
     
-    const result = await db.all(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(...params);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -392,8 +383,7 @@ ipcMain.handle('salary-payment-get-by-method', async (event, { method, startDate
 // Get monthly salary summary
 ipcMain.handle('salary-payment-get-monthly-summary', async (event, { month, year }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       SELECT 
@@ -409,8 +399,9 @@ ipcMain.handle('salary-payment-get-monthly-summary', async (event, { month, year
     `;
     
     const monthYear = `${year}-${month.toString().padStart(2, '0')}`;
-    const result = await db.all(query, [monthYear]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(monthYear);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -422,8 +413,7 @@ ipcMain.handle('salary-payment-get-monthly-summary', async (event, { month, year
 // Get yearly salary summary
 ipcMain.handle('salary-payment-get-yearly-summary', async (event, year) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     const query = `
       SELECT 
@@ -437,8 +427,9 @@ ipcMain.handle('salary-payment-get-yearly-summary', async (event, year) => {
       ORDER BY month
     `;
     
-    const result = await db.all(query, [year.toString()]);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(year.toString());
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {
@@ -450,12 +441,12 @@ ipcMain.handle('salary-payment-get-yearly-summary', async (event, year) => {
 // Check if employee has pending salary
 ipcMain.handle('salary-payment-check-pending', async (event, employeeId) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     // Get employee salary
     const employeeQuery = 'SELECT salary FROM employee WHERE id = ? AND isActive = 1 AND isDeleted = 0';
-    const employee = await db.get(employeeQuery, [employeeId]);
+    const empStmt = db.prepare(employeeQuery);
+    const employee = empStmt.get(employeeId);
     
     if (!employee) {
       await db.close();
@@ -464,12 +455,13 @@ ipcMain.handle('salary-payment-check-pending', async (event, employeeId) => {
     
     // Get total paid
     const paymentQuery = 'SELECT SUM(amount) as total_paid FROM salary_payments WHERE employee_id = ? AND isdeleted = 0';
-    const payment = await db.get(paymentQuery, [employeeId]);
+    const payStmt = db.prepare(paymentQuery);
+    const payment = payStmt.get(employeeId);
     
     const totalPaid = payment.total_paid || 0;
     const remaining = Math.max(0, employee.salary - totalPaid);
     
-    await db.close();
+    db.close();
     
     return { 
       success: true, 
@@ -489,8 +481,7 @@ ipcMain.handle('salary-payment-check-pending', async (event, employeeId) => {
 // Get salary payment methods summary
 ipcMain.handle('salary-payment-get-methods-summary', async (event, { startDate, endDate }) => {
   try {
-    const db = new Database();
-    await db.connect();
+    const db = new Database(getDbPath());
     
     let query = `
       SELECT 
@@ -510,8 +501,9 @@ ipcMain.handle('salary-payment-get-methods-summary', async (event, { startDate, 
     
     query += ' GROUP BY payment_method ORDER BY total_amount DESC';
     
-    const result = await db.all(query, params);
-    await db.close();
+    const stmt = db.prepare(query);
+    const result = stmt.all(...params);
+    db.close();
     
     return { success: true, data: result };
   } catch (error) {

@@ -26,6 +26,7 @@
     "postinstall": "electron-builder install-app-deps",
     "build:app": "node build-app.js",
     "build:app-linux": "node build-app-linux.js",
+    "build:app-windows-pro": "node windowbuildcode/build-app-professional.cjs",
     "test:table-integration": "node src/database/test/run-table-test.js",
     "check:floor-data": "node src/database/test/check-floor-data.js"
   },
