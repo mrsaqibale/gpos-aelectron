@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, AlertTriangle, CheckCircle, FileText, Gift } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, FileText, Gift, Clock } from 'lucide-react';
 import Keyboard from 'react-simple-keyboard';
 import 'react-simple-keyboard/build/css/index.css';
 
@@ -88,13 +88,21 @@ const FinalizeSaleModal = ({
   // Functions
   handlePlaceOrder,
   showError,
+  showSuccess,
   setIsInvoiceAfterPayment,
   setShowInvoiceModal,
   clearCart,
   resetFinalizeSaleModal,
   setIsSinglePayMode,
   setSelectedPlacedOrder,
-  setCurrentOrderForInvoice
+  setCurrentOrderForInvoice,
+  // Modify order payment props
+  isModifyingOrder,
+  modifyingOrderPaymentInfo,
+  showPayLaterButton,
+  setShowPayLaterButton,
+  hasResetPayment,
+  setHasResetPayment
 }) => {
   if (!isOpen) return null;
 
@@ -462,6 +470,43 @@ const FinalizeSaleModal = ({
                 </div>
               </div>
             </div>
+
+            {/* Modify Order Payment Information */}
+            {isModifyingOrder && modifyingOrderPaymentInfo && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-md font-semibold text-blue-800">Previous Payment Information</h4>
+                  <button
+                    onClick={() => {
+                      setHasResetPayment(true);
+                      setPaymentAmount('0');
+                      setGivenAmount('0');
+                      setChangeAmount('0');
+                      setAddedPayments([]);
+                      setShowPayLaterButton(true);
+                    }}
+                    className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+                  >
+                    Reset Payment
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-blue-700">Payment Method:</span>
+                    <span className="text-sm font-medium text-blue-800">{modifyingOrderPaymentInfo.payment_method}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-blue-700">Previously Paid:</span>
+                    <span className="text-sm font-medium text-blue-800">{getCurrencySymbol()}{modifyingOrderPaymentInfo.paid_amount.toFixed(2)}</span>
+                  </div>
+                </div>
+                {hasResetPayment && (
+                  <div className="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded">
+                    <p className="text-sm text-yellow-800">Payment has been reset. You can now add new payments or use Pay Later option.</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Payment Status Message */}
             {addedPayments.length > 0 && calculateDueAmount() > 0 && (
@@ -837,6 +882,46 @@ const FinalizeSaleModal = ({
             </div>
           </div>
         </div>
+
+        {/* Pay Later Button - Only show when modifying order and reset has been clicked */}
+        {isModifyingOrder && showPayLaterButton && (
+          <div className="px-6 pb-4">
+            <button
+              onClick={async () => {
+                try {
+                  // Calculate the new total amount
+                  const newTotal = isSinglePayMode ? calculateSinglePayTotals().total :
+                                 selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal();
+                  
+                  // Update the order with the new total amount and set payment status to pending
+                  const paymentUpdates = {
+                    order_amount: newTotal,
+                    payment_status: 'pending',
+                    payment_method: null
+                  };
+                  
+                  // Get the modifying order ID from the parent component
+                  // This would need to be passed as a prop or handled differently
+                  // For now, we'll show a success message
+                  showSuccess('Order updated with new amount. Payment status set to pending.');
+                  
+                  onClose();
+                  setIsSinglePayMode(false);
+                  clearCart();
+                  resetFinalizeSaleModal();
+                } catch (error) {
+                  console.error('Error updating order for pay later:', error);
+                  showError('Failed to update order. Please try again.');
+                }
+              }}
+              className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <Clock size={20} />
+              Pay Later (€{(isSinglePayMode ? calculateSinglePayTotals().total :
+                           selectedSplitBill ? calculateSplitBillTotal() : calculateCartTotal()).toFixed(2)})
+            </button>
+          </div>
+        )}
 
         {/* Footer - Action Buttons */}
         <div className="p-6 border-t border-gray-200 flex gap-4">

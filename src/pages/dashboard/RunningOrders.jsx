@@ -9703,6 +9703,13 @@ const RunningOrders = () => {
           setIsSinglePayMode={setIsSinglePayMode}
           setSelectedPlacedOrder={setSelectedPlacedOrder}
           setCurrentOrderForInvoice={setCurrentOrderForInvoice}
+          // Modify order payment props
+          isModifyingOrder={isModifyingOrder}
+          modifyingOrderPaymentInfo={modifyingOrderPaymentInfo}
+          showPayLaterButton={showPayLaterButton}
+          setShowPayLaterButton={setShowPayLaterButton}
+          hasResetPayment={hasResetPayment}
+          setHasResetPayment={setHasResetPayment}
         />
       )}
     </>
