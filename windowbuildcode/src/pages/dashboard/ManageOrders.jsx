@@ -1,0 +1,2151 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Clock,
+  User,
+  MapPin,
+  ShoppingBag,
+  Eye,
+  Check,
+  X,
+  ChefHat,
+  CheckCircle,
+  DollarSign,
+  ChevronRight,
+  Edit,
+  Printer,
+  Calendar,
+  Filter,
+  RotateCcw
+} from 'lucide-react';
+import VirtualKeyboard from '../../components/VirtualKeyboard';
+import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
+import UpdateOrderStatus from '../../components/UpdateOrderStatus';
+import AssignRider from '../../components/AssignRider';
+import ConfirmationModal from '../../components/ConfirmationModal';
+import CustomAlert from '../../components/CustomAlert';
+import Invoice from '../../components/Invoice';
+import FinalizeSaleModal from '../../components/FinalizeSaleModal';
+
+const ManageOrders = () => {
+  const [activeTab, setActiveTab] = useState('all');
+  const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [fromDateTime, setFromDateTime] = useState('');
+  const [toDateTime, setToDateTime] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderDetails, setOrderDetails] = useState([]);
+  const [orderTotals, setOrderTotals] = useState(null);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [isModalAnimating, setIsModalAnimating] = useState(false);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedOrderIdForSales, setSelectedOrderIdForSales] = useState(null);
+  const [showUpdateStatusModal, setShowUpdateStatusModal] = useState(false);
+  const [selectedOrderForStatus, setSelectedOrderForStatus] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState('New');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [showAssignRiderModal, setShowAssignRiderModal] = useState(false);
+  const [selectedOrderForRider, setSelectedOrderForRider] = useState(null);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState(null);
+  const [confirmationConfig, setConfirmationConfig] = useState({
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
+  const [isConfirmationLoading, setIsConfirmationLoading] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    message: '',
+    type: 'success'
+  });
+  
+  // FinalizeSaleModal state variables
+  const [showFinalizeSaleModal, setShowFinalizeSaleModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('Cash');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [givenAmount, setGivenAmount] = useState('');
+  const [changeAmount, setChangeAmount] = useState('');
+  const [addedPayments, setAddedPayments] = useState([]);
+  const [sendSMS, setSendSMS] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState('EUR');
+  const [currencyAmount, setCurrencyAmount] = useState('');
+  const [currencyOptions] = useState([
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'GBP', symbol: '£', name: 'British Pound' }
+  ]);
+  
+  // Coupon and discount state
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [discountType, setDiscountType] = useState('percentage');
+  const [discountAmount, setDiscountAmount] = useState('');
+  
+  // Numeric keyboard state
+  const [numericActiveInput, setNumericActiveInput] = useState('');
+  const [numericKeyboardInput, setNumericKeyboardInput] = useState('');
+  
+  const navigate = useNavigate();
+
+  // Use the custom hook for keyboard functionality
+  const {
+    showKeyboard,
+    activeInput,
+    keyboardInput,
+    capsLock,
+    handleInputFocus,
+    handleInputBlur,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    onKeyboardChange,
+    onKeyboardChangeAll,
+    onKeyboardKeyPress,
+    resetKeyboardInputs,
+    hideKeyboard
+  } = useVirtualKeyboard(['searchTerm', 'customerSearchTerm']);
+
+  // Format Date to input[type="datetime-local"] string in local time
+  const formatForDatetimeLocal = (date) => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const y = date.getFullYear();
+    const m = pad(date.getMonth() + 1);
+    const d = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const mm = pad(date.getMinutes());
+    return `${y}-${m}-${d}T${hh}:${mm}`;
+  };
+
+  // Set today's date range on component mount
+  useEffect(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), 0);
+    
+    setFromDateTime(formatForDatetimeLocal(todayStart));
+    setToDateTime(formatForDatetimeLocal(todayEnd));
+    
+    // Also fetch immediately on mount
+    loadOrders(todayStart.toISOString(), todayEnd.toISOString());
+  }, []);
+
+  // Load orders from database
+  const loadOrders = async (startDate, endDate) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await window.myAPI.getOrdersByDateRange(startDate, endDate);
+      
+      if (result.success) {
+        // Process orders to include customer data and format properly
+        const processedOrders = await Promise.all(
+          result.data.map(async (order) => {
+            let customerData = null;
+            
+            if (order.customer_id) {
+              try {
+                const customerResult = await window.myAPI.getCustomerById(order.customer_id);
+                if (customerResult.success && customerResult.data) {
+                  customerData = customerResult.data;
+                }
+              } catch (error) {
+                console.warn(`Failed to fetch customer data for order ${order.id}:`, error);
+              }
+            }
+            
+            return {
+              ...order,
+              customerData,
+              // Format dates for display
+              orderDate: new Date(order.created_at).toLocaleDateString(),
+              orderTime: new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              dueDate: order.schedule_at ? new Date(order.schedule_at).toLocaleDateString() : 'N/A',
+              dueTime: order.schedule_at ? new Date(order.schedule_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
+              // Format amount
+              total: parseFloat(order.order_amount || 0),
+              // Format status
+              status: order.order_status || 'new',
+              paymentStatus: order.payment_status || 'pending'
+            };
+          })
+        );
+        
+        setOrders(processedOrders);
+        setFilteredOrders(processedOrders);
+      } else {
+        setError(result.message || 'Failed to load orders');
+        setOrders([]);
+        setFilteredOrders([]);
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error);
+      setError('Failed to load orders');
+      setOrders([]);
+      setFilteredOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = orders;
+
+    // Filter by tab
+    if (activeTab === 'collection') {
+      filtered = filtered.filter(o => normalizeOrderType(o.order_type) === 'collection');
+    } else if (activeTab === 'delivery') {
+      filtered = filtered.filter(o => normalizeOrderType(o.order_type) === 'delivery');
+    } else if (activeTab === 'online') {
+      filtered = filtered.filter(o => normalizeOrderType(o.order_type) === 'online');
+    } else if (activeTab === 'dinein') {
+      filtered = filtered.filter(o => normalizeOrderType(o.order_type) === 'dinein');
+    } else if (activeTab === 'instore') {
+      filtered = filtered.filter(o => normalizeOrderType(o.order_type) === 'instore');
+    } else if (activeTab === 'paid') {
+      filtered = filtered.filter(o => o.paymentStatus === 'paid');
+    } else if (activeTab === 'unpaid') {
+      filtered = filtered.filter(o => o.paymentStatus === 'unpaid');
+    }
+
+    // Payment status filter
+    if (paymentStatusFilter === 'paid') {
+      filtered = filtered.filter(o => o.paymentStatus === 'paid');
+    } else if (paymentStatusFilter === 'unpaid') {
+      filtered = filtered.filter(o => o.paymentStatus === 'unpaid');
+    }
+
+    // Order status filter
+    if (orderStatusFilter !== 'all') {
+      filtered = filtered.filter(o => o.status === orderStatusFilter);
+    }
+
+    // Order ID filter
+    if (searchTerm) {
+      filtered = filtered.filter(o => 
+        o.id.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.order_number?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Customer filter
+    if (customerSearchTerm) {
+      filtered = filtered.filter(o => {
+        if (o.customerData) {
+          return o.customerData.name?.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+                 o.customerData.phone?.includes(customerSearchTerm);
+        }
+        return false;
+      });
+    }
+
+    setFilteredOrders(filtered);
+  }, [orders, activeTab, paymentStatusFilter, orderStatusFilter, searchTerm, customerSearchTerm]);
+
+  // Fetch orders instantly when either date changes (when both present)
+  useEffect(() => {
+    if (!fromDateTime || !toDateTime) return;
+    try {
+      const startDate = new Date(fromDateTime).toISOString();
+      const endDate = new Date(toDateTime).toISOString();
+      loadOrders(startDate, endDate);
+    } catch (e) {
+      // ignore invalid date parse
+    }
+  }, [fromDateTime, toDateTime]);
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    setActiveTab('all');
+    setPaymentStatusFilter('all');
+    setOrderStatusFilter('all');
+    setSearchTerm('');
+    setCustomerSearchTerm('');
+    
+    // Reset to today's date range
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), 0);
+    
+    setFromDateTime(formatForDatetimeLocal(todayStart));
+    setToDateTime(formatForDatetimeLocal(todayEnd));
+    
+    loadOrders(todayStart.toISOString(), todayEnd.toISOString());
+  };
+
+  const openInvoiceForOrder = async (order) => {
+    try {
+      setInvoiceLoading(true);
+      setSelectedOrder(order);
+      setShowOrderModal(true);
+      setTimeout(() => setIsModalAnimating(true), 10);
+      // Fetch order details and totals
+      const [detailsResult, totalsResult] = await Promise.all([
+        window.myAPI.getOrderDetailsWithFood(order.id),
+        window.myAPI.calculateOrderTotal(order.id)
+      ]);
+      if (detailsResult?.success) setOrderDetails(detailsResult.data || []);
+      else setOrderDetails([]);
+      if (totalsResult?.success) setOrderTotals(totalsResult.data || null);
+      else setOrderTotals(null);
+    } finally {
+      setInvoiceLoading(false);
+    }
+  };
+
+  const closeOrderModal = () => {
+    setIsModalAnimating(false);
+    setTimeout(() => {
+      setShowOrderModal(false);
+      setSelectedOrder(null);
+      setOrderDetails([]);
+      setOrderTotals(null);
+    }, 300);
+  };
+
+  const openUpdateStatusModal = (order) => {
+    setSelectedOrderForStatus({
+      id: order.id,
+      orderNumber: order.id,
+      orderType: getOrderTypeDisplay(order.order_type),
+      status: order.status,
+      customer: order.customerData
+    });
+    // Ensure status is properly normalized to match the component's expected format
+    const normalizeStatus = (status) => {
+      if (!status) return 'New';
+      
+      // Handle common status variations
+      const statusMap = {
+        'new': 'New',
+        'in progress': 'In Progress',
+        'inprogress': 'In Progress',
+        'ready': 'Ready',
+        'completed': 'Completed',
+        'delivered': 'Delivered',
+        'on the way': 'On the way',
+        'ontheway': 'On the way'
+      };
+      
+      const lowerStatus = status.toLowerCase().replace(/[_\s-]+/g, ' ');
+      return statusMap[lowerStatus] || status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    };
+    
+    const normalizedStatus = normalizeStatus(order.status);
+    setSelectedStatus(normalizedStatus);
+    setShowUpdateStatusModal(true);
+  };
+
+  const closeUpdateStatusModal = () => {
+    setShowUpdateStatusModal(false);
+    setSelectedOrderForStatus(null);
+    setSelectedStatus('New');
+  };
+
+  const openAssignRiderModal = (order) => {
+    // Only allow rider assignment for delivery orders
+    if (normalizeOrderType(order.order_type) !== 'delivery') {
+      console.log('Rider assignment is only available for delivery orders');
+      return;
+    }
+    
+    setSelectedOrderForRider({
+      id: order.id,
+      orderNumber: order.id,
+      orderType: getOrderTypeDisplay(order.order_type),
+      status: order.status,
+      customer: order.customerData
+    });
+    setShowAssignRiderModal(true);
+  };
+
+  const closeAssignRiderModal = () => {
+    setShowAssignRiderModal(false);
+    setSelectedOrderForRider(null);
+  };
+
+  const openInvoiceModal = async (order) => {
+    try {
+      // Fetch order details and totals for the invoice
+      const [detailsResult, totalsResult] = await Promise.all([
+        window.myAPI.getOrderDetailsWithFood(order.id),
+        window.myAPI.calculateOrderTotal(order.id)
+      ]);
+      
+      const details = detailsResult?.success ? detailsResult.data : [];
+      const totals = totalsResult?.success ? totalsResult.data : null;
+      
+      // Transform order data to match Invoice component expectations
+      const invoiceOrder = {
+        orderNumber: order.id,
+        orderType: getOrderTypeDisplay(order.order_type),
+        placedAt: order.created_at,
+        createdAt: order.created_at,
+        customer: order.customerData ? {
+          name: order.customerData.name || 'Walk-in Customer',
+          phone: order.customerData.phone,
+          email: order.customerData.email,
+          address: order.customerData.address,
+          addresses: order.customerData.address ? [order.customerData.address] : []
+        } : {
+          name: 'Walk-in Customer',
+          phone: 'N/A',
+          address: 'N/A',
+          addresses: []
+        },
+        table: order.table_details,
+        items: details.map(d => ({
+          id: d.id,
+          food: {
+            id: d.food_id,
+            name: d.food_name,
+            description: d.food_description
+          },
+          quantity: d.quantity,
+          totalPrice: Number(d.price || 0) * Number(d.quantity || 1),
+          variations: d.variation ? (() => { try { return JSON.parse(d.variation); } catch { return {}; } })() : {},
+          adons: d.add_ons ? (() => { try { return JSON.parse(d.add_ons); } catch { return []; } })() : []
+        })),
+        notes: order.special_instructions || null
+      };
+      
+      // Create foodDetails structure for variations and add-ons
+      const foodDetailsForInvoice = {
+        variations: details.reduce((acc, detail) => {
+          if (detail.variation) {
+            try {
+              const variations = JSON.parse(detail.variation);
+              Object.keys(variations).forEach(variationId => {
+                if (!acc[variationId]) {
+                  acc[variationId] = {
+                    id: parseInt(variationId),
+                    name: `Variation ${variationId}`,
+                    options: []
+                  };
+                }
+              });
+            } catch (e) {
+              console.warn('Failed to parse variations for detail:', detail.id);
+            }
+          }
+          return acc;
+        }, {}),
+        adons: details.reduce((acc, detail) => {
+          if (detail.add_ons) {
+            try {
+              const addons = JSON.parse(detail.add_ons);
+              addons.forEach(addonId => {
+                if (!acc.find(a => a.id === parseInt(addonId))) {
+                  acc.push({
+                    id: parseInt(addonId),
+                    name: `Addon ${addonId}`,
+                    price: 0
+                  });
+                }
+              });
+            } catch (e) {
+              console.warn('Failed to parse add-ons for detail:', detail.id);
+            }
+          }
+          return acc;
+        }, [])
+      };
+      
+      setSelectedOrderForInvoice(invoiceOrder);
+      setOrderDetails(details); // Update orderDetails for the Invoice component
+      setShowInvoiceModal(true);
+    } catch (error) {
+      console.error('Error preparing invoice data:', error);
+      showCustomAlert('Failed to load invoice data', 'error');
+    }
+  };
+
+  const closeInvoiceModal = () => {
+    setShowInvoiceModal(false);
+    setSelectedOrderForInvoice(null);
+  };
+
+  const handleStatusUpdate = async (newStatus) => {
+    if (!selectedOrderForStatus) return;
+    
+    console.log('handleStatusUpdate called with status:', newStatus);
+    console.log('selectedOrderForStatus:', selectedOrderForStatus);
+    
+    setIsUpdatingStatus(true);
+    
+    try {
+      // Map UI status to database status format
+      let dbStatus = newStatus;
+      switch (newStatus) {
+        case 'New':
+          dbStatus = 'new';
+          break;
+        case 'In Progress':
+          dbStatus = 'in_progress';
+          break;
+        case 'Ready':
+          dbStatus = 'ready';
+          break;
+        case 'On the way':
+          dbStatus = 'on_the_way';
+          break;
+        case 'Delivered':
+          dbStatus = 'delivered';
+          break;
+        case 'Completed':
+          dbStatus = 'completed';
+          break;
+        default:
+          dbStatus = newStatus.toLowerCase().replace(/\s+/g, '_');
+      }
+      
+      console.log('Mapped status for database:', dbStatus);
+      
+      // Update the order status in the database
+      const result = await window.myAPI.updateOrderStatus(selectedOrderForStatus.id, dbStatus);
+      
+      console.log('API result:', result);
+      
+      if (result.success) {
+        // Update the local state
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order.id === selectedOrderForStatus.id 
+              ? { ...order, status: newStatus }
+              : order
+          )
+        );
+        
+        // Show success message
+        console.log('Order status updated successfully');
+        
+        // Add a small delay before closing the modal to show success state
+        setTimeout(() => {
+          closeUpdateStatusModal();
+        }, 500);
+        
+        // You can add a toast notification here if you have a notification system
+        // For now, we'll just close the modal and update the UI
+      } else {
+        console.error('Failed to update order status:', result.message);
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleStatusChange = (status) => {
+    console.log('handleStatusChange called with status:', status);
+    setSelectedStatus(status);
+  };
+
+  const handleAssignRider = async (rider) => {
+    if (!selectedOrderForRider) return false;
+    
+    try {
+      // Here you would call your API to assign the rider to the order
+      // For now, we'll just log it and close the modal
+      console.log(`Assigning rider ${rider.name} to order ${selectedOrderForRider.id}`);
+      
+      // You can add your API call here:
+      // const result = await window.myAPI.assignRiderToOrder(selectedOrderForRider.id, rider.id);
+      
+      // Update the order status to "On the way" since this is triggered from status selection
+      const statusUpdateResult = await window.myAPI.updateOrderStatus(selectedOrderForRider.id, 'on_the_way');
+      
+      if (statusUpdateResult.success) {
+        // Update the local state to show the assigned rider and new status
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === selectedOrderForRider.id 
+              ? { ...order, driver: rider.name, status: 'On the way' }
+            : order
+        )
+      );
+        
+        console.log('Order status updated to "On the way" and rider assigned successfully');
+      
+      // Close the modal on success
+      closeAssignRiderModal();
+      return true;
+      } else {
+        console.error('Failed to update order status:', statusUpdateResult.message);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error assigning rider:', error);
+      return false;
+    }
+  };
+
+  // Handle marking order as delivered
+  const handleMarkDelivered = async (order) => {
+    try {
+      // Check if order is already delivered
+      if (order.status === 'delivered' || order.status === 'Delivered') {
+        showCustomAlert(`Order #${order.id} is already marked as delivered`, 'warning');
+        return;
+      }
+      
+      // Show beautiful confirmation modal
+      showConfirmation(
+        'Mark Order as Delivered',
+        `Are you sure you want to mark Order #${order.id} as delivered?\n\nThis action will change the order status to "delivered" and cannot be undone.`,
+        'warning',
+        async () => {
+          try {
+            console.log(`Marking order ${order.id} as delivered`);
+            
+            // Update the order status to "delivered" in the database
+            const result = await window.myAPI.updateOrderStatus(order.id, 'delivered');
+            
+            if (result.success) {
+              // Update the local state
+              setOrders(prevOrders => 
+                prevOrders.map(o => 
+                  o.id === order.id 
+                    ? { ...o, status: 'delivered' }
+                    : o
+                )
+              );
+              
+              console.log('Order marked as delivered successfully');
+              
+              // Show success feedback
+              showCustomAlert(`Order #${order.id} has been marked as delivered successfully!`, 'success');
+              
+              // Clear the selection after successful update
+              setSelectedOrderIdForSales(null);
+            } else {
+              console.error('Failed to mark order as delivered:', result.message);
+              showCustomAlert(`Failed to mark order as delivered: ${result.message}`, 'error');
+            }
+          } catch (error) {
+            console.error('Error marking order as delivered:', error);
+            showCustomAlert('An error occurred while marking the order as delivered', 'error');
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error marking order as delivered:', error);
+      alert('An error occurred while marking the order as delivered');
+    }
+  };
+
+  // Helper function to show confirmation modal
+  const showConfirmation = (title, message, type = 'warning', onConfirm) => {
+    setConfirmationConfig({
+      title,
+      message,
+      type,
+      onConfirm
+    });
+    setShowConfirmationModal(true);
+  };
+
+  // Helper function to close confirmation modal
+  const closeConfirmation = () => {
+    setShowConfirmationModal(false);
+    setConfirmationConfig({
+      title: '',
+      message: '',
+      type: 'warning',
+      onConfirm: null
+    });
+  };
+
+  // Helper function to show custom alert
+  const showCustomAlert = (message, type = 'success') => {
+    setAlertConfig({ message, type });
+    setShowAlert(true);
+  };
+
+  // Handle completing all orders
+  const handleCompleteAll = async () => {
+    try {
+      if (!selectedOrderIdForSales) return;
+      
+      const order = orders.find(o => o.id === selectedOrderIdForSales);
+      if (!order) return;
+      
+      // Check if order is already completed
+      if (order.status === 'completed' || order.status === 'Completed') {
+        showCustomAlert(`Order #${order.id} is already completed`, 'warning');
+        return;
+      }
+      
+      // Check if order is in a final state that shouldn't be changed to completed
+      if (order.status === 'delivered' || order.status === 'Delivered' || 
+          order.status === 'canceled' || order.status === 'Canceled') {
+        showCustomAlert(`Order #${order.id} cannot be completed as it is in ${order.status} state`, 'warning');
+        return;
+      }
+      
+      // Show beautiful confirmation modal
+      showConfirmation(
+        'Complete Order',
+        `Are you sure you want to mark Order #${order.id} as completed?\n\nThis action will change the order status to "completed" and cannot be undone.`,
+        'warning',
+        async () => {
+          try {
+            console.log(`Completing order ${order.id}`);
+            
+            // Update the order status to "completed" in the database
+            const result = await window.myAPI.updateOrderStatus(order.id, 'completed');
+            
+            if (result.success) {
+              // Update the local state
+              setOrders(prevOrders => 
+                prevOrders.map(o => 
+                  o.id === order.id 
+                    ? { ...o, status: 'completed' }
+                    : o
+                )
+              );
+              
+              console.log('Order completed successfully');
+              
+              // Show success feedback
+              showCustomAlert(`Order #${order.id} has been completed successfully!`, 'success');
+              
+              // Clear the selection after successful update
+              setSelectedOrderIdForSales(null);
+            } else {
+              console.error('Failed to complete order:', result.message);
+              showCustomAlert(`Failed to complete order: ${result.message}`, 'error');
+            }
+          } catch (error) {
+            console.error('Error completing order:', error);
+            showCustomAlert('An error occurred while completing the order', 'error');
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error completing order:', error);
+      alert('An error occurred while completing the order');
+    }
+  };
+
+  // FinalizeSaleModal handler functions
+  const handleCashGivenAmountChange = (value) => {
+    setGivenAmount(value);
+    setPaymentAmount(value);
+    if (value) {
+      const total = parseFloat(order?.total || 0);
+      const change = parseFloat(value) - total;
+      setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+    } else {
+      setChangeAmount('0.00');
+    }
+  };
+
+  const handleCashAmountChange = (value) => {
+    setPaymentAmount(value);
+    setGivenAmount(value);
+    if (value) {
+      const total = parseFloat(order?.total || 0);
+      const change = parseFloat(value) - total;
+      setChangeAmount(change > 0 ? change.toFixed(2) : '0.00');
+    } else {
+      setChangeAmount('0.00');
+    }
+  };
+
+  const handleNumericInputFocus = (e, inputName, currentValue) => {
+    setNumericActiveInput(inputName);
+    setNumericKeyboardInput(currentValue || '');
+  };
+
+  const handleNumericKeyboardChange = (input) => {
+    setNumericKeyboardInput(input);
+  };
+
+  const handleNumericKeyboardKeyPress = (button) => {
+    if (button === '{bksp}') {
+      setNumericKeyboardInput(prev => prev.slice(0, -1));
+    }
+  };
+
+  const handleAddPayment = () => {
+    if (!paymentAmount || parseFloat(paymentAmount) <= 0) return;
+    
+    const newPayment = {
+      method: selectedPaymentMethod,
+      amount: parseFloat(paymentAmount)
+    };
+    
+    setAddedPayments(prev => [...prev, newPayment]);
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+    setCurrencyAmount('');
+  };
+
+  const handleApplyManualDiscount = () => {
+    if (!discountAmount || parseFloat(discountAmount) <= 0) return;
+    
+    // For now, just show a success message
+    showCustomAlert(`Manual discount of ${discountAmount}${discountType === 'percentage' ? '%' : '€'} applied successfully!`, 'success');
+    
+    // Clear the discount fields
+    setDiscountAmount('');
+  };
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) return;
+    
+    // For now, just show a success message
+    showCustomAlert(`Coupon code "${couponCode}" applied successfully!`, 'success');
+    
+    // Clear the coupon code
+    setCouponCode('');
+  };
+
+  const removeAppliedCoupon = () => {
+    setAppliedCoupon(null);
+    showCustomAlert('Coupon removed successfully!', 'success');
+  };
+
+  const handleCustomInputBlur = (e, inputName) => {
+    // Handle custom input blur for keyboard
+  };
+
+  // Calculation functions for FinalizeSaleModal
+  const calculateCartTotal = () => {
+    return parseFloat(selectedOrder?.total || 0);
+  };
+
+  const calculateCartSubtotal = () => {
+    return parseFloat(selectedOrder?.total || 0);
+  };
+
+  const calculateCartTax = () => {
+    return 0; // No tax calculation for now
+  };
+
+  const calculateCartDiscount = () => {
+    return 0; // No discount calculation for now
+  };
+
+  const calculateDueAmount = () => {
+    const total = calculateCartTotal();
+    const paid = addedPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+    return Math.max(0, total - paid);
+  };
+
+  const getCurrencySymbol = () => {
+    return currencyOptions.find(c => c.code === selectedCurrency)?.symbol || '€';
+  };
+
+  // Reset FinalizeSaleModal
+  const resetFinalizeSaleModal = () => {
+    setSelectedPaymentMethod('Cash');
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+    setAddedPayments([]);
+    setDiscountAmount('');
+    setSendSMS(false);
+    setSelectedCurrency('EUR');
+    setCurrencyAmount('');
+    setAppliedCoupon(null);
+    setCouponCode('');
+  };
+
+  // Open FinalizeSaleModal for payment
+  const openFinalizeSaleModal = (order) => {
+    if (!order) return;
+    
+    // Format the order to match what FinalizeSaleModal expects
+    const formattedOrder = {
+      ...order,
+      databaseId: order.id, // Add databaseId for payment processing
+      orderNumber: `ORD-${order.id}`,
+      items: orderDetails.length > 0 ? orderDetails.map(d => ({
+        id: d.id,
+        food: {
+          id: d.food_id,
+          name: d.food_name,
+          description: d.food_description
+        },
+        quantity: d.quantity,
+        totalPrice: Number(d.price || 0) * Number(d.quantity || 1),
+        variations: d.variation ? (() => { try { return JSON.parse(d.variation); } catch { return {}; } })() : {},
+        adons: d.add_ons ? (() => { try { return JSON.parse(d.add_ons); } catch { return []; } })() : []
+      })) : [],
+      customer: order.customerData ? {
+        name: order.customerData.name || 'Walk-in Customer',
+        phone: order.customerData.phone,
+        email: order.customerData.email,
+        address: order.customerData.address
+      } : {
+        name: 'Walk-in Customer',
+        phone: 'N/A',
+        address: 'N/A'
+      },
+      total: order.total,
+      orderType: getOrderTypeDisplay(order.order_type),
+      table: order.table_details || 'None',
+      waiter: 'Ds Waiter',
+      status: order.status,
+      placedAt: order.created_at
+    };
+    
+    setSelectedOrder(formattedOrder);
+    setShowFinalizeSaleModal(true);
+  };
+
+  // Close FinalizeSaleModal
+  const closeFinalizeSaleModal = () => {
+    setShowFinalizeSaleModal(false);
+    resetFinalizeSaleModal();
+  };
+
+  // Handle successful payment completion
+  const handlePaymentSuccess = async (orderId) => {
+    try {
+      // Update the local state to reflect payment status change
+      setOrders(prevOrders => 
+        prevOrders.map(o => 
+          o.id === orderId 
+            ? { ...o, paymentStatus: 'paid' }
+            : o
+        )
+      );
+      
+      // Clear the selection after successful payment
+      setSelectedOrderIdForSales(null);
+      
+      // Show success message
+      showCustomAlert(`Payment processed successfully for Order #${orderId}!`, 'success');
+      
+      // Close the modal
+      closeFinalizeSaleModal();
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      showCustomAlert('Payment processed but failed to update display. Please refresh the page.', 'warning');
+    }
+  };
+
+  // Handle payment submission
+  const handlePaymentSubmission = async () => {
+    try {
+      if (!selectedOrder) return;
+      
+      // Check if payment is complete
+      if (addedPayments.length === 0 || calculateDueAmount() > 0) {
+        showCustomAlert('Please complete the payment before submitting', 'warning');
+        return;
+      }
+      
+      // Update the order payment status in the database
+      const paymentUpdates = {
+        payment_status: 'paid',
+        payment_method: selectedPaymentMethod
+      };
+      
+      const updateResult = await window.myAPI.updateOrder(selectedOrder.id, paymentUpdates);
+      if (updateResult.success) {
+        // Update the local state
+        setOrders(prevOrders => 
+          prevOrders.map(o => 
+            o.id === selectedOrder.id 
+              ? { ...o, paymentStatus: 'paid' }
+              : o
+          )
+        );
+        
+        // Clear the selection after successful payment
+        setSelectedOrderIdForSales(null);
+        
+        showCustomAlert(`Payment processed successfully for Order #${selectedOrder.id}!`, 'success');
+        closeFinalizeSaleModal();
+      } else {
+        showCustomAlert(`Failed to process payment: ${updateResult.message}`, 'error');
+      }
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      showCustomAlert('An error occurred while processing the payment', 'error');
+    }
+  };
+
+  // Handle keyboard input changes
+  const handleKeyboardChange = (input, inputName) => {
+    if (inputName === 'searchTerm') {
+      setSearchTerm(input);
+    } else if (inputName === 'customerSearchTerm') {
+      setCustomerSearchTerm(input);
+    }
+  };
+
+  // Enhanced input focus handling for keyboard
+  const handleInputFocusEnhanced = (e, inputName) => {
+    if (inputName === 'searchTerm') {
+      handleAnyInputFocus(e, 'searchTerm', searchTerm);
+    } else if (inputName === 'customerSearchTerm') {
+      handleAnyInputFocus(e, 'customerSearchTerm', customerSearchTerm);
+    }
+  };
+
+  // Enhanced input click handling for keyboard
+  const handleInputClickEnhanced = (e, inputName) => {
+    if (inputName === 'searchTerm') {
+      handleAnyInputClick(e, 'searchTerm', searchTerm);
+    } else if (inputName === 'customerSearchTerm') {
+      handleAnyInputClick(e, 'customerSearchTerm', customerSearchTerm);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'new': 'bg-purple-50 text-purple-700 border-purple-200',
+      'pending': 'bg-orange-50 text-orange-700 border-orange-200',
+      'confirmed': 'bg-blue-50 text-blue-700 border-blue-200',
+      'processing': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      'ready': 'bg-green-50 text-green-700 border-green-200',
+      'completed': 'bg-gray-50 text-gray-700 border-gray-200',
+      'delivered': 'bg-blue-50 text-blue-700 border-blue-200',
+      'canceled': 'bg-red-50 text-red-700 border-red-200',
+      'In Prepare': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      'In Progress': 'bg-blue-50 text-blue-700 border-blue-200',
+      'Ready': 'bg-green-50 text-green-700 border-green-200',
+      'Completed': 'bg-gray-50 text-gray-700 border-gray-200',
+      'Delivered': 'bg-blue-50 text-blue-700 border-blue-200'
+    };
+    return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
+  };
+
+  const getStatusText = (status) => {
+    const statusMap = {
+      new: 'New',
+      pending: 'Pending',
+      confirmed: 'Confirmed',
+      processing: 'Processing',
+      ready: 'Ready',
+      completed: 'Completed',
+      delivered: 'Delivered',
+      canceled: 'Canceled'
+    };
+    return statusMap[status] || status;
+  };
+
+  const normalizeOrderType = (orderType) => {
+    if (!orderType) return '';
+    const s = String(orderType).toLowerCase().replace(/[_\s-]+/g, '');
+    if (s === 'dinein' || s === 'dine') return 'dinein';
+    if (s === 'instore' || s === 'instoreshop' || s === 'inshop') return 'instore';
+    if (s === 'collection' || s === 'pickup' || s === 'pickuporder') return 'collection';
+    if (s === 'delivery') return 'delivery';
+    if (s === 'online' || s === 'web' || s === 'app') return 'online';
+    return s;
+  };
+
+  const getOrderTypeDisplay = (orderType) => {
+    const key = normalizeOrderType(orderType);
+    const typeMap = {
+      dinein: 'Dine In',
+      delivery: 'Delivery',
+      collection: 'Collection',
+      online: 'Online',
+      instore: 'In Store'
+    };
+    return typeMap[key] || orderType;
+  };
+
+  const getCustomerDisplay = (order) => {
+    if (order.customerData) {
+      return {
+        name: order.customerData.name || 'N/A',
+        phone: order.customerData.phone || 'N/A',
+        address: order.customerData.address || 'N/A'
+      };
+    } else {
+      return {
+        name: 'Walk-in Customer',
+        phone: 'N/A',
+        address: 'N/A'
+      };
+    }
+  };
+
+  const getDriverTableDisplay = (order) => {
+    const t = normalizeOrderType(order.order_type);
+    if (t === 'delivery') {
+      return order.driver || 'N/A';
+    } else if (t === 'dinein') {
+      return order.table_details || 'N/A';
+    } else {
+      return 'N/A';
+    }
+  };
+
+  // Helper function to check if an order status prevents navigation to sales
+  const isOrderStatusBlocked = (status) => {
+    if (!status) return false;
+    const normalizedStatus = status.toLowerCase().replace(/[_\s-]+/g, '');
+    const blockedStatuses = ['completed', 'ontheway', 'delivered'];
+    return blockedStatuses.includes(normalizedStatus);
+  };
+
+  const tabs = [
+    { id: 'all', label: 'All Orders', count: orders.length },
+    { id: 'collection', label: 'Collection', count: orders.filter(o => normalizeOrderType(o.order_type) === 'collection').length },
+    { id: 'delivery', label: 'Delivery', count: orders.filter(o => normalizeOrderType(o.order_type) === 'delivery').length },
+    { id: 'online', label: 'Online', count: orders.filter(o => normalizeOrderType(o.order_type) === 'online').length },
+    { id: 'dinein', label: 'Dine In', count: orders.filter(o => normalizeOrderType(o.order_type) === 'dinein').length },
+    { id: 'instore', label: 'In Store', count: orders.filter(o => normalizeOrderType(o.order_type) === 'instore').length },
+    { id: 'paid', label: 'Paid', count: orders.filter(o => o.paymentStatus === 'paid').length },
+    { id: 'unpaid', label: 'Unpaid', count: orders.filter(o => o.paymentStatus === 'unpaid').length }
+  ];
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading orders...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <X size={48} className="mx-auto" />
+          </div>
+          <p className="text-red-600 font-medium mb-2">Error loading orders</p>
+          <p className="text-gray-600 text-sm">{error}</p>
+          <button 
+            onClick={() => handleClearFilters()}
+            className="mt-4 px-4 py-4 bg-primary text-white rounded-lg hover:bg-primaryDark transition-colors"
+          >
+            Retry
+        </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col px-4 py-4 bg-transparent">
+      {/* Orders Table - Takes remaining space */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="bg-[#CDCDCD] rounded-lg mb-6">
+        {/* Top Section: Date Filters, Order Type Filters, and Global Actions */}
+        <div className="flex-shrink-0 p-4">
+          <div className="flex items-start justify-between gap-2 mb-4 ">
+            {/* Date & Time Range Filter */}
+            <div className="flex flex-col items-start gap-6">
+              {/* From Date & Time */}
+              <div className="flex items-center gap-2">
+                <label className="w-20 text-center rounded-md px-3 py-4 text-sm font-medium text-white bg-primary" htmlFor="from-datetime">From:</label>
+                <div className="relative flex items-center gap-2">
+                  <input
+                    id="from-datetime"
+                    type="datetime-local"
+                    className="px-3 py-4 border bg-white text-black border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                    value={fromDateTime}
+                    onChange={(e) => setFromDateTime(e.target.value)}
+                  />
+                </div>
+              </div>
+              {/* To Date & Time */}
+              <div className="flex items-center gap-2">
+                <label className="w-20 text-center rounded-md px-3 py-4 text-sm font-medium text-white bg-primary" htmlFor="to-datetime">To:</label>
+                <div className="relative flex items-center gap-2">
+                  <input
+                    id="to-datetime"
+                    type="datetime-local"
+                    className="px-3 py-4 border bg-white text-black border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                    value={toDateTime}
+                    onChange={(e) => setToDateTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Order Type Filters */}
+            <div className="flex items-center gap-2 mb-4">
+              {['In Store', 'Dine In', 'Collection', 'Delivery', 'Online'].map((type) => {
+                const typeId = type.toLowerCase().replace(/\s+/g, '');
+                return (
+                <button
+                  key={type}
+                    className={`w-28 px-4 py-4 rounded-lg text-sm font-medium transition-colors border-2 ${
+                      activeTab === typeId
+                        ? 'bg-white text-black border-primary cursor-pointer'
+                        : 'bg-primary text-white border-primary cursor-pointer'
+                    }`}
+                    onClick={() => setActiveTab(typeId)}
+                >
+                  {type}
+                </button>
+                );
+              })}
+            </div>
+
+            {/* Payment Status Filters */}
+            <div className="flex flex-col items-center gap-2 mb-4">
+              <button
+                className={`w-24 px-4 py-4 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'paid'
+                    ? 'bg-[#16A34A] text-white'
+                    : 'bg-[#16A34A] text-white hover:bg-[#16A34A] cursor-pointer'
+                  }`}
+                onClick={() => setPaymentStatusFilter(paymentStatusFilter === 'paid' ? 'all' : 'paid')}
+              >
+                Paid
+              </button>
+              <button
+                className={`w-24 px-4 py-4 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'unpaid'
+                    ? 'bg-[#0EA5E9] text-white'
+                    : 'bg-[#0EA5E9] text-white hover:bg-[#0EA5E9] cursor-pointer'
+                  }`}
+                onClick={() => setPaymentStatusFilter(paymentStatusFilter === 'unpaid' ? 'all' : 'unpaid')}
+              >
+                Unpaid
+              </button>
+            </div>
+            {/* Global Action Buttons */}
+            <div className="flex items-center gap-2">
+              <button 
+                className="w-10 h-10 bg-white border border-gray-300 rounded-md flex items-center justify-center hover:bg-gray-50 transition-colors"
+                onClick={handleClearFilters}
+              >
+                <RotateCcw size={18} className="text-gray-600" />
+              </button>
+              <button className="w-10 h-10 bg-white border cursor-pointer border-gray-300 rounded-md flex items-center justify-center hover:bg-gray-50 transition-colors">
+                <ShoppingBag size={18} className="text-gray-600" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Middle Section: Search and Advanced Search */}
+        <div className="flex-shrink-0 p-4 border-b border-gray-200">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <select 
+                className="px-3 py-4 border border-gray-300 rounded-lg text-sm bg-white w-38"
+                value={orderStatusFilter}
+                onChange={(e) => setOrderStatusFilter(e.target.value)}
+              >
+                <option value="all">Status (All)</option>
+                <option value="new">New</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="ready">Ready</option>
+                <option value="completed">Completed</option>
+                <option value="delivered">Delivered</option>
+                <option value="canceled">Canceled</option>
+              </select>
+            </div>
+
+            {/* Search Fields */}
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                name="searchTerm"
+                placeholder="Search by Order ID"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={(e) => handleInputFocusEnhanced(e, 'searchTerm')}
+                onClick={(e) => handleInputClickEnhanced(e, 'searchTerm')}
+                onBlur={handleInputBlur}
+                className="px-3 py-4 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
+              />
+              <input
+                type="text"
+                name="customerSearchTerm"
+                placeholder="Search by Customer name or Number"
+                value={customerSearchTerm}
+                onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                onFocus={(e) => handleInputFocusEnhanced(e, 'customerSearchTerm')}
+                onClick={(e) => handleInputClickEnhanced(e, 'customerSearchTerm')}
+                onBlur={handleInputBlur}
+                className="px-3 py-4 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
+              />
+              <button className="px-4 py-4 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+                Search by Driver
+              </button>
+              <button className="px-4 py-4 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+                Advanced Search
+              </button>
+            </div>
+          </div>
+        </div>
+        </div>
+        {/* Bulk Actions Bar */}
+        <div className="flex-shrink-0 px-4 py-4 rounded-lg mb-5 border-b border-gray-200 bg-primary">
+          <div className="flex gap-2 w-full">
+            <button
+              className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                (() => {
+                  if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return 'bg-white text-primary cursor-pointer';
+                  
+                  // Check if order status prevents navigation to sales
+                  if (isOrderStatusBlocked(order.status)) {
+                    return 'bg-white text-primary cursor-pointer';
+                  }
+                  
+                  return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
+                })()
+              }`}
+              title={(() => {
+                if (!selectedOrderIdForSales) return 'No order selected';
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return 'No order selected';
+                
+                if (isOrderStatusBlocked(order.status)) {
+                  return `Cannot load sales for order with status: ${order.status}`;
+                }
+                
+                return 'Load order into sales screen';
+              })()}
+              onClick={async () => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                
+                // Check if order status prevents navigation to sales
+                if (isOrderStatusBlocked(order.status)) {
+                  console.log(`Cannot load sales for order with status: ${order.status}`);
+                  return;
+                }
+                
+                try {
+                  // Fetch details and totals to pass along
+                  const [detailsResult] = await Promise.all([
+                    window.myAPI.getOrderDetailsWithFood(order.id)
+                  ]);
+                  const details = detailsResult?.success ? detailsResult.data : [];
+                  // Build minimal payload for RunningOrders
+                  const payload = {
+                    orderId: order.id,
+                    databaseId: order.id,
+                    orderType: getOrderTypeDisplay(order.order_type),
+                    customer: order.customerData ? {
+                      id: order.customer_id,
+                      name: order.customerData.name,
+                      phone: order.customerData.phone,
+                      address: order.customerData.address
+                    } : null,
+                    items: details.map(d => ({
+                      id: d.id,
+                      food: {
+                        id: d.food_id,
+                        name: d.food_name,
+                        description: d.food_description
+                      },
+                      quantity: d.quantity,
+                      totalPrice: Number(d.price || 0) * Number(d.quantity || 1),
+                      variations: d.variation ? (() => { try { return JSON.parse(d.variation); } catch { return {}; } })() : {},
+                      adons: d.add_ons ? (() => { try { return JSON.parse(d.add_ons); } catch { return []; } })() : []
+                    })),
+                    payment: {
+                      method: order.payment_method,
+                      status: order.paymentStatus,
+                      amount: order.total
+                    },
+                    table: order.table_details || null,
+                    waiter: order.waiter || null
+                  };
+                  navigate('/dashboard/sales', { state: { loadOrder: payload } });
+                } catch (e) {
+                  console.error('Failed to prepare order for sales:', e);
+                }
+              }}
+            >
+              Load Sales
+            </button>
+            <button
+              className="w-full px-4 py-4 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                openUpdateStatusModal(order);
+              }}
+            >
+              Move Order
+            </button>
+            {['Pay'].map((action) => (
+              <button
+                key={action}
+                className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                  !selectedOrderIdForSales
+                    ? 'bg-white text-primary cursor-not-allowed'
+                    : 'bg-white text-primary hover:bg-gray-100 cursor-pointer'
+                }`}
+                disabled={!selectedOrderIdForSales}
+                title={!selectedOrderIdForSales ? 'No order selected' : 'Process payment for selected order'}
+                onClick={() => {
+                  if (!selectedOrderIdForSales) return;
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return;
+                  openInvoiceModal(order);
+                }}
+              >
+                {action}
+              </button>
+            ))}
+            <button
+              className="w-full px-4 py-4 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                openAssignRiderModal(order);
+              }}
+            >
+              Assign Driver
+            </button>
+            <button
+              className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                (() => {
+                  if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return 'bg-white text-primary cursor-pointer';
+                  
+                  // Only enable for delivery orders
+                  if (normalizeOrderType(order.order_type) !== 'delivery') {
+                    return 'bg-white text-primary cursor-pointer';
+                  }
+                  
+                  return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
+                })()
+              }`}
+              disabled={(() => {
+                if (!selectedOrderIdForSales) return true;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return true;
+                
+                // Disable if not a delivery order or if already delivered
+                if (normalizeOrderType(order.order_type) !== 'delivery') return true;
+                if (order.status === 'delivered' || order.status === 'Delivered') return true;
+                
+                return false;
+              })()}
+              title={(() => {
+                if (!selectedOrderIdForSales) return 'No order selected';
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return 'No order selected';
+                
+                if (normalizeOrderType(order.order_type) !== 'delivery') {
+                  return 'Mark Delivered is only available for delivery orders';
+                }
+                
+                if (order.status === 'delivered' || order.status === 'Delivered') {
+                  return 'Order is already marked as delivered';
+                }
+                
+                return 'Mark order as delivered';
+              })()}
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                
+                // Only allow marking as delivered for delivery orders
+                if (normalizeOrderType(order.order_type) !== 'delivery') {
+                  console.log('Mark Delivered is only available for delivery orders');
+                  return;
+                }
+                
+                handleMarkDelivered(order);
+              }}
+            >
+              Mark Delivered
+            </button>
+            <button
+              className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                (() => {
+                  if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
+                  
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return 'bg-white text-primary cursor-pointer';
+                  
+                  // Check if order can be completed
+                  if (order.status === 'completed' || order.status === 'Completed' ||
+                      order.status === 'delivered' || order.status === 'Delivered' ||
+                      order.status === 'canceled' || order.status === 'Canceled') {
+                    return 'bg-white text-primary cursor-pointer';
+                  }
+                  
+                  return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
+                })()
+              }`}
+              disabled={(() => {
+                if (!selectedOrderIdForSales) return true;
+                
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return true;
+                
+                // Disable if order is in a final state
+                return order.status === 'completed' || order.status === 'Completed' ||
+                       order.status === 'delivered' || order.status === 'Delivered' ||
+                       order.status === 'canceled' || order.status === 'Canceled';
+              })()}
+              title={(() => {
+                if (!selectedOrderIdForSales) return 'No order selected';
+                
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return 'No order selected';
+                
+                if (order.status === 'completed' || order.status === 'Completed') {
+                  return 'Order is already completed';
+                }
+                
+                if (order.status === 'delivered' || order.status === 'Delivered') {
+                  return 'Order is delivered and cannot be completed';
+                }
+                
+                if (order.status === 'canceled' || order.status === 'Canceled') {
+                  return 'Order is canceled and cannot be completed';
+                }
+                
+                return 'Mark order as completed';
+              })()}
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                
+                handleCompleteAll();
+              }}
+            >
+              Complete All
+            </button>
+            <button
+              className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                (() => {
+                  if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
+                  const order = orders.find(o => o.id === selectedOrderIdForSales);
+                  if (!order) return 'bg-white text-primary cursor-pointer';
+                  
+                  return 'bg-white text-primary hover:bg-gray-100 cursor-pointer';
+                })()
+              }`}
+              disabled={!selectedOrderIdForSales}
+              title={(() => {
+                if (!selectedOrderIdForSales) return 'No order selected';
+                return 'Print invoice for selected order';
+              })()}
+              onClick={() => {
+                if (!selectedOrderIdForSales) return;
+                const order = orders.find(o => o.id === selectedOrderIdForSales);
+                if (!order) return;
+                
+                openInvoiceModal(order);
+              }}
+            >
+              Print
+            </button>
+          </div>
+        </div>
+        
+
+        {/* Table Container - Scrollable */}
+        <div className="flex-1 overflow-auto">
+          <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
+            <thead className="sticky top-0 bg-primaryExtraLight z-10">
+              <tr>
+                <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <input type="checkbox" className="rounded border-gray-300 text-primaryLight focus:ring-primaryLight" />
+                </th>
+                <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Type
+                  </div>
+                </th>
+                <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Order ID
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Kitchen ID
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Date/Time
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Due At
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Driver/Table
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Customer
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Address
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Amount
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Payment
+                  </div>
+                </th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1">
+                    Status
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrders.map((order, index) => {
+                const customerDisplay = getCustomerDisplay(order);
+                const driverTableDisplay = getDriverTableDisplay(order);
+                
+                return (
+                <tr
+                  key={order.id}
+                  className={`border-b border-gray-100 transition-colors ${
+                    index % 2 === 0 
+                      ? 'bg-white hover:bg-blue-50' 
+                      : 'bg-gray-50 hover:bg-blue-50'
+                  }`}
+                >
+                  <td className="py-3 px-4">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300 focus:ring-primaryLight text-primaryLight cursor-pointer"
+                      checked={selectedOrderIdForSales === order.id}
+                      disabled={isOrderStatusBlocked(order.status)}
+                      title={isOrderStatusBlocked(order.status) 
+                        ? `Cannot select order with status: ${order.status}` 
+                        : 'Select order for sales operations'
+                      }
+                      onChange={(e) => {
+                        // Prevent selection of orders with blocked statuses
+                        if (isOrderStatusBlocked(order.status)) {
+                          return;
+                        }
+                        setSelectedOrderIdForSales(e.target.checked ? order.id : null);
+                      }}
+                    />
+                  </td>
+                  <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-gray-700">{getOrderTypeDisplay(order.order_type)}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      className="text-sm font-medium text-primary underline hover:text-primaryDark"
+                      onClick={() => openInvoiceForOrder(order)}
+                    >
+                      ORD-{order.id}
+                    </button>
+                  </td>
+                  <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-gray-700">{order.id}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-800">{order.orderDate}</div>
+                      <div className="text-xs text-gray-600">{order.orderTime}</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="space-y-1">
+                      <div className="text-sm text-gray-800">{order.dueDate}</div>
+                      <div className="text-xs text-gray-600">{order.dueTime}</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">
+                        {driverTableDisplay}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="space-y-1">
+                        <div className="text-sm font-medium text-gray-800">{customerDisplay.name}</div>
+                        <div className="text-xs text-gray-600">({customerDisplay.phone})</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-600">
+                        {customerDisplay.address}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="text-sm font-semibold text-gray-800">€{order.total.toFixed(2)}</div>
+                  </td>
+                  <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {order.paymentStatus}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex flex-col gap-1">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                        {getStatusText(order.status)}
+                    </span>
+                      
+                    </div>
+                  </td>
+                </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {filteredOrders.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-300 mb-3">
+                <ShoppingBag size={40} className="mx-auto" />
+              </div>
+              <p className="text-gray-600 font-medium text-sm">No orders found</p>
+              <p className="text-gray-500 text-xs">Orders matching your filter criteria will appear here.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Order Details Modal - Slides in from right */}
+      {showOrderModal && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-[#0000000d] bg-opacity-50 transition-opacity"
+            onClick={closeOrderModal}
+          />
+
+          {/* Modal Content - Slides in from right */}
+          <div className={`relative w-96 h-full bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isModalAnimating ? 'translate-x-0' : 'translate-x-full'
+            }`}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800">Order Details</h2>
+              <button
+                onClick={closeOrderModal}
+                className="text-primaryLight hover:text-primary transition-colors p-2 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Order Info - Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+            <div className="p-6 space-y-6">
+              {/* Order ID and Type */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold text-primary">ORD-{selectedOrder.id}</span>
+                  <span className="text-sm text-gray-600">•</span>
+                  <span className="text-sm text-gray-600">{getOrderTypeDisplay(selectedOrder.order_type)}</span>
+                </div>
+                <p className="text-sm text-gray-600">{selectedOrder.orderDate}, {selectedOrder.orderTime}</p>
+              </div>
+
+              {/* Items */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-gray-800">Items</h3>
+                {invoiceLoading ? (
+                  <div className="text-sm text-gray-500">Loading items...</div>
+                ) : (
+                  <div className="space-y-2">
+                    {orderDetails.length === 0 && (
+                      <div className="text-sm text-gray-500">No items found for this order.</div>
+                    )}
+                    {orderDetails.map((item) => (
+                      <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-700">{item.food_name || 'Item'}</span>
+                          <span className="text-xs text-gray-500">Qty: {item.quantity}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-800">€{(Number(item.price || 0) * Number(item.quantity || 1)).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Payment and Customer Info */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Payment Details */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-gray-800">Payment</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Method:</span>
+                      <span className="text-gray-800">{selectedOrder.payment_method || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="font-medium text-gray-800">€{(orderTotals?.grand_total ?? selectedOrder.total).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Status:</span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${selectedOrder.paymentStatus === 'paid'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                        }`}>
+                        {selectedOrder.paymentStatus}
+                      </span>
+                    </div>
+                    {orderTotals && (
+                      <div className="space-y-1 pt-2 border-t border-gray-100">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Subtotal:</span>
+                          <span className="text-gray-800">€{Number(orderTotals.subtotal || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Add-ons:</span>
+                          <span className="text-gray-800">€{Number(orderTotals.total_addons || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Taxes:</span>
+                          <span className="text-gray-800">€{Number(orderTotals.total_taxes || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Discounts:</span>
+                          <span className="text-gray-800">-€{Number(orderTotals.total_discounts || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between font-medium">
+                          <span className="text-gray-800">Grand Total:</span>
+                          <span className="text-gray-800">€{Number(orderTotals.grand_total || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Customer Details */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-gray-800">Customer</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="text-gray-800 font-medium">{getCustomerDisplay(selectedOrder).name}</div>
+                    <div className="text-gray-600">{getCustomerDisplay(selectedOrder).phone}</div>
+                    <div className="text-gray-400">{getCustomerDisplay(selectedOrder).address}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Status */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-gray-800">Current Status</h3>
+                <span className={`px-3 py-2 rounded-full text-sm font-medium ${getStatusColor(selectedOrder.status)}`}>
+                  {getStatusText(selectedOrder.status)}
+                </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200 bg-white">
+              <div className="flex gap-3">
+                <button 
+                  className="w-full px-4 py-4 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium"
+                  onClick={() => {
+                    closeOrderModal();
+                    openUpdateStatusModal(selectedOrder);
+                  }}
+                >
+                  Update Status
+                </button>
+                <button 
+                  className="w-full px-4 py-4 border border-primaryLight text-primaryLight rounded-lg hover:bg-primaryLight hover:text-white transition-colors font-medium"
+                  onClick={() => {
+                    closeOrderModal();
+                    openInvoiceModal(selectedOrder);
+                  }}
+                >
+                  Print Invoice
+                </button>
+                <button 
+                  className={`w-full px-4 py-4 border rounded-lg transition-colors font-medium ${
+                    normalizeOrderType(selectedOrder.order_type) === 'delivery'
+                      ? 'border-primaryLight text-primaryLight hover:bg-primaryLight hover:text-white'
+                      : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                  }`}
+                  disabled={normalizeOrderType(selectedOrder.order_type) !== 'delivery'}
+                  onClick={() => {
+                    if (normalizeOrderType(selectedOrder.order_type) === 'delivery') {
+                      closeOrderModal();
+                      openAssignRiderModal(selectedOrder);
+                    }
+                  }}
+                >
+                  Assign Driver
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Order Status Modal */}
+      {showUpdateStatusModal && selectedOrderForStatus && (
+        <UpdateOrderStatus
+          isOpen={showUpdateStatusModal}
+          onClose={closeUpdateStatusModal}
+          order={selectedOrderForStatus}
+          onStatusUpdate={handleStatusUpdate}
+          onRiderAssignment={() => {
+            closeUpdateStatusModal();
+            // Open the rider assignment modal for delivery orders
+            setSelectedOrderForRider(selectedOrderForStatus);
+            setShowAssignRiderModal(true);
+          }}
+          selectedStatus={selectedStatus}
+          onStatusChange={handleStatusChange}
+          isUpdating={isUpdatingStatus}
+        />
+      )}
+
+      {/* Assign Rider Modal */}
+      {showAssignRiderModal && selectedOrderForRider && (
+        <AssignRider
+          isOpen={showAssignRiderModal}
+          onClose={closeAssignRiderModal}
+          onBack={closeAssignRiderModal}
+          order={selectedOrderForRider}
+          onAssignRider={handleAssignRider}
+          onStatusUpdate={handleStatusUpdate}
+        />
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoiceModal && selectedOrderForInvoice && (
+        <Invoice
+          order={selectedOrderForInvoice}
+          isOpen={showInvoiceModal}
+          onClose={closeInvoiceModal}
+          onPrint={() => {
+            // Use the browser's print functionality
+            try {
+              // Small delay to ensure modal is fully rendered
+              setTimeout(() => {
+                window.print();
+              }, 100);
+            } catch (error) {
+              console.error('Print failed:', error);
+              showCustomAlert('Print failed. Please try again.', 'error');
+            }
+          }}
+          foodDetails={orderDetails}
+        />
+      )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={closeConfirmation}
+        onConfirm={() => {
+          if (confirmationConfig.onConfirm) {
+            setIsConfirmationLoading(true);
+            confirmationConfig.onConfirm().finally(() => {
+              setIsConfirmationLoading(false);
+            });
+          }
+          closeConfirmation();
+        }}
+        title={confirmationConfig.title}
+        message={confirmationConfig.message}
+        type={confirmationConfig.type}
+        confirmText="Confirm"
+        cancelText="Cancel"
+        isLoading={isConfirmationLoading}
+      />
+
+      {/* Custom Alert */}
+      <CustomAlert
+        message={alertConfig.message}
+        isVisible={showAlert}
+        onClose={() => setShowAlert(false)}
+        type={alertConfig.type}
+        duration={4000}
+      />
+
+      {/* FinalizeSaleModal */}
+      {showFinalizeSaleModal && selectedOrder && (
+        <FinalizeSaleModal
+          isOpen={showFinalizeSaleModal}
+          onClose={closeFinalizeSaleModal}
+          // Payment related props
+          selectedPaymentMethod={selectedPaymentMethod}
+          setSelectedPaymentMethod={setSelectedPaymentMethod}
+          paymentAmount={paymentAmount}
+          setPaymentAmount={setPaymentAmount}
+          givenAmount={givenAmount}
+          setGivenAmount={setGivenAmount}
+          changeAmount={changeAmount}
+          setChangeAmount={setChangeAmount}
+          currencyAmount={currencyAmount}
+          setCurrencyAmount={setCurrencyAmount}
+          selectedCurrency={selectedCurrency}
+          setSelectedCurrency={setSelectedCurrency}
+          currencyOptions={currencyOptions}
+          addedPayments={addedPayments}
+          setAddedPayments={setAddedPayments}
+          // Mode and data props
+          isSinglePayMode={false}
+          selectedSplitBill={null}
+          selectedPlacedOrder={selectedOrder}
+          cartItems={[]}
+          foodDetails={null}
+          // Coupon related props
+          appliedCoupon={appliedCoupon}
+          removeAppliedCoupon={removeAppliedCoupon}
+          couponCode={couponCode}
+          setCouponCode={setCouponCode}
+          availableCoupons={availableCoupons}
+          couponsLoading={couponsLoading}
+          // Discount related props
+          discountType={discountType}
+          setDiscountType={setDiscountType}
+          discountAmount={discountAmount}
+          setDiscountAmount={setDiscountAmount}
+          // Other props
+          sendSMS={sendSMS}
+          setSendSMS={setSendSMS}
+          // Handler functions
+          handleCashGivenAmountChange={handleCashGivenAmountChange}
+          handleCashAmountChange={handleCashAmountChange}
+          handleNumericInputFocus={handleNumericInputFocus}
+          handleNumericKeyboardChange={handleNumericKeyboardChange}
+          handleNumericKeyboardKeyPress={handleNumericKeyboardKeyPress}
+          handleAddPayment={handleAddPayment}
+          handleApplyManualDiscount={handleApplyManualDiscount}
+          handleApplyCoupon={handleApplyCoupon}
+          handleAnyInputFocus={handleAnyInputFocus}
+          handleAnyInputClick={handleAnyInputClick}
+          handleCustomInputBlur={handleCustomInputBlur}
+          // Calculation functions
+          calculateSinglePayTotals={() => ({ total: calculateCartTotal(), subtotal: calculateCartSubtotal(), tax: calculateCartTax(), discount: calculateCartDiscount() })}
+          calculateSplitBillTotal={calculateCartTotal}
+          calculateCartTotal={calculateCartTotal}
+          calculateSplitBillSubtotal={calculateCartSubtotal}
+          calculateSplitBillTax={calculateCartTax}
+          calculateSplitBillDiscount={calculateCartDiscount}
+          calculateSplitBillCharge={() => 0}
+          calculateSplitBillTips={() => 0}
+          calculateCartSubtotal={calculateCartSubtotal}
+          calculateCartTax={calculateCartTax}
+          calculateCartDiscount={calculateCartDiscount}
+          calculateDueAmount={calculateDueAmount}
+          getCurrencySymbol={getCurrencySymbol}
+          // State variables
+          numericActiveInput={numericActiveInput}
+          numericKeyboardInput={numericKeyboardInput}
+          setNumericActiveInput={setNumericActiveInput}
+          setNumericKeyboardInput={setNumericKeyboardInput}
+          // Modal state
+          setShowCartDetailsModal={() => {}}
+          // Split bill props
+          splitBillToRemove={null}
+          setSplitBills={() => {}}
+          setSplitBillToRemove={() => {}}
+          // Order related props
+          placedOrders={[]}
+          selectedCustomer={selectedOrder?.customerData || null}
+          selectedOrderType={getOrderTypeDisplay(selectedOrder?.order_type)}
+          selectedTable={selectedOrder?.table_details || null}
+          // Functions
+          handlePlaceOrder={async () => {
+            try {
+              // Check if payment is complete
+              if (addedPayments.length === 0 || calculateDueAmount() > 0) {
+                showCustomAlert('Please complete the payment before submitting', 'warning');
+                return null;
+              }
+              
+              // Process payment for the existing order
+              const paymentUpdates = {
+                payment_status: 'paid',
+                payment_method: selectedPaymentMethod
+              };
+              
+              const updateResult = await window.myAPI.updateOrder(selectedOrder.id, paymentUpdates);
+              if (updateResult.success) {
+                // Update the local state
+                setOrders(prevOrders => 
+                  prevOrders.map(o => 
+                    o.id === selectedOrder.id 
+                      ? { ...o, paymentStatus: 'paid' }
+                      : o
+                  )
+                );
+                
+                // Clear the selection after successful payment
+                setSelectedOrderIdForSales(null);
+                
+                // Show success message
+                showCustomAlert(`Payment processed successfully for Order #${selectedOrder.id}!`, 'success');
+                
+                // Close the modal
+                closeFinalizeSaleModal();
+                
+                return selectedOrder.id;
+              } else {
+                showCustomAlert(`Failed to process payment: ${updateResult.message}`, 'error');
+                return null;
+              }
+            } catch (error) {
+              console.error('Error processing payment:', error);
+              showCustomAlert('An error occurred while processing the payment', 'error');
+              return null;
+            }
+          }}
+          showError={showCustomAlert}
+          setIsInvoiceAfterPayment={() => {}}
+          setShowInvoiceModal={() => {}}
+          clearCart={() => {}}
+          resetFinalizeSaleModal={resetFinalizeSaleModal}
+          setIsSinglePayMode={() => {}}
+          setSelectedPlacedOrder={() => {}}
+          setCurrentOrderForInvoice={() => {}}
+        />
+      )}
+
+      {/* Virtual Keyboard Component */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={hideKeyboard}
+        activeInput={activeInput}
+        onInputChange={handleKeyboardChange}
+        onInputBlur={handleInputBlur}
+        inputValue={keyboardInput}
+      />
+    </div>
+  );
+};
+
+export default ManageOrders;
