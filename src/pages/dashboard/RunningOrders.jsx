@@ -8899,6 +8899,7 @@ const RunningOrders = () => {
             // Functions
             handlePlaceOrder={handlePlaceOrder}
             showError={showError}
+            showSuccess={showSuccess}
             setIsInvoiceAfterPayment={setIsInvoiceAfterPayment}
             setShowInvoiceModal={setShowInvoiceModal}
             clearCart={clearCart}
@@ -8908,6 +8909,7 @@ const RunningOrders = () => {
             setCurrentOrderForInvoice={setCurrentOrderForInvoice}
             // Modify order payment props
             isModifyingOrder={isModifyingOrder}
+            modifyingOrderId={modifyingOrderId}
             modifyingOrderPaymentInfo={modifyingOrderPaymentInfo}
             showPayLaterButton={showPayLaterButton}
             setShowPayLaterButton={setShowPayLaterButton}
@@ -9696,6 +9698,7 @@ const RunningOrders = () => {
           // Functions
           handlePlaceOrder={handlePlaceOrder}
           showError={showError}
+          showSuccess={showSuccess}
           setIsInvoiceAfterPayment={setIsInvoiceAfterPayment}
           setShowInvoiceModal={setShowInvoiceModal}
           clearCart={clearCart}
@@ -9705,6 +9708,7 @@ const RunningOrders = () => {
           setCurrentOrderForInvoice={setCurrentOrderForInvoice}
           // Modify order payment props
           isModifyingOrder={isModifyingOrder}
+          modifyingOrderId={modifyingOrderId}
           modifyingOrderPaymentInfo={modifyingOrderPaymentInfo}
           showPayLaterButton={showPayLaterButton}
           setShowPayLaterButton={setShowPayLaterButton}
