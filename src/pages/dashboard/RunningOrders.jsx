@@ -7031,22 +7031,25 @@ const RunningOrders = () => {
               
               {/* Primary Action Buttons */}
               <div className="grid grid-cols-7 gap-3 mb-3">
-                <button
-                  onClick={() => {
-                    playButtonSound();
-                    handlePlaceOrder();
-                  }}
-                  className="col-span-2 bg-[#fb8b02] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#e67a00] transition-colors"
-                >
-                  <ShoppingCart size={16} />
-                  {isModifyingOrder ? 'UPDATE ORDER' : 'PLACE ORDER'}
-                </button>
+                {/* Hide UPDATE ORDER button when modifying paid orders */}
+                {!(isModifyingOrder && modifyingOrderPaymentInfo) && (
+                  <button
+                    onClick={() => {
+                      playButtonSound();
+                      handlePlaceOrder();
+                    }}
+                    className="col-span-2 bg-[#fb8b02] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#e67a00] transition-colors"
+                  >
+                    <ShoppingCart size={16} />
+                    {isModifyingOrder ? 'UPDATE ORDER' : 'PLACE ORDER'}
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     playButtonSound();
                     handlePayment();
                   }}
-                  className="col-span-3 bg-[#16A34A] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#15803d] transition-colors"
+                  className={`${isModifyingOrder && modifyingOrderPaymentInfo ? 'col-span-5' : 'col-span-3'} bg-[#16A34A] text-white btn-lifted h-12 px-3 text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#15803d] transition-colors`}
                 >
                   PAY (€{calculateCartTotal().toFixed(2)})
                 </button>
@@ -8806,7 +8809,14 @@ const RunningOrders = () => {
         {showFinalizeSaleModal && (
           <FinalizeSaleModal
             isOpen={showFinalizeSaleModal}
-            onClose={() => setShowFinalizeSaleModal(false)}
+            onClose={() => {
+              // Reset payment modification state when closing modal
+              if (isModifyingOrder && modifyingOrderPaymentInfo && hasResetPayment) {
+                setHasResetPayment(false);
+                setShowPayLaterButton(false);
+              }
+              setShowFinalizeSaleModal(false);
+            }}
             // Payment related props
             selectedPaymentMethod={selectedPaymentMethod}
             setSelectedPaymentMethod={setSelectedPaymentMethod}
