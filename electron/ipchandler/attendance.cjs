@@ -2,7 +2,7 @@ const { ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
-const { getDatabasePath } = require('../../src/database/database-service.cjs');
+const { getDatabasePath } = require('../database-service.cjs');
 
 // Dynamic path resolution for both development and production
 const getDbPath = () => {

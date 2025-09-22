@@ -1,4 +1,4 @@
-const { initializeDatabase } = require('../src/database/database-service.cjs');
+const { initializeDatabase } = require('./database-service.cjs');
 
 function initDatabase() {
   try {
