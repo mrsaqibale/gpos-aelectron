@@ -1,8 +1,0 @@
-CREATE TABLE IF NOT EXISTS allergins (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME,
-    issyncronized BOOLEAN DEFAULT 0,
-    isdeleted BOOLEAN DEFAULT 0
-);

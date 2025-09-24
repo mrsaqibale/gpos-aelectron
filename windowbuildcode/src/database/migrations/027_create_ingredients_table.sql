@@ -1,9 +1,0 @@
-CREATE TABLE IF NOT EXISTS ingredients (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    status INTEGER DEFAULT 1,
-    isdeleted BOOLEAN DEFAULT 0,
-    issyncronized BOOLEAN DEFAULT 0,
-    updated_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-); 
