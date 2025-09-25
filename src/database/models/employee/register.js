@@ -60,8 +60,8 @@ export function createRegister(data) {
     }
 
     const stmt = db.prepare(`
-      INSERT INTO register (startamount, employee_id, isopen, openat, created_at)
-      VALUES (?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO register (startamount, employee_id, isopen, isclosed, openat, created_at)
+      VALUES (?, ?, 1, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
 
     const result = stmt.run(startamount, employee_id);
@@ -73,6 +73,7 @@ export function createRegister(data) {
         startamount,
         employee_id,
         isopen: 1,
+        isclosed: 0,
         openat: new Date().toISOString()
       },
       message: 'Register opened successfully'
@@ -188,7 +189,7 @@ export function closeRegister(id, endamount) {
 
     const stmt = db.prepare(`
       UPDATE register 
-      SET endamount = ?, isopen = 0, closeat = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      SET endamount = ?, isopen = 0, isclosed = 1, closeat = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND isdeleted = 0
     `);
 
@@ -211,7 +212,7 @@ export function closeRegister(id, endamount) {
 // Update register
 export function updateRegister(id, updates) {
   try {
-    const allowedFields = ['startamount', 'endamount', 'issyncronized', 'isopen', 'openat', 'closeat'];
+    const allowedFields = ['startamount', 'endamount', 'issyncronized', 'isopen', 'isclosed', 'openat', 'closeat'];
     const updateFields = [];
     const updateValues = [];
 
@@ -273,6 +274,49 @@ export function deleteRegister(id) {
   } catch (error) {
     console.error('Error deleting register:', error);
     return errorResponse('Failed to delete register');
+  }
+}
+
+// Check register status (isopen or isclosed)
+export function checkRegisterStatus(id) {
+  try {
+    const stmt = db.prepare(`
+      SELECT r.id, r.isopen, r.isclosed, e.fname, e.lname, e.roll as employee_role
+      FROM register r
+      LEFT JOIN employee e ON r.employee_id = e.id
+      WHERE r.id = ? AND r.isdeleted = 0
+    `);
+    
+    const register = stmt.get(id);
+    
+    if (!register) {
+      return errorResponse('Register not found');
+    }
+
+    // Determine status
+    let status = 'unknown';
+    if (register.isopen === 1 && register.isclosed === 0) {
+      status = 'open';
+    } else if (register.isopen === 0 && register.isclosed === 1) {
+      status = 'closed';
+    } else if (register.isopen === 0 && register.isclosed === 0) {
+      status = 'inactive';
+    }
+
+    return {
+      success: true,
+      data: {
+        id: register.id,
+        status: status,
+        isopen: register.isopen === 1,
+        isclosed: register.isclosed === 1,
+        employee_name: `${register.fname} ${register.lname}`,
+        employee_role: register.employee_role
+      }
+    };
+  } catch (error) {
+    console.error('Error checking register status:', error);
+    return errorResponse('Failed to check register status');
   }
 }
 

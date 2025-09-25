@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS register (
     issyncronized BOOLEAN DEFAULT 0,
     isdeleted BOOLEAN DEFAULT 0,
     isopen BOOLEAN DEFAULT 0,
+    isclosed BOOLEAN DEFAULT 0,
     openat DATETIME,
     closeat DATETIME,
     FOREIGN KEY (employee_id) REFERENCES employee(id)
