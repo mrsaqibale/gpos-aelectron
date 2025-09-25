@@ -5,12 +5,13 @@ import { CheckCircle, Save, ArrowRight } from 'lucide-react';
 const CheckInFlow = ({ onComplete }) => {
   // Get user name from localStorage
   const [userName, setUserName] = useState('');
-  const [showSuccess, setShowSuccess] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [showCashInput, setShowCashInput] = useState(false);
   const [openingCash, setOpeningCash] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [isCheckingRegister, setIsCheckingRegister] = useState(true);
 
   useEffect(() => {
     const currentEmployee = localStorage.getItem('currentEmployee');
@@ -27,6 +28,53 @@ const CheckInFlow = ({ onComplete }) => {
       setUserName('User');
     }
   }, []);
+
+  // Check register status when component mounts
+  useEffect(() => {
+    const checkRegisterStatus = async () => {
+      try {
+        // Get the last register entry from database
+        // Using getAllRegisters as workaround since getLastRegister might not be registered yet
+        const allRegistersResult = await window.myAPI?.getAllRegisters();
+        const lastRegisterResult = allRegistersResult && allRegistersResult.success && allRegistersResult.data && allRegistersResult.data.length > 0 
+          ? { success: true, data: allRegistersResult.data[0] } // First item is the last register
+          : { success: true, data: null };
+        
+        console.log('CheckInPopup - allRegistersResult:', allRegistersResult);
+        console.log('CheckInPopup - lastRegisterResult:', lastRegisterResult);
+        
+        if (lastRegisterResult && lastRegisterResult.success && lastRegisterResult.data) {
+          const lastRegister = lastRegisterResult.data;
+          console.log('CheckInPopup - lastRegister:', lastRegister);
+          console.log('CheckInPopup - isclosed value:', lastRegister.isclosed, 'type:', typeof lastRegister.isclosed);
+          
+          // Check if the last register is closed (isclosed = 1)
+          // If isclosed = 1 (closed), show popup to open new register
+          // If isclosed = 0 (open), no popup needed, go directly to sales
+          if (lastRegister.isclosed === 1) {
+            console.log('CheckInPopup - Register is closed, showing welcome screen');
+            setShowWelcome(true);
+          } else {
+            console.log('CheckInPopup - Register is open, going directly to sales');
+            // Register is already open, go directly to sales
+            onComplete(true);
+          }
+        } else {
+          console.log('CheckInPopup - No register found, showing welcome screen');
+          // If no register found, show welcome screen
+          setShowWelcome(true);
+        }
+      } catch (error) {
+        console.error('Error checking register status:', error);
+        // On error, show welcome screen to be safe
+        setShowWelcome(true);
+      } finally {
+        setIsCheckingRegister(false);
+      }
+    };
+
+    checkRegisterStatus();
+  }, [onComplete]);
 
   useEffect(() => {
     // Update time every minute
@@ -53,18 +101,17 @@ const CheckInFlow = ({ onComplete }) => {
   };
 
 
-  useEffect(() => {
-    if (showSuccess) {
-      const timer = setTimeout(() => {
-    
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [showSuccess]);
 
-  const handleRegisterClick = () => {
+  const handleWelcomeYes = () => {
+    setShowWelcome(false);
     setShowCashInput(true);
   };
+
+  const handleWelcomeNo = () => {
+    // User chose not to start register, just close the popup without redirecting
+    onComplete(false);
+  };
+
 
   const handleSave = async () => {
     if (openingCash === '' || openingCash === null || openingCash === undefined) {
@@ -105,7 +152,7 @@ const CheckInFlow = ({ onComplete }) => {
         console.log('Register created successfully:', result.data);
         // Store register info in localStorage for later use
         localStorage.setItem('currentRegister', JSON.stringify(result.data));
-        onComplete();
+        onComplete(true); // Navigate to sales after successful register creation
       } else {
         setError(result?.message || 'Failed to create register');
         setIsSaving(false);
@@ -119,8 +166,25 @@ const CheckInFlow = ({ onComplete }) => {
 
   const handleCancel = () => {
     // Close the modal without creating a register
-    onComplete();
+    onComplete(false);
   };
+
+  // Show loading state while checking register
+  if (isCheckingRegister) {
+    return (
+      <div className="fixed inset-0 bg-[#0000009a] bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl overflow-hidden shadow-xl w-full max-w-md transform transition-all duration-300">
+          <div className="bg-[#032D3A] p-4 flex justify-center items-center">
+            <h3 className="text-white font-bold text-lg">Checking Register Status</h3>
+          </div>
+          <div className="p-6 text-center">
+            <div className="w-8 h-8 border-4 border-[#032D3A] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Please wait...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-[#0000009a] bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -128,29 +192,37 @@ const CheckInFlow = ({ onComplete }) => {
         {/* Header - No close button */}
         <div className="bg-[#032D3A] p-4 flex justify-center items-center">
           <h3 className="text-white font-bold text-lg">
-            {!showCashInput ? 'Check-In Successful' : 'Register Cash Drawer'}
+            {showWelcome ? 'Welcome' : 'Register Cash Drawer'}
           </h3>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          {!showCashInput ? (
+          {showWelcome ? (
             <div className="text-center py-4">
               <div className="flex justify-center mb-4">
-                <CheckCircle className="w-16 h-16 text-green-500 animate-bounce" />
+                <CheckCircle className="w-16 h-16 text-blue-500" />
               </div>
               <h4 className="text-xl font-semibold text-gray-800 mb-2">
-                {userName} is now checked in
+                Welcome, {userName}!
               </h4>
               <p className="text-gray-600 mb-6">
-                at {currentTime}
+                Do you want to start register?
               </p>
-              <button
-                onClick={handleRegisterClick}
-                className="bg-[#032D3A] hover:bg-[#2d5a87] text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 mx-auto"
-              >
-                Start Register <ArrowRight size={18} />
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={handleWelcomeNo}
+                  className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200"
+                >
+                  No
+                </button>
+                <button
+                  onClick={handleWelcomeYes}
+                  className="bg-[#032D3A] hover:bg-[#2d5a87] text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200"
+                >
+                  Yes
+                </button>
+              </div>
             </div>
           ) : (
             <div>

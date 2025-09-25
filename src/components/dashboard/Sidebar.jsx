@@ -27,19 +27,32 @@ const Sidebar = ({ navigationItems }) => {
     if (item.path === '/dashboard/sales') {
       try {
         // Get the last register entry from database
-        const lastRegisterResult = await window.myAPI?.getLastRegister();
+        // Using getAllRegisters as workaround since getLastRegister might not be registered yet
+        const allRegistersResult = await window.myAPI?.getAllRegisters();
+        const lastRegisterResult = allRegistersResult && allRegistersResult.success && allRegistersResult.data && allRegistersResult.data.length > 0 
+          ? { success: true, data: allRegistersResult.data[0] } // First item is the last register
+          : { success: true, data: null };
+        
+        console.log('Sidebar - allRegistersResult:', allRegistersResult);
+        console.log('Sidebar - lastRegisterResult:', lastRegisterResult);
         
         if (lastRegisterResult && lastRegisterResult.success && lastRegisterResult.data) {
           const lastRegister = lastRegisterResult.data;
+          console.log('Sidebar - lastRegister:', lastRegister);
+          console.log('Sidebar - isclosed value:', lastRegister.isclosed, 'type:', typeof lastRegister.isclosed);
           
           // Check if the last register is closed (isclosed = 1)
-          // If isclosed = 0, show check-in popup
-          // If isclosed = 1, don't show popup
-          if (lastRegister.isclosed === 0) {
+          // If isclosed = 1 (closed), show popup to open new register
+          // If isclosed = 0 (open), no popup needed, go directly to sales
+          if (lastRegister.isclosed === 1) {
+            console.log('Sidebar - Register is closed, showing check-in popup');
             setShowCheckIn(true);
             return; // Don't navigate yet, wait for check-in completion
+          } else {
+            console.log('Sidebar - Register is open, going directly to sales');
           }
         } else {
+          console.log('Sidebar - No register found, showing check-in popup');
           // If no register found, show check-in popup
           setShowCheckIn(true);
           return;
@@ -156,10 +169,12 @@ const Sidebar = ({ navigationItems }) => {
       {/* Check-In Popup */}
       {showCheckIn && (
         <CheckInFlow 
-          onComplete={() => {
+          onComplete={(shouldNavigate = false) => {
             setShowCheckIn(false);
-            // Navigate to sales after check-in completion
-            navigate('/dashboard/sales');
+            // Only navigate to sales if explicitly requested (e.g., after successful register creation)
+            if (shouldNavigate) {
+              navigate('/dashboard/sales');
+            }
             // Close mobile menu if on mobile
             if (windowWidth < 1024) {
               toggleMobileMenu();

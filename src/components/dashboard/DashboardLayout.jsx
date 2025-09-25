@@ -223,18 +223,39 @@ const DashboardLayout = () => {
                 {navigationItems.map((item) => (
                   <div key={item.name}>
                                          <button
-                       onClick={() => {
+                       onClick={async () => {
                          setShowDashboardSlider(false);
                          
-                         // Check if this is the sales route and user hasn't checked in
+                         // Check if this is the sales route and check register status
                          if (item.path === '/dashboard/sales') {
-                           const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
-                           const currentEmployee = localStorage.getItem('currentEmployee');
-                           
-                           // Show check-in popup if user hasn't checked in and has employee data
-                           if (!hasCheckedIn && currentEmployee) {
+                           try {
+                             // Get the last register entry from database
+                             // Using getAllRegisters as workaround since getLastRegister might not be registered yet
+                             const allRegistersResult = await window.myAPI?.getAllRegisters();
+                             const lastRegisterResult = allRegistersResult && allRegistersResult.success && allRegistersResult.data && allRegistersResult.data.length > 0 
+                               ? { success: true, data: allRegistersResult.data[0] } // First item is the last register
+                               : { success: true, data: null };
+                             
+                             if (lastRegisterResult && lastRegisterResult.success && lastRegisterResult.data) {
+                               const lastRegister = lastRegisterResult.data;
+                               
+                               // Check if the last register is closed (isclosed = 1)
+                               // If isclosed = 1 (closed), show popup to open new register
+                               // If isclosed = 0 (open), no popup needed, go directly to sales
+                               if (lastRegister.isclosed === 1) {
+                                 setShowCheckIn(true);
+                                 return; // Don't navigate yet, wait for check-in completion
+                               }
+                             } else {
+                               // If no register found, show check-in popup
+                               setShowCheckIn(true);
+                               return;
+                             }
+                           } catch (error) {
+                             console.error('Error checking register status:', error);
+                             // On error, show check-in popup to be safe
                              setShowCheckIn(true);
-                             return; // Don't navigate yet, wait for check-in completion
+                             return;
                            }
                          }
                          
@@ -291,10 +312,12 @@ const DashboardLayout = () => {
       <div className="dashboard-container">
         {/* Check-In Popup */}
         {showCheckIn && (
-          <CheckInFlow onComplete={() => {
+          <CheckInFlow onComplete={(shouldNavigate = false) => {
             setShowCheckIn(false);
-            // Navigate to sales after check-in completion
-            navigate('/dashboard/sales');
+            // Only navigate to sales if explicitly requested (e.g., after successful register creation)
+            if (shouldNavigate) {
+              navigate('/dashboard/sales');
+            }
           }} />
         )}
         
