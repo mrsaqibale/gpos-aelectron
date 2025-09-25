@@ -62,3 +62,4 @@ export const playNotificationSound = (options = {}) => {
 export const playProductAddSound = (options = {}) => {
   return playAudio('newProductAdd.mp3', options);
 };
+
