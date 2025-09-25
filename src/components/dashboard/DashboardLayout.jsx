@@ -225,7 +225,20 @@ const DashboardLayout = () => {
                                          <button
                        onClick={() => {
                          setShowDashboardSlider(false);
-                         // Navigate to the item's path using React Router
+                         
+                         // Check if this is the sales route and user hasn't checked in
+                         if (item.path === '/dashboard/sales') {
+                           const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
+                           const currentEmployee = localStorage.getItem('currentEmployee');
+                           
+                           // Show check-in popup if user hasn't checked in and has employee data
+                           if (!hasCheckedIn && currentEmployee) {
+                             setShowCheckIn(true);
+                             return; // Don't navigate yet, wait for check-in completion
+                           }
+                         }
+                         
+                         // Normal navigation for other routes or if already checked in
                          navigate(item.path);
                        }}
                       className="w-full flex items-center px-4 py-3 text-sm text-gray-100 transition-colors"
@@ -278,7 +291,11 @@ const DashboardLayout = () => {
       <div className="dashboard-container">
         {/* Check-In Popup */}
         {showCheckIn && (
-          <CheckInFlow onComplete={() => setShowCheckIn(false)} />
+          <CheckInFlow onComplete={() => {
+            setShowCheckIn(false);
+            // Navigate to sales after check-in completion
+            navigate('/dashboard/sales');
+          }} />
         )}
         
         <div className="dashboard-content">

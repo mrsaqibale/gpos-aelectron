@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LogOut,
   X,
@@ -8,13 +8,41 @@ import {
 import { SidebarContext } from './DashboardLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useButtonSound } from '../../hooks/useButtonSound';
+import CheckInFlow from '../../pages/loginPage/CheckInPopup';
 
 const Sidebar = ({ navigationItems }) => {
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [showCheckIn, setShowCheckIn] = useState(false);
   const { isOpen, toggleSidebar, isMobileMenuOpen, toggleMobileMenu, windowWidth } =
     useContext(SidebarContext);
   const { themeColors } = useTheme();
   const { playButtonSound } = useButtonSound();
+  const navigate = useNavigate();
+
+  // Handle navigation with check-in logic
+  const handleNavigation = (item) => {
+    playButtonSound();
+    
+    // Check if this is the sales route and user hasn't checked in
+    if (item.path === '/dashboard/sales') {
+      const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      
+      // Show check-in popup if user hasn't checked in and has employee data
+      if (!hasCheckedIn && currentEmployee) {
+        setShowCheckIn(true);
+        return; // Don't navigate yet, wait for check-in completion
+      }
+    }
+    
+    // Normal navigation for other routes or if already checked in
+    navigate(item.path);
+    
+    // Close mobile menu if on mobile
+    if (windowWidth < 1024) {
+      toggleMobileMenu();
+    }
+  };
 
   // Handle logout (frontend only)
   const handleLogout = async () => {
@@ -62,11 +90,9 @@ const Sidebar = ({ navigationItems }) => {
                 const isActive = e.target.classList.contains('bg-[#ffffff0e]') || e.target.closest('a').classList.contains('bg-[#ffffff0e]');
                 e.target.style.backgroundColor = isActive ? 'rgba(255, 255, 255, 0.055)' : 'transparent';
               }}
-              onClick={() => {
-                playButtonSound();
-                if (windowWidth < 1024) {
-                  toggleMobileMenu();
-                }
+              onClick={(e) => {
+                e.preventDefault(); // Prevent default navigation
+                handleNavigation(item);
               }}
             >
               <span className="text-gray-100">{item.icon}</span>
@@ -110,6 +136,21 @@ const Sidebar = ({ navigationItems }) => {
 
   return (
     <>
+      {/* Check-In Popup */}
+      {showCheckIn && (
+        <CheckInFlow 
+          onComplete={() => {
+            setShowCheckIn(false);
+            // Navigate to sales after check-in completion
+            navigate('/dashboard/sales');
+            // Close mobile menu if on mobile
+            if (windowWidth < 1024) {
+              toggleMobileMenu();
+            }
+          }} 
+        />
+      )}
+
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div
