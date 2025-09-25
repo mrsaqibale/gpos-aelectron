@@ -231,8 +231,7 @@ const POSLogin = () => {
             console.warn('Could not reload app settings on login:', e);
           }
 
-          // Navigate to dashboard and trigger Check-In popup there
-          sessionStorage.setItem('triggerCheckIn', 'true');
+          // Navigate to dashboard
           navigate('/dashboard');
         } else {
           setError('⚠ Invalid PIN or role. Please try again.');
