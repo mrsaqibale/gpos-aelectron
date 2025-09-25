@@ -61,7 +61,8 @@ const {
   closeRegister, 
   updateRegister, 
   deleteRegister, 
-  getRegisterStatistics 
+  getRegisterStatistics,
+  getLastRegister
 } = getModelPath('employee/register.js');
 const { 
   createEmployeeLogin, 
@@ -131,6 +132,7 @@ function registerEmployeeIpcHandlers() {
   ipcMain.handle('register:update', async (event, id, updates) => updateRegister(id, updates));
   ipcMain.handle('register:delete', async (event, id) => deleteRegister(id));
   ipcMain.handle('register:getStatistics', async (event, employeeId, startDate, endDate) => getRegisterStatistics(employeeId, startDate, endDate));
+  ipcMain.handle('register:getLast', async () => getLastRegister());
 
   // Employee Login handlers
   ipcMain.handle('employeeLogin:create', async (event, employeeId) => createEmployeeLogin(employeeId));

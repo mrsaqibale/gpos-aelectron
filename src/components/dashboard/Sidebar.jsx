@@ -20,22 +20,39 @@ const Sidebar = ({ navigationItems }) => {
   const navigate = useNavigate();
 
   // Handle navigation with check-in logic
-  const handleNavigation = (item) => {
+  const handleNavigation = async (item) => {
     playButtonSound();
     
     // Check if this is the sales route and user hasn't checked in
     if (item.path === '/dashboard/sales') {
-      const hasCheckedIn = sessionStorage.getItem('hasCheckedIn');
-      const currentEmployee = localStorage.getItem('currentEmployee');
-      
-      // Show check-in popup if user hasn't checked in and has employee data
-      if (!hasCheckedIn && currentEmployee) {
+      try {
+        // Get the last register entry from database
+        const lastRegisterResult = await window.myAPI?.getLastRegister();
+        
+        if (lastRegisterResult && lastRegisterResult.success && lastRegisterResult.data) {
+          const lastRegister = lastRegisterResult.data;
+          
+          // Check if the last register is closed (isclosed = 1)
+          // If isclosed = 0, show check-in popup
+          // If isclosed = 1, don't show popup
+          if (lastRegister.isclosed === 0) {
+            setShowCheckIn(true);
+            return; // Don't navigate yet, wait for check-in completion
+          }
+        } else {
+          // If no register found, show check-in popup
+          setShowCheckIn(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking register status:', error);
+        // On error, show check-in popup to be safe
         setShowCheckIn(true);
-        return; // Don't navigate yet, wait for check-in completion
+        return;
       }
     }
     
-    // Normal navigation for other routes or if already checked in
+    // Normal navigation for other routes or if register is closed
     navigate(item.path);
     
     // Close mobile menu if on mobile

@@ -320,6 +320,30 @@ export function checkRegisterStatus(id) {
   }
 }
 
+// Get the last register entry
+export function getLastRegister() {
+  try {
+    const stmt = db.prepare(`
+      SELECT r.*, e.fname, e.lname, e.roll as employee_role
+      FROM register r
+      LEFT JOIN employee e ON r.employee_id = e.id
+      WHERE r.isdeleted = 0
+      ORDER BY r.created_at DESC
+      LIMIT 1
+    `);
+    
+    const register = stmt.get();
+    
+    return {
+      success: true,
+      data: register || null
+    };
+  } catch (error) {
+    console.error('Error getting last register:', error);
+    return errorResponse('Failed to get last register');
+  }
+}
+
 // Get register statistics
 export function getRegisterStatistics(employeeId = null, startDate = null, endDate = null) {
   try {

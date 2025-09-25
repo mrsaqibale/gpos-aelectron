@@ -140,6 +140,7 @@ contextBridge.exposeInMainWorld('myAPI', {
   updateRegister: (id, updates) => ipcRenderer.invoke('register:update', id, updates),
   deleteRegister: (id) => ipcRenderer.invoke('register:delete', id),
   getRegisterStatistics: (employeeId, startDate, endDate) => ipcRenderer.invoke('register:getStatistics', employeeId, startDate, endDate),
+  getLastRegister: () => ipcRenderer.invoke('register:getLast'),
 
   // Employee Login
   createEmployeeLogin: (employeeId) => ipcRenderer.invoke('employeeLogin:create', employeeId),
