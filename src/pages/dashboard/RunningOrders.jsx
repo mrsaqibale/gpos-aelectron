@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { getAudioPath } from '../../utils/soundUtils.js';
 import {
   Home,
   Receipt,
@@ -1278,7 +1279,7 @@ const RunningOrders = () => {
       const now = Date.now();
       if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
         try {
-          const audio = new Audio('./src/assets/newProductAdd.mp3');
+          const audio = new Audio(getAudioPath('newProductAdd.mp3'));
           audio.play().catch(error => {
             console.log('Audio play failed:', error);
           });
@@ -1438,7 +1439,7 @@ const RunningOrders = () => {
             const now = Date.now();
             if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
               try {
-                const audio = new Audio('./src/assets/newProductAdd.mp3');
+                const audio = new Audio(getAudioPath('newProductAdd.mp3'));
                 audio.play().catch(error => {
                   console.log('Audio play failed:', error);
                 });
@@ -1478,7 +1479,7 @@ const RunningOrders = () => {
           const now = Date.now();
           if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
             try {
-              const audio = new Audio('./src/assets/newProductAdd.mp3');
+              const audio = new Audio(getAudioPath('newProductAdd.mp3'));
               audio.play().catch(error => {
                 console.log('Audio play failed:', error);
               });
@@ -1518,7 +1519,7 @@ const RunningOrders = () => {
         const now = Date.now();
         if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
           try {
-            const audio = new Audio('./src/assets/newProductAdd.mp3');
+            const audio = new Audio(getAudioPath('newProductAdd.mp3'));
             audio.play().catch(error => {
               console.log('Audio play failed:', error);
             });
@@ -2222,7 +2223,7 @@ const RunningOrders = () => {
     const now = Date.now();
     if (now - lastSoundTime > 200) { // 200ms cooldown between sounds
       try {
-        const audio = new Audio('./src/assets/newProductAdd.mp3');
+                const audio = new Audio(getAudioPath('newProductAdd.mp3'));
         audio.play().catch(error => {
           console.log('Audio play failed:', error);
         });
@@ -2889,7 +2890,7 @@ const RunningOrders = () => {
     
     // Play sound
     try {
-      const audio = new Audio('./src/assets/newProductAdd.mp3');
+                const audio = new Audio(getAudioPath('newProductAdd.mp3'));
       audio.play().catch(error => console.log('Audio play failed:', error));
     } catch (error) {
       console.log('Audio creation failed:', error);

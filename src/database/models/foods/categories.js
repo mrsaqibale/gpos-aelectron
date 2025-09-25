@@ -9,24 +9,34 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Check if we're in development by looking for src/database
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+    
+    // Current location: src/database/models/foods/
+    // Target: src/database/ (go up 2 levels)
     const devPath = path.join(__dirname, '../../', relativePath);
-    const prodPath = path.join(__dirname, '../../../', relativePath);
-    // For built app, check in the resources directory
+    
+    // For built app: resources/database/models/foods -> resources/database
     const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
     
-    if (fs.existsSync(devPath)) {
-      return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
-    } else if (fs.existsSync(builtPath)) {
+    console.log(`[categories.js] Looking for: ${relativePath}`);
+    console.log(`[categories.js] Current dir: ${__dirname}`);
+    console.log(`[categories.js] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[categories.js] Dev path: ${devPath}`);
+    console.log(`[categories.js] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [categories.js] Found at built path: ${builtPath}`);
       return builtPath;
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [categories.js] Found at dev path: ${devPath}`);
+      return devPath;
     } else {
-      // Fallback to development path
+      console.log(`❌ [categories.js] Not found, using dev path: ${devPath}`);
       return devPath;
     }
   } catch (error) {
-    console.error(`Failed to resolve path: ${relativePath}`, error);
+    console.error(`[categories.js] Failed to resolve path: ${relativePath}`, error);
     // Fallback to development path
     return path.join(__dirname, '../../', relativePath);
   }

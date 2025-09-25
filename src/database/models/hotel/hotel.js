@@ -9,21 +9,34 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../', relativePath);
-    const prodPath = path.join(__dirname, '../../../', relativePath);
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
     
-    if (fs.existsSync(devPath)) {
+    // Current location: src/database/models/hotel/
+    // Target: src/database/ (go up 2 levels)
+    const devPath = path.join(__dirname, '../../', relativePath);
+    
+    // For built app: resources/database/models/hotel -> resources/database
+    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
+    
+    console.log(`[hotel.js] Looking for: ${relativePath}`);
+    console.log(`[hotel.js] Current dir: ${__dirname}`);
+    console.log(`[hotel.js] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[hotel.js] Dev path: ${devPath}`);
+    console.log(`[hotel.js] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [hotel.js] Found at built path: ${builtPath}`);
+      return builtPath;
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [hotel.js] Found at dev path: ${devPath}`);
       return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
     } else {
-      // Fallback to development path
+      console.log(`❌ [hotel.js] Not found, using dev path: ${devPath}`);
       return devPath;
     }
   } catch (error) {
-    console.error(`Failed to resolve path: ${relativePath}`, error);
-    // Fallback to development path
+    console.error(`[hotel.js] Failed to resolve path: ${relativePath}`, error);
     return path.join(__dirname, '../../', relativePath);
   }
 };

@@ -1,11 +1,48 @@
 const { ipcMain } = require('electron');
+const path = require('path');
+const fs = require('fs');
 
-// Dynamic import for ES module
+// Dynamic import for ES module with path resolution
 let voucherModule = null;
 
 async function loadVoucherModule() {
   if (!voucherModule) {
-    voucherModule = await import('../../src/database/models/voucher/voucher.js');
+    try {
+      // Check if we're in a built app (app.asar) or have resourcesPath
+      const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+      
+      // Current location: electron/ipchandler/
+      // Target: src/database/models/ (go up 2 levels, then into src/database/models)
+      const devPath = path.join(__dirname, '../../src/database/models/voucher/voucher.js');
+      
+      // For built app: resources/database/models
+      const builtPath = path.join(process.resourcesPath || '', 'database/models/voucher/voucher.js');
+      
+      console.log(`[voucher.cjs] Looking for voucher model`);
+      console.log(`[voucher.cjs] Current dir: ${__dirname}`);
+      console.log(`[voucher.cjs] isBuiltApp: ${isBuiltApp}`);
+      console.log(`[voucher.cjs] Dev path: ${devPath}`);
+      console.log(`[voucher.cjs] Built path: ${builtPath}`);
+      
+      let modulePath;
+      if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+        console.log(`✅ [voucher.cjs] Found model at built path: ${builtPath}`);
+        modulePath = builtPath;
+      } else if (fs.existsSync(devPath)) {
+        console.log(`✅ [voucher.cjs] Found model at dev path: ${devPath}`);
+        modulePath = devPath;
+      } else {
+        console.log(`❌ [voucher.cjs] Model not found, trying dev path: ${devPath}`);
+        modulePath = devPath;
+      }
+      
+      // Convert to file:// URL for ES module import
+      const fileUrl = `file://${modulePath}`;
+      voucherModule = await import(fileUrl);
+    } catch (error) {
+      console.error(`[voucher.cjs] Failed to load voucher model:`, error);
+      throw error;
+    }
   }
   return voucherModule;
 }

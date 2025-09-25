@@ -1,12 +1,48 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+    
+    // Current location: src/database/models/voucher/
+    // Target: src/database/ (go up 2 levels)
+    const devPath = path.join(__dirname, '../../', relativePath);
+    
+    // For built app: resources/database/models/voucher -> resources/database
+    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
+    
+    console.log(`[voucher.js] Looking for: ${relativePath}`);
+    console.log(`[voucher.js] Current dir: ${__dirname}`);
+    console.log(`[voucher.js] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[voucher.js] Dev path: ${devPath}`);
+    console.log(`[voucher.js] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [voucher.js] Found at built path: ${builtPath}`);
+      return builtPath;
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [voucher.js] Found at dev path: ${devPath}`);
+      return devPath;
+    } else {
+      console.log(`❌ [voucher.js] Not found, using dev path: ${devPath}`);
+      return devPath;
+    }
+  } catch (error) {
+    console.error(`[voucher.js] Failed to resolve path: ${relativePath}`, error);
+    return path.join(__dirname, '../../', relativePath);
+  }
+};
+
 // Get the database path
-const dbPath = path.join(__dirname, '../../pos.db');
+const dbPath = getDynamicPath('pos.db');
 const db = new Database(dbPath);
 
 // Universal error response

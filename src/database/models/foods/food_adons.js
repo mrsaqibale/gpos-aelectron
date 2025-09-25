@@ -1,10 +1,47 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../pos.db');
+
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+    
+    // Current location: src/database/models/foods/
+    // Target: src/database/ (go up 2 levels)
+    const devPath = path.join(__dirname, '../../', relativePath);
+    
+    // For built app: resources/database/models/foods -> resources/database
+    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
+    
+    console.log(`[food_adons.js] Looking for: ${relativePath}`);
+    console.log(`[food_adons.js] Current dir: ${__dirname}`);
+    console.log(`[food_adons.js] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[food_adons.js] Dev path: ${devPath}`);
+    console.log(`[food_adons.js] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [food_adons.js] Found at built path: ${builtPath}`);
+      return builtPath;
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [food_adons.js] Found at dev path: ${devPath}`);
+      return devPath;
+    } else {
+      console.log(`❌ [food_adons.js] Not found, using dev path: ${devPath}`);
+      return devPath;
+    }
+  } catch (error) {
+    console.error(`[food_adons.js] Failed to resolve path: ${relativePath}`, error);
+    return path.join(__dirname, '../../', relativePath);
+  }
+};
+
+const dbPath = getDynamicPath('pos.db');
 const db = new Database(dbPath);
 
 // Helper function for error responses

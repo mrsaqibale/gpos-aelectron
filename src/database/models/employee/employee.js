@@ -9,25 +9,35 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Check if we're in development by looking for src/database
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+    
+    // Current location: src/database/models/employee/
+    // Target: src/database/ (go up 2 levels)
     const devPath = path.join(__dirname, '../../', relativePath);
-    const prodPath = path.join(__dirname, '../../../', relativePath);
-    // For built app, check in the resources directory
+    
+    // For built app: resources/database/models/employee -> resources/database
     const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
     
-    if (fs.existsSync(devPath)) {
-      return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
-    } else if (fs.existsSync(builtPath)) {
+    console.log(`[employee.js] Looking for: ${relativePath}`);
+    console.log(`[employee.js] Current dir: ${__dirname}`);
+    console.log(`[employee.js] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[employee.js] Dev path: ${devPath}`);
+    console.log(`[employee.js] Built path: ${builtPath}`);
+    
+    // Check if we're in a built app by looking for process.resourcesPath
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [employee.js] Found at built path: ${builtPath}`);
       return builtPath;
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [employee.js] Found at dev path: ${devPath}`);
+      return devPath;
     } else {
-      // Fallback to development path
+      console.log(`❌ [employee.js] Not found, using dev path: ${devPath}`);
       return devPath;
     }
   } catch (error) {
-    console.error(`Failed to resolve path: ${relativePath}`, error);
-    // Fallback to development path
+    console.error(`[employee.js] Failed to resolve path: ${relativePath}`, error);
     return path.join(__dirname, '../../', relativePath);
   }
 };

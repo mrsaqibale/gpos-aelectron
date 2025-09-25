@@ -9,20 +9,34 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../', relativePath);
-    const prodPath = path.join(__dirname, '../../../', relativePath);
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
     
-    if (fs.existsSync(devPath)) {
+    // Current location: src/database/models/orders/
+    // Target: src/database/ (go up 2 levels)
+    const devPath = path.join(__dirname, '../../', relativePath);
+    
+    // For built app: resources/database/models/orders -> resources/database
+    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
+    
+    console.log(`[orderDetails.js] Looking for: ${relativePath}`);
+    console.log(`[orderDetails.js] Current dir: ${__dirname}`);
+    console.log(`[orderDetails.js] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[orderDetails.js] Dev path: ${devPath}`);
+    console.log(`[orderDetails.js] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [orderDetails.js] Found at built path: ${builtPath}`);
+      return builtPath;
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [orderDetails.js] Found at dev path: ${devPath}`);
       return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
     } else {
-      // Fallback to development path
+      console.log(`❌ [orderDetails.js] Not found, using dev path: ${devPath}`);
       return devPath;
     }
   } catch (error) {
-    console.error(`Failed to resolve path: ${relativePath}`, error);
+    console.error(`[orderDetails.js] Failed to resolve path: ${relativePath}`, error);
     // Fallback to development path
     return path.join(__dirname, '../../', relativePath);
   }

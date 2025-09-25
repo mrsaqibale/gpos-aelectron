@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { playButtonSound as playButtonSoundUtil } from '../utils/soundUtils.js';
 
 export const useButtonSound = () => {
   const playButtonSound = useCallback(() => {
@@ -13,11 +14,8 @@ export const useButtonSound = () => {
         return; // Don't play sound if disabled
       }
 
-      // Play button press sound with relative path
-      const audio = new Audio('./src/assets/buttonPressBeep.mp3');
-      audio.play().catch(error => {
-        console.log('Button sound play failed:', error);
-      });
+      // Play button press sound using utility function
+      playButtonSoundUtil();
     } catch (error) {
       console.log('Button sound creation failed:', error);
     }

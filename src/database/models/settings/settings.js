@@ -9,18 +9,34 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Match hotel model resolution: src/database/<file> in dev
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+    
+    // Current location: src/database/models/settings/
+    // Target: src/database/ (go up 2 levels)
     const devPath = path.join(__dirname, '../../', relativePath);
-    const prodPath = path.join(__dirname, '../../../', relativePath);
-    if (fs.existsSync(devPath)) {
+    
+    // For built app: resources/database/models/settings -> resources/database
+    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
+    
+    console.log(`[settings.js] Looking for: ${relativePath}`);
+    console.log(`[settings.js] Current dir: ${__dirname}`);
+    console.log(`[settings.js] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[settings.js] Dev path: ${devPath}`);
+    console.log(`[settings.js] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [settings.js] Found at built path: ${builtPath}`);
+      return builtPath;
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [settings.js] Found at dev path: ${devPath}`);
       return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
     } else {
+      console.log(`❌ [settings.js] Not found, using dev path: ${devPath}`);
       return devPath;
     }
   } catch (error) {
-    console.error(`Failed to resolve path: ${relativePath}`, error);
+    console.error(`[settings.js] Failed to resolve path: ${relativePath}`, error);
     return path.join(__dirname, '../../', relativePath);
   }
 };

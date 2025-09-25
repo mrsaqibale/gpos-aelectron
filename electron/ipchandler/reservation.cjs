@@ -5,28 +5,39 @@ const fs = require('fs');
 // Use dynamic path resolution for both development and production
 const getModelPath = async (modelPath) => {
   try {
-    // Check if we're in development by looking for src/database
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+    
+    // Current location: electron/ipchandler/
+    // Target: src/database/models/ (go up 2 levels, then into src/database/models)
     const devPath = path.join(__dirname, '../../src/database/models', modelPath);
-    const prodPath = path.join(__dirname, '../../database/models', modelPath);
-    // For built app, check in the unpacked directory
-    const builtPath = path.join(process.resourcesPath, 'database/models', modelPath);
+    
+    // For built app: resources/database/models
+    const builtPath = path.join(process.resourcesPath || '', 'database/models', modelPath);
+    
+    console.log(`[reservation.cjs] Looking for model: ${modelPath}`);
+    console.log(`[reservation.cjs] Current dir: ${__dirname}`);
+    console.log(`[reservation.cjs] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[reservation.cjs] Dev path: ${devPath}`);
+    console.log(`[reservation.cjs] Built path: ${builtPath}`);
     
     let modulePath;
-    if (fs.existsSync(devPath)) {
-      modulePath = devPath;
-    } else if (fs.existsSync(prodPath)) {
-      modulePath = prodPath;
-    } else if (fs.existsSync(builtPath)) {
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [reservation.cjs] Found model at built path: ${builtPath}`);
       modulePath = builtPath;
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [reservation.cjs] Found model at dev path: ${devPath}`);
+      modulePath = devPath;
     } else {
-      throw new Error(`Model not found at ${devPath}, ${prodPath}, or ${builtPath}`);
+      console.log(`❌ [reservation.cjs] Model not found, trying dev path: ${devPath}`);
+      modulePath = devPath;
     }
     
     // Convert to file:// URL for ES module import
     const fileUrl = `file://${modulePath}`;
     return await import(fileUrl);
   } catch (error) {
-    console.error(`Failed to load model: ${modelPath}`, error);
+    console.error(`[reservation.cjs] Failed to load model: ${modelPath}`, error);
     throw error;
   }
 };

@@ -3,26 +3,36 @@ const path = require('path');
 const fs = require('fs');
 
 // Use dynamic path resolution for both development and production
-
 const getModelPath = (modelPath) => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
-    const prodPath = path.join(__dirname, '../../database/models', modelPath);
-    // For built app, check in the unpacked directory
-    const builtPath = path.join(process.resourcesPath, 'database/models', modelPath);
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
     
-    if (fs.existsSync(devPath)) {
-      return require(devPath);
-    } else if (fs.existsSync(prodPath)) {
-      return require(prodPath);
-    } else if (fs.existsSync(builtPath)) {
+    // Current location: electron/ipchandler/
+    // Target: src/database/models/ (go up 2 levels, then into src/database/models)
+    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
+    
+    // For built app: resources/database/models
+    const builtPath = path.join(process.resourcesPath || '', 'database/models', modelPath);
+    
+    console.log(`[table.cjs] Looking for model: ${modelPath}`);
+    console.log(`[table.cjs] Current dir: ${__dirname}`);
+    console.log(`[table.cjs] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[table.cjs] Dev path: ${devPath}`);
+    console.log(`[table.cjs] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [table.cjs] Found model at built path: ${builtPath}`);
       return require(builtPath);
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [table.cjs] Found model at dev path: ${devPath}`);
+      return require(devPath);
     } else {
-      throw new Error(`Model not found at ${devPath}, ${prodPath}, or ${builtPath}`);
+      console.log(`❌ [table.cjs] Model not found, trying dev path: ${devPath}`);
+      return require(devPath);
     }
   } catch (error) {
-    console.error(`Failed to load model: ${modelPath}`, error);
+    console.error(`[table.cjs] Failed to load model: ${modelPath}`, error);
     throw error;
   }
 };

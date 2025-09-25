@@ -1,4 +1,6 @@
 // Global button sound handler
+import { playButtonSound as playButtonSoundUtil } from './soundUtils.js';
+
 let settings = null;
 
 // Function to update settings from the global context
@@ -19,11 +21,8 @@ const playButtonSound = () => {
       return; // Don't play sound if disabled
     }
 
-    // Play button press sound with relative path
-    const audio = new Audio('./src/assets/buttonPressBeep.mp3');
-    audio.play().catch(error => {
-      console.log('Button sound play failed:', error);
-    });
+    // Play button press sound using utility function
+    playButtonSoundUtil();
   } catch (error) {
     console.log('Button sound creation failed:', error);
   }
