@@ -6754,8 +6754,10 @@ const RunningOrders = () => {
                     setSelectedTable('');
                     setSelectedPersons('');
                     setReservedTables([]);
-                    // Open customer search modal
-                    setShowCustomerSearchModal(true);
+                    // Open customer search modal only if no customer is selected
+                    if (!selectedCustomer) {
+                      setShowCustomerSearchModal(true);
+                    }
                   }}
                   disabled={isModifyingOrder}
                   className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
@@ -6784,8 +6786,10 @@ const RunningOrders = () => {
                     setReservedTables([]);
                     // Clear schedule when switching away from Collection
                     setSelectedScheduleDateTime('');
-                    // Open customer search modal
-                    setShowCustomerSearchModal(true);
+                    // Open customer search modal only if no customer is selected
+                    if (!selectedCustomer) {
+                      setShowCustomerSearchModal(true);
+                    }
                   }}
                   disabled={isModifyingOrder}
                   className={`px-3 py-1.5 h-10 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
