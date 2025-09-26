@@ -109,47 +109,43 @@ const DailyReports = () => {
           <div className="w-96 flex flex-col gap-4">
             {/* Payment Summary */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-start gap-4">
-                <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
-                    <DollarSign className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-700">Payment Summary</h3>
+              <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                  <DollarSign className="w-4 h-4 text-white" />
                 </div>
-                <div className="flex-1 max-h-48 overflow-y-auto pr-2">
-                  <div className="space-y-2">
-                    {reportData.payments.map((payment, index) => (
-                      <div key={index} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700">{payment.type}:</span>
-                        <span className="font-medium text-gray-800">€{payment.amount.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
+                <h3 className="text-lg font-semibold text-gray-700">Payment Summary</h3>
+              </div>
+              <div className="flex-1 max-h-48 overflow-y-auto pr-2 mt-3">
+                <div className="space-y-2">
+                  {reportData.payments.map((payment, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-700">{payment.type}:</span>
+                      <span className="font-medium text-gray-800">€{payment.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
             {/* Tax Breakdown */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-start gap-4">
-                <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
-                    <FileText className="w-4 h-4 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-700">Tax Breakdown</h3>
+              <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                  <FileText className="w-4 h-4 text-white" />
                 </div>
-                <div className="flex-1 max-h-48 overflow-y-auto pr-2">
-                  <div className="space-y-2">
-                    {reportData.taxes.map((tax, index) => (
-                      <div key={index} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700">{tax.category}:</span>
-                        <div className="text-right">
-                          <div className="font-medium text-gray-800">€{tax.taxes.toFixed(2)}</div>
-                          <div className="text-xs text-gray-500">€{tax.net.toFixed(2)}</div>
-                        </div>
+                <h3 className="text-lg font-semibold text-gray-700">Tax Breakdown</h3>
+              </div>
+              <div className="flex-1 max-h-48 overflow-y-auto pr-2 mt-3">
+                <div className="space-y-2">
+                  {reportData.taxes.map((tax, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm">
+                      <span className="text-gray-700">{tax.category}:</span>
+                      <div className="text-right">
+                        <div className="font-medium text-gray-800">€{tax.taxes.toFixed(2)}</div>
+                        <div className="text-xs text-gray-500">€{tax.net.toFixed(2)}</div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
