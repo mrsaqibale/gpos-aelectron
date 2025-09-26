@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS addresses (
     customer_id INTEGER NOT NULL,
     address TEXT NOT NULL,
     code TEXT,
+    latitude REAL,
+    longitude REAL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME,
     issyncronized BOOLEAN DEFAULT 0,
