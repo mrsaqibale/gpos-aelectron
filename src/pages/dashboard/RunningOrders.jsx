@@ -966,13 +966,28 @@ const RunningOrders = () => {
     // Removed auto-refresh - orders only update when user clicks refresh button
   }, []);
 
-  // Clear invalid order type selection when settings change (but don't auto-select)
+  // Set default order type to 'In Store' when component mounts and no order type is selected
   useEffect(() => {
-    // If current selection is no longer available, clear it (but don't auto-select)
-    if (selectedOrderType && !isOrderTypeValid(selectedOrderType)) {
-      setSelectedOrderType(null);
+    if (!selectedOrderType && shouldShowOrderType('instore')) {
+      setSelectedOrderType('In Store');
     }
-  }, [orderTypeSettings, selectedOrderType]);
+  }, [selectedOrderType, shouldShowOrderType]);
+
+  // Clear invalid order type selection when settings change and set default to 'In Store'
+  useEffect(() => {
+    // If current selection is no longer available, set to 'In Store' if available
+    if (selectedOrderType && !isOrderTypeValid(selectedOrderType)) {
+      if (shouldShowOrderType('instore')) {
+        setSelectedOrderType('In Store');
+      } else {
+        setSelectedOrderType(null);
+      }
+    }
+    // If no order type is selected and 'In Store' is available, set it as default
+    else if (!selectedOrderType && shouldShowOrderType('instore')) {
+      setSelectedOrderType('In Store');
+    }
+  }, [orderTypeSettings, selectedOrderType, shouldShowOrderType]);
 
   // Debug floors state
   useEffect(() => {
@@ -2539,7 +2554,7 @@ const RunningOrders = () => {
     setFoodQuantity(1);
     setSelectedVariations({});
     setSelectedAdons([]);
-    setSelectedOrderType('');
+    setSelectedOrderType('In Store');
     setSelectedScheduleDateTime(''); // Clear schedule when clearing cart
     
     // Clear modification flags when starting fresh
