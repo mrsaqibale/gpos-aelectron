@@ -27,6 +27,7 @@ import { SettingsProvider } from './contexts/SettingsContext.jsx'
 import { DraftProvider } from './contexts/DraftContext.jsx'
 import { RiderProvider } from './contexts/RiderContext.jsx'
 import { NotificationProvider } from './contexts/NotificationContext.jsx'
+import { ZoomProvider } from './contexts/ZoomContext.jsx'
 
 console.log('main.jsx loading...');
 
@@ -48,7 +49,7 @@ const ErrorBoundary = ({ children }) => {
 const router = createHashRouter([
   {
     path: '/',
-    element: <ErrorBoundary><ThemeProvider><SettingsProvider><DraftProvider><RiderProvider><NotificationProvider><App /></NotificationProvider></RiderProvider></DraftProvider></SettingsProvider></ThemeProvider></ErrorBoundary>,
+    element: <ErrorBoundary><ThemeProvider><ZoomProvider><SettingsProvider><DraftProvider><RiderProvider><NotificationProvider><App /></NotificationProvider></RiderProvider></DraftProvider></SettingsProvider></ZoomProvider></ThemeProvider></ErrorBoundary>,
     children: [
       { index: true, element: <ErrorBoundary><WelcomeScreen /></ErrorBoundary> },
       {
