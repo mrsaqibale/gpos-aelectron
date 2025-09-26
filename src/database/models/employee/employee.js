@@ -95,10 +95,10 @@ function saveImageFile(imageData, employeeId, originalFilename) {
 }
 
 // Create a new employee
-export function createEmployee({ fname, lname, imgurl, s3url, phone, roll, email, address, pin, code, salary = 0, salary_per_hour = 0, vnumber = null, vtype = null, isActive = true, isDeleted = false, isSyncronized = false, originalFilename }) {
+export function createEmployee({ fname, lname, imgurl, s3url, phone, roll, email, address, pin, code, salary = 0, salary_per_hour = 0, vnumber = null, vtype = null, license_number = null, license_expiry = null, isActive = true, isDeleted = false, isSyncronized = false, originalFilename }) {
   try {
     console.log('Creating employee with data:', {
-      fname, lname, phone, roll, email, pin, code, salary, salary_per_hour, vnumber, vtype,
+      fname, lname, phone, roll, email, pin, code, salary, salary_per_hour, vnumber, vtype, license_number, license_expiry,
       imgurl: imgurl ? `image_data_provided` : null,
       isActive, isDeleted, isSyncronized
     });
@@ -117,10 +117,10 @@ export function createEmployee({ fname, lname, imgurl, s3url, phone, roll, email
     const stmt = db.prepare(`
       INSERT INTO employee (
         fname, lname, imgurl, s3url, phone, roll, email, address, pin, code,
-        salary, salary_per_hour, vnumber, vtype,
+        salary, salary_per_hour, vnumber, vtype, license_number, license_expiry,
         isActive, isDeleted, isSyncronized
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     // Convert boolean values to integers for SQLite
@@ -144,6 +144,8 @@ export function createEmployee({ fname, lname, imgurl, s3url, phone, roll, email
       salary_per_hour,
       vnumber,
       vtype,
+      license_number,
+      license_expiry,
       isActiveInt,
       isDeletedInt,
       isSyncronizedInt

@@ -28,7 +28,9 @@ const Employee = () => {
     salaryPerHour: '',
     image: null,
     vehicleNumber: '',
-    vehicleType: ''
+    vehicleType: '',
+    licenseNumber: '',
+    licenseExpiry: ''
   });
   const [pinError, setPinError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -93,10 +95,12 @@ const Employee = () => {
       email: employee.email || '',
       pin: '',
       confirmPin: '',
-      salaryPerHour: employee.salaryPerHour || '',
+      salaryPerHour: employee.salary_per_hour || '',
       image: null,
-      vehicleNumber: employee.vehicleNumber || '',
-      vehicleType: employee.vehicleType || ''
+      vehicleNumber: employee.vnumber || '',
+      vehicleType: employee.vtype || '',
+      licenseNumber: employee.license_number || '',
+      licenseExpiry: employee.license_expiry || ''
     });
     // Set image preview if employee has an image
     if (employee.imgurl) {
@@ -143,7 +147,9 @@ const Employee = () => {
       salaryPerHour: '',
       image: null,
       vehicleNumber: '',
-      vehicleType: ''
+      vehicleType: '',
+      licenseNumber: '',
+      licenseExpiry: ''
     });
     setImagePreview(null);
     setPinError(''); // Clear any previous PIN error messages
@@ -299,10 +305,23 @@ const Employee = () => {
         isSyncronized: 0
       };
 
-      // Add vehicle information for Delivery Man
+      // Add vehicle and license information for Delivery Man
       if (newEmployee.role === 'Delivery Man') {
-        employeeData.vehicleNumber = newEmployee.vehicleNumber;
-        employeeData.vehicleType = newEmployee.vehicleType;
+        employeeData.vnumber = newEmployee.vehicleNumber;
+        employeeData.vtype = newEmployee.vehicleType;
+        // License details
+        if (!newEmployee.licenseExpiry) {
+          alert('License expiry date is required for Delivery Man');
+          return;
+        }
+        employeeData.license_number = newEmployee.licenseNumber || null;
+        employeeData.license_expiry = newEmployee.licenseExpiry;
+      } else {
+        // Ensure backend clears if role changed away from Delivery Man
+        employeeData.vnumber = null;
+        employeeData.vtype = null;
+        employeeData.license_number = null;
+        employeeData.license_expiry = null;
       }
 
       // Only include image data if a new image is selected
@@ -373,7 +392,9 @@ const Employee = () => {
       salaryPerHour: '',
       image: null,
       vehicleNumber: '',
-      vehicleType: ''
+      vehicleType: '',
+      licenseNumber: '',
+      licenseExpiry: ''
     });
     setImagePreview(null);
     setPinError('');
@@ -719,6 +740,40 @@ const Employee = () => {
                             <option value="Truck">Truck</option>
                             <option value="Bicycle">Bicycle</option>
                           </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            License Number
+                          </label>
+                          <input
+                            type="text"
+                            name="licenseNumber"
+                            value={newEmployee.licenseNumber}
+                            onChange={handleInputChange}
+                            onFocus={() => handleAnyInputFocus(null, 'licenseNumber')}
+                            onBlur={handleInputBlur}
+                            onClick={() => handleAnyInputClick(null, 'licenseNumber')}
+                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            placeholder="Optional"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            License Expiry Date <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="licenseExpiry"
+                            value={newEmployee.licenseExpiry}
+                            onChange={handleInputChange}
+                            onFocus={() => handleAnyInputFocus(null, 'licenseExpiry')}
+                            onBlur={handleInputBlur}
+                            onClick={() => handleAnyInputClick(null, 'licenseExpiry')}
+                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            required
+                          />
                         </div>
                       </>
                     )}

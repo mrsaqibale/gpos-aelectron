@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS employee (
     salary_per_hour NUMERIC DEFAULT 0, -- hourly pay rate for time-based salary calculations
     vnumber TEXT, -- vehicle number (for delivery staff)
     vtype TEXT, -- vehicle type (bike, car, scooter, etc.)
+    license_number TEXT, -- driving license number (for delivery staff)
+    license_expiry TEXT, -- driving license expiry date (YYYY-MM-DD)
     isActive BOOLEAN DEFAULT 1,
     isDeleted BOOLEAN DEFAULT 0,
     isSyncronized BOOLEAN DEFAULT 0
