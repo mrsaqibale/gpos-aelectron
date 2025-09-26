@@ -90,7 +90,7 @@ export function getCustomerById(id) {
     const stmt = db.prepare(`
       SELECT 
         c.*,
-        GROUP_CONCAT(a.id || ':' || a.address || ':' || a.code) as addresses
+        GROUP_CONCAT(a.id || ':' || a.address || ':' || IFNULL(a.code,'') || ':' || IFNULL(a.latitude,'') || ':' || IFNULL(a.longitude,'')) as addresses
       FROM customer c
       LEFT JOIN addresses a ON c.id = a.customer_id AND a.isdeleted = 0
       WHERE c.id = ? AND c.isDelete = 0
@@ -102,8 +102,14 @@ export function getCustomerById(id) {
     // Parse addresses string into array of objects
     if (customer.addresses) {
       customer.addresses = customer.addresses.split(',').map(addr => {
-        const [id, address, code] = addr.split(':');
-        return { id: parseInt(id), address, code: code || null };
+        const [id, address, code, latitude, longitude] = addr.split(':');
+        return {
+          id: parseInt(id),
+          address,
+          code: code || null,
+          latitude: latitude !== '' ? parseFloat(latitude) : null,
+          longitude: longitude !== '' ? parseFloat(longitude) : null
+        };
       });
     } else {
       customer.addresses = [];
@@ -121,7 +127,7 @@ export function getCustomersByHotelId(hotel_id) {
     const stmt = db.prepare(`
       SELECT 
         c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy,
-        GROUP_CONCAT(a.id || ':' || a.address || ':' || a.code) as addresses
+        GROUP_CONCAT(a.id || ':' || a.address || ':' || IFNULL(a.code,'') || ':' || IFNULL(a.latitude,'') || ':' || IFNULL(a.longitude,'')) as addresses
       FROM customer c
       LEFT JOIN addresses a ON c.id = a.customer_id AND a.isdeleted = 0
       WHERE c.hotel_id = ? AND c.isDelete = 0
@@ -134,8 +140,14 @@ export function getCustomersByHotelId(hotel_id) {
     customers.forEach(customer => {
       if (customer.addresses) {
         customer.addresses = customer.addresses.split(',').map(addr => {
-          const [id, address, code] = addr.split(':');
-          return { id: parseInt(id), address, code: code || null };
+          const [id, address, code, latitude, longitude] = addr.split(':');
+          return {
+            id: parseInt(id),
+            address,
+            code: code || null,
+            latitude: latitude !== '' ? parseFloat(latitude) : null,
+            longitude: longitude !== '' ? parseFloat(longitude) : null
+          };
         });
       } else {
         customer.addresses = [];
@@ -157,7 +169,7 @@ export function searchCustomerByPhone(phone) {
     const stmt = db.prepare(`
       SELECT 
         c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy,
-        GROUP_CONCAT(a.id || ':' || a.address || ':' || a.code) as addresses
+        GROUP_CONCAT(a.id || ':' || a.address || ':' || IFNULL(a.code,'') || ':' || IFNULL(a.latitude,'') || ':' || IFNULL(a.longitude,'')) as addresses
       FROM customer c
       LEFT JOIN addresses a ON c.id = a.customer_id AND a.isdeleted = 0
       WHERE c.phone LIKE ? AND c.isDelete = 0
@@ -169,8 +181,14 @@ export function searchCustomerByPhone(phone) {
     customers.forEach(customer => {
       if (customer.addresses) {
         customer.addresses = customer.addresses.split(',').map(addr => {
-          const [id, address, code] = addr.split(':');
-          return { id: parseInt(id), address, code: code || null };
+          const [id, address, code, latitude, longitude] = addr.split(':');
+          return {
+            id: parseInt(id),
+            address,
+            code: code || null,
+            latitude: latitude !== '' ? parseFloat(latitude) : null,
+            longitude: longitude !== '' ? parseFloat(longitude) : null
+          };
         });
       } else {
         customer.addresses = [];
@@ -192,7 +210,7 @@ export function searchCustomerByName(name) {
     const stmt = db.prepare(`
       SELECT 
         c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy,
-        GROUP_CONCAT(a.id || ':' || a.address || ':' || a.code) as addresses
+        GROUP_CONCAT(a.id || ':' || a.address || ':' || IFNULL(a.code,'') || ':' || IFNULL(a.latitude,'') || ':' || IFNULL(a.longitude,'')) as addresses
       FROM customer c
       LEFT JOIN addresses a ON c.id = a.customer_id AND a.isdeleted = 0
       WHERE LOWER(c.name) LIKE LOWER(?) AND c.isDelete = 0
@@ -204,8 +222,14 @@ export function searchCustomerByName(name) {
     customers.forEach(customer => {
       if (customer.addresses) {
         customer.addresses = customer.addresses.split(',').map(addr => {
-          const [id, address, code] = addr.split(':');
-          return { id: parseInt(id), address, code: code || null };
+          const [id, address, code, latitude, longitude] = addr.split(':');
+          return {
+            id: parseInt(id),
+            address,
+            code: code || null,
+            latitude: latitude !== '' ? parseFloat(latitude) : null,
+            longitude: longitude !== '' ? parseFloat(longitude) : null
+          };
         });
       } else {
         customer.addresses = [];
@@ -244,8 +268,8 @@ export function createCustomerWithAddresses({ customer, addresses = [] }) {
       const addressIds = [];
       if (addresses.length > 0) {
         const addressStmt = db.prepare(`
-          INSERT INTO addresses (customer_id, address, code, addedby)
-          VALUES (?, ?, ?, ?)
+          INSERT INTO addresses (customer_id, address, code, latitude, longitude, addedby)
+          VALUES (?, ?, ?, ?, ?, ?)
         `);
         
         for (const address of addresses) {
@@ -253,6 +277,8 @@ export function createCustomerWithAddresses({ customer, addresses = [] }) {
             customerId,
             address.address,
             address.code || null,
+            address.latitude ?? null,
+            address.longitude ?? null,
             address.addedby || customer.addedBy
           );
           addressIds.push(addressInfo.lastInsertRowid);
@@ -274,13 +300,13 @@ export function createCustomerWithAddresses({ customer, addresses = [] }) {
 }
 
 // Create a single address for an existing customer
-export function createAddress({ customer_id, address, code, addedby }) {
+export function createAddress({ customer_id, address, code, latitude, longitude, addedby }) {
   try {
     const stmt = db.prepare(`
-      INSERT INTO addresses (customer_id, address, code, addedby)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO addresses (customer_id, address, code, latitude, longitude, addedby)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    const info = stmt.run(customer_id, address, code || null, addedby);
+    const info = stmt.run(customer_id, address, code || null, latitude ?? null, longitude ?? null, addedby);
     return { success: true, id: info.lastInsertRowid };
   } catch (err) {
     return errorResponse(err.message);
