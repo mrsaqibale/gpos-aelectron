@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import VirtualKeyboard from '../VirtualKeyboard';
 
-const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer, orderType }) => {
+const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer, orderType, onParentClose }) => {
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     phone: '',
@@ -874,6 +874,16 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
       newErrors.email = 'Please enter a valid email address';
     }
     
+    // Make address required for Delivery orders
+    if (orderType === 'Delivery') {
+      const hasValidAddress = addresses.some((addr, index) => 
+        addr.address.trim() && selectedAddresses.includes(index)
+      );
+      if (!hasValidAddress) {
+        newErrors.address = 'At least one address is required for Delivery orders';
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -952,6 +962,10 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
             });
           }
           onClose();
+          // Close parent modal if provided
+          if (onParentClose) {
+            onParentClose();
+          }
         } else {
           alert('Error updating customer: ' + result.message);
         }
@@ -994,6 +1008,10 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
             });
           }
           onClose();
+          // Close parent modal if provided
+          if (onParentClose) {
+            onParentClose();
+          }
         } else {
           alert('Error creating customer: ' + result.message);
         }
@@ -1111,7 +1129,7 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Addresses
+                    Addresses {orderType === 'Delivery' && <span className="text-red-500">*</span>}
                   </label>
                   <button
                     type="button"
@@ -1121,6 +1139,9 @@ const CustomerManagement = ({ isOpen, onClose, onCustomerSelect, editingCustomer
                     + Add More Address
                   </button>
                 </div>
+                {errors.address && (
+                  <p className="text-red-500 text-xs mt-1">{errors.address}</p>
+                )}
                 
                 {/* Help text for address selection */}
                 {editingCustomer && addresses.length >= 2 && (

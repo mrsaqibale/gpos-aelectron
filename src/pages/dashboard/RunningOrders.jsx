@@ -1737,6 +1737,10 @@ const RunningOrders = () => {
   const handleCustomerSelect = (customer) => {
     setSelectedCustomer(customer);
     
+    // Close both modals when customer is selected
+    setShowCustomerModal(false);
+    setShowCustomerSearchModal(false);
+    
     // If this is a new customer (has an ID), trigger update event
     if (customer && customer.id) {
       window.dispatchEvent(new CustomEvent('customerUpdated', { 
@@ -1774,6 +1778,11 @@ const RunningOrders = () => {
   const handleEditCustomer = (updatedCustomer) => {
     setSelectedCustomer(updatedCustomer);
     setShowEditModal(false);
+    
+    // If we're editing from CustomerSearchModal, close it too
+    if (showCustomerSearchModal) {
+      setShowCustomerSearchModal(false);
+    }
     
     // Trigger a custom event to refresh customer list in CustomerSearchModal
     window.dispatchEvent(new CustomEvent('customerUpdated', { 
@@ -7138,6 +7147,7 @@ const RunningOrders = () => {
             onCustomerSelect={handleEditCustomer}
             editingCustomer={selectedCustomer}
             orderType={selectedOrderType}
+            onParentClose={showCustomerSearchModal ? () => setShowCustomerSearchModal(false) : undefined}
           />
         )}
 
