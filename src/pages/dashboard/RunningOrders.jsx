@@ -1750,15 +1750,9 @@ const RunningOrders = () => {
   };
 
   const handleCustomerSelect = (customer) => {
-    setSelectedCustomer(customer);
-    
-    // Close both modals when customer is selected
-    setShowCustomerModal(false);
-    setShowCustomerSearchModal(false);
-    
-    // Validate customer information based on order type and show edit modal if needed
+    // Only select customer if all required data is present for the current order type
     if (customer && selectedOrderType) {
-      let needsEdit = false;
+      let hasRequiredData = true;
       
       // Check for Delivery orders
       if (selectedOrderType === 'Delivery') {
@@ -1766,7 +1760,7 @@ const RunningOrders = () => {
         const hasAddress = customer.addresses && customer.addresses.length > 0;
         
         if (!hasPhone || !hasAddress) {
-          needsEdit = true;
+          hasRequiredData = false;
         }
       }
       // Check for Collection orders
@@ -1774,16 +1768,21 @@ const RunningOrders = () => {
         const hasPhone = customer.phone && customer.phone.trim().length > 0;
         
         if (!hasPhone) {
-          needsEdit = true;
+          hasRequiredData = false;
         }
       }
       
-      // Show edit modal immediately if validation fails
-      if (needsEdit) {
-        setShowEditModal(true);
-        return; // Don't trigger customer update event yet
+      // Only proceed with customer selection if all required data is present
+      if (!hasRequiredData) {
+        // Don't select customer - let the edit modal handle it
+        return;
       }
     }
+    
+    // Set customer and close modals
+    setSelectedCustomer(customer);
+    setShowCustomerModal(false);
+    setShowCustomerSearchModal(false);
     
     // If this is a new customer (has an ID), trigger update event
     if (customer && customer.id) {
@@ -1820,7 +1819,37 @@ const RunningOrders = () => {
   };
 
   const handleEditCustomer = (updatedCustomer) => {
-    setSelectedCustomer(updatedCustomer);
+    // Validate that the updated customer has all required data for the current order type
+    if (updatedCustomer && selectedOrderType) {
+      let hasRequiredData = true;
+      
+      // Check for Delivery orders
+      if (selectedOrderType === 'Delivery') {
+        const hasPhone = updatedCustomer.phone && updatedCustomer.phone.trim().length > 0;
+        const hasAddress = updatedCustomer.addresses && updatedCustomer.addresses.length > 0;
+        
+        if (!hasPhone || !hasAddress) {
+          hasRequiredData = false;
+        }
+      }
+      // Check for Collection orders
+      else if (selectedOrderType === 'Collection') {
+        const hasPhone = updatedCustomer.phone && updatedCustomer.phone.trim().length > 0;
+        
+        if (!hasPhone) {
+          hasRequiredData = false;
+        }
+      }
+      
+      // Only select customer if all required data is present
+      if (hasRequiredData) {
+        setSelectedCustomer(updatedCustomer);
+      }
+    } else {
+      // For In Store orders, always select the customer
+      setSelectedCustomer(updatedCustomer);
+    }
+    
     setShowEditModal(false);
     
     // If we're editing from CustomerSearchModal, close it too
@@ -7159,8 +7188,9 @@ const RunningOrders = () => {
           isOpen={showCustomerModal}
           onClose={() => {
             setShowCustomerModal(false);
-            // If no customer is selected and order type is Collection or Delivery, fallback to In Store
-            if ((selectedOrderType === 'Collection' || selectedOrderType === 'Delivery') && !selectedCustomer && shouldShowOrderType('instore')) {
+            // Deselect customer and switch to In Store when Customer List modal is closed
+            setSelectedCustomer(null);
+            if (shouldShowOrderType('instore')) {
               setSelectedOrderType('In Store');
             }
           }}

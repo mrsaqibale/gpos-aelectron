@@ -215,12 +215,24 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
       // Check phone number for Collection and Delivery orders
       if ((orderType === 'Collection' || orderType === 'Delivery') && (!selectedCustomer.phone || selectedCustomer.phone.trim().length === 0)) {
         // Open edit customer modal instead of showing error
+        // Don't select customer yet - wait for edit completion
         if (onEditCustomer) {
           onEditCustomer(selectedCustomer);
         }
         return;
       }
       
+      // Check address for Delivery orders
+      if (orderType === 'Delivery' && (!selectedCustomer.addresses || selectedCustomer.addresses.length === 0)) {
+        // Open edit customer modal instead of showing error
+        // Don't select customer yet - wait for edit completion
+        if (onEditCustomer) {
+          onEditCustomer(selectedCustomer);
+        }
+        return;
+      }
+      
+      // Only select customer if all required data is present
       onCustomerSelect(selectedCustomer);
       onClose();
     }

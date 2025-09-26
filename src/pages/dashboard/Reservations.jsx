@@ -171,7 +171,6 @@ const Reservations = () => {
                         { id: 'all', label: 'All' },
                         { id: 'today', label: 'Today' },
                         { id: 'upcoming', label: 'Upcoming' },
-                        { id: 'confirmed', label: 'Confirmed' },
                         { id: 'completed', label: 'Completed' },
                         { id: 'cancelled', label: 'Cancelled' },
                     ].map(t => (
