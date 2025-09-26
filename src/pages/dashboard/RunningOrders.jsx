@@ -7282,7 +7282,15 @@ const RunningOrders = () => {
         {showEditModal && selectedCustomer && (
           <CustomerManagement
             isOpen={showEditModal}
-            onClose={() => setShowEditModal(false)}
+            onClose={() => {
+              setShowEditModal(false);
+              // If user closes edit modal without saving, revert to In Store order type
+              if (selectedOrderType === 'Delivery' || selectedOrderType === 'Collection') {
+                if (shouldShowOrderType('instore')) {
+                  setSelectedOrderType('In Store');
+                }
+              }
+            }}
             onCustomerSelect={handleEditCustomer}
             editingCustomer={selectedCustomer}
             orderType={selectedOrderType}
