@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Minus, ArrowLeft, Menu, Plus, ZoomIn, ZoomOut } from 'lucide-react';
+import { Minus, ArrowLeft, Menu } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { useZoom } from '../contexts/ZoomContext';
 
 const CustomTitleBar = () => {
   // const [isMaximized, setIsMaximized] = useState(false);
@@ -10,7 +9,6 @@ const CustomTitleBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { themeColors, changeTheme } = useTheme();
-  const { zoomLevel, zoomIn, zoomOut, resetZoom } = useZoom();
 
   // Check if user is logged in
   const isLoggedIn = () => {
@@ -216,30 +214,6 @@ const CustomTitleBar = () => {
           />
         </div>
 
-        {/* Zoom controls */}
-        <div className="flex items-center space-x-1 mr-2">
-          <button
-            onClick={zoomOut}
-            className="w-8 h-8 cursor-pointer flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg"
-            style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
-            title={`Zoom Out (${Math.round(zoomLevel * 100)}%)`}
-          >
-            <Minus className="w-4 h-4" />
-          </button>
-          
-          <span className="text-white text-xs font-semibold min-w-[3rem] text-center">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          
-          <button
-            onClick={zoomIn}
-            className="w-8 h-8 cursor-pointer flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg"
-            style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
-            title={`Zoom In (${Math.round(zoomLevel * 100)}%)`}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
 
         {/* Window controls */}
         <div className="flex items-center space-x-1">
