@@ -8,15 +8,15 @@ import {
   BarChart3,
   RotateCcw,
   X,
-  RefreshCw
+  Printer,
+  CheckCircle
 } from 'lucide-react'
 
 const DailyReports = () => {
   const [startDate, setStartDate] = useState('2025-09-12')
   const [startTime, setStartTime] = useState('09:00')
-  const [endDate, setEndDate] = useState('')
-  const [endTime, setEndTime] = useState('')
-  const [reportGenerated, setReportGenerated] = useState(false)
+  const [endDate, setEndDate] = useState('2025-09-12')
+  const [endTime, setEndTime] = useState('12:47')
 
   // Report data
   const reportData = {
@@ -65,51 +65,16 @@ const DailyReports = () => {
     { type: 'Total', count: totalTransactions, gross: totalGross, taxes: totalTaxes, net: totalNet, bgColor: 'bg-blue-50', icon: <BarChart3 className="w-4 h-4 text-blue-600" /> }
   ]
 
-  const handleGenerateReport = () => {
-    console.log('Generating report for:', { startDate, startTime, endDate, endTime })
-    setReportGenerated(true)
+  const handlePrint = () => {
+    window.print()
+  }
+
+  const handleCloseCash = () => {
+    console.log('Close cash clicked')
   }
 
   return (
     <div className="min-h-screen">
-      <style jsx>{`
-        input[type="date"], input[type="time"] {
-          color-scheme: light;
-          position: relative;
-          z-index: 1;
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator,
-        input[type="time"]::-webkit-calendar-picker-indicator {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          width: auto;
-          height: auto;
-          color: transparent;
-          background: transparent;
-          cursor: pointer;
-          z-index: 2;
-        }
-        input[type="date"]::-webkit-inner-spin-button,
-        input[type="date"]::-webkit-clear-button,
-        input[type="time"]::-webkit-inner-spin-button,
-        input[type="time"]::-webkit-clear-button {
-          display: none;
-          -webkit-appearance: none;
-        }
-        input[type="date"]:focus,
-        input[type="time"]:focus {
-          outline: none;
-          z-index: 10;
-          position: relative;
-        }
-        input[type="date"]:focus::-webkit-calendar-picker-indicator,
-        input[type="time"]:focus::-webkit-calendar-picker-indicator {
-          z-index: 11;
-        }
-      `}</style>
 
       {/* Header */}
       <div className='bg-white p-6 mb-6 rounded-lg border border-gray-200'>
@@ -122,141 +87,76 @@ const DailyReports = () => {
             <p className="text-gray-600 mt-1 text-sm bg-[#F3F4F6] rounded-lg p-2">Register: <span className="font-bold text-primary">001</span></p>
           </div>
           
-          {/* Date Selectors and Generate Button */}
-          <div className="flex items-end gap-2 bg-[#F8F9FA] border border-gray-300 rounded-lg p-2">
-            <div className="flex flex-col items-start gap-2">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Start Date:</label>
-              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-3 py-2">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onFocus={(e) => e.stopPropagation()}
-                  onBlur={(e) => e.stopPropagation()}
-                  className="text-sm border-none outline-none bg-transparent w-20"
-                />
-                <span className="text-gray-400">|</span>
-                <input
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onFocus={(e) => e.stopPropagation()}
-                  onBlur={(e) => e.stopPropagation()}
-                  className="text-sm border-none outline-none bg-transparent w-16"
-                />
-              </div>
+          {/* Date Range (read-only) */}
+          <div className="flex items-center gap-4 bg-[#F8F9FA] border border-gray-300 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Start:</span>
+              <span className="text-sm text-gray-800">{startDate} {startTime}</span>
             </div>
-            
-            <div className="flex flex-col items-start gap-2">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">End Date:</label>
-              <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-3 py-2">
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onFocus={(e) => e.stopPropagation()}
-                  onBlur={(e) => e.stopPropagation()}
-                  className="text-sm border-none outline-none bg-transparent w-20"
-                  placeholder="mm/dd/yyyy"
-                />
-                <span className="text-gray-400">|</span>
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onFocus={(e) => e.stopPropagation()}
-                  onBlur={(e) => e.stopPropagation()}
-                  className="text-sm border-none outline-none bg-transparent w-16"
-                  placeholder="--:--"
-                />
-              </div>
+            <span className="text-gray-400">/</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">End:</span>
+              <span className="text-sm text-gray-800">{endDate} {endTime}</span>
             </div>
-            
-            <button 
-              onClick={handleGenerateReport}
-              className="bg-primary text-white px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Generate Report
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="flex gap-4 mb-6">
-        <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-start gap-4">
-            {/* Header Section */}
-            <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
-                <DollarSign className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-700">Payment Summary</h3>
-            </div>
-            
-            {/* Data List */}
-            {reportGenerated ? (
-              <div className="flex-1 max-h-48 overflow-y-auto pr-2">
-                <div className="space-y-2">
-                  {reportData.payments.map((payment, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-700">{payment.type}:</span>
-                      <span className="font-medium text-gray-800">€{payment.amount.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex items-center justify-center h-32">
-                <p className="text-gray-500 text-sm">Click "Generate Report" to view payment summary</p>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-start gap-4">
-            {/* Header Section */}
-            <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
-                <FileText className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-700">Tax Breakdown</h3>
-            </div>
-            
-            {/* Data List */}
-            {reportGenerated ? (
-              <div className="flex-1 max-h-48 overflow-y-auto pr-2">
-                <div className="space-y-2">
-                  {reportData.taxes.map((tax, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-700">{tax.category}:</span>
-                      <div className="text-right">
-                        <div className="font-medium text-gray-800">€{tax.taxes.toFixed(2)}</div>
-                        <div className="text-xs text-gray-500">€{tax.net.toFixed(2)}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex items-center justify-center h-32">
-                <p className="text-gray-500 text-sm">Click "Generate Report" to view tax breakdown</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
+      {/* Main Content Area: Left summaries, Right table */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex gap-6">
-          <div className="w-80">
+          {/* Left Column */}
+          <div className="w-96 flex flex-col gap-4">
+            {/* Payment Summary */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                    <DollarSign className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-700">Payment Summary</h3>
+                </div>
+                <div className="flex-1 max-h-48 overflow-y-auto pr-2">
+                  <div className="space-y-2">
+                    {reportData.payments.map((payment, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-700">{payment.type}:</span>
+                        <span className="font-medium text-gray-800">€{payment.amount.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tax Breakdown */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-start gap-4">
+                <div className="flex items-center gap-3 bg-gray-100 px-3 py-2 rounded-lg">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary">
+                    <FileText className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-700">Tax Breakdown</h3>
+                </div>
+                <div className="flex-1 max-h-48 overflow-y-auto pr-2">
+                  <div className="space-y-2">
+                    {reportData.taxes.map((tax, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-700">{tax.category}:</span>
+                        <div className="text-right">
+                          <div className="font-medium text-gray-800">€{tax.taxes.toFixed(2)}</div>
+                          <div className="text-xs text-gray-500">€{tax.net.toFixed(2)}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Transaction Table */}
+          <div className="flex-1">
             {/* Transaction Summary Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -290,10 +190,10 @@ const DailyReports = () => {
                         {transaction.icon}
                         <span className="text-sm font-medium text-gray-800">{transaction.type}</span>
                       </div>
-                      <div className="text-sm text-gray-600">{reportGenerated ? transaction.count : '-'}</div>
-                      <div className="text-sm text-gray-600">{reportGenerated ? `€${transaction.gross.toFixed(2)}` : '-'}</div>
-                      <div className="text-sm text-gray-600">{reportGenerated ? `€${transaction.taxes.toFixed(2)}` : '-'}</div>
-                      <div className="text-sm text-gray-600">{reportGenerated ? `€${transaction.net.toFixed(2)}` : '-'}</div>
+                      <div className="text-sm text-gray-600">{transaction.count}</div>
+                      <div className="text-sm text-gray-600">€{transaction.gross.toFixed(2)}</div>
+                      <div className="text-sm text-gray-600">€{transaction.taxes.toFixed(2)}</div>
+                      <div className="text-sm text-gray-600">€{transaction.net.toFixed(2)}</div>
                     </div>
                   </div>
                 ))}
@@ -302,6 +202,18 @@ const DailyReports = () => {
           </div>
 
         </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex items-center justify-center gap-4 mt-6">
+        <button onClick={handlePrint} className="bg-primary text-white px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2">
+          <Printer className="w-4 h-4" />
+          Print Report
+        </button>
+        <button onClick={handleCloseCash} className="bg-primary text-white px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2">
+          <CheckCircle className="w-4 h-4" />
+          Close Cash
+        </button>
       </div>
     </div>
   )
