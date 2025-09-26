@@ -57,7 +57,7 @@ const Reservations = () => {
     const filtered = useMemo(() => {
         if (activeTab === 'today') {
             const today = new Date().toISOString().split('T')[0]
-            return reservations.filter(r => r.reservation_date === today)
+            return reservations.filter(r => r.reservation_date === today && r.status !== 'completed')
         } else if (activeTab === 'upcoming') {
             const today = new Date().toISOString().split('T')[0]
             return reservations.filter(r => r.reservation_date > today)

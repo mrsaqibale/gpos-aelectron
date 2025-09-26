@@ -7203,8 +7203,9 @@ const RunningOrders = () => {
           isOpen={showCustomerSearchModal}
           onClose={() => {
             setShowCustomerSearchModal(false);
-            // If no customer is selected and order type is Collection or Delivery, fallback to In Store
-            if ((selectedOrderType === 'Collection' || selectedOrderType === 'Delivery') && !selectedCustomer && shouldShowOrderType('instore')) {
+            // Deselect customer and switch to In Store when Customer Search modal is closed
+            setSelectedCustomer(null);
+            if (shouldShowOrderType('instore')) {
               setSelectedOrderType('In Store');
             }
           }}
