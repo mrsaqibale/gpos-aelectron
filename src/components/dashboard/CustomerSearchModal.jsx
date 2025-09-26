@@ -214,7 +214,10 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
     if (selectedCustomer && onCustomerSelect) {
       // Check phone number for Collection and Delivery orders
       if ((orderType === 'Collection' || orderType === 'Delivery') && (!selectedCustomer.phone || selectedCustomer.phone.trim().length === 0)) {
-        showAlert('Customer must have a phone number for ' + orderType + ' orders. Please edit the customer to add a phone number.', 'error');
+        // Open edit customer modal instead of showing error
+        if (onEditCustomer) {
+          onEditCustomer(selectedCustomer);
+        }
         return;
       }
       

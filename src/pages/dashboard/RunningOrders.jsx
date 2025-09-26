@@ -1756,6 +1756,35 @@ const RunningOrders = () => {
     setShowCustomerModal(false);
     setShowCustomerSearchModal(false);
     
+    // Validate customer information based on order type and show edit modal if needed
+    if (customer && selectedOrderType) {
+      let needsEdit = false;
+      
+      // Check for Delivery orders
+      if (selectedOrderType === 'Delivery') {
+        const hasPhone = customer.phone && customer.phone.trim().length > 0;
+        const hasAddress = customer.addresses && customer.addresses.length > 0;
+        
+        if (!hasPhone || !hasAddress) {
+          needsEdit = true;
+        }
+      }
+      // Check for Collection orders
+      else if (selectedOrderType === 'Collection') {
+        const hasPhone = customer.phone && customer.phone.trim().length > 0;
+        
+        if (!hasPhone) {
+          needsEdit = true;
+        }
+      }
+      
+      // Show edit modal immediately if validation fails
+      if (needsEdit) {
+        setShowEditModal(true);
+        return; // Don't trigger customer update event yet
+      }
+    }
+    
     // If this is a new customer (has an ID), trigger update event
     if (customer && customer.id) {
       window.dispatchEvent(new CustomEvent('customerUpdated', { 
@@ -3128,7 +3157,6 @@ const RunningOrders = () => {
     // Check phone number for Collection and Delivery orders
     if ((selectedOrderType === 'Collection' || selectedOrderType === 'Delivery') && selectedCustomer) {
       if (!selectedCustomer.phone || selectedCustomer.phone.trim().length === 0) {
-        showError('Customer must have a phone number for ' + selectedOrderType + ' orders');
         // Open customer management modal to edit phone number
         setShowEditModal(true);
         return;
@@ -3143,7 +3171,8 @@ const RunningOrders = () => {
       // Check if customer has addresses array with at least one address
       if (!selectedCustomer.addresses || selectedCustomer.addresses.length === 0) {
         console.log('No addresses found for customer');
-        showError('Customer must have a delivery address');
+        // Open customer management modal to edit address
+        setShowEditModal(true);
         return;
       }
       
@@ -3161,7 +3190,8 @@ const RunningOrders = () => {
       })));
       
       if (!hasValidAddress) {
-        showError('Customer must have a valid delivery address');
+        // Open customer management modal to edit address
+        setShowEditModal(true);
         return;
       }
       
@@ -7127,7 +7157,13 @@ const RunningOrders = () => {
         {/* Customer Management Modal */}
         <CustomerManagement
           isOpen={showCustomerModal}
-          onClose={() => setShowCustomerModal(false)}
+          onClose={() => {
+            setShowCustomerModal(false);
+            // If no customer is selected and order type is Collection or Delivery, fallback to In Store
+            if ((selectedOrderType === 'Collection' || selectedOrderType === 'Delivery') && !selectedCustomer && shouldShowOrderType('instore')) {
+              setSelectedOrderType('In Store');
+            }
+          }}
           onCustomerSelect={handleCustomerSelect}
           orderType={selectedOrderType}
         />
@@ -7135,7 +7171,13 @@ const RunningOrders = () => {
         {/* Customer Search Modal */}
         <CustomerSearchModal
           isOpen={showCustomerSearchModal}
-          onClose={() => setShowCustomerSearchModal(false)}
+          onClose={() => {
+            setShowCustomerSearchModal(false);
+            // If no customer is selected and order type is Collection or Delivery, fallback to In Store
+            if ((selectedOrderType === 'Collection' || selectedOrderType === 'Delivery') && !selectedCustomer && shouldShowOrderType('instore')) {
+              setSelectedOrderType('In Store');
+            }
+          }}
           onCustomerSelect={handleCustomerSelect}
           onEditCustomer={handleOpenEditModal}
           onNewCustomer={() => setShowCustomerModal(true)}
@@ -7972,7 +8014,13 @@ const RunningOrders = () => {
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">Table Selection</h2>
                 <button
-                  onClick={() => setShowTableModal(false)}
+                  onClick={() => {
+                    setShowTableModal(false);
+                    // If no table is selected and order type is Table, fallback to In Store
+                    if (selectedOrderType === 'Table' && !selectedTable && reservedTables.length === 0 && shouldShowOrderType('instore')) {
+                      setSelectedOrderType('In Store');
+                    }
+                  }}
                   className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
                 >
                   <X size={20} />
