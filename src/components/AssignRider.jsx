@@ -10,21 +10,33 @@ const AssignRider = ({
   onAssignRider, 
   onStatusUpdate 
 }) => {
-  const { riders, getAvailableRiders, setSelectedRider: setGlobalSelectedRider } = useRiders();
+  const { setSelectedRider: setGlobalSelectedRider } = useRiders();
   const [selectedRider, setSelectedRider] = useState(null);
   const [riderSearchQuery, setRiderSearchQuery] = useState('');
   const [availableRiders, setAvailableRiders] = useState([]);
   const [ridersLoading, setRidersLoading] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  // Fetch available riders
+  // Fetch employees with role delivery_man and map to riders list
   const fetchAvailableRiders = async () => {
     try {
       setRidersLoading(true);
-      // Get riders from context
-      const availableRidersList = getAvailableRiders();
-      console.log('Fetched available riders:', availableRidersList);
-      setAvailableRiders(availableRidersList);
+      const result = await window.myAPI.getAllEmployees();
+      if (result && result.success && Array.isArray(result.data)) {
+        const riders = result.data
+          .filter((emp) => String(emp.roll).toLowerCase() === 'delivery_man')
+          .map((emp) => ({
+            id: emp.id,
+            name: [emp.fname, emp.lname].filter(Boolean).join(' ') || emp.phone || `Rider ${emp.id}`,
+            vehicle: emp.vtype && emp.vnumber ? `${emp.vtype} • ${emp.vnumber}` : emp.vtype || 'N/A',
+            vehicleType: (emp.vtype || '').toLowerCase().includes('car') ? 'car' : 'bike',
+            status: emp.isavailable === 1 || emp.isavailable === true ? 'Available' : 'Not Available',
+            raw: emp,
+          }));
+        setAvailableRiders(riders);
+      } else {
+        setAvailableRiders([]);
+      }
     } catch (error) {
       console.error('Error fetching riders:', error);
       setAvailableRiders([]);
@@ -83,7 +95,7 @@ const AssignRider = ({
       setIsAssigning(false);
       setAvailableRiders([]);
     }
-  }, [isOpen, riders]); // Add riders as dependency to refresh when riders change
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -146,7 +158,7 @@ const AssignRider = ({
               {availableRiders
                 .filter(rider => 
                   rider.name.toLowerCase().includes(riderSearchQuery.toLowerCase()) ||
-                  rider.vehicle.toLowerCase().includes(riderSearchQuery.toLowerCase())
+                  (rider.vehicle || '').toLowerCase().includes(riderSearchQuery.toLowerCase())
                 )
                 .map((rider) => (
                   <div
