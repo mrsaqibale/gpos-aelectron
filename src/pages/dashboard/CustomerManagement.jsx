@@ -665,7 +665,11 @@ const CustomerManagement = () => {
                            </td>
                            <td className="py-3 px-4">
                              <div className="flex gap-2">
-                               <button className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors">
+                               <button 
+                                 onClick={() => handleOrderDetailsOpen(order)}
+                                 className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                                 title="View Order Details"
+                               >
                                  <Eye size={14} />
                                </button>
                                <button className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
@@ -730,6 +734,14 @@ const CustomerManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Order Details Modal */}
+      <OrderDetailsModal
+        isOpen={showOrderDetailsModal}
+        onClose={handleOrderDetailsClose}
+        order={selectedOrder}
+        orderDetails={orderDetails}
+      />
 
     </div>
   );

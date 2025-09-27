@@ -5,6 +5,7 @@ const OrderDetailsModal = ({
   isOpen, 
   onClose, 
   order, 
+  orderDetails = [],
   onCreateInvoice,
   foodDetails = null 
 }) => {
