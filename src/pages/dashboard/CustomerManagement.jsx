@@ -277,30 +277,30 @@ const CustomerManagement = () => {
         <div className="grid grid-cols-4 gap-6">
           
           {/* Order Date Filter */}
-          <div className="relative">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Order Date
+              Order Date Range
             </label>
-            <div className="grid grid-cols-2 gap-4 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+            <div className="grid grid-cols-2 gap-2">
               {/* Start Date */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={orderStartDate}
                   onChange={(e) => setOrderStartDate(e.target.value)}
-                  className="w-full text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="Start Date"
                 />
               </div>
               
               {/* End Date */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
                 <input
                   type="date"
                   value={orderEndDate}
                   onChange={(e) => setOrderEndDate(e.target.value)}
-                  className="w-full text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="End Date"
                 />
               </div>
             </div>

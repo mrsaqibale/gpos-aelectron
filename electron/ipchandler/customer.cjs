@@ -55,7 +55,9 @@ const {
   getCustomerOrders,
   getCustomerOrderCount,
   getCustomersWithOrderStatsAndDateFilter,
-  getCustomersCountWithDateFilter
+  getCustomersCountWithDateFilter,
+  getCustomersByOrderDateRange,
+  getCustomersCountByOrderDateRange
 } = getModelPath('customer/customer.js');
 
 function registerCustomerIpcHandlers() {
@@ -97,6 +99,12 @@ function registerCustomerIpcHandlers() {
     getCustomersWithOrderStatsAndDateFilter(hotelId, orderStartDate, orderEndDate, customerJoiningDate, sortBy, limit, offset));
   ipcMain.handle('customer:getCountWithDateFilter', async (event, hotelId, orderStartDate, orderEndDate, customerJoiningDate) => 
     getCustomersCountWithDateFilter(hotelId, orderStartDate, orderEndDate, customerJoiningDate));
+  
+  // Customer management by order date range
+  ipcMain.handle('customer:getByOrderDateRange', async (event, hotelId, startDate, endDate, limit, offset) => 
+    getCustomersByOrderDateRange(hotelId, startDate, endDate, limit, offset));
+  ipcMain.handle('customer:getCountByOrderDateRange', async (event, hotelId, startDate, endDate) => 
+    getCustomersCountByOrderDateRange(hotelId, startDate, endDate));
 }
 
 module.exports = { registerCustomerIpcHandlers }; 

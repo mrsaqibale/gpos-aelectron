@@ -645,3 +645,64 @@ export function getCustomersCountWithDateFilter(hotel_id = 1, orderStartDate = n
     return errorResponse(err.message);
   }
 }
+
+// Get customers who placed orders between specific dates
+export function getCustomersByOrderDateRange(hotel_id = 1, startDate, endDate, limit = 1000, offset = 0) {
+  try {
+    if (!startDate || !endDate) {
+      return errorResponse('Start date and end date are required');
+    }
+
+    const stmt = db.prepare(`
+      SELECT DISTINCT
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      INNER JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? 
+        AND c.isDelete = 0
+        AND DATE(o.created_at) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    
+    const customers = stmt.all(hotel_id, startDate, endDate, limit, offset);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get count of customers who placed orders between specific dates
+export function getCustomersCountByOrderDateRange(hotel_id = 1, startDate, endDate) {
+  try {
+    if (!startDate || !endDate) {
+      return errorResponse('Start date and end date are required');
+    }
+
+    const stmt = db.prepare(`
+      SELECT COUNT(DISTINCT c.id) as count 
+      FROM customer c
+      INNER JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? 
+        AND c.isDelete = 0
+        AND DATE(o.created_at) BETWEEN DATE(?) AND DATE(?)
+    `);
+    
+    const result = stmt.get(hotel_id, startDate, endDate);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
