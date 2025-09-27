@@ -36,23 +36,34 @@ const CustomerManagement = () => {
   const paginationOptions = [10, 20, 30, 50, 100];
 
 
-  // Load all customers from database (no pagination, we'll handle it on frontend)
+  // Load customers from database based on filters
   const loadCustomers = async (search = '') => {
     setLoading(true);
     try {
       let result;
       
-      if (search.trim()) {
+      console.log('Loading customers with filters:', { orderStartDate, orderEndDate, search });
+      
+      // Check if order date range filter is applied
+      if (orderStartDate && orderEndDate) {
+        console.log('Using order date range filter:', orderStartDate, 'to', orderEndDate);
+        // Use order date range filtering
+        result = await window.electronAPI.invoke('customer:getByOrderDateRange', 1, orderStartDate, orderEndDate, 1000, 0);
+        console.log('Order date range result:', result);
+      } else if (search.trim()) {
+        console.log('Using search filter:', search);
         // For search, we still use the search function but get more results
         result = await window.electronAPI.invoke('customer:searchWithOrderStats', search, 1, 1000, 0);
       } else {
+        console.log('Loading all customers');
         // Get all customers without pagination
         result = await window.electronAPI.invoke('customer:getWithOrderStats', 1, 1000, 0);
       }
       
       if (result.success) {
+        console.log('Loaded customers:', result.data.length);
         setCustomers(result.data);
-        // Apply frontend filtering
+        // Apply frontend filtering (for other filters like joining date and sorting)
         applyFrontendFilters(result.data);
       } else {
         console.error('Failed to load customers:', result.message);
@@ -72,27 +83,12 @@ const CustomerManagement = () => {
   const applyFrontendFilters = (customerData) => {
     let filtered = [...customerData];
 
-    // Apply date filtering
-    if (orderStartDate || orderEndDate || customerJoiningDate) {
+    // Apply customer joining date filtering (order date filtering is handled by database)
+    if (customerJoiningDate) {
       filtered = filtered.filter(customer => {
-        // Check order date filtering
-        if (orderStartDate || orderEndDate) {
-          const lastOrderDate = new Date(customer.lastOrderDate);
-          const startDate = orderStartDate ? new Date(orderStartDate) : null;
-          const endDate = orderEndDate ? new Date(orderEndDate + ' 23:59:59') : null;
-          
-          if (startDate && lastOrderDate < startDate) return false;
-          if (endDate && lastOrderDate > endDate) return false;
-        }
-
-        // Check customer joining date filtering
-        if (customerJoiningDate) {
-          const joiningDate = new Date(customer.joiningDate);
-          const filterDate = new Date(customerJoiningDate);
-          if (joiningDate.toDateString() !== filterDate.toDateString()) return false;
-        }
-
-        return true;
+        const joiningDate = new Date(customer.joiningDate);
+        const filterDate = new Date(customerJoiningDate);
+        return joiningDate.toDateString() === filterDate.toDateString();
       });
     }
 
@@ -149,13 +145,27 @@ const CustomerManagement = () => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  // Handle date filtering and sorting changes
+  // Handle order date range changes (requires database reload)
+  useEffect(() => {
+    console.log('Order date range changed:', { orderStartDate, orderEndDate });
+    if (orderStartDate && orderEndDate) {
+      console.log('Both dates selected, loading customers with date filter');
+      loadCustomers(searchTerm);
+      setCurrentPage(1);
+    } else if (!orderStartDate && !orderEndDate && customers.length === 0) {
+      console.log('No date filter, loading all customers');
+      // Load all customers if no order date filter and no customers loaded
+      loadCustomers(searchTerm);
+    }
+  }, [orderStartDate, orderEndDate]);
+
+  // Handle other filtering and sorting changes (frontend only)
   useEffect(() => {
     if (customers.length > 0) {
       applyFrontendFilters(customers);
       setCurrentPage(1);
     }
-  }, [orderStartDate, orderEndDate, customerJoiningDate, sortBy, customers]);
+  }, [customerJoiningDate, sortBy, customers]);
 
   // Calculate pagination info
   const totalPages = Math.ceil(totalCustomers / customersPerPage);
@@ -265,11 +275,22 @@ const CustomerManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Users size={24} className="text-primary" />
           <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
         </div>
+        <button
+          onClick={() => {
+            console.log('Manual test - Current state:', { orderStartDate, orderEndDate, customers: customers.length, filteredCustomers: filteredCustomers.length });
+            if (orderStartDate && orderEndDate) {
+              loadCustomers(searchTerm);
+            }
+          }}
+          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+        >
+          Test Filter
+        </button>
       </div>
 
       {/* Filters Card */}
