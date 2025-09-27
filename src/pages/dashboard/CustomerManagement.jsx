@@ -42,26 +42,19 @@ const CustomerManagement = () => {
     try {
       let result;
       
-      console.log('Loading customers with filters:', { orderStartDate, orderEndDate, search });
-      
       // Check if order date range filter is applied
       if (orderStartDate && orderEndDate) {
-        console.log('Using order date range filter:', orderStartDate, 'to', orderEndDate);
         // Use order date range filtering
         result = await window.electronAPI.invoke('customer:getByOrderDateRange', 1, orderStartDate, orderEndDate, 1000, 0);
-        console.log('Order date range result:', result);
       } else if (search.trim()) {
-        console.log('Using search filter:', search);
         // For search, we still use the search function but get more results
         result = await window.electronAPI.invoke('customer:searchWithOrderStats', search, 1, 1000, 0);
       } else {
-        console.log('Loading all customers');
         // Get all customers without pagination
         result = await window.electronAPI.invoke('customer:getWithOrderStats', 1, 1000, 0);
       }
       
       if (result.success) {
-        console.log('Loaded customers:', result.data.length);
         setCustomers(result.data);
         // Apply frontend filtering (for other filters like joining date and sorting)
         applyFrontendFilters(result.data);
@@ -147,13 +140,10 @@ const CustomerManagement = () => {
 
   // Handle order date range changes (requires database reload)
   useEffect(() => {
-    console.log('Order date range changed:', { orderStartDate, orderEndDate });
     if (orderStartDate && orderEndDate) {
-      console.log('Both dates selected, loading customers with date filter');
       loadCustomers(searchTerm);
       setCurrentPage(1);
     } else if (!orderStartDate && !orderEndDate && customers.length === 0) {
-      console.log('No date filter, loading all customers');
       // Load all customers if no order date filter and no customers loaded
       loadCustomers(searchTerm);
     }
@@ -275,22 +265,11 @@ const CustomerManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Users size={24} className="text-primary" />
           <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
         </div>
-        <button
-          onClick={() => {
-            console.log('Manual test - Current state:', { orderStartDate, orderEndDate, customers: customers.length, filteredCustomers: filteredCustomers.length });
-            if (orderStartDate && orderEndDate) {
-              loadCustomers(searchTerm);
-            }
-          }}
-          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-        >
-          Test Filter
-        </button>
       </div>
 
       {/* Filters Card */}

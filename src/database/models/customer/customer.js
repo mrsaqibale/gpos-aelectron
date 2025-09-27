@@ -649,10 +649,7 @@ export function getCustomersCountWithDateFilter(hotel_id = 1, orderStartDate = n
 // Get customers who placed orders between specific dates
 export function getCustomersByOrderDateRange(hotel_id = 1, startDate, endDate, limit = 1000, offset = 0) {
   try {
-    console.log('[customer.js] getCustomersByOrderDateRange called with:', { hotel_id, startDate, endDate, limit, offset });
-    
     if (!startDate || !endDate) {
-      console.log('[customer.js] Missing start or end date');
       return errorResponse('Start date and end date are required');
     }
 
@@ -679,13 +676,10 @@ export function getCustomersByOrderDateRange(hotel_id = 1, startDate, endDate, l
       LIMIT ? OFFSET ?
     `);
     
-    console.log('[customer.js] Executing query with params:', [hotel_id, startDate, endDate, limit, offset]);
     const customers = stmt.all(hotel_id, startDate, endDate, limit, offset);
-    console.log('[customer.js] Found customers:', customers.length);
     
     return { success: true, data: customers };
   } catch (err) {
-    console.error('[customer.js] Error in getCustomersByOrderDateRange:', err);
     return errorResponse(err.message);
   }
 }
