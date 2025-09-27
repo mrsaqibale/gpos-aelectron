@@ -19,6 +19,7 @@ const CustomerManagement = () => {
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [loading, setLoading] = useState(false);
   const [customerOrders, setCustomerOrders] = useState([]);
+  const [updatingCustomer, setUpdatingCustomer] = useState(null); // Track which customer is being updated
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -28,11 +29,12 @@ const CustomerManagement = () => {
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
 
-  // Sample sorting options
+  // Updated sorting options
   const sortingOptions = [
     { value: 'loyal_customers', label: 'Loyal Customers' },
-    { value: 'impulse_customers', label: 'Impulse Customers' },
-    { value: 'discount_customer', label: 'Discount Customers' }
+    { value: 'not_loyal_customers', label: 'Not Loyal Customers' },
+    { value: 'max_orders_first', label: 'Max Orders First' },
+    { value: 'min_orders_first', label: 'Min Orders First' }
   ];
 
   // Pagination options
@@ -145,18 +147,62 @@ const CustomerManagement = () => {
   // Handle customer status toggle
   const handleStatusToggle = async (customerId) => {
     try {
+      console.log('Toggling loyalty for customer ID:', customerId);
+      setUpdatingCustomer(customerId); // Set loading state
+      
       const customer = customers.find(c => c.id === customerId);
       if (customer) {
-        const result = await window.electronAPI.invoke('customer:update', customerId, { isloyal: !customer.isloyal });
+        console.log('Current customer loyalty status:', customer.isloyal);
+        const newLoyaltyStatus = !customer.isloyal;
+        console.log('New loyalty status:', newLoyaltyStatus);
+        
+        // Optimistically update the UI immediately for smooth experience
+        setCustomers(prevCustomers => 
+          prevCustomers.map(c => 
+            c.id === customerId 
+              ? { ...c, isloyal: newLoyaltyStatus }
+              : c
+          )
+        );
+        
+        const result = await window.electronAPI.invoke('customer:update', customerId, { isloyal: newLoyaltyStatus ? 1 : 0 });
+        console.log('Update result:', result);
+        
         if (result.success) {
-          // Reload customers to get updated data
-          loadCustomers(currentPage, customersPerPage, searchTerm);
+          console.log('Successfully updated customer loyalty status');
+          // No need to reload - UI is already updated optimistically
         } else {
           console.error('Failed to update customer status:', result.message);
+          // Revert the optimistic update on failure
+          setCustomers(prevCustomers => 
+            prevCustomers.map(c => 
+              c.id === customerId 
+                ? { ...c, isloyal: customer.isloyal } // Revert to original state
+                : c
+            )
+          );
+          alert(`Failed to update customer status: ${result.message}`);
         }
+      } else {
+        console.error('Customer not found with ID:', customerId);
+        alert('Customer not found');
       }
     } catch (error) {
       console.error('Error updating customer status:', error);
+      // Revert the optimistic update on error
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        setCustomers(prevCustomers => 
+          prevCustomers.map(c => 
+            c.id === customerId 
+              ? { ...c, isloyal: customer.isloyal } // Revert to original state
+              : c
+          )
+        );
+      }
+      alert(`Error updating customer status: ${error.message}`);
+    } finally {
+      setUpdatingCustomer(null); // Clear loading state
     }
   };
 
@@ -440,15 +486,20 @@ const CustomerManagement = () => {
                   <td className="py-3 px-4">
                     <button
                       onClick={() => handleStatusToggle(customer.id)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      disabled={updatingCustomer === customer.id}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ease-in-out ${
                           customer.isloyal ? 'bg-primary' : 'bg-gray-300'
-                      }`}
+                      } ${updatingCustomer === customer.id ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
                     >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            customer.isloyal ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
+                      {updatingCustomer === customer.id ? (
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                      ) : (
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-200 ease-in-out ${
+                              customer.isloyal ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      )}
                     </button>
                   </td>
                   <td className="py-3 px-4">

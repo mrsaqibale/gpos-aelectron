@@ -105,20 +105,34 @@ export function createCustomer({ name, phone, email, address, isloyal = false, a
 // Update a customer by id
 export function updateCustomer(id, updates) {
   try {
+    console.log('[customer.js] updateCustomer called with ID:', id, 'updates:', updates);
     const fields = [];
     const values = [];
     for (const key in updates) {
       fields.push(`${key} = ?`);
-      values.push(updates[key]);
+      // Convert boolean values to integers for SQLite compatibility
+      let value = updates[key];
+      if (typeof value === 'boolean') {
+        value = value ? 1 : 0;
+      }
+      values.push(value);
     }
     fields.push('updated_at = CURRENT_TIMESTAMP');
     const sql = `UPDATE customer SET ${fields.join(', ')} WHERE id = ? AND isDelete = 0`;
     values.push(id);
+    console.log('[customer.js] SQL:', sql);
+    console.log('[customer.js] Values:', values);
     const stmt = db.prepare(sql);
     const result = stmt.run(...values);
-    if (result.changes === 0) return errorResponse('No customer updated.');
+    console.log('[customer.js] Update result:', result);
+    if (result.changes === 0) {
+      console.log('[customer.js] No customer updated - customer might not exist or already deleted');
+      return errorResponse('No customer updated.');
+    }
+    console.log('[customer.js] Successfully updated customer');
     return { success: true };
   } catch (err) {
+    console.error('[customer.js] Error updating customer:', err);
     return errorResponse(err.message);
   }
 }

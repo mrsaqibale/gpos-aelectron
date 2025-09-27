@@ -58,7 +58,17 @@ const {
 
 function registerCustomerIpcHandlers() {
   ipcMain.handle('customer:create', async (event, data) => createCustomer(data));
-  ipcMain.handle('customer:update', async (event, id, updates) => updateCustomer(id, updates));
+  ipcMain.handle('customer:update', async (event, id, updates) => {
+    try {
+      console.log('[customer.cjs] Updating customer with ID:', id, 'updates:', updates);
+      const result = updateCustomer(id, updates);
+      console.log('[customer.cjs] Update result:', result);
+      return result;
+    } catch (error) {
+      console.error('[customer.cjs] Error in customer:update handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
   ipcMain.handle('customer:getById', async (event, id) => getCustomerById(id));
   ipcMain.handle('customer:getByHotelId', async (event, hotelId) => getCustomersByHotelId(hotelId));
   ipcMain.handle('customer:searchByPhone', async (event, phone) => searchCustomerByPhone(phone));
