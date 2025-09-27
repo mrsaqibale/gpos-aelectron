@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
+import OrderDetailsModal from '../../components/OrderDetailsModal';
 
 const CustomerManagement = () => {
   // State for filters
@@ -22,6 +23,11 @@ const CustomerManagement = () => {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  
+  // Order details modal state
+  const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderDetails, setOrderDetails] = useState([]);
 
 
   // Updated sorting options
@@ -258,6 +264,33 @@ const CustomerManagement = () => {
   const handleModalClose = () => {
     setShowModal(false);
     setSelectedCustomer(null);
+  };
+
+  // Handle order details modal open
+  const handleOrderDetailsOpen = async (order) => {
+    try {
+      setSelectedOrder(order);
+      setShowOrderDetailsModal(true);
+      
+      // Fetch order details with food information
+      const result = await window.electronAPI.invoke('orderDetail:getWithFood', order.id);
+      if (result.success) {
+        setOrderDetails(result.data);
+      } else {
+        console.error('Failed to load order details:', result.message);
+        setOrderDetails([]);
+      }
+    } catch (error) {
+      console.error('Error loading order details:', error);
+      setOrderDetails([]);
+    }
+  };
+
+  // Handle order details modal close
+  const handleOrderDetailsClose = () => {
+    setShowOrderDetailsModal(false);
+    setSelectedOrder(null);
+    setOrderDetails([]);
   };
 
 
