@@ -9,36 +9,74 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Check if we're in a built app (app.asar) or have resourcesPath
-    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
-    
-    // Current location: src/database/models/foods/
-    // Target: src/database/ (go up 2 levels)
-    const devPath = path.join(__dirname, '../../', relativePath);
-    
-    // For built app: resources/database/models/foods -> resources/database
-    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
-    
-    console.log(`[categories.js] Looking for: ${relativePath}`);
-    console.log(`[categories.js] Current dir: ${__dirname}`);
-    console.log(`[categories.js] isBuiltApp: ${isBuiltApp}`);
-    console.log(`[categories.js] Dev path: ${devPath}`);
-    console.log(`[categories.js] Built path: ${builtPath}`);
-    
-    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
-      console.log(`✅ [categories.js] Found at built path: ${builtPath}`);
-      return builtPath;
-    } else if (fs.existsSync(devPath)) {
-      console.log(`✅ [categories.js] Found at dev path: ${devPath}`);
-      return devPath;
-    } else {
-      console.log(`❌ [categories.js] Not found, using dev path: ${devPath}`);
-      return devPath;
+    // Check if we're in development mode
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../../', relativePath));
+    if (isDev) {
+      return path.join(__dirname, '../../', relativePath);
     }
+
+    // For production builds, try multiple possible paths
+    const possiblePaths = [
+      path.join(process.resourcesPath || '', 'database', relativePath),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'app.asar.unpacked', 'database', relativePath),
+      path.join(process.cwd(), 'database', relativePath),
+      path.join(process.cwd(), 'resources', 'database', relativePath),
+      path.join(__dirname, '../../', relativePath) // Fallback to relative path
+    ];
+
+    console.log(`[${path.basename(__filename)}] Looking for: ${relativePath}`);
+    console.log(`[${path.basename(__filename)}] Current dir: ${__dirname}`);
+    console.log(`[${path.basename(__filename)}] isDev: ${isDev}`);
+
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          console.log(`✅ [${path.basename(__filename)}] Found at: ${candidate}`);
+          return candidate;
+        }
+      } catch (_) {}
+    }
+
+    // If not found, create in user's app data directory
+    const appDataBaseDir = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database');
+    if (!fs.existsSync(appDataBaseDir)) {
+      fs.mkdirSync(appDataBaseDir, { recursive: true });
+    }
+    const finalPath = path.join(appDataBaseDir, relativePath);
+
+    // Try to copy from any of the possible paths
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, finalPath);
+          console.log(`✅ [${path.basename(__filename)}] Copied to: ${finalPath}`);
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If still not found, create empty file
+    if (!fs.existsSync(finalPath)) {
+      if (relativePath.endsWith('.db')) {
+        fs.writeFileSync(finalPath, '');
+      } else {
+        fs.mkdirSync(finalPath, { recursive: true });
+      }
+    }
+
+    console.log(`✅ [${path.basename(__filename)}] Using final path: ${finalPath}`);
+    return finalPath;
   } catch (error) {
-    console.error(`[categories.js] Failed to resolve path: ${relativePath}`, error);
-    // Fallback to development path
-    return path.join(__dirname, '../../', relativePath);
+    console.error(`[${path.basename(__filename)}] Failed to resolve path: ${relativePath}`, error);
+    // Ultimate fallback
+    const fallback = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database', relativePath);
+    const dir = path.dirname(fallback);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return fallback;
   }
 };
 
