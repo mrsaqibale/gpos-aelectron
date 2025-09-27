@@ -36,25 +36,24 @@ const CustomerManagement = () => {
   const paginationOptions = [10, 20, 30, 50, 100];
 
 
-  // Load customers from database with date filtering
-  const loadCustomers = async (page = 1, limit = customersPerPage, search = '', useDateFilter = false) => {
+  // Load all customers from database (no pagination, we'll handle it on frontend)
+  const loadCustomers = async (search = '') => {
     setLoading(true);
     try {
-      const offset = (page - 1) * limit;
       let result;
       
       if (search.trim()) {
-        result = await window.electronAPI.invoke('customer:searchWithOrderStats', search, 1, limit, offset);
-      } else if (useDateFilter && (orderStartDate || orderEndDate || customerJoiningDate || sortBy)) {
-        result = await window.electronAPI.invoke('customer:getWithOrderStatsAndDateFilter', 
-          1, orderStartDate, orderEndDate, customerJoiningDate, sortBy, limit, offset);
+        // For search, we still use the search function but get more results
+        result = await window.electronAPI.invoke('customer:searchWithOrderStats', search, 1, 1000, 0);
       } else {
-        result = await window.electronAPI.invoke('customer:getWithOrderStats', 1, limit, offset);
+        // Get all customers without pagination
+        result = await window.electronAPI.invoke('customer:getWithOrderStats', 1, 1000, 0);
       }
       
       if (result.success) {
         setCustomers(result.data);
-        setFilteredCustomers(result.data);
+        // Apply frontend filtering
+        applyFrontendFilters(result.data);
       } else {
         console.error('Failed to load customers:', result.message);
         setCustomers([]);
@@ -69,23 +68,54 @@ const CustomerManagement = () => {
     }
   };
 
-  // Load total customer count with date filtering
-  const loadCustomerCount = async (useDateFilter = false) => {
-    try {
-      let result;
-      if (useDateFilter && (orderStartDate || orderEndDate || customerJoiningDate)) {
-        result = await window.electronAPI.invoke('customer:getCountWithDateFilter', 
-          1, orderStartDate, orderEndDate, customerJoiningDate);
-      } else {
-        result = await window.electronAPI.invoke('customer:getCount', 1);
-      }
-      
-      if (result.success) {
-        setTotalCustomers(result.count);
-      }
-    } catch (error) {
-      console.error('Error loading customer count:', error);
+  // Apply frontend filtering and sorting
+  const applyFrontendFilters = (customerData) => {
+    let filtered = [...customerData];
+
+    // Apply date filtering
+    if (orderStartDate || orderEndDate || customerJoiningDate) {
+      filtered = filtered.filter(customer => {
+        // Check order date filtering
+        if (orderStartDate || orderEndDate) {
+          const lastOrderDate = new Date(customer.lastOrderDate);
+          const startDate = orderStartDate ? new Date(orderStartDate) : null;
+          const endDate = orderEndDate ? new Date(orderEndDate + ' 23:59:59') : null;
+          
+          if (startDate && lastOrderDate < startDate) return false;
+          if (endDate && lastOrderDate > endDate) return false;
+        }
+
+        // Check customer joining date filtering
+        if (customerJoiningDate) {
+          const joiningDate = new Date(customer.joiningDate);
+          const filterDate = new Date(customerJoiningDate);
+          if (joiningDate.toDateString() !== filterDate.toDateString()) return false;
+        }
+
+        return true;
+      });
     }
+
+    // Apply sorting
+    if (sortBy) {
+      filtered.sort((a, b) => {
+        switch (sortBy) {
+          case 'loyal_customers':
+            return b.isloyal - a.isloyal; // Loyal customers first
+          case 'not_loyal_customers':
+            return a.isloyal - b.isloyal; // Non-loyal customers first
+          case 'max_orders_first':
+            return b.totalOrders - a.totalOrders; // Highest orders first
+          case 'min_orders_first':
+            return a.totalOrders - b.totalOrders; // Lowest orders first
+          default:
+            return 0;
+        }
+      });
+    }
+
+    setFilteredCustomers(filtered);
+    setTotalCustomers(filtered.length);
   };
 
   // Load customer orders for modal
@@ -107,41 +137,36 @@ const CustomerManagement = () => {
   // Initialize customers data
   useEffect(() => {
     loadCustomers();
-    loadCustomerCount();
   }, []);
 
   // Handle search with debouncing
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchTerm !== '') {
-        loadCustomers(1, customersPerPage, searchTerm);
-      } else {
-        loadCustomers(1, customersPerPage);
-      }
+      loadCustomers(searchTerm);
       setCurrentPage(1);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, customersPerPage]);
+  }, [searchTerm]);
 
-  // Handle pagination changes
+  // Handle date filtering and sorting changes
   useEffect(() => {
-    loadCustomers(currentPage, customersPerPage, searchTerm);
-  }, [currentPage, customersPerPage]);
-
-  // Handle date filtering changes
-  useEffect(() => {
-    if (orderStartDate || orderEndDate || customerJoiningDate || sortBy) {
-      loadCustomers(1, customersPerPage, '', true);
-      loadCustomerCount(true);
+    if (customers.length > 0) {
+      applyFrontendFilters(customers);
       setCurrentPage(1);
     }
-  }, [orderStartDate, orderEndDate, customerJoiningDate, sortBy]);
+  }, [orderStartDate, orderEndDate, customerJoiningDate, sortBy, customers]);
 
   // Calculate pagination info
   const totalPages = Math.ceil(totalCustomers / customersPerPage);
   const indexOfFirstCustomer = (currentPage - 1) * customersPerPage + 1;
   const indexOfLastCustomer = Math.min(currentPage * customersPerPage, totalCustomers);
+  
+  // Get paginated customers for display
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * customersPerPage,
+    currentPage * customersPerPage
+  );
 
   // Format date
   const formatDate = (dateString) => {
@@ -328,8 +353,7 @@ const CustomerManagement = () => {
                 setSearchTerm('');
                 setCurrentPage(1);
                 // Load fresh data
-                loadCustomers(1, customersPerPage, '', false);
-                loadCustomerCount(false);
+                loadCustomers('');
               }}
               className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
             >
@@ -424,14 +448,14 @@ const CustomerManagement = () => {
                     Loading customers...
                   </td>
                 </tr>
-              ) : customers.length === 0 ? (
+              ) : paginatedCustomers.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="py-8 text-center text-gray-500">
                     No customers found
                   </td>
                 </tr>
               ) : (
-                customers.map((customer, index) => (
+                paginatedCustomers.map((customer, index) => (
                   <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {indexOfFirstCustomer + index}
