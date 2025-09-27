@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
-import VirtualKeyboard from '../../components/VirtualKeyboard';
 
 const CustomerManagement = () => {
   // State for filters
@@ -8,7 +7,6 @@ const CustomerManagement = () => {
   const [orderEndDate, setOrderEndDate] = useState('');
   const [customerJoiningDate, setCustomerJoiningDate] = useState('');
   const [sortBy, setSortBy] = useState('');
-  const [chooseFirst, setChooseFirst] = useState('');
 
   // Customer list state
   const [customers, setCustomers] = useState([]);
@@ -25,24 +23,21 @@ const CustomerManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  // Keyboard state
-  const [showKeyboard, setShowKeyboard] = useState(false);
-  const [activeInput, setActiveInput] = useState('');
 
   // Updated sorting options
   const sortingOptions = [
     { value: 'loyal_customers', label: 'Loyal Customers' },
     { value: 'not_loyal_customers', label: 'Not Loyal Customers' },
-    { value: 'max_orders_first', label: 'Max Orders First' },
-    { value: 'min_orders_first', label: 'Min Orders First' }
+    { value: 'max_orders_first', label: 'Maximum Orders' },
+    { value: 'min_orders_first', label: 'Minimum Orders' }
   ];
 
   // Pagination options
   const paginationOptions = [10, 20, 30, 50, 100];
 
 
-  // Load customers from database
-  const loadCustomers = async (page = 1, limit = customersPerPage, search = '') => {
+  // Load customers from database with date filtering
+  const loadCustomers = async (page = 1, limit = customersPerPage, search = '', useDateFilter = false) => {
     setLoading(true);
     try {
       const offset = (page - 1) * limit;
@@ -50,6 +45,9 @@ const CustomerManagement = () => {
       
       if (search.trim()) {
         result = await window.electronAPI.invoke('customer:searchWithOrderStats', search, 1, limit, offset);
+      } else if (useDateFilter && (orderStartDate || orderEndDate || customerJoiningDate || sortBy)) {
+        result = await window.electronAPI.invoke('customer:getWithOrderStatsAndDateFilter', 
+          1, orderStartDate, orderEndDate, customerJoiningDate, sortBy, limit, offset);
       } else {
         result = await window.electronAPI.invoke('customer:getWithOrderStats', 1, limit, offset);
       }
@@ -71,10 +69,17 @@ const CustomerManagement = () => {
     }
   };
 
-  // Load total customer count
-  const loadCustomerCount = async () => {
+  // Load total customer count with date filtering
+  const loadCustomerCount = async (useDateFilter = false) => {
     try {
-      const result = await window.electronAPI.invoke('customer:getCount', 1);
+      let result;
+      if (useDateFilter && (orderStartDate || orderEndDate || customerJoiningDate)) {
+        result = await window.electronAPI.invoke('customer:getCountWithDateFilter', 
+          1, orderStartDate, orderEndDate, customerJoiningDate);
+      } else {
+        result = await window.electronAPI.invoke('customer:getCount', 1);
+      }
+      
       if (result.success) {
         setTotalCustomers(result.count);
       }
@@ -123,6 +128,30 @@ const CustomerManagement = () => {
   useEffect(() => {
     loadCustomers(currentPage, customersPerPage, searchTerm);
   }, [currentPage, customersPerPage]);
+
+  // Handle date filtering changes
+  useEffect(() => {
+    if (orderStartDate || orderEndDate || customerJoiningDate || sortBy) {
+      console.log('Date filter changed:', { orderStartDate, orderEndDate, customerJoiningDate, sortBy });
+      loadCustomers(1, customersPerPage, '', true);
+      loadCustomerCount(true);
+      setCurrentPage(1);
+    }
+  }, [orderStartDate, orderEndDate, customerJoiningDate, sortBy]);
+
+  // Debug function to check dates in database
+  const debugDates = async () => {
+    try {
+      const result = await window.electronAPI.invoke('customer:debugDates', 1);
+      console.log('Debug dates result:', result);
+      if (result.success) {
+        console.log('Sample customer dates from database:', result.data);
+        alert(`Found ${result.data.length} customers. Check console for date details.`);
+      }
+    } catch (error) {
+      console.error('Error debugging dates:', error);
+    }
+  };
 
   // Calculate pagination info
   const totalPages = Math.ceil(totalCustomers / customersPerPage);
@@ -222,62 +251,21 @@ const CustomerManagement = () => {
   };
 
 
-  // Handle keyboard input
-  const handleInputFocus = (inputName) => {
-    setActiveInput(inputName);
-    setShowKeyboard(true);
-  };
-
-  const handleInputBlur = (e) => {
-    // Check if the focus is moving to a keyboard element
-    if (e.relatedTarget && e.relatedTarget.closest('.hg-theme-default')) {
-      return;
-    }
-    
-    // Small delay to allow keyboard interactions to complete
-    setTimeout(() => {
-      setShowKeyboard(false);
-      setActiveInput('');
-    }, 300);
-  };
-
-  const handleAnyInputFocus = (e, inputName) => {
-    handleInputFocus(inputName);
-  };
-
-  const handleAnyInputClick = (e, inputName) => {
-    if (!showKeyboard || activeInput !== inputName) {
-      handleInputFocus(inputName);
-    }
-  };
-
-  const onKeyboardChange = (input, inputName) => {
-    if (inputName === 'chooseFirst') {
-      setChooseFirst(input);
-    }
-  };
-
-  const handleKeyboardClose = () => {
-    setShowKeyboard(false);
-    setActiveInput('');
-  };
-
-
-
-  // Handle number input change
-  const handleNumberChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Only allow numbers
-    setChooseFirst(value);
-  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Users size={24} className="text-primary" />
           <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
         </div>
+        <button
+          onClick={debugDates}
+          className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
+        >
+          Debug Dates
+        </button>
       </div>
 
       {/* Filters Card */}
@@ -292,21 +280,23 @@ const CustomerManagement = () => {
             <div className="grid grid-cols-2 gap-4 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
               {/* Start Date */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 ">Start Date</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={orderStartDate}
                   onChange={(e) => setOrderStartDate(e.target.value)}
+                  className="w-full text-sm"
                 />
               </div>
               
               {/* End Date */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 ">End Date</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
                 <input
                   type="date"
                   value={orderEndDate}
                   onChange={(e) => setOrderEndDate(e.target.value)}
+                  className="w-full text-sm"
                 />
               </div>
             </div>
@@ -336,7 +326,7 @@ const CustomerManagement = () => {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
               >
-                <option value="">Select Customer Sorting Order</option>
+                <option value="">Select Sorting Order</option>
                 {sortingOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -347,26 +337,30 @@ const CustomerManagement = () => {
             </div>
           </div>
 
-          {/* Choose First Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose First
-            </label>
-            <input
-              type="text"
-              name="chooseFirst"
-              placeholder="Ex : 100"
-              value={chooseFirst}
-              onChange={handleNumberChange}
-              onFocus={() => handleAnyInputFocus(null, 'chooseFirst')}
-              onBlur={handleInputBlur}
-              onClick={() => handleAnyInputClick(null, 'chooseFirst')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-            />
+          {/* Refresh Button */}
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                // Clear all filters
+                setOrderStartDate('');
+                setOrderEndDate('');
+                setCustomerJoiningDate('');
+                setSortBy('');
+                setSearchTerm('');
+                setCurrentPage(1);
+                // Load fresh data
+                loadCustomers(1, customersPerPage, '', false);
+                loadCustomerCount(false);
+              }}
+              className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
           </div>
         </div>
-
-        
       </div>
 
       {/* Customer List */}
@@ -706,18 +700,6 @@ const CustomerManagement = () => {
           </div>
         </div>
       )}
-
-      {/* Virtual Keyboard */}
-      <VirtualKeyboard
-        isVisible={showKeyboard}
-        onClose={handleKeyboardClose}
-        activeInput={activeInput}
-        onInputChange={onKeyboardChange}
-        onInputBlur={handleInputBlur}
-        inputValue={chooseFirst || ''}
-        placeholder="Type here..."
-      />
-
 
     </div>
   );

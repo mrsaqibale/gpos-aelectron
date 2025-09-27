@@ -538,4 +538,134 @@ export function getCustomerOrderCount(customer_id) {
   } catch (err) {
     return errorResponse(err.message);
   }
+}
+
+// Get customers with order statistics and date filtering
+export function getCustomersWithOrderStatsAndDateFilter(hotel_id = 1, orderStartDate = null, orderEndDate = null, customerJoiningDate = null, sortBy = null, limit = 50, offset = 0) {
+  try {
+    console.log('[customer.js] Date filter params:', { orderStartDate, orderEndDate, customerJoiningDate, sortBy });
+    
+    let whereConditions = ['c.hotel_id = ?', 'c.isDelete = 0'];
+    let params = [hotel_id];
+    
+    // Add order date filtering
+    if (orderStartDate && orderEndDate) {
+      whereConditions.push('o.created_at BETWEEN ? AND ?');
+      params.push(orderStartDate, orderEndDate + ' 23:59:59');
+    } else if (orderStartDate) {
+      whereConditions.push('o.created_at >= ?');
+      params.push(orderStartDate);
+    } else if (orderEndDate) {
+      whereConditions.push('o.created_at <= ?');
+      params.push(orderEndDate + ' 23:59:59');
+    }
+    
+    // Add customer joining date filtering
+    if (customerJoiningDate) {
+      // Handle different date formats - convert to YYYY-MM-DD format
+      const formattedDate = new Date(customerJoiningDate).toISOString().split('T')[0];
+      whereConditions.push('DATE(c.created_at) = ?');
+      params.push(formattedDate);
+      console.log('[customer.js] Filtering by joining date:', formattedDate);
+    }
+    
+    // Build ORDER BY clause based on sortBy
+    let orderBy = 'c.created_at DESC';
+    if (sortBy === 'loyal_customers') {
+      orderBy = 'c.isloyal DESC, c.created_at DESC';
+    } else if (sortBy === 'not_loyal_customers') {
+      orderBy = 'c.isloyal ASC, c.created_at DESC';
+    } else if (sortBy === 'max_orders_first') {
+      orderBy = 'totalOrders DESC, c.created_at DESC';
+    } else if (sortBy === 'min_orders_first') {
+      orderBy = 'totalOrders ASC, c.created_at DESC';
+    }
+    
+    const stmt = db.prepare(`
+      SELECT 
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      LEFT JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE ${whereConditions.join(' AND ')}
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY ${orderBy}
+      LIMIT ? OFFSET ?
+    `);
+    
+    params.push(limit, offset);
+    console.log('[customer.js] Final SQL params:', params);
+    const customers = stmt.all(...params);
+    console.log('[customer.js] Found customers:', customers.length);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get total count of customers with date filtering
+export function getCustomersCountWithDateFilter(hotel_id = 1, orderStartDate = null, orderEndDate = null, customerJoiningDate = null) {
+  try {
+    let whereConditions = ['c.hotel_id = ?', 'c.isDelete = 0'];
+    let params = [hotel_id];
+    
+    // Add order date filtering
+    if (orderStartDate && orderEndDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at BETWEEN ? AND ?)');
+      params.push(orderStartDate, orderEndDate + ' 23:59:59');
+    } else if (orderStartDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at >= ?)');
+      params.push(orderStartDate);
+    } else if (orderEndDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at <= ?)');
+      params.push(orderEndDate + ' 23:59:59');
+    }
+    
+    // Add customer joining date filtering
+    if (customerJoiningDate) {
+      // Handle different date formats - convert to YYYY-MM-DD format
+      const formattedDate = new Date(customerJoiningDate).toISOString().split('T')[0];
+      whereConditions.push('DATE(c.created_at) = ?');
+      params.push(formattedDate);
+      console.log('[customer.js] Count filtering by joining date:', formattedDate);
+    }
+    
+    const stmt = db.prepare(`
+      SELECT COUNT(DISTINCT c.id) as count 
+      FROM customer c
+      WHERE ${whereConditions.join(' AND ')}
+    `);
+    const result = stmt.get(...params);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Debug function to check actual dates in database
+export function debugCustomerDates(hotel_id = 1) {
+  try {
+    const stmt = db.prepare(`
+      SELECT id, name, created_at, DATE(created_at) as date_only
+      FROM customer 
+      WHERE hotel_id = ? AND isDelete = 0
+      ORDER BY created_at DESC
+      LIMIT 10
+    `);
+    const customers = stmt.all(hotel_id);
+    console.log('[customer.js] Sample customer dates:', customers);
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
 } 
