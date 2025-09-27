@@ -543,8 +543,6 @@ export function getCustomerOrderCount(customer_id) {
 // Get customers with order statistics and date filtering
 export function getCustomersWithOrderStatsAndDateFilter(hotel_id = 1, orderStartDate = null, orderEndDate = null, customerJoiningDate = null, sortBy = null, limit = 50, offset = 0) {
   try {
-    console.log('[customer.js] Date filter params:', { orderStartDate, orderEndDate, customerJoiningDate, sortBy });
-    
     let whereConditions = ['c.hotel_id = ?', 'c.isDelete = 0'];
     let params = [hotel_id];
     
@@ -566,7 +564,6 @@ export function getCustomersWithOrderStatsAndDateFilter(hotel_id = 1, orderStart
       const formattedDate = new Date(customerJoiningDate).toISOString().split('T')[0];
       whereConditions.push('DATE(c.created_at) = ?');
       params.push(formattedDate);
-      console.log('[customer.js] Filtering by joining date:', formattedDate);
     }
     
     // Build ORDER BY clause based on sortBy
@@ -603,9 +600,7 @@ export function getCustomersWithOrderStatsAndDateFilter(hotel_id = 1, orderStart
     `);
     
     params.push(limit, offset);
-    console.log('[customer.js] Final SQL params:', params);
     const customers = stmt.all(...params);
-    console.log('[customer.js] Found customers:', customers.length);
     
     return { success: true, data: customers };
   } catch (err) {
@@ -637,7 +632,6 @@ export function getCustomersCountWithDateFilter(hotel_id = 1, orderStartDate = n
       const formattedDate = new Date(customerJoiningDate).toISOString().split('T')[0];
       whereConditions.push('DATE(c.created_at) = ?');
       params.push(formattedDate);
-      console.log('[customer.js] Count filtering by joining date:', formattedDate);
     }
     
     const stmt = db.prepare(`
@@ -651,21 +645,3 @@ export function getCustomersCountWithDateFilter(hotel_id = 1, orderStartDate = n
     return errorResponse(err.message);
   }
 }
-
-// Debug function to check actual dates in database
-export function debugCustomerDates(hotel_id = 1) {
-  try {
-    const stmt = db.prepare(`
-      SELECT id, name, created_at, DATE(created_at) as date_only
-      FROM customer 
-      WHERE hotel_id = ? AND isDelete = 0
-      ORDER BY created_at DESC
-      LIMIT 10
-    `);
-    const customers = stmt.all(hotel_id);
-    console.log('[customer.js] Sample customer dates:', customers);
-    return { success: true, data: customers };
-  } catch (err) {
-    return errorResponse(err.message);
-  }
-} 

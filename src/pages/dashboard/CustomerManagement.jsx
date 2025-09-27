@@ -132,26 +132,11 @@ const CustomerManagement = () => {
   // Handle date filtering changes
   useEffect(() => {
     if (orderStartDate || orderEndDate || customerJoiningDate || sortBy) {
-      console.log('Date filter changed:', { orderStartDate, orderEndDate, customerJoiningDate, sortBy });
       loadCustomers(1, customersPerPage, '', true);
       loadCustomerCount(true);
       setCurrentPage(1);
     }
   }, [orderStartDate, orderEndDate, customerJoiningDate, sortBy]);
-
-  // Debug function to check dates in database
-  const debugDates = async () => {
-    try {
-      const result = await window.electronAPI.invoke('customer:debugDates', 1);
-      console.log('Debug dates result:', result);
-      if (result.success) {
-        console.log('Sample customer dates from database:', result.data);
-        alert(`Found ${result.data.length} customers. Check console for date details.`);
-      }
-    } catch (error) {
-      console.error('Error debugging dates:', error);
-    }
-  };
 
   // Calculate pagination info
   const totalPages = Math.ceil(totalCustomers / customersPerPage);
@@ -255,17 +240,11 @@ const CustomerManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Users size={24} className="text-primary" />
           <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
         </div>
-        <button
-          onClick={debugDates}
-          className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
-        >
-          Debug Dates
-        </button>
       </div>
 
       {/* Filters Card */}
