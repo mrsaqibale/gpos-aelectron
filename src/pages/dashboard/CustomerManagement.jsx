@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
+import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
 
 const CustomerManagement = () => {
   // State for filters
@@ -402,12 +402,6 @@ const CustomerManagement = () => {
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             </div>
-            {/* Export Button */}
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm">
-              <Download size={16} />
-              Export
-              <ChevronDown size={14} />
-            </button>
           </div>
         </div>
 
