@@ -544,13 +544,13 @@ const Dashboard = () => {
         </div>
         
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-8">
           {/* Total Revenue Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-600 mb-1">Total Revenue</p>
-                <p className="text-3xl font-bold text-gray-800">$12,847</p>
+                <p className="text-2xl font-bold text-gray-800">$12,847</p>
                 <p className="text-sm text-green-600 mt-1">+12.5% vs last week</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">

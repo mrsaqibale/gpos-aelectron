@@ -144,7 +144,7 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
                   if (item.path) { navigate(item.path); return; }
                   if (index === 0) navigate('/dashboard'); // fallback: home
                 }}
-                className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-4 py-3 font-semibold flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
+                className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-1 py-3 font-semibold flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
                 style={item.style || (item.bgColor ? { backgroundColor: item.bgColor } : {})}
               >
                 {item.icon}

@@ -207,7 +207,7 @@ const WelcomeScreen = () => {
       <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
         
         {/* Logo Section */}
-        <div className="mb-4 transform hover:scale-105 transition-transform duration-300">
+        <div className="mb-1 transform hover:scale-105 transition-transform duration-300">
           <div 
             className="w-32 h-32 mx-auto rounded-3xl border-4 flex flex-col items-center justify-center mb-6 shadow-2xl"
             style={{ 
@@ -242,9 +242,9 @@ const WelcomeScreen = () => {
         </div>
 
         {/* Welcome Text */}
-        <div className="mb-12">
+        <div className="mb-6">
           <h1 
-            className="text-5xl font-bold mb-4 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent"
+            className="text-md sx:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent"
           >
             Welcome to GPOS
           </h1>
@@ -327,12 +327,12 @@ const WelcomeScreen = () => {
         {/* Time and Date */}
         <div className="text-center">
           <div 
-            className="inline-flex items-center gap-3 px-6 py-3 rounded-full"
+            className="inline-flex items-center gap-3 px-6 py-2 rounded-full"
             style={{ backgroundColor: 'white', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)' }}
           >
             <div className="text-center">
               <div 
-                className="text-2xl font-bold"
+                className="text-xl font-bold"
                 style={{ color: themeColors.primary }}
               >
                 {formatTime(currentTime)}

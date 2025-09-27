@@ -358,7 +358,7 @@ const POSLogin = () => {
     disabled = false,
   }) => {
     const baseClasses =
-      "py-1 px-0 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
+      "px-0 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
     const buttonStyle = {
       backgroundColor: selectedRole ? themeStyles.rightActionButtonsBg : themeStyles.rightActionButtonsBg,
@@ -382,13 +382,13 @@ const POSLogin = () => {
   return (
     <>
       <div
-        className="w-full h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
+        className="w-full h-screen relative flex flex-col items-center justify-center px-6 py-0 transition-colors duration-300"
         style={{ backgroundColor: themeStyles.screenBg }}
       >
         {/* Close button for login page */}
         <button
           onClick={() => window.loginWindowControls?.close()}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-full border border-gray-300 hover:border-red-300"
+          className="absolute top-14 right-4 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-full border border-gray-300 hover:border-red-300"
           title="Close Application"
         >
           <X className="w-5 h-5" />
@@ -396,7 +396,7 @@ const POSLogin = () => {
 
         <div className="py-4 rounded-t-xl">
           <div
-            className="flex flex-col items-center justify-center text-center mt-4"
+            className="flex flex-col items-center justify-center text-center"
           >
             <div className="w-24 h-20 rounded-2xl border-2 flex flex-col items-center justify-center mb-3 shadow-md shadow-black"
             style={{ backgroundColor: themeStyles.logoBg, borderColor: themeStyles.logoBg  }} 
@@ -414,7 +414,7 @@ const POSLogin = () => {
 
         {/* Main Content */}
         <div 
-          className="w-full h-[500px] max-w-4xl flex transform perspective-1000 rounded-3xl overflow-hidden"
+          className="w-full h-[480px] max-w-4xl flex transform perspective-1000 rounded-3xl overflow-hidden"
           style={{
             boxShadow: themeStyles.mainContentShadow,
             border: themeStyles.mainContentBorder
@@ -422,12 +422,12 @@ const POSLogin = () => {
         >
 
                       {/* Left Section - Role Selection with 3D effect */}
-            <div className="w-1/2 p-6" style={{ backgroundColor: themeStyles.leftSectionBg }}>
+            <div className="w-1/2 p-3" style={{ backgroundColor: themeStyles.leftSectionBg }}>
             <h2 className="text-2xl mt-2 font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
 
-            <div className="grid h-[380px] grid-cols-2 gap-4">
+            <div className="grid h-[300px] grid-cols-2 gap-4">
               {roles.map((role) => {
                 const IconComponent = role.icon;
                 const isSelected = selectedRole === role.id;
@@ -469,7 +469,7 @@ const POSLogin = () => {
 
           {/* Right Section - PIN Entry with 3D effect */}
           <div
-            className="w-1/2 bg-[#ffffff] text-black p-6"
+            className="w-1/2 bg-[#ffffff] text-black p-3"
             style={{
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
             }}
@@ -486,12 +486,12 @@ const POSLogin = () => {
               </div>
             )}
 
-            <h2 className="text-2xl mt-0 font-semibold text-black mb-2 text-center transform transition-transform hover:scale-105">
+            <h2 className="text-xl mt-0 font-semibold text-black mb-2 text-center transform transition-transform hover:scale-105">
               Enter PIN To Continue
             </h2>
 
             {/* PIN Display */}
-            <div className="mb-4">
+            <div className="mb-2">
               {renderPinDisplay()}
               <p className="text-center text-xs text-gray-400 mt-2">
                 {pin.length}/4 digits
@@ -500,16 +500,16 @@ const POSLogin = () => {
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 mx-10 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
+              <div className="mb-2 mx-10 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">{error}</span>
               </div>
             )}
 
             {/* Number Pad with 3D buttons */}
-            <div className="max-w-xs mx-auto mb-4">
+            <div className="max-w-xs mx-auto mb-2">
               {/* First 3 rows */}
-              <div className="grid grid-cols-3 gap-3 mb-3 text-white cursor-pointer">
+              <div className="grid grid-cols-3 gap-3 mb-2 text-white cursor-pointer">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
                                      <NumberButton
                      key={number}
