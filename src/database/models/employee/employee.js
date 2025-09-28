@@ -809,10 +809,10 @@ export function resetEmployeePIN(phone, role, otp, newPin) {
       return errorResponse('This PIN is already in use. Please choose a different PIN.');
     }
     
-    // Update the PIN
+    // Update the PIN and clear the OTP code
     const updateStmt = db.prepare(`
       UPDATE employee 
-      SET pin = ?, updated_at = CURRENT_TIMESTAMP 
+      SET pin = ?, code = NULL, updated_at = CURRENT_TIMESTAMP 
       WHERE id = ? AND isDeleted = 0
     `);
     
@@ -830,27 +830,6 @@ export function resetEmployeePIN(phone, role, otp, newPin) {
     };
   } catch (err) {
     console.error('[resetEmployeePIN] error', err);
-    return errorResponse(err.message);
-  }
-}
-
-// Clean up expired OTPs (utility function)
-export function cleanupExpiredOTPs() {
-  try {
-    const stmt = db.prepare(`
-      DELETE FROM otp_verification 
-      WHERE expires_at < CURRENT_TIMESTAMP
-    `);
-    
-    const result = stmt.run();
-    console.log(`[cleanupExpiredOTPs] cleaned up ${result.changes} expired OTPs`);
-    
-    return { 
-      success: true, 
-      message: `Cleaned up ${result.changes} expired OTPs`
-    };
-  } catch (err) {
-    console.error('[cleanupExpiredOTPs] error', err);
     return errorResponse(err.message);
   }
 }
