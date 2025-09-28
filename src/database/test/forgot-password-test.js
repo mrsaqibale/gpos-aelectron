@@ -5,8 +5,7 @@ import {
   verifyEmployeeByPhoneAndRole,
   sendPasswordResetOTP,
   verifyPasswordResetOTP,
-  resetEmployeePIN,
-  cleanupExpiredOTPs
+  resetEmployeePIN
 } from '../models/employee/employee.js';
 
 // Example usage of the forgot password functionality
@@ -35,7 +34,6 @@ async function testForgotPasswordFlow() {
     const otpResult = await sendPasswordResetOTP(testPhone, testRole);
     if (otpResult.success) {
       console.log('✅ OTP sent successfully:', otpResult.message);
-      console.log('   Expires in:', otpResult.expiresIn, 'minutes');
     } else {
       console.log('❌ Failed to send OTP:', otpResult.message);
       return;
@@ -65,26 +63,13 @@ async function testForgotPasswordFlow() {
   }
 }
 
-// Test cleanup function
-function testCleanup() {
-  console.log('\n=== Testing OTP Cleanup ===');
-  const cleanupResult = cleanupExpiredOTPs();
-  if (cleanupResult.success) {
-    console.log('✅ Cleanup completed:', cleanupResult.message);
-  } else {
-    console.log('❌ Cleanup failed:', cleanupResult.message);
-  }
-}
-
 // Export functions for use in other files
 export {
-  testForgotPasswordFlow,
-  testCleanup
+  testForgotPasswordFlow
 };
 
 // Run tests if this file is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   console.log('Running forgot password tests...\n');
   testForgotPasswordFlow();
-  testCleanup();
 }
