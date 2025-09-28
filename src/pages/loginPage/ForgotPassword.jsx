@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Shield, Phone, Crown, Settings, DollarSign, Scissors, ChefHat, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { parsePhoneNumber, isValidPhoneNumber, getCountryCallingCode, getCountries } from 'libphonenumber-js';
 
 // Custom styles for scrollbar
 const scrollbarStyles = `
@@ -34,12 +35,13 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState({ code: '+353', name: 'Ireland', flag: '🇮🇪' });
+  const [selectedCountry, setSelectedCountry] = useState({ code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' });
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [countries, setCountries] = useState([]);
   const [loadingCountries, setLoadingCountries] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showCursor, setShowCursor] = useState(false);
+  const [isValidNumber, setIsValidNumber] = useState(false);
   const { themeColors, currentTheme } = useTheme();
 
   // Get theme-specific styles
