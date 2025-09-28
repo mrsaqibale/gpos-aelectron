@@ -38,6 +38,8 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   const [showCountrySelector, setShowCountrySelector] = useState(false);
   const [countries, setCountries] = useState([]);
   const [loadingCountries, setLoadingCountries] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showCursor, setShowCursor] = useState(false);
   const { themeColors, currentTheme } = useTheme();
 
   // Get theme-specific styles
@@ -192,6 +194,20 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showCountrySelector]);
+
+  // Monitor online/offline status
+  React.useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleNumberClick = (number) => {
     setPhoneNumber(prev => prev + number);
