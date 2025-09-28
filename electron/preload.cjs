@@ -129,6 +129,12 @@ contextBridge.exposeInMainWorld('myAPI', {
   checkPinUnique: (pin, excludeId) => ipcRenderer.invoke('employee:checkPinUnique', pin, excludeId),
   validateEmployeeData: (data, excludeId) => ipcRenderer.invoke('employee:validateData', data, excludeId),
   changeEmployeePassword: (employeeId, oldPin, newPin) => ipcRenderer.invoke('employee:changePassword', employeeId, oldPin, newPin),
+  
+  // Forgot Password
+  verifyEmployeeByPhoneAndRole: (phone, role) => ipcRenderer.invoke('employee:verifyByPhoneAndRole', phone, role),
+  sendPasswordResetOTP: (phone, role) => ipcRenderer.invoke('employee:sendPasswordResetOTP', phone, role),
+  verifyPasswordResetOTP: (phone, role, otp) => ipcRenderer.invoke('employee:verifyPasswordResetOTP', phone, role, otp),
+  resetEmployeePIN: (phone, role, otp, newPin) => ipcRenderer.invoke('employee:resetPIN', phone, role, otp, newPin),
 
   // Register
   createRegister: (data) => ipcRenderer.invoke('register:create', data),

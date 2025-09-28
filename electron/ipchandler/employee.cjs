@@ -126,6 +126,55 @@ function registerEmployeeIpcHandlers() {
     }
   });
 
+  // Forgot password handlers
+  ipcMain.handle('employee:verifyByPhoneAndRole', async (event, phone, role) => {
+    try {
+      console.log('Verifying employee by phone and role:', { phone, role });
+      const result = verifyEmployeeByPhoneAndRole(phone, role);
+      console.log('Employee verification result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in employee:verifyByPhoneAndRole handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  ipcMain.handle('employee:sendPasswordResetOTP', async (event, phone, role) => {
+    try {
+      console.log('Sending password reset OTP:', { phone, role });
+      const result = await sendPasswordResetOTP(phone, role);
+      console.log('Send OTP result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in employee:sendPasswordResetOTP handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  ipcMain.handle('employee:verifyPasswordResetOTP', async (event, phone, role, otp) => {
+    try {
+      console.log('Verifying password reset OTP:', { phone, role, otp });
+      const result = verifyPasswordResetOTP(phone, role, otp);
+      console.log('Verify OTP result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in employee:verifyPasswordResetOTP handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  ipcMain.handle('employee:resetPIN', async (event, phone, role, otp, newPin) => {
+    try {
+      console.log('Resetting employee PIN:', { phone, role, otp, newPin: '***' });
+      const result = resetEmployeePIN(phone, role, otp, newPin);
+      console.log('Reset PIN result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in employee:resetPIN handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
   // Register handlers
   ipcMain.handle('register:create', async (event, data) => createRegister(data));
   ipcMain.handle('register:getById', async (event, id) => getRegisterById(id));
