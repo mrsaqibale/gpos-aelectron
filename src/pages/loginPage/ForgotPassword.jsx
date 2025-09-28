@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Shield, Phone, Crown, Settings, DollarSign, Scissors, ChefHat, AlertCircle } from 'lucide-react';
+import { X, Shield, Phone, Crown, Settings, DollarSign, Scissors, ChefHat, AlertCircle, CheckCircle } from 'lucide-react';
 
 // Custom styles for scrollbar
 const scrollbarStyles = `
@@ -114,30 +114,57 @@ const ResetPinStep1 = ({ isOpen, onClose, onNext, resetFields }) => {
 // Step 2: Phone Number Entry with Number Pad
 const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   React.useEffect(() => {
     if (resetFields) {
       setPhoneNumber('');
+      setError('');
     }
   }, [resetFields]);
 
   const handleNumberClick = (number) => {
     if (phoneNumber.length < 11) {
       setPhoneNumber(prev => prev + number);
+      setError(''); // Clear error when typing
     }
   };
 
   const handleClear = () => {
     setPhoneNumber('');
+    setError('');
   };
 
   const handleBackspace = () => {
     setPhoneNumber(prev => prev.slice(0, -1));
+    setError('');
   };
 
-  const handleSendOTP = () => {
-    if (phoneNumber.length >= 10) {
-      onNext({ ...userInfo, phoneNumber });
+  const handleSendOTP = async () => {
+    if (phoneNumber.length < 10) {
+      setError('Please enter a valid phone number');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Call the backend to send OTP
+      const result = await window.myAPI?.sendPasswordResetOTP(phoneNumber, userInfo.role);
+      
+      if (result && result.success) {
+        // OTP sent successfully, proceed to next step
+        onNext({ ...userInfo, phoneNumber });
+      } else {
+        setError(result?.message || 'Failed to send OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      setError('Failed to send OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -198,6 +225,14 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                 Role: <span className="text-white font-semibold">{userInfo?.role}</span>
               </p>
 
+              {/* Error Message */}
+              {error && (
+                <div className="mb-3 flex items-center justify-center gap-1 bg-red-900/40 text-red-300 p-2 rounded border border-red-600/30">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-xs font-medium">{error}</span>
+                </div>
+              )}
+
               {/* Phone Number Display */}
               <div className="mb-4">
                 <div className="flex justify-center items-center gap-2 mb-1">
@@ -252,14 +287,21 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
               <div className="flex justify-center">
                 <button
                   onClick={handleSendOTP}
-                  disabled={phoneNumber.length < 10}
-                  className={`px-6 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                    phoneNumber.length >= 10
+                  disabled={phoneNumber.length < 10 || isLoading}
+                  className={`px-6 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border flex items-center gap-2 ${
+                    phoneNumber.length >= 10 && !isLoading
                       ? 'bg-[#2d5a87] border-[#4a7ca3] text-white hover:bg-[#4a7ca3] cursor-pointer'
                       : 'bg-[#1e3a5f] border-[#4a7ca3] text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  Send OTP
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    'Send OTP'
+                  )}
                 </button>
               </div>
             </div>
@@ -273,30 +315,57 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
 // Step 3: OTP Verification with Number Pad
 const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   const [otp, setOtp] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   React.useEffect(() => {
     if (resetFields) {
       setOtp('');
+      setError('');
     }
   }, [resetFields]);
 
   const handleNumberClick = (number) => {
     if (otp.length < 6) {
       setOtp(prev => prev + number);
+      setError(''); // Clear error when typing
     }
   };
 
   const handleClear = () => {
     setOtp('');
+    setError('');
   };
 
   const handleBackspace = () => {
     setOtp(prev => prev.slice(0, -1));
+    setError('');
   };
 
-  const handleVerifyOTP = () => {
-    if (otp.length === 6) {
-      onNext();
+  const handleVerifyOTP = async () => {
+    if (otp.length !== 6) {
+      setError('Please enter the complete 6-digit OTP');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Call the backend to verify OTP
+      const result = await window.myAPI?.verifyPasswordResetOTP(userInfo.phoneNumber, userInfo.role, otp);
+      
+      if (result && result.success) {
+        // OTP verified successfully, proceed to next step
+        onNext();
+      } else {
+        setError(result?.message || 'Invalid OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setError('Failed to verify OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -383,6 +452,14 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
               <p className="text-xs text-gray-300 mb-3 text-center">
                 OTP sent to: <span className="text-white font-semibold">{userInfo?.phoneNumber}</span>
               </p>
+
+              {/* Error Message */}
+              {error && (
+                <div className="mb-3 flex items-center justify-center gap-1 bg-red-900/40 text-red-300 p-2 rounded border border-red-600/30">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="text-xs font-medium">{error}</span>
+                </div>
+              )}
 
               {/* OTP Display */}
               <div className="mb-3">
