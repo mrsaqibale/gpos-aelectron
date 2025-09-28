@@ -188,18 +188,240 @@ const StockManagement = () => {
     }
   };
 
-  const navigationTabs = [
-    {
-      id: "stock",
-      label: "Stock Management",
-      icon: <Package size={16} />,
-    },
-    {
-      id: "suppliers",
-      label: "Suppliers",
-      icon: <Truck size={16} />,
-    },
-  ];
+  // Stock Management Content Component
+  const StockManagementContent = () => (
+    <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-semibold text-gray-800">Stock List</h2>
+        <div className="flex items-center gap-3">
+          {/* Search and Filter Section */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search by item name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+            
+            <div className="relative">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Date From"
+              />
+              <Calendar size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+            
+            <div className="relative">
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Date To"
+              />
+              <Calendar size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+          <button
+            onClick={handleAddNewStock}
+            className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+          >
+            <Plus size={16} />
+            Add New Stock
+          </button>
+        </div>
+      </div>
+
+      <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
+        <thead>
+          <tr className="bg-primaryExtraLight">
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Stock Item
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Qty
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Consumed
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Current Stock
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Low Stock
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Status
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredStock.map((item, index) => (
+            <tr key={item.id} className={`border-b border-gray-100 hover:bg-gray-25 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+              <td className="py-4 px-6">
+                <div>
+                  <div className="text-sm font-medium text-gray-900">{item.stockItem}</div>
+                  <div className="text-xs text-gray-500">Added: {item.dateAdded}</div>
+                </div>
+              </td>
+              <td className="py-4 px-6">
+                <span className="text-sm font-medium text-gray-900">{item.qty}</span>
+              </td>
+              <td className="py-4 px-6">
+                <span className="text-sm text-gray-600">{item.consumed}</span>
+              </td>
+              <td className="py-4 px-6">
+                <span className="text-sm font-medium text-gray-900">{item.currentStock}</span>
+              </td>
+              <td className="py-4 px-6">
+                <span className="text-sm text-gray-600">{item.lowStock}</span>
+              </td>
+              <td className="py-4 px-6">
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockStatusColor(item.currentStock, item.lowStock)}`}>
+                  {getStockStatusText(item.currentStock, item.lowStock)}
+                </span>
+              </td>
+              <td className="py-4 px-6">
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleViewStock(item)}
+                    className="text-blue-500 hover:text-blue-700 cursor-pointer transition-colors"
+                    title="View Details"
+                  >
+                    <Eye size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleEditStock(item)}
+                    className="text-primary hover:text-primaryDark cursor-pointer transition-colors"
+                    title="Edit Item"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteStock(item)}
+                    className="text-red-500 hover:text-red-700 cursor-pointer transition-colors"
+                    title="Delete Item"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      
+      {filteredStock.length === 0 && (
+        <div className="text-center py-12">
+          <Package size={48} className="mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 text-lg font-medium">No stock items found</p>
+          <p className="text-gray-400 text-sm mt-1">
+            {searchTerm || dateFrom || dateTo ? "Try adjusting your search criteria" : "Add your first stock item to get started"}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
+  // Suppliers Management Content Component
+  const SuppliersManagementContent = () => (
+    <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-semibold text-gray-800">Suppliers List</h2>
+        <button
+          onClick={handleAddNewSupplier}
+          className="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg cursor-pointer transition-colors flex items-center gap-2"
+        >
+          <Plus size={16} />
+          Add New Supplier
+        </button>
+      </div>
+
+      <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
+        <thead>
+          <tr className="bg-primaryExtraLight">
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Supplier Name
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Contact
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Email
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Address
+            </th>
+            <th className="text-left py-4 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {suppliers.map((supplier, index) => (
+            <tr key={supplier.id} className={`border-b border-gray-100 hover:bg-gray-25 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+              <td className="py-4 px-6">
+                <span className="text-sm font-medium text-gray-900">{supplier.name}</span>
+              </td>
+              <td className="py-4 px-6">
+                <span className="text-sm text-gray-600">{supplier.contact}</span>
+              </td>
+              <td className="py-4 px-6">
+                <span className="text-sm text-gray-600">{supplier.email}</span>
+              </td>
+              <td className="py-4 px-6">
+                <span className="text-sm text-gray-600">{supplier.address}</span>
+              </td>
+              <td className="py-4 px-6">
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => console.log("View supplier:", supplier)}
+                    className="text-blue-500 hover:text-blue-700 cursor-pointer transition-colors"
+                    title="View Details"
+                  >
+                    <Eye size={16} />
+                  </button>
+                  <button 
+                    onClick={() => console.log("Edit supplier:", supplier)}
+                    className="text-primary hover:text-primaryDark cursor-pointer transition-colors"
+                    title="Edit Supplier"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button 
+                    onClick={() => console.log("Delete supplier:", supplier)}
+                    className="text-red-500 hover:text-red-700 cursor-pointer transition-colors"
+                    title="Delete Supplier"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div className="px-4 py-2">
