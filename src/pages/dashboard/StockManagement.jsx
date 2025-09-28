@@ -10,13 +10,12 @@ import {
   Trash2, 
   Filter,
   Calendar,
-  ChevronLeft
+  List,
+  Grid
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const StockManagement = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("stock");
+  const [activeTab, setActiveTab] = useState('stock'); // Default to stock management
   
   // Check if we should start on suppliers tab (when coming from Suppliers button)
   useEffect(() => {
@@ -203,64 +202,42 @@ const StockManagement = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Navigation Tabs */}
-      <div className="bg-white flex justify-center rounded-lg shadow-sm mb-6">
-        <div className="flex items-center p-2">
-          {navigationTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === tab.id
-                  ? "text-white bg-primary rounded-lg"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <span className={activeTab === tab.id ? "text-white" : "text-gray-500"}>
-                {tab.icon}
-              </span>
-              {tab.label}
-            </button>
-          ))}
+    <div className="px-4 py-2">
+      {/* Buttons */}
+      <div className="flex items-center justify-end mb-6">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveTab('stock')}
+            className={`px-3 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors flex items-center gap-2 ${
+              activeTab === 'stock' 
+                ? 'bg-primaryLight text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Package size={16} />
+            Stock Management
+          </button>
+          <button
+            onClick={() => setActiveTab('suppliers')}
+            className={`px-3 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors flex items-center gap-2 ${
+              activeTab === 'suppliers' 
+                ? 'bg-primaryLight text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <Truck size={16} />
+            Suppliers
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="w-full">
-        <div className="bg-white rounded-lg shadow-sm p-8 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
-          
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <button
-              onClick={() => navigate("/dashboard/admin-panel")}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronLeft size={20} className="text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                {activeTab === "stock" ? (
-                  <>
-                    <Package size={24} className="text-primary" />
-                    Stock Management
-                  </>
-                ) : (
-                  <>
-                    <Truck size={24} className="text-primary" />
-                    Suppliers Management
-                  </>
-                )}
-              </h1>
-              <p className="text-gray-500 text-sm mt-1">
-                {activeTab === "stock" 
-                  ? "Manage your inventory stock items, track consumption, and monitor low stock levels"
-                  : "Manage your suppliers and vendor information"
-                }
-              </p>
-            </div>
-          </div>
+      {/* Content */}
+      <div className="mt-6">
+        {activeTab === 'stock' && <StockManagementContent />}
+        {activeTab === 'suppliers' && <SuppliersManagementContent />}
+      </div>
+    </div>
+  );
 
           {/* Content based on active tab */}
           {activeTab === "stock" ? (
