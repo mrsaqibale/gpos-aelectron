@@ -132,20 +132,36 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
 
   const themeStyles = getThemeStyles();
 
-  // Fetch countries data
+  // Fetch countries data with flags and phone codes
   const fetchCountries = async () => {
     setLoadingCountries(true);
     try {
-      const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd');
-      const data = await response.json();
+      // Get countries from libphonenumber-js
+      const phoneCountries = getCountries();
       
-      const formattedCountries = data
-        .filter(country => country.idd && country.idd.root)
-        .map(country => ({
-          code: country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : ''),
-          name: country.name.common,
-          flag: country.cca2 ? String.fromCodePoint(...country.cca2.split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '🏳️'
-        }))
+      // Fetch flags from REST Countries API
+      const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
+      const flagData = await response.json();
+      
+      // Create a map of country codes to flags
+      const flagMap = {};
+      flagData.forEach(country => {
+        if (country.cca2) {
+          flagMap[country.cca2] = String.fromCodePoint(...country.cca2.split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+        }
+      });
+      
+      // Combine phone countries with flags
+      const formattedCountries = phoneCountries
+        .map(countryCode => {
+          const callingCode = getCountryCallingCode(countryCode);
+          return {
+            code: countryCode,
+            name: getCountryName(countryCode),
+            flag: flagMap[countryCode] || '🏳️',
+            callingCode: `+${callingCode}`
+          };
+        })
         .sort((a, b) => a.name.localeCompare(b.name));
       
       setCountries(formattedCountries);
@@ -153,29 +169,57 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       console.error('Error fetching countries:', error);
       // Fallback to basic countries if API fails
       setCountries([
-        { code: '+353', name: 'Ireland', flag: '🇮🇪' },
-        { code: '+44', name: 'United Kingdom', flag: '🇬🇧' },
-        { code: '+1', name: 'United States', flag: '🇺🇸' },
-        { code: '+49', name: 'Germany', flag: '🇩🇪' },
-        { code: '+33', name: 'France', flag: '🇫🇷' },
-        { code: '+39', name: 'Italy', flag: '🇮🇹' },
-        { code: '+34', name: 'Spain', flag: '🇪🇸' },
-        { code: '+31', name: 'Netherlands', flag: '🇳🇱' },
-        { code: '+32', name: 'Belgium', flag: '🇧🇪' },
-        { code: '+41', name: 'Switzerland', flag: '🇨🇭' }
+        { code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' },
+        { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', callingCode: '+44' },
+        { code: 'US', name: 'United States', flag: '🇺🇸', callingCode: '+1' },
+        { code: 'DE', name: 'Germany', flag: '🇩🇪', callingCode: '+49' },
+        { code: 'FR', name: 'France', flag: '🇫🇷', callingCode: '+33' },
+        { code: 'IT', name: 'Italy', flag: '🇮🇹', callingCode: '+39' },
+        { code: 'ES', name: 'Spain', flag: '🇪🇸', callingCode: '+34' },
+        { code: 'NL', name: 'Netherlands', flag: '🇳🇱', callingCode: '+31' },
+        { code: 'BE', name: 'Belgium', flag: '🇧🇪', callingCode: '+32' },
+        { code: 'CH', name: 'Switzerland', flag: '🇨🇭', callingCode: '+41' }
       ]);
     } finally {
       setLoadingCountries(false);
     }
   };
 
+  // Helper function to get country name
+  const getCountryName = (countryCode) => {
+    const countryNames = {
+      'IE': 'Ireland', 'GB': 'United Kingdom', 'US': 'United States', 'DE': 'Germany',
+      'FR': 'France', 'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands',
+      'BE': 'Belgium', 'CH': 'Switzerland', 'CA': 'Canada', 'AU': 'Australia',
+      'JP': 'Japan', 'KR': 'South Korea', 'CN': 'China', 'IN': 'India',
+      'BR': 'Brazil', 'MX': 'Mexico', 'AR': 'Argentina', 'ZA': 'South Africa',
+      'EG': 'Egypt', 'NG': 'Nigeria', 'KE': 'Kenya', 'MA': 'Morocco',
+      'RU': 'Russia', 'TR': 'Turkey', 'SA': 'Saudi Arabia', 'AE': 'UAE',
+      'SG': 'Singapore', 'MY': 'Malaysia', 'TH': 'Thailand', 'ID': 'Indonesia',
+      'PH': 'Philippines', 'VN': 'Vietnam', 'BD': 'Bangladesh', 'PK': 'Pakistan'
+    };
+    return countryNames[countryCode] || countryCode;
+  };
+
   React.useEffect(() => {
     if (resetFields) {
       setPhoneNumber('');
       setError('');
-      setSelectedCountry({ code: '+353', name: 'Ireland', flag: '🇮🇪' });
+      setSelectedCountry({ code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' });
+      setIsValidNumber(false);
     }
   }, [resetFields]);
+
+  // Validate phone number when it changes
+  React.useEffect(() => {
+    if (phoneNumber && selectedCountry.callingCode) {
+      const fullNumber = selectedCountry.callingCode + phoneNumber;
+      const isValid = isValidPhoneNumber(fullNumber);
+      setIsValidNumber(isValid);
+    } else {
+      setIsValidNumber(false);
+    }
+  }, [phoneNumber, selectedCountry.callingCode]);
 
   React.useEffect(() => {
     if (isOpen && countries.length === 0) {
