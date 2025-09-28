@@ -78,7 +78,7 @@ const TodaySalesSummary = ({
                             </div>
                         </div>
                     </div>
-                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm mt-2">
+                    <div class="bg-blue-50 border border-blue-400 border-l-4 rounded-lg p-6 shadow-sm mt-2">
                         <h4 class="flex justify-center items-center text-lg text-center font-semibold text-blue-900 mb-4 border-b border-blue-300 pb-2">
                             {/* <span class="material-icons text-blue-800 mr-2">account_balance</span> */}
                             <Landmark size={16} />
@@ -90,9 +90,10 @@ const TodaySalesSummary = ({
                             <span id="closingBalanceWithTax" class="text-lg font-bold text-blue-900">€0.00</span>
                         </div>
 
-                        <div class="flex justify-between items-center bg-white border-2 border-blue-400 rounded-lg px-4 py-! shadow-sm">
+                        <div class="flex justify-between items-center bg-white border-2 border-blue-400 rounded-lg px-4 py-1 shadow-sm">
                             <span class="font-medium text-blue-900">Closing Balance (Without Tax):</span>
                             <span id="closingBalanceWithoutTax" class="text-lg font-bold text-blue-900">€0.00</span>
+                            
                         </div>
                     </div>
                     <div className="p-3 border-t border-gray-200 flex gap-4">
@@ -103,7 +104,7 @@ const TodaySalesSummary = ({
                             Refresh Data
                         </button>
                         <button
-                            className="flex-1 px-@ py-2 rounded-lg transition-colors flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                            className="flex-1 px-2 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
                         >
                             <Download size={20} />
                             Export Data
