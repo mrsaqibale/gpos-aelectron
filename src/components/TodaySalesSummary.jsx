@@ -22,7 +22,7 @@ const TodaySalesSummary = ({
 
                 <div className="p-6 flex-1 overflow-y-auto">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div class="bg-green-50 shadow rounded-lg p-2">
+                        <div class="bg-green-50 shadow border-l-4 border-green-500 rounded-lg p-2">
                             <h4 class="flex items-center text-lg font-semibold text-green-600 mb-4 gap-1">
                                 <TrendingUp size={16} />
                                 Payment IN
@@ -52,7 +52,7 @@ const TodaySalesSummary = ({
                             </div>
                         </div>
 
-                        <div class="bg-red-50 shadow rounded-xl p-2">
+                        <div class="bg-red-50 shadow border-l-4 border-red-500 rounded-xl p-2">
                             <h4 class="flex items-center text-lg font-semibold text-red-600 mb-4">
                                 <TrendingDown size={16} />
                                 Payment OUT
@@ -97,13 +97,13 @@ const TodaySalesSummary = ({
                     </div>
                     <div className="p-3 border-t border-gray-200 flex gap-4">
                         <button
-                            className="flex-1 px-2 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                            className="flex-1 px-2 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
                         >
                             <RefreshCcw size={20} />
                             Refresh Data
                         </button>
                         <button
-                            className="flex-1 px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                            className="flex-1 px-@ py-2 rounded-lg transition-colors flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
                         >
                             <Download size={20} />
                             Export Data
