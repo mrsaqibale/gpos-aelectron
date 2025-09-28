@@ -225,6 +225,12 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   };
 
   const handleSendOTP = async () => {
+    // Check if offline
+    if (!isOnline) {
+      setError('⚠ Turn on your internet to send the OTP');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
@@ -239,11 +245,20 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
         // OTP sent successfully, proceed to next step
         onNext({ ...userInfo, phoneNumber: fullPhoneNumber });
       } else {
-        setError(result?.message || 'Failed to send OTP. Please try again.');
+        // Check for specific error messages
+        if (result?.message && result.message.includes('not found')) {
+          setError('⚠ Enter correct phone number');
+        } else {
+          setError(result?.message || 'Failed to send OTP. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error sending OTP:', error);
-      setError('Failed to send OTP. Please try again.');
+      if (!isOnline) {
+        setError('⚠ Turn on your internet to send the OTP');
+      } else {
+        setError('Failed to send OTP. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
