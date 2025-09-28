@@ -1021,8 +1021,8 @@ const ApplicationSettings = () => {
                     </div>
                   </div>
 
-                  {/* In-Store Orders */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  {/* In-Store Orders - Hidden */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 hidden">
                     <div className="flex items-center gap-2 mb-2">
                       <Store size={16} className="text-primary" />
                       <label className="block text-sm font-medium text-gray-700">

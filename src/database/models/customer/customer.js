@@ -9,35 +9,74 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Check if we're in a built app (app.asar) or have resourcesPath
-    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
-    
-    // Current location: src/database/models/customer/
-    // Target: src/database/ (go up 2 levels)
-    const devPath = path.join(__dirname, '../../', relativePath);
-    
-    // For built app: resources/database/models/customer -> resources/database
-    const builtPath = path.join(process.resourcesPath || '', 'database', relativePath);
-    
-    console.log(`[customer.js] Looking for: ${relativePath}`);
-    console.log(`[customer.js] Current dir: ${__dirname}`);
-    console.log(`[customer.js] isBuiltApp: ${isBuiltApp}`);
-    console.log(`[customer.js] Dev path: ${devPath}`);
-    console.log(`[customer.js] Built path: ${builtPath}`);
-    
-    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
-      console.log(`✅ [customer.js] Found at built path: ${builtPath}`);
-      return builtPath;
-    } else if (fs.existsSync(devPath)) {
-      console.log(`✅ [customer.js] Found at dev path: ${devPath}`);
-      return devPath;
-    } else {
-      console.log(`❌ [customer.js] Not found, using dev path: ${devPath}`);
-      return devPath;
+    // Check if we're in development mode
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../../', relativePath));
+    if (isDev) {
+      return path.join(__dirname, '../../', relativePath);
     }
+
+    // For production builds, try multiple possible paths
+    const possiblePaths = [
+      path.join(process.resourcesPath || '', 'database', relativePath),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'app.asar.unpacked', 'database', relativePath),
+      path.join(process.cwd(), 'database', relativePath),
+      path.join(process.cwd(), 'resources', 'database', relativePath),
+      path.join(__dirname, '../../', relativePath) // Fallback to relative path
+    ];
+
+    console.log(`[${path.basename(__filename)}] Looking for: ${relativePath}`);
+    console.log(`[${path.basename(__filename)}] Current dir: ${__dirname}`);
+    console.log(`[${path.basename(__filename)}] isDev: ${isDev}`);
+
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          console.log(`✅ [${path.basename(__filename)}] Found at: ${candidate}`);
+          return candidate;
+        }
+      } catch (_) {}
+    }
+
+    // If not found, create in user's app data directory
+    const appDataBaseDir = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database');
+    if (!fs.existsSync(appDataBaseDir)) {
+      fs.mkdirSync(appDataBaseDir, { recursive: true });
+    }
+    const finalPath = path.join(appDataBaseDir, relativePath);
+
+    // Try to copy from any of the possible paths
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, finalPath);
+          console.log(`✅ [${path.basename(__filename)}] Copied to: ${finalPath}`);
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If still not found, create empty file
+    if (!fs.existsSync(finalPath)) {
+      if (relativePath.endsWith('.db')) {
+        fs.writeFileSync(finalPath, '');
+      } else {
+        fs.mkdirSync(finalPath, { recursive: true });
+      }
+    }
+
+    console.log(`✅ [${path.basename(__filename)}] Using final path: ${finalPath}`);
+    return finalPath;
   } catch (error) {
-    console.error(`[customer.js] Failed to resolve path: ${relativePath}`, error);
-    return path.join(__dirname, '../../', relativePath);
+    console.error(`[${path.basename(__filename)}] Failed to resolve path: ${relativePath}`, error);
+    // Ultimate fallback
+    const fallback = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database', relativePath);
+    const dir = path.dirname(fallback);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return fallback;
   }
 };
 
@@ -66,20 +105,34 @@ export function createCustomer({ name, phone, email, address, isloyal = false, a
 // Update a customer by id
 export function updateCustomer(id, updates) {
   try {
+    console.log('[customer.js] updateCustomer called with ID:', id, 'updates:', updates);
     const fields = [];
     const values = [];
     for (const key in updates) {
       fields.push(`${key} = ?`);
-      values.push(updates[key]);
+      // Convert boolean values to integers for SQLite compatibility
+      let value = updates[key];
+      if (typeof value === 'boolean') {
+        value = value ? 1 : 0;
+      }
+      values.push(value);
     }
     fields.push('updated_at = CURRENT_TIMESTAMP');
     const sql = `UPDATE customer SET ${fields.join(', ')} WHERE id = ? AND isDelete = 0`;
     values.push(id);
+    console.log('[customer.js] SQL:', sql);
+    console.log('[customer.js] Values:', values);
     const stmt = db.prepare(sql);
     const result = stmt.run(...values);
-    if (result.changes === 0) return errorResponse('No customer updated.');
+    console.log('[customer.js] Update result:', result);
+    if (result.changes === 0) {
+      console.log('[customer.js] No customer updated - customer might not exist or already deleted');
+      return errorResponse('No customer updated.');
+    }
+    console.log('[customer.js] Successfully updated customer');
     return { success: true };
   } catch (err) {
+    console.error('[customer.js] Error updating customer:', err);
     return errorResponse(err.message);
   }
 }
@@ -485,4 +538,171 @@ export function getCustomerOrderCount(customer_id) {
   } catch (err) {
     return errorResponse(err.message);
   }
-} 
+}
+
+// Get customers with order statistics and date filtering
+export function getCustomersWithOrderStatsAndDateFilter(hotel_id = 1, orderStartDate = null, orderEndDate = null, customerJoiningDate = null, sortBy = null, limit = 50, offset = 0) {
+  try {
+    let whereConditions = ['c.hotel_id = ?', 'c.isDelete = 0'];
+    let params = [hotel_id];
+    
+    // Add order date filtering
+    if (orderStartDate && orderEndDate) {
+      whereConditions.push('o.created_at BETWEEN ? AND ?');
+      params.push(orderStartDate, orderEndDate + ' 23:59:59');
+    } else if (orderStartDate) {
+      whereConditions.push('o.created_at >= ?');
+      params.push(orderStartDate);
+    } else if (orderEndDate) {
+      whereConditions.push('o.created_at <= ?');
+      params.push(orderEndDate + ' 23:59:59');
+    }
+    
+    // Add customer joining date filtering
+    if (customerJoiningDate) {
+      // Handle different date formats - convert to YYYY-MM-DD format
+      const formattedDate = new Date(customerJoiningDate).toISOString().split('T')[0];
+      whereConditions.push('DATE(c.created_at) = ?');
+      params.push(formattedDate);
+    }
+    
+    // Build ORDER BY clause based on sortBy
+    let orderBy = 'c.created_at DESC';
+    if (sortBy === 'loyal_customers') {
+      orderBy = 'c.isloyal DESC, c.created_at DESC';
+    } else if (sortBy === 'not_loyal_customers') {
+      orderBy = 'c.isloyal ASC, c.created_at DESC';
+    } else if (sortBy === 'max_orders_first') {
+      orderBy = 'totalOrders DESC, c.created_at DESC';
+    } else if (sortBy === 'min_orders_first') {
+      orderBy = 'totalOrders ASC, c.created_at DESC';
+    }
+    
+    const stmt = db.prepare(`
+      SELECT 
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      LEFT JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE ${whereConditions.join(' AND ')}
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY ${orderBy}
+      LIMIT ? OFFSET ?
+    `);
+    
+    params.push(limit, offset);
+    const customers = stmt.all(...params);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get total count of customers with date filtering
+export function getCustomersCountWithDateFilter(hotel_id = 1, orderStartDate = null, orderEndDate = null, customerJoiningDate = null) {
+  try {
+    let whereConditions = ['c.hotel_id = ?', 'c.isDelete = 0'];
+    let params = [hotel_id];
+    
+    // Add order date filtering
+    if (orderStartDate && orderEndDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at BETWEEN ? AND ?)');
+      params.push(orderStartDate, orderEndDate + ' 23:59:59');
+    } else if (orderStartDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at >= ?)');
+      params.push(orderStartDate);
+    } else if (orderEndDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at <= ?)');
+      params.push(orderEndDate + ' 23:59:59');
+    }
+    
+    // Add customer joining date filtering
+    if (customerJoiningDate) {
+      // Handle different date formats - convert to YYYY-MM-DD format
+      const formattedDate = new Date(customerJoiningDate).toISOString().split('T')[0];
+      whereConditions.push('DATE(c.created_at) = ?');
+      params.push(formattedDate);
+    }
+    
+    const stmt = db.prepare(`
+      SELECT COUNT(DISTINCT c.id) as count 
+      FROM customer c
+      WHERE ${whereConditions.join(' AND ')}
+    `);
+    const result = stmt.get(...params);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get customers who placed orders between specific dates
+export function getCustomersByOrderDateRange(hotel_id = 1, startDate, endDate, limit = 1000, offset = 0) {
+  try {
+    if (!startDate || !endDate) {
+      return errorResponse('Start date and end date are required');
+    }
+
+    const stmt = db.prepare(`
+      SELECT DISTINCT
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      INNER JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? 
+        AND c.isDelete = 0
+        AND DATE(o.created_at) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    
+    const customers = stmt.all(hotel_id, startDate, endDate, limit, offset);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get count of customers who placed orders between specific dates
+export function getCustomersCountByOrderDateRange(hotel_id = 1, startDate, endDate) {
+  try {
+    if (!startDate || !endDate) {
+      return errorResponse('Start date and end date are required');
+    }
+
+    const stmt = db.prepare(`
+      SELECT COUNT(DISTINCT c.id) as count 
+      FROM customer c
+      INNER JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? 
+        AND c.isDelete = 0
+        AND DATE(o.created_at) BETWEEN DATE(?) AND DATE(?)
+    `);
+    
+    const result = stmt.get(hotel_id, startDate, endDate);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}

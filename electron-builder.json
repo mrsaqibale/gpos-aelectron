@@ -32,15 +32,15 @@
     "target": [
       {
         "target": "nsis",
-        "arch": ["x64"]
+        "arch": ["x64", "ia32", "arm64"]
       },
       {
         "target": "dir",
-        "arch": ["x64"]
+        "arch": ["x64", "ia32", "arm64"]
       }
     ],
     "requestedExecutionLevel": "asInvoker",
-    "artifactName": "${productName}-${version}.${ext}",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
     "verifyUpdateCodeSignature": false,
     "sign": null,
     "signAndEditExecutable": false

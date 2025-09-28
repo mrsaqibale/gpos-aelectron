@@ -571,17 +571,16 @@ const RunningOrders = () => {
     const now = new Date();
     const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
 
+    let intervalId = null;
     const startTimeout = setTimeout(() => {
       setCurrentTime(new Date());
-      const interval = setInterval(() => {
+      intervalId = setInterval(() => {
         setCurrentTime(new Date());
       }, 60000);
-      // Store interval on the timeout closure for cleanup
-      (startTimeout).interval = interval;
     }, msUntilNextMinute);
 
     return () => {
-      if ((startTimeout).interval) clearInterval((startTimeout).interval);
+      if (intervalId) clearInterval(intervalId);
       clearTimeout(startTimeout);
     };
   }, []);
@@ -968,13 +967,34 @@ const RunningOrders = () => {
     // Removed auto-refresh - orders only update when user clicks refresh button
   }, []);
 
-  // Clear invalid order type selection when settings change (but don't auto-select)
+  // Set default order type to 'In Store' when component mounts and no order type is selected
   useEffect(() => {
-    // If current selection is no longer available, clear it (but don't auto-select)
-    if (selectedOrderType && !isOrderTypeValid(selectedOrderType)) {
-      setSelectedOrderType(null);
+    if (!selectedOrderType && shouldShowOrderType('instore')) {
+      setSelectedOrderType('In Store');
     }
-  }, [orderTypeSettings, selectedOrderType]);
+  }, [selectedOrderType, shouldShowOrderType]);
+
+  // Debug selectedCustomer changes
+  useEffect(() => {
+    console.log('selectedCustomer changed to:', selectedCustomer);
+    console.log('selectedCustomer name:', selectedCustomer?.name);
+  }, [selectedCustomer]);
+
+  // Clear invalid order type selection when settings change and set default to 'In Store'
+  useEffect(() => {
+    // If current selection is no longer available, set to 'In Store' if available
+    if (selectedOrderType && !isOrderTypeValid(selectedOrderType)) {
+      if (shouldShowOrderType('instore')) {
+        setSelectedOrderType('In Store');
+      } else {
+        setSelectedOrderType(null);
+      }
+    }
+    // If no order type is selected and 'In Store' is available, set it as default
+    else if (!selectedOrderType && shouldShowOrderType('instore')) {
+      setSelectedOrderType('In Store');
+    }
+  }, [orderTypeSettings, selectedOrderType, shouldShowOrderType]);
 
   // Debug floors state
   useEffect(() => {
@@ -1737,8 +1757,60 @@ const RunningOrders = () => {
   };
 
   const handleCustomerSelect = (customer) => {
+    console.log('handleCustomerSelect called with:', customer);
+    console.log('Current selectedOrderType:', selectedOrderType);
+    console.log('Customer name:', customer?.name);
+    console.log('Customer id:', customer?.id);
+    
+    // Set customer first
     setSelectedCustomer(customer);
-
+    setShowCustomerModal(false);
+    setShowCustomerSearchModal(false);
+    
+    console.log('Customer set, selectedCustomer should be:', customer);
+    console.log('Customer name after setting:', customer?.name);
+    
+    // Check if customer needs editing based on order type
+    if (customer && selectedOrderType) {
+      let needsEdit = false;
+      
+      // Only validate for Collection and Delivery orders
+      // In Store and Table orders don't require validation
+      if (selectedOrderType === 'Delivery') {
+        const hasPhone = customer.phone && customer.phone.trim().length > 0;
+        const hasAddress = customer.addresses && customer.addresses.length > 0;
+        
+        console.log('Delivery validation - hasPhone:', hasPhone, 'hasAddress:', hasAddress);
+        
+        if (!hasPhone || !hasAddress) {
+          needsEdit = true;
+        }
+      }
+      else if (selectedOrderType === 'Collection') {
+        const hasPhone = customer.phone && customer.phone.trim().length > 0;
+        
+        console.log('Collection validation - hasPhone:', hasPhone);
+        
+        if (!hasPhone) {
+          needsEdit = true;
+        }
+      }
+      // For In Store and Table orders, no validation needed
+      else if (selectedOrderType === 'In Store' || selectedOrderType === 'Table') {
+        console.log('In Store/Table order - no validation needed');
+        // No validation required, customer can be selected directly
+      }
+      
+      // Show edit modal if validation fails
+      if (needsEdit) {
+        console.log('Opening edit modal for customer');
+        setShowEditModal(true);
+        return; // Don't trigger customer update event yet
+      }
+    }
+    
+    console.log('Customer selection completed successfully');
+    
     // If this is a new customer (has an ID), trigger update event
     if (customer && customer.id) {
       window.dispatchEvent(new CustomEvent('customerUpdated', {
@@ -1774,9 +1846,48 @@ const RunningOrders = () => {
   };
 
   const handleEditCustomer = (updatedCustomer) => {
+    console.log('handleEditCustomer called with:', updatedCustomer);
+    console.log('Current selectedOrderType:', selectedOrderType);
+    
+    // Always set the customer first
     setSelectedCustomer(updatedCustomer);
+    
+    // Validate that the updated customer has all required data for the current order type
+    if (updatedCustomer && selectedOrderType) {
+      let hasRequiredData = true;
+      
+      // Check for Delivery orders
+      if (selectedOrderType === 'Delivery') {
+        const hasPhone = updatedCustomer.phone && updatedCustomer.phone.trim().length > 0;
+        const hasAddress = updatedCustomer.addresses && updatedCustomer.addresses.length > 0;
+        
+        console.log('Delivery validation - hasPhone:', hasPhone, 'hasAddress:', hasAddress);
+        
+        if (!hasPhone || !hasAddress) {
+          hasRequiredData = false;
+        }
+      }
+      // Check for Collection orders
+      else if (selectedOrderType === 'Collection') {
+        const hasPhone = updatedCustomer.phone && updatedCustomer.phone.trim().length > 0;
+        
+        console.log('Collection validation - hasPhone:', hasPhone);
+        
+        if (!hasPhone) {
+          hasRequiredData = false;
+        }
+      }
+      // For In Store and Table orders, no validation needed
+      else if (selectedOrderType === 'In Store' || selectedOrderType === 'Table') {
+        console.log('In Store/Table order - no validation needed');
+        hasRequiredData = true;
+      }
+      
+      console.log('Customer validation result:', hasRequiredData);
+    }
+    
     setShowEditModal(false);
-
+    
     // Trigger a custom event to refresh customer list in CustomerSearchModal
     window.dispatchEvent(new CustomEvent('customerUpdated', {
       detail: { customer: updatedCustomer }
@@ -2532,7 +2643,7 @@ const RunningOrders = () => {
     setFoodQuantity(1);
     setSelectedVariations({});
     setSelectedAdons([]);
-    setSelectedOrderType('');
+    setSelectedOrderType('In Store');
     setSelectedScheduleDateTime(''); // Clear schedule when clearing cart
 
     // Clear modification flags when starting fresh
@@ -3106,7 +3217,6 @@ const RunningOrders = () => {
     // Check phone number for Collection and Delivery orders
     if ((selectedOrderType === 'Collection' || selectedOrderType === 'Delivery') && selectedCustomer) {
       if (!selectedCustomer.phone || selectedCustomer.phone.trim().length === 0) {
-        showError('Customer must have a phone number for ' + selectedOrderType + ' orders');
         // Open customer management modal to edit phone number
         setShowEditModal(true);
         return;
@@ -3121,7 +3231,8 @@ const RunningOrders = () => {
       // Check if customer has addresses array with at least one address
       if (!selectedCustomer.addresses || selectedCustomer.addresses.length === 0) {
         console.log('No addresses found for customer');
-        showError('Customer must have a delivery address');
+        // Open customer management modal to edit address
+        setShowEditModal(true);
         return;
       }
 
@@ -3139,7 +3250,8 @@ const RunningOrders = () => {
       })));
 
       if (!hasValidAddress) {
-        showError('Customer must have a valid delivery address');
+        // Open customer management modal to edit address
+        setShowEditModal(true);
         return;
       }
 
@@ -6482,8 +6594,17 @@ const RunningOrders = () => {
                     setSelectedTable('');
                     setSelectedPersons('');
                     setReservedTables([]);
-                    // Open customer search modal
-                    setShowCustomerSearchModal(true);
+                    // Check if selected customer has required data for Collection orders
+                    if (selectedCustomer) {
+                      const hasPhone = selectedCustomer.phone && selectedCustomer.phone.trim().length > 0;
+                      if (!hasPhone) {
+                        // Open edit modal to add missing phone number
+                        setShowEditModal(true);
+                      }
+                    } else {
+                      // Open customer search modal only if no customer is selected
+                      setShowCustomerSearchModal(true);
+                    }
                   }}
                   disabled={isModifyingOrder}
                   className={`p-1 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
@@ -6512,8 +6633,18 @@ const RunningOrders = () => {
                     setReservedTables([]);
                     // Clear schedule when switching away from Collection
                     setSelectedScheduleDateTime('');
-                    // Open customer search modal
-                    setShowCustomerSearchModal(true);
+                    // Check if selected customer has required data for Delivery orders
+                    if (selectedCustomer) {
+                      const hasPhone = selectedCustomer.phone && selectedCustomer.phone.trim().length > 0;
+                      const hasAddress = selectedCustomer.addresses && selectedCustomer.addresses.length > 0;
+                      if (!hasPhone || !hasAddress) {
+                        // Open edit modal to add missing phone number or address
+                        setShowEditModal(true);
+                      }
+                    } else {
+                      // Open customer search modal only if no customer is selected
+                      setShowCustomerSearchModal(true);
+                    }
                   }}
                   disabled={isModifyingOrder}
                   className={`p-1 text-[#666] text-base font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
@@ -6551,8 +6682,12 @@ const RunningOrders = () => {
                 onClick={() => setSelectedCustomer(null)}
                 className="p-1 text-xs sm:text-sm md:text-xs lg:text-sm text-base text-[#666666] font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                          transition-colors cursor-pointer hover:border-[#007BFF] hover:bg-[#F8F9FA] hover:border-2">
-                {!selectedCustomer && <UserCheck size={16} />}
-                {selectedCustomer ? selectedCustomer.name : 'Walk In Customer'}
+                {!selectedCustomer && <UserCheck size={14} />}
+{(() => {
+                  console.log('Rendering customer button - selectedCustomer:', selectedCustomer);
+                  console.log('selectedCustomer name:', selectedCustomer?.name);
+                  return selectedCustomer ? selectedCustomer.name : 'Walk In Customer';
+                })()}
               </button>
               <button
                 onClick={() => {
@@ -6829,7 +6964,11 @@ const RunningOrders = () => {
         {/* Customer Management Modal */}
         <CustomerManagement
           isOpen={showCustomerModal}
-          onClose={() => setShowCustomerModal(false)}
+          onClose={() => {
+            setShowCustomerModal(false);
+            // Only reset customer if no customer was selected during this modal session
+            // Don't reset if customer was already selected before opening modal
+          }}
           onCustomerSelect={handleCustomerSelect}
           orderType={selectedOrderType}
         />
@@ -6837,7 +6976,11 @@ const RunningOrders = () => {
         {/* Customer Search Modal */}
         <CustomerSearchModal
           isOpen={showCustomerSearchModal}
-          onClose={() => setShowCustomerSearchModal(false)}
+          onClose={() => {
+            setShowCustomerSearchModal(false);
+            // Only reset customer if no customer was selected during this modal session
+            // Don't reset if customer was already selected before opening modal
+          }}
           onCustomerSelect={handleCustomerSelect}
           onEditCustomer={handleOpenEditModal}
           onNewCustomer={() => setShowCustomerModal(true)}
@@ -6864,10 +7007,19 @@ const RunningOrders = () => {
         {showEditModal && selectedCustomer && (
           <CustomerManagement
             isOpen={showEditModal}
-            onClose={() => setShowEditModal(false)}
+            onClose={() => {
+              setShowEditModal(false);
+              // If user closes edit modal without saving, revert to In Store order type
+              if (selectedOrderType === 'Delivery' || selectedOrderType === 'Collection') {
+                if (shouldShowOrderType('instore')) {
+                  setSelectedOrderType('In Store');
+                }
+              }
+            }}
             onCustomerSelect={handleEditCustomer}
             editingCustomer={selectedCustomer}
             orderType={selectedOrderType}
+            onParentClose={showCustomerSearchModal ? () => setShowCustomerSearchModal(false) : undefined}
           />
         )}
 
@@ -7669,7 +7821,13 @@ const RunningOrders = () => {
               <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
                 <h2 className="text-xl font-bold">Table Selection</h2>
                 <button
-                  onClick={() => setShowTableModal(false)}
+                  onClick={() => {
+                    setShowTableModal(false);
+                    // If no table is selected and order type is Table, fallback to In Store
+                    if (selectedOrderType === 'Table' && !selectedTable && reservedTables.length === 0 && shouldShowOrderType('instore')) {
+                      setSelectedOrderType('In Store');
+                    }
+                  }}
                   className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
                 >
                   <X size={20} />

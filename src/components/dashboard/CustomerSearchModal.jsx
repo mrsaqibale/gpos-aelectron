@@ -211,15 +211,44 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
   }, []);
 
   const handleSave = () => {
+    console.log('CustomerSearchModal handleSave called');
+    console.log('selectedCustomer:', selectedCustomer);
+    console.log('orderType:', orderType);
+    console.log('onCustomerSelect:', onCustomerSelect);
+    
     if (selectedCustomer && onCustomerSelect) {
-      // Check phone number for Collection and Delivery orders
-      if ((orderType === 'Collection' || orderType === 'Delivery') && (!selectedCustomer.phone || selectedCustomer.phone.trim().length === 0)) {
-        showAlert('Customer must have a phone number for ' + orderType + ' orders. Please edit the customer to add a phone number.', 'error');
-        return;
+      // Only validate for Collection and Delivery orders
+      // In Store and Table orders don't require validation
+      if (orderType === 'Collection' || orderType === 'Delivery') {
+        // Check phone number for Collection and Delivery orders
+        if (!selectedCustomer.phone || selectedCustomer.phone.trim().length === 0) {
+          console.log('Customer missing phone number, opening edit modal');
+          // Open edit customer modal instead of showing error
+          // Don't select customer yet - wait for edit completion
+          if (onEditCustomer) {
+            onEditCustomer(selectedCustomer);
+          }
+          return;
+        }
+        
+        // Check address for Delivery orders
+        if (orderType === 'Delivery' && (!selectedCustomer.addresses || selectedCustomer.addresses.length === 0)) {
+          console.log('Customer missing address, opening edit modal');
+          // Open edit customer modal instead of showing error
+          // Don't select customer yet - wait for edit completion
+          if (onEditCustomer) {
+            onEditCustomer(selectedCustomer);
+          }
+          return;
+        }
       }
       
+      console.log('Customer has all required data, calling onCustomerSelect');
+      // Select customer (no validation needed for In Store and Table orders)
       onCustomerSelect(selectedCustomer);
       onClose();
+    } else {
+      console.log('No customer selected or onCustomerSelect not available');
     }
   };
 

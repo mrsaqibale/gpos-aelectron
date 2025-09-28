@@ -57,7 +57,7 @@ const Reservations = () => {
     const filtered = useMemo(() => {
         if (activeTab === 'today') {
             const today = new Date().toISOString().split('T')[0]
-            return reservations.filter(r => r.reservation_date === today)
+            return reservations.filter(r => r.reservation_date === today && r.status !== 'completed')
         } else if (activeTab === 'upcoming') {
             const today = new Date().toISOString().split('T')[0]
             return reservations.filter(r => r.reservation_date > today)
@@ -171,7 +171,6 @@ const Reservations = () => {
                         { id: 'all', label: 'All' },
                         { id: 'today', label: 'Today' },
                         { id: 'upcoming', label: 'Upcoming' },
-                        { id: 'confirmed', label: 'Confirmed' },
                         { id: 'completed', label: 'Completed' },
                         { id: 'cancelled', label: 'Cancelled' },
                     ].map(t => (
@@ -236,43 +235,40 @@ const Reservations = () => {
                                                     >
                                                         View
                                                     </button>
-                                                    {canEditReservation(res) && (
-                                                        <button
-                                                            onClick={() => setReservationToEdit(res)}
-                                                            className="px-3 py-1 rounded bg-[#007bff] text-white text-sm hover:bg-[#0056b3]"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                    )}
-                                                    {res.status === 'confirmed' ? (
+                                                    {res.status === 'cancelled' || res.status === 'completed' ? null : (
                                                         <>
+                                                            {canEditReservation(res) && (
+                                                                <button
+                                                                    onClick={() => setReservationToEdit(res)}
+                                                                    className="px-3 py-1 rounded bg-[#007bff] text-white text-sm hover:bg-[#0056b3]"
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                            )}
+                                                            {res.status === 'confirmed' ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => updateReservationStatus(res.id, 'completed')}
+                                                                        className="px-3 py-1 rounded bg-[#28a745] text-white text-sm hover:bg-[#1e7e34]"
+                                                                    >
+                                                                        Complete
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => updateReservationStatus(res.id, 'cancelled')}
+                                                                        className="px-3 py-1 rounded bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </>
+                                                            ) : null}
                                                             <button
-                                                                onClick={() => updateReservationStatus(res.id, 'completed')}
-                                                                className="px-3 py-1 rounded bg-[#28a745] text-white text-sm hover:bg-[#1e7e34]"
+                                                                onClick={() => handleRequestDelete(res)}
+                                                                className="px-3 py-1 rounded bg-[#6c757d] text-white text-sm hover:bg-[#545b62]"
                                                             >
-                                                                Complete
-                                                            </button>
-                                                            <button
-                                                                onClick={() => updateReservationStatus(res.id, 'cancelled')}
-                                                                className="px-3 py-1 rounded bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
-                                                            >
-                                                                Cancel
+                                                                Delete
                                                             </button>
                                                         </>
-                                                    ) : res.status === 'completed' ? (
-                                                        <button
-                                                            onClick={() => updateReservationStatus(res.id, 'cancelled')}
-                                                            className="px-3 py-1 rounded bg-[#dc3545] text-white text-sm hover:bg-[#c82333]"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    ) : null}
-                                                    <button
-                                                        onClick={() => handleRequestDelete(res)}
-                                                        className="px-3 py-1 rounded bg-[#6c757d] text-white text-sm hover:bg-[#545b62]"
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
