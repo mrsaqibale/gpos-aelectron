@@ -179,6 +179,20 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
     }
   }, [isOpen]);
 
+  // Close country selector when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showCountrySelector && !event.target.closest('.country-selector')) {
+        setShowCountrySelector(false);
+      }
+    };
+
+    if (showCountrySelector) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showCountrySelector]);
+
   const handleNumberClick = (number) => {
     setPhoneNumber(prev => prev + number);
     setError(''); // Clear error when typing
@@ -321,7 +335,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
             <div className="mb-6">
               <div className="flex justify-center items-center gap-2 mb-2">
                 {/* Country Code Selector */}
-                <div className="relative">
+                <div className="relative country-selector">
                   <button
                     onClick={() => setShowCountrySelector(!showCountrySelector)}
                     className="flex items-center bg-white border-2 rounded-lg px-3 py-3 shadow-inner hover:bg-gray-50 transition-colors"
