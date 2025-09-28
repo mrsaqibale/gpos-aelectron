@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
+import Invoice from '../../components/Invoice';
 
 const CustomerManagement = () => {
   // State for filters
@@ -28,6 +29,11 @@ const CustomerManagement = () => {
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
+
+  // Print modal state
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printOrder, setPrintOrder] = useState(null);
+  const [printOrderDetails, setPrintOrderDetails] = useState([]);
 
 
   // Updated sorting options
@@ -291,6 +297,33 @@ const CustomerManagement = () => {
     setShowOrderDetailsModal(false);
     setSelectedOrder(null);
     setOrderDetails([]);
+  };
+
+  // Handle print modal open
+  const handlePrintOpen = async (order) => {
+    try {
+      setPrintOrder(order);
+      setShowPrintModal(true);
+      
+      // Fetch order details with food information for printing
+      const result = await window.electronAPI.invoke('orderDetail:getWithFood', order.id);
+      if (result.success) {
+        setPrintOrderDetails(result.data);
+      } else {
+        console.error('Failed to load order details for printing:', result.message);
+        setPrintOrderDetails([]);
+      }
+    } catch (error) {
+      console.error('Error loading order details for printing:', error);
+      setPrintOrderDetails([]);
+    }
+  };
+
+  // Handle print modal close
+  const handlePrintClose = () => {
+    setShowPrintModal(false);
+    setPrintOrder(null);
+    setPrintOrderDetails([]);
   };
 
 
@@ -672,7 +705,11 @@ const CustomerManagement = () => {
                                >
                                  <Eye size={14} />
                                </button>
-                               <button className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
+                               <button 
+                                 onClick={() => handlePrintOpen(order)}
+                                 className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                                 title="Print Invoice"
+                               >
                                  <Printer size={14} />
                                </button>
                              </div>
@@ -741,6 +778,15 @@ const CustomerManagement = () => {
         onClose={handleOrderDetailsClose}
         order={selectedOrder}
         orderDetails={orderDetails}
+      />
+
+      {/* Print Invoice Modal */}
+      <Invoice
+        order={printOrder}
+        isOpen={showPrintModal}
+        onClose={handlePrintClose}
+        foodDetails={printOrderDetails}
+        paymentStatus="PAID"
       />
 
     </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Invoice = ({ 
@@ -12,6 +12,29 @@ const Invoice = ({
   paymentStatus = "PAID"
 }) => {
   const { themeColors } = useTheme();
+  const [settings, setSettings] = useState(null);
+  const [loadingSettings, setLoadingSettings] = useState(false);
+
+  // Fetch settings when component mounts
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!isOpen) return;
+      
+      setLoadingSettings(true);
+      try {
+        const result = await window.electronAPI.invoke('settings:get');
+        if (result.success && result.data) {
+          setSettings(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching settings for invoice:', error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+
+    fetchSettings();
+  }, [isOpen]);
 
   if (!isOpen || !order) return null;
 
@@ -72,39 +95,93 @@ const Invoice = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-800">
-            {isKitchen ? 'Kitchen Order' : isEmployee ? 'Employee Copy' : 'Print Invoice'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-          >
-            ✕
-          </button>
-        </div>
+    <>
+      <style>
+        {`
+          @media print {
+            .invoice-print-content {
+              width: 3in !important;
+              max-width: 3in !important;
+              margin: 0 auto !important;
+            }
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+          }
+        `}
+      </style>
+      <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl w-full max-h-[90vh] flex flex-col" style={{ width: '3in', maxWidth: '3in' }}>
+          {/* Header */}
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-gray-800">
+              {isKitchen ? 'Kitchen Order' : isEmployee ? 'Employee Copy' : 'Print Invoice'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
+            >
+              ✕
+            </button>
+          </div>
 
-        {/* Invoice Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="bg-white border border-gray-300 rounded-lg p-6 print:p-0 print:border-0 invoice-print-content">
-            {/* Logo Section */}
-            <div className="text-center mb-4">
-              <div 
-                className="w-16 h-16 mx-auto rounded-lg border-2 flex flex-col items-center justify-center mb-2 shadow-md"
-                style={{ 
-                  backgroundColor: themeColors.primary, 
-                  borderColor: themeColors.primaryLight 
-                }}
-              >
-                <span className="text-white font-bold text-2xl">G</span>
-                <span className="text-white font-medium text-xs">POS</span>
+          {/* Invoice Content */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {loadingSettings ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-gray-600">Loading settings...</p>
+                </div>
               </div>
+            ) : (
+              <div className="bg-white border border-gray-300 rounded-lg p-6 print:p-0 print:border-0 invoice-print-content" style={{ width: '3in', maxWidth: '3in' }}>
+                {/* Logo Section */}
+                <div className="text-center mb-4">
+              {settings?.logo_file ? (
+                <div className="w-16 h-16 mx-auto rounded-lg border-2 flex items-center justify-center mb-2 shadow-md overflow-hidden">
+                  <img 
+                    src={`file://${settings.logo_file}`} 
+                    alt="Restaurant Logo" 
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      // Fallback to default logo if image fails to load
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div 
+                    className="w-full h-full flex flex-col items-center justify-center"
+                    style={{ 
+                      backgroundColor: themeColors.primary, 
+                      borderColor: themeColors.primaryLight,
+                      display: 'none'
+                    }}
+                  >
+                    <span className="text-white font-bold text-2xl">G</span>
+                    <span className="text-white font-medium text-xs">POS</span>
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  className="w-16 h-16 mx-auto rounded-lg border-2 flex flex-col items-center justify-center mb-2 shadow-md"
+                  style={{ 
+                    backgroundColor: themeColors.primary, 
+                    borderColor: themeColors.primaryLight 
+                  }}
+                >
+                  <span className="text-white font-bold text-2xl">G</span>
+                  <span className="text-white font-medium text-xs">POS</span>
+                </div>
+              )}
               <div className="text-center">
-                <h1 className="text-lg font-bold text-gray-800">Saffron Indian Cuisine Cashel</h1>
-                <p className="text-sm text-gray-600">Tel: 06262080</p>
+                <h1 className="text-lg font-bold text-gray-800">
+                  {settings?.business_name || 'Saffron Indian Cuisine Cashel'}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Tel: {settings?.phone_number || '06262080'}
+                </p>
               </div>
             </div>
 
@@ -309,27 +386,29 @@ const Invoice = ({
               <p className="text-xs text-gray-600">Powered By G Tech Nexa Limited</p>
             </div>
 
-            <div className="border-t border-gray-300 my-4"></div>
+                <div className="border-t border-gray-300 my-4"></div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="p-4 border-t border-gray-200 flex gap-3">
+            <button
+              onClick={handlePrint}
+              className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              {isKitchen ? 'Print Kitchen Order' : isEmployee ? 'Print Employee Copy' : 'Print Invoice'}
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
-
-        {/* Footer Actions */}
-        <div className="p-4 border-t border-gray-200 flex gap-3">
-          <button
-            onClick={handlePrint}
-            className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
-          >
-            {isKitchen ? 'Print Kitchen Order' : isEmployee ? 'Print Employee Copy' : 'Print Invoice'}
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            Close
-          </button>
-        </div>
       </div>
-    </div>
+    </>
   );
 };
 
