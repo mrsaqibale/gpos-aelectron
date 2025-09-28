@@ -147,7 +147,16 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       const flagMap = {};
       flagData.forEach(country => {
         if (country.cca2) {
-          flagMap[country.cca2] = String.fromCodePoint(...country.cca2.split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+          try {
+            // Generate flag emoji from country code
+            const flag = String.fromCodePoint(
+              ...country.cca2.split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65)
+            );
+            flagMap[country.cca2] = flag;
+          } catch (error) {
+            console.warn(`Failed to generate flag for ${country.cca2}:`, error);
+            flagMap[country.cca2] = '🏳️';
+          }
         }
       });
       
@@ -178,7 +187,33 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
         { code: 'ES', name: 'Spain', flag: '🇪🇸', callingCode: '+34' },
         { code: 'NL', name: 'Netherlands', flag: '🇳🇱', callingCode: '+31' },
         { code: 'BE', name: 'Belgium', flag: '🇧🇪', callingCode: '+32' },
-        { code: 'CH', name: 'Switzerland', flag: '🇨🇭', callingCode: '+41' }
+        { code: 'CH', name: 'Switzerland', flag: '🇨🇭', callingCode: '+41' },
+        { code: 'PK', name: 'Pakistan', flag: '🇵🇰', callingCode: '+92' },
+        { code: 'IN', name: 'India', flag: '🇮🇳', callingCode: '+91' },
+        { code: 'BD', name: 'Bangladesh', flag: '🇧🇩', callingCode: '+880' },
+        { code: 'CN', name: 'China', flag: '🇨🇳', callingCode: '+86' },
+        { code: 'JP', name: 'Japan', flag: '🇯🇵', callingCode: '+81' },
+        { code: 'KR', name: 'South Korea', flag: '🇰🇷', callingCode: '+82' },
+        { code: 'TH', name: 'Thailand', flag: '🇹🇭', callingCode: '+66' },
+        { code: 'MY', name: 'Malaysia', flag: '🇲🇾', callingCode: '+60' },
+        { code: 'SG', name: 'Singapore', flag: '🇸🇬', callingCode: '+65' },
+        { code: 'ID', name: 'Indonesia', flag: '🇮🇩', callingCode: '+62' },
+        { code: 'PH', name: 'Philippines', flag: '🇵🇭', callingCode: '+63' },
+        { code: 'VN', name: 'Vietnam', flag: '🇻🇳', callingCode: '+84' },
+        { code: 'AU', name: 'Australia', flag: '🇦🇺', callingCode: '+61' },
+        { code: 'CA', name: 'Canada', flag: '🇨🇦', callingCode: '+1' },
+        { code: 'BR', name: 'Brazil', flag: '🇧🇷', callingCode: '+55' },
+        { code: 'MX', name: 'Mexico', flag: '🇲🇽', callingCode: '+52' },
+        { code: 'AR', name: 'Argentina', flag: '🇦🇷', callingCode: '+54' },
+        { code: 'ZA', name: 'South Africa', flag: '🇿🇦', callingCode: '+27' },
+        { code: 'EG', name: 'Egypt', flag: '🇪🇬', callingCode: '+20' },
+        { code: 'NG', name: 'Nigeria', flag: '🇳🇬', callingCode: '+234' },
+        { code: 'KE', name: 'Kenya', flag: '🇰🇪', callingCode: '+254' },
+        { code: 'MA', name: 'Morocco', flag: '🇲🇦', callingCode: '+212' },
+        { code: 'RU', name: 'Russia', flag: '🇷🇺', callingCode: '+7' },
+        { code: 'TR', name: 'Turkey', flag: '🇹🇷', callingCode: '+90' },
+        { code: 'SA', name: 'Saudi Arabia', flag: '🇸🇦', callingCode: '+966' },
+        { code: 'AE', name: 'UAE', flag: '🇦🇪', callingCode: '+971' }
       ]);
     } finally {
       setLoadingCountries(false);
@@ -199,6 +234,18 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       'PH': 'Philippines', 'VN': 'Vietnam', 'BD': 'Bangladesh', 'PK': 'Pakistan'
     };
     return countryNames[countryCode] || countryCode;
+  };
+
+  // Helper function to get maximum phone number length for a country
+  const getMaxPhoneLength = (countryCode) => {
+    const phoneLengths = {
+      'IE': 9, 'GB': 10, 'US': 10, 'DE': 11, 'FR': 9, 'IT': 10, 'ES': 9,
+      'NL': 9, 'BE': 9, 'CH': 9, 'CA': 10, 'AU': 9, 'JP': 10, 'KR': 10,
+      'CN': 11, 'IN': 10, 'BR': 11, 'MX': 10, 'AR': 10, 'ZA': 9, 'EG': 10,
+      'NG': 10, 'KE': 9, 'MA': 9, 'RU': 10, 'TR': 10, 'SA': 9, 'AE': 9,
+      'SG': 8, 'MY': 9, 'TH': 9, 'ID': 11, 'PH': 10, 'VN': 9, 'BD': 10, 'PK': 10
+    };
+    return phoneLengths[countryCode] || 15; // Default to 15 if not found
   };
 
   React.useEffect(() => {
@@ -260,7 +307,15 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   }, []);
 
   const handleNumberClick = (number) => {
-    setPhoneNumber(prev => prev + number);
+    // Get maximum length for the selected country
+    const maxLength = getMaxPhoneLength(selectedCountry.code);
+    
+    setPhoneNumber(prev => {
+      if (prev.length >= maxLength) {
+        return prev; // Don't add more digits if limit reached
+      }
+      return prev + number;
+    });
     setError(''); // Clear error when typing
     setShowCursor(false); // Hide cursor when typing
   };
@@ -438,7 +493,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                   
                   {/* Country Dropdown */}
                   {showCountrySelector && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border-2 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto min-w-[200px]"
+                    <div className="absolute top-full left-0 mt-1 bg-white border-2 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto min-w-[280px]"
                       style={{ borderColor: themeStyles.rightActionButtonsBg }}
                     >
                       {loadingCountries ? (
@@ -457,7 +512,8 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                             className="w-full flex items-center px-3 py-2 hover:bg-gray-100 text-left transition-colors"
                           >
                             <span className="text-xl mr-3">{country.flag}</span>
-                            <span className="text-sm text-gray-700">{country.name}</span>
+                            <span className="text-sm text-gray-700 flex-1">{country.name}</span>
+                            <span className="text-sm font-mono text-gray-500">{country.callingCode}</span>
                           </button>
                         ))
                       )}
@@ -473,7 +529,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                 >
                   <Phone className="w-5 h-5 mr-3" style={{ color: themeStyles.rightActionButtonsBg }} />
                   <span className="font-mono text-lg" style={{ color: themeStyles.rightActionButtonsBg }}>
-                    {phoneNumber ? `${selectedCountry.callingCode} ${phoneNumber}` : `${selectedCountry.callingCode} xxxxxxx`}
+                    {phoneNumber ? `${selectedCountry.callingCode} ${phoneNumber}` : `${selectedCountry.callingCode} ${'x'.repeat(getMaxPhoneLength(selectedCountry.code))}`}
                   </span>
                   {showCursor && (
                     <span className="ml-1 animate-pulse" style={{ color: themeStyles.rightActionButtonsBg }}>|</span>
@@ -481,7 +537,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                 </div>
               </div>
               <p className="text-center text-sm" style={{ color: themeStyles.logoSubText }}>
-                {phoneNumber.length} digits
+                {phoneNumber.length}/{getMaxPhoneLength(selectedCountry.code)} digits
               </p>
             </div>
 
