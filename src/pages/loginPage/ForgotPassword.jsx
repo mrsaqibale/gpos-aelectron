@@ -610,7 +610,7 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
         const result = await window.myAPI?.resetEmployeePIN(
           userInfo.phoneNumber, 
           userInfo.role, 
-          userInfo.otp || '000000', // This is a placeholder - we need to store the OTP
+          userInfo.otp,
           newPin
         );
         
@@ -781,14 +781,21 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
                 )}
                 <button
                   onClick={handleContinue}
-                  disabled={(!isConfirmMode && newPin.length < 4) || (isConfirmMode && confirmPin.length < 4)}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                    ((!isConfirmMode && newPin.length >= 4) || (isConfirmMode && confirmPin.length >= 4))
+                  disabled={(!isConfirmMode && newPin.length < 4) || (isConfirmMode && confirmPin.length < 4) || isLoading}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border flex items-center gap-2 ${
+                    ((!isConfirmMode && newPin.length >= 4) || (isConfirmMode && confirmPin.length >= 4)) && !isLoading
                       ? 'bg-[#2d5a87] border-[#4a7ca3] text-white hover:bg-[#4a7ca3] cursor-pointer'
                       : 'bg-[#1e3a5f] border-[#4a7ca3] text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  {!isConfirmMode ? 'Continue' : 'Reset PIN'}
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                      Resetting...
+                    </>
+                  ) : (
+                    !isConfirmMode ? 'Continue' : 'Reset PIN'
+                  )}
                 </button>
               </div>
             </div>
@@ -824,7 +831,8 @@ const ForgotPinModals = ({ isOpen, onClose }) => {
     setCurrentStep(3);
   };
 
-  const handleStep3Next = () => {
+  const handleStep3Next = (info) => {
+    setUserInfo(info);
     setCurrentStep(4);
   };
 
@@ -872,6 +880,7 @@ const ForgotPinModals = ({ isOpen, onClose }) => {
         isOpen={isOpen && currentStep === 4}
         onClose={handleModalClose}
         onComplete={handleResetComplete}
+        userInfo={userInfo}
         resetFields={resetFields}
       />
     </>

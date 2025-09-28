@@ -50,7 +50,11 @@ const {
   checkPhoneUnique,
   checkPinUnique,
   validateEmployeeData,
-  changeEmployeePassword
+  changeEmployeePassword,
+  verifyEmployeeByPhoneAndRole,
+  sendPasswordResetOTP,
+  verifyPasswordResetOTP,
+  resetEmployeePIN
 } = getModelPath('employee/employee.js');
 const { 
   createRegister, 
