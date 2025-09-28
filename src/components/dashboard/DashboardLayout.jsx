@@ -108,55 +108,55 @@ const DashboardLayout = () => {
     const allItems = [
       {
         name: "Dashboard",
-        icon: <Home size={18} />,
+        icon: <Home size={18} className="font-bold" />,
         path: "/dashboard",
         allowedRoles: ["admin", "cashier", "manager", "chef", "waiter"]
       },
       {
-        name: "Manage-Orders",
-        icon: <LayoutDashboard size={18} />,
+        name: "Sales",
+        icon: <Users2 size={18} className="font-bold" />,
+        path: "/dashboard/sales",
+        allowedRoles: ["admin", "cashier"]
+      },
+      {
+        name: "Manage Orders",
+        icon: <LayoutDashboard size={18} className="font-bold" />,
         path: "/dashboard/manage-orders",
         allowedRoles: ["admin", "cashier"]
       },
       {
         name: "Reservations",
-        icon: <Clock size={18} />,
+        icon: <Clock size={18} className="font-bold" />,
         path: "/dashboard/reservations",
         allowedRoles: ["admin", "cashier"]
       },
       {
-        name: "KDS",
-        icon: <Search size={18} />,
-        path: "/dashboard/kds",
-        allowedRoles: ["admin", "bde", "cashier"]
-      },
-      {
         name: "Customer Management",
-        icon: <User size={18} />,
+        icon: <User size={18} className="font-bold" />,
         path: "/dashboard/customer-management",
         allowedRoles: ["admin", "cashier"]
       },
       {
-        name: "Coupons",
-        icon: <Tag size={18} />,
+        name: "Coupon & Discount",
+        icon: <Tag size={18} className="font-bold" />,
         path: "/dashboard/coupons",
         allowedRoles: ["admin", "manager", "cashier"]
       },
       {
-        name: "sales",
-        icon: <Users2 size={18} />,
-        path: "/dashboard/sales",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
-        name: "Reports",
-        icon: <BarChart3 size={18} />,
+        name: "All Reports",
+        icon: <BarChart3 size={18} className="font-bold" />,
         path: "/dashboard/reports",
         allowedRoles: ["admin", "manager", "cashier"]
       },
       {
-        name: "Admin Panel",
-        icon: <Settings size={18} />,
+        name: "KDS",
+        icon: <Search size={18} className="font-bold" />,
+        path: "/dashboard/kds",
+        allowedRoles: ["admin", "bde", "cashier"]
+      },
+      {
+        name: "Admin",
+        icon: <Settings size={18} className="font-bold" />,
         path: "/dashboard/admin-panel",
         allowedRoles: ["admin"]
       },
@@ -316,7 +316,7 @@ const DashboardLayout = () => {
                   }}
                   className="w-full flex items-center cursor-pointer gap-2 py-3 text-gray-100"
                 >
-                  <LogOut size={20} />
+                  <LogOut size={20} className="font-bold" />
                   <span className="font-medium">
                     Logout
                   </span>
