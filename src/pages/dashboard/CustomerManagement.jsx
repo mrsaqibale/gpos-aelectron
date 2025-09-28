@@ -302,19 +302,48 @@ const CustomerManagement = () => {
   // Handle print modal open
   const handlePrintOpen = async (order) => {
     try {
-      setPrintOrder(order);
       setShowPrintModal(true);
       
       // Fetch order details with food information for printing
       const result = await window.electronAPI.invoke('orderDetail:getWithFood', order.id);
       if (result.success) {
+        // Structure the order data properly for the Invoice component
+        const structuredOrder = {
+          ...order,
+          items: result.data.map(item => ({
+            quantity: item.quantity,
+            totalPrice: item.total_price,
+            food: {
+              name: item.food_name || 'Unknown Item'
+            },
+            variations: item.variations ? JSON.parse(item.variations) : {},
+            adons: item.adons ? JSON.parse(item.adons) : []
+          })),
+          orderNumber: order.order_number || order.id,
+          orderType: order.order_type || 'Collection',
+          placedAt: order.created_at,
+          createdAt: order.created_at,
+          customer: {
+            name: order.customer_name || 'Walk-in Customer',
+            phone: order.customer_phone,
+            email: order.customer_email,
+            address: order.customer_address,
+            addresses: order.customer_addresses ? JSON.parse(order.customer_addresses) : []
+          },
+          table: order.table_number || 'None',
+          notes: order.notes
+        };
+        
+        setPrintOrder(structuredOrder);
         setPrintOrderDetails(result.data);
       } else {
         console.error('Failed to load order details for printing:', result.message);
+        setPrintOrder(order);
         setPrintOrderDetails([]);
       }
     } catch (error) {
       console.error('Error loading order details for printing:', error);
+      setPrintOrder(order);
       setPrintOrderDetails([]);
     }
   };
@@ -785,7 +814,6 @@ const CustomerManagement = () => {
         order={printOrder}
         isOpen={showPrintModal}
         onClose={handlePrintClose}
-        foodDetails={printOrderDetails}
         paymentStatus="PAID"
       />
 
