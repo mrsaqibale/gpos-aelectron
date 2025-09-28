@@ -1148,18 +1148,18 @@ const ManageOrders = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="bg-[#CDCDCD] rounded-lg mb-6">
         {/* Top Section: Date Filters, Order Type Filters, and Global Actions */}
-        <div className="flex-shrink-0 p-4">
-          <div className="flex items-start justify-between gap-2 mb-4 ">
+        <div className="flex-shrink-0 p-2">
+          <div className="flex items-start justify-between gap-2">
             {/* Date & Time Range Filter */}
             <div className="flex flex-col items-start gap-6">
               {/* From Date & Time */}
               <div className="flex items-center gap-2">
-                <label className="w-20 text-center rounded-md px-3 py-4 text-sm font-medium text-white bg-primary" htmlFor="from-datetime">From:</label>
+                <label className="w-20 text-center rounded-md p-3 text-sm font-medium text-white bg-primary" htmlFor="from-datetime">From:</label>
                 <div className="relative flex items-center gap-2">
                   <input
                     id="from-datetime"
                     type="datetime-local"
-                    className="px-3 py-4 border bg-white text-black border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                    className="p-3 border bg-white text-black border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
                     value={fromDateTime}
                     onChange={(e) => setFromDateTime(e.target.value)}
                   />
@@ -1167,12 +1167,12 @@ const ManageOrders = () => {
               </div>
               {/* To Date & Time */}
               <div className="flex items-center gap-2">
-                <label className="w-20 text-center rounded-md px-3 py-4 text-sm font-medium text-white bg-primary" htmlFor="to-datetime">To:</label>
+                <label className="w-20 text-center rounded-md p-3 text-sm font-medium text-white bg-primary" htmlFor="to-datetime">To:</label>
                 <div className="relative flex items-center gap-2">
                   <input
                     id="to-datetime"
                     type="datetime-local"
-                    className="px-3 py-4 border bg-white text-black border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
+                    className="p-3 border bg-white text-black border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primaryLight focus:border-transparent"
                     value={toDateTime}
                     onChange={(e) => setToDateTime(e.target.value)}
                   />
@@ -1181,13 +1181,13 @@ const ManageOrders = () => {
             </div>
 
             {/* Order Type Filters */}
-            <div className="flex items-center gap-2 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2  items-center gap-2 mb-4">
               {['In Store', 'Dine In', 'Collection', 'Delivery', 'Online'].map((type) => {
                 const typeId = type.toLowerCase().replace(/\s+/g, '');
                 return (
                 <button
                   key={type}
-                    className={`w-28 px-4 py-4 rounded-lg text-sm font-medium transition-colors border-2 ${
+                    className={`p-3 rounded-lg text-sm font-medium transition-colors border-2 ${
                       activeTab === typeId
                         ? 'bg-white text-black border-primary cursor-pointer'
                         : 'bg-primary text-white border-primary cursor-pointer'
@@ -1203,7 +1203,7 @@ const ManageOrders = () => {
             {/* Payment Status Filters */}
             <div className="flex flex-col items-center gap-2 mb-4">
               <button
-                className={`w-24 px-4 py-4 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'paid'
+                className={`w-24 p-3 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'paid'
                     ? 'bg-[#16A34A] text-white'
                     : 'bg-[#16A34A] text-white hover:bg-[#16A34A] cursor-pointer'
                   }`}
@@ -1212,7 +1212,7 @@ const ManageOrders = () => {
                 Paid
               </button>
               <button
-                className={`w-24 px-4 py-4 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'unpaid'
+                className={`w-24 p-3 rounded-lg text-sm font-medium transition-colors ${paymentStatusFilter === 'unpaid'
                     ? 'bg-[#0EA5E9] text-white'
                     : 'bg-[#0EA5E9] text-white hover:bg-[#0EA5E9] cursor-pointer'
                   }`}
@@ -1237,12 +1237,12 @@ const ManageOrders = () => {
         </div>
 
         {/* Middle Section: Search and Advanced Search */}
-        <div className="flex-shrink-0 p-4 border-b border-gray-200">
-          <div className="flex items-center justify-center gap-4 mb-4">
+        <div className="flex-shrink-0 p-2 border-b border-gray-200">
+          <div className="flex items-center justify-center gap-1 mb-4">
             {/* Status Filter */}
             <div className="flex items-center gap-2">
               <select 
-                className="px-3 py-4 border border-gray-300 rounded-lg text-sm bg-white w-38"
+                className="p-3 border border-gray-300 rounded-lg text-sm bg-white w-38"
                 value={orderStatusFilter}
                 onChange={(e) => setOrderStatusFilter(e.target.value)}
               >
@@ -1259,7 +1259,7 @@ const ManageOrders = () => {
             </div>
 
             {/* Search Fields */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
               <input
                 type="text"
                 name="searchTerm"
@@ -1269,7 +1269,7 @@ const ManageOrders = () => {
                 onFocus={(e) => handleInputFocusEnhanced(e, 'searchTerm')}
                 onClick={(e) => handleInputClickEnhanced(e, 'searchTerm')}
                 onBlur={handleInputBlur}
-                className="px-3 py-4 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
+                className="p-3 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
               />
               <input
                 type="text"
@@ -1280,12 +1280,12 @@ const ManageOrders = () => {
                 onFocus={(e) => handleInputFocusEnhanced(e, 'customerSearchTerm')}
                 onClick={(e) => handleInputClickEnhanced(e, 'customerSearchTerm')}
                 onBlur={handleInputBlur}
-                className="px-3 py-4 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
+                className="p-3 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
               />
-              <button className="px-4 py-4 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+              <button className="p-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
                 Search by Driver
               </button>
-              <button className="px-4 py-4 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+              <button className="p-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
                 Advanced Search
               </button>
             </div>
@@ -1296,7 +1296,7 @@ const ManageOrders = () => {
         <div className="flex-shrink-0 px-4 py-4 rounded-lg mb-5 border-b border-gray-200 bg-primary">
           <div className="flex gap-2 w-full">
             <button
-              className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+              className={`w-full p-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
                 (() => {
                   if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
                   const order = orders.find(o => o.id === selectedOrderIdForSales);
@@ -1378,7 +1378,7 @@ const ManageOrders = () => {
               Load Sales
             </button>
             <button
-              className="w-full px-4 py-4 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
+              className="w-full p-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
               onClick={() => {
                 if (!selectedOrderIdForSales) return;
                 const order = orders.find(o => o.id === selectedOrderIdForSales);
@@ -1391,7 +1391,7 @@ const ManageOrders = () => {
             {['Pay'].map((action) => (
               <button
                 key={action}
-                className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+                className={`w-full p-2 rounded-sm text-sm font-medium transition-colors font-semibold ${
                   !selectedOrderIdForSales
                     ? 'bg-white text-primary cursor-not-allowed'
                     : 'bg-white text-primary hover:bg-gray-100 cursor-pointer'
@@ -1409,7 +1409,7 @@ const ManageOrders = () => {
               </button>
             ))}
             <button
-              className="w-full px-4 py-4 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
+              className="w-full p-2 bg-white text-primary rounded-sm text-sm font-medium hover:bg-gray-100 transition-colors font-semibold cursor-pointer"
               onClick={() => {
                 if (!selectedOrderIdForSales) return;
                 const order = orders.find(o => o.id === selectedOrderIdForSales);
@@ -1420,7 +1420,7 @@ const ManageOrders = () => {
               Assign Driver
             </button>
             <button
-              className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+              className={`w-full p-3 rounded-sm text-sm font-medium transition-colors font-semibold ${
                 (() => {
                   if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
                   const order = orders.find(o => o.id === selectedOrderIdForSales);
@@ -1477,7 +1477,7 @@ const ManageOrders = () => {
               Mark Delivered
             </button>
             <button
-              className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+              className={`w-full p-3 rounded-sm text-sm font-medium transition-colors font-semibold ${
                 (() => {
                   if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
                   
@@ -1536,7 +1536,7 @@ const ManageOrders = () => {
               Complete All
             </button>
             <button
-              className={`w-full px-4 py-4 rounded-sm text-sm font-medium transition-colors font-semibold ${
+              className={`w-full p-3 rounded-sm text-sm font-medium transition-colors font-semibold ${
                 (() => {
                   if (!selectedOrderIdForSales) return 'bg-white text-primary cursor-pointer';
                   const order = orders.find(o => o.id === selectedOrderIdForSales);

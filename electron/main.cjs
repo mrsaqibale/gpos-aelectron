@@ -49,7 +49,7 @@ async function createWindow() {
     x: 0,
     y: 0,
     minWidth: 800,
-    minHeight: 600,
+    minHeight: 740,
     resizable: true,
     // Remove default frame to create custom window controls
     frame: false,
