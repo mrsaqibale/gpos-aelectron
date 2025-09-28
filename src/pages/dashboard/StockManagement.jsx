@@ -17,6 +17,15 @@ import { useNavigate } from "react-router-dom";
 const StockManagement = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("stock");
+  
+  // Check if we should start on suppliers tab (when coming from Suppliers button)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab === 'suppliers') {
+      setActiveTab('suppliers');
+    }
+  }, []);
   const [stockItems, setStockItems] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
