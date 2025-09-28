@@ -372,11 +372,8 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                     className="flex items-center bg-white border-2 rounded-lg px-3 py-3 shadow-inner hover:bg-gray-50 transition-colors"
                     style={{ borderColor: themeStyles.rightActionButtonsBg }}
                   >
-                    <span className="text-lg mr-2">{selectedCountry.flag}</span>
-                    <span className="font-mono text-sm" style={{ color: themeStyles.rightActionButtonsBg }}>
-                      {selectedCountry.code}
-                    </span>
-                    <svg className="w-4 h-4 ml-1" style={{ color: themeStyles.rightActionButtonsBg }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="text-2xl">{selectedCountry.flag}</span>
+                    <svg className="w-4 h-4 ml-2" style={{ color: themeStyles.rightActionButtonsBg }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
@@ -401,10 +398,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                             }}
                             className="w-full flex items-center px-3 py-2 hover:bg-gray-100 text-left transition-colors"
                           >
-                            <span className="text-lg mr-3">{country.flag}</span>
-                            <span className="font-mono text-sm mr-2" style={{ color: themeStyles.rightActionButtonsBg }}>
-                              {country.code}
-                            </span>
+                            <span className="text-xl mr-3">{country.flag}</span>
                             <span className="text-sm text-gray-700">{country.name}</span>
                           </button>
                         ))
@@ -414,13 +408,18 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                 </div>
                 
                 {/* Phone Number Input */}
-                <div className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[150px] shadow-inner"
+                <div 
+                  className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[150px] shadow-inner cursor-text"
                   style={{ borderColor: themeStyles.rightActionButtonsBg }}
+                  onClick={() => setShowCursor(true)}
                 >
                   <Phone className="w-5 h-5 mr-3" style={{ color: themeStyles.rightActionButtonsBg }} />
                   <span className="font-mono text-lg" style={{ color: themeStyles.rightActionButtonsBg }}>
                     {phoneNumber || "Enter number"}
                   </span>
+                  {showCursor && (
+                    <span className="ml-1 animate-pulse" style={{ color: themeStyles.rightActionButtonsBg }}>|</span>
+                  )}
                 </div>
               </div>
               <p className="text-center text-sm" style={{ color: themeStyles.logoSubText }}>
