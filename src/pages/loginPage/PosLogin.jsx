@@ -166,10 +166,18 @@ const POSLogin = () => {
   };
 
   const handleClear = () => {
+    if (!selectedRole) {
+      setError('⚠ Please select a role first.');
+      return;
+    }
     setPin('');
   };
 
   const handleBackspace = () => {
+    if (!selectedRole) {
+      setError('⚠ Please select a role first.');
+      return;
+    }
     setPin(prev => prev.slice(0, -1));
   };
 
@@ -338,7 +346,6 @@ const POSLogin = () => {
     const NumberButton = ({ number, onClick, style }) => (
       <button
         onClick={() => onClick(number)}
-        disabled={!selectedRole}
         className="rounded-xl py-1 px-0 shadow-lg cursor-pointer hover:shadow-xl font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
         style={{
           backgroundColor: 'white',
@@ -369,7 +376,6 @@ const POSLogin = () => {
     return (
       <button
         onClick={onClick}
-        disabled={disabled}
         className={`${baseClasses} ${className}`}
         style={buttonStyle}
       >
@@ -442,7 +448,7 @@ const POSLogin = () => {
                           ? 'scale-[1.04] z-[1]'
                           : 'hover:bg-transparent hover:border-white'}
                          rounded-xl transition-all duration-300 
-                        flex flex-col items-center justify-center
+                        flex flex-col items-center justify-center h-24
                         hover:cursor-pointer transform hover:-translate-y-1 hover:scale-105 active:translate-y-0 
                         border-[2.5px]
                       `}

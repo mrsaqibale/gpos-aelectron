@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
+import Invoice from '../../components/Invoice';
 
 const CustomerManagement = () => {
   // State for filters
@@ -28,6 +29,11 @@ const CustomerManagement = () => {
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
+
+  // Print modal state
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printOrder, setPrintOrder] = useState(null);
+  const [printOrderDetails, setPrintOrderDetails] = useState([]);
 
 
   // Updated sorting options
@@ -291,6 +297,62 @@ const CustomerManagement = () => {
     setShowOrderDetailsModal(false);
     setSelectedOrder(null);
     setOrderDetails([]);
+  };
+
+  // Handle print modal open
+  const handlePrintOpen = async (order) => {
+    try {
+      setShowPrintModal(true);
+      
+      // Fetch order details with food information for printing
+      const result = await window.electronAPI.invoke('orderDetail:getWithFood', order.id);
+      if (result.success) {
+        // Structure the order data properly for the Invoice component
+        const structuredOrder = {
+          ...order,
+          items: result.data.map(item => ({
+            quantity: item.quantity,
+            totalPrice: item.total_price,
+            food: {
+              name: item.food_name || 'Unknown Item'
+            },
+            variations: item.variations ? JSON.parse(item.variations) : {},
+            adons: item.adons ? JSON.parse(item.adons) : []
+          })),
+          orderNumber: order.order_number || order.id,
+          orderType: order.order_type || 'Collection',
+          placedAt: order.created_at,
+          createdAt: order.created_at,
+          customer: {
+            name: order.customer_name || 'Walk-in Customer',
+            phone: order.customer_phone,
+            email: order.customer_email,
+            address: order.customer_address,
+            addresses: order.customer_addresses ? JSON.parse(order.customer_addresses) : []
+          },
+          table: order.table_number || 'None',
+          notes: order.notes
+        };
+        
+        setPrintOrder(structuredOrder);
+        setPrintOrderDetails(result.data);
+      } else {
+        console.error('Failed to load order details for printing:', result.message);
+        setPrintOrder(order);
+        setPrintOrderDetails([]);
+      }
+    } catch (error) {
+      console.error('Error loading order details for printing:', error);
+      setPrintOrder(order);
+      setPrintOrderDetails([]);
+    }
+  };
+
+  // Handle print modal close
+  const handlePrintClose = () => {
+    setShowPrintModal(false);
+    setPrintOrder(null);
+    setPrintOrderDetails([]);
   };
 
 
@@ -672,7 +734,11 @@ const CustomerManagement = () => {
                                >
                                  <Eye size={14} />
                                </button>
-                               <button className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
+                               <button 
+                                 onClick={() => handlePrintOpen(order)}
+                                 className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                                 title="Print Invoice"
+                               >
                                  <Printer size={14} />
                                </button>
                              </div>
@@ -741,6 +807,14 @@ const CustomerManagement = () => {
         onClose={handleOrderDetailsClose}
         order={selectedOrder}
         orderDetails={orderDetails}
+      />
+
+      {/* Print Invoice Modal */}
+      <Invoice
+        order={printOrder}
+        isOpen={showPrintModal}
+        onClose={handlePrintClose}
+        paymentStatus="PAID"
       />
 
     </div>

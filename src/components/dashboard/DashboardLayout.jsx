@@ -1,6 +1,5 @@
 import React, { useState, createContext, useEffect } from 'react';
 import Sidebar from './Sidebar';
-import Header from './Header';
 import ReservationsHeader from './ReservationsHeader';
 import OrdersHeader from './OrdersHeader'; // Import the new OrdersHeader component
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -285,10 +284,35 @@ const DashboardLayout = () => {
               {/* Logout Button */}
               <div className="px-4 mb-6 cursor-pointer">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setShowDashboardSlider(false);
-                    // Handle logout logic here
-                    console.log("Logout clicked");
+                    
+                    try {
+                      const currentEmployee = localStorage.getItem('currentEmployee');
+                      if (currentEmployee) {
+                        const employeeData = JSON.parse(currentEmployee);
+                        if (employeeData.id) {
+                          // Use the global logout function if available, otherwise call directly
+                          if (window.handleEmployeeLogout) {
+                            await window.handleEmployeeLogout(employeeData.id);
+                          } else {
+                            await window.myAPI?.updateEmployeeLogout(employeeData.id);
+                          }
+                        }
+                      }
+                      // Clear local storage
+                      localStorage.removeItem('currentEmployee');
+                      sessionStorage.clear();
+                      
+                      // Navigate to login
+                      navigate('/login');
+                    } catch (error) {
+                      console.error('Error during logout:', error);
+                      // Still navigate to login even if logout fails
+                      localStorage.removeItem('currentEmployee');
+                      sessionStorage.clear();
+                      navigate('/login');
+                    }
                   }}
                   className="w-full flex items-center cursor-pointer gap-2 py-3 text-gray-100"
                 >
@@ -339,28 +363,12 @@ const DashboardLayout = () => {
                     window.dispatchEvent(new CustomEvent('openDraftsModal'));
                   }}
                 />
-              ) : isKDSRoute ? (
-                // Show KDS-specific Header for KDS route
-                <div className={shouldHideSidebar ? "" : "md:pl-5"}>
-                  <Header 
-                    onRecallClick={() => console.log("Recall clicked")}
-                    onNotificationsClick={() => console.log("Notifications clicked")}
-                    onViewToggle={() => console.log("View toggle clicked")}
-                    currentView="cards" // or manage this state
-                    notificationCount={3} // or manage this state
-                  />
-                </div>
               ) : isReservationsRoute ? (
                 // Show Reservations toolbar under title bar with proper margins when sidebar is visible
                 <div className={shouldHideSidebar ? "" : "md:pl-5"}>
                   <ReservationsHeader />
                 </div>
-              ) : (
-                // Show regular Header for other routes
-                <div className={shouldHideSidebar ? "" : "md:pl-5"}>
-                  <Header />
-                </div>
-              )}
+              ) : null}
          
               <main className="dashboard-main">
                 <div className={`dashboard-scrollable rounded-br-xl ${
@@ -368,7 +376,7 @@ const DashboardLayout = () => {
                 } ${
                   shouldHideSidebar ? '' : 'md:ml-2'
                 } ${
-                  isKDSRoute ? '' : 'mt-6 md:mt-3'
+                  isOrdersRoute || isReservationsRoute ? '' : 'mt-6 md:mt-3'
                 }`}
                   style={{
                     transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)',
