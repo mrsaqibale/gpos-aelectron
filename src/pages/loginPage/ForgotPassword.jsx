@@ -356,8 +356,8 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       const result = await window.myAPI?.verifyPasswordResetOTP(userInfo.phoneNumber, userInfo.role, otp);
       
       if (result && result.success) {
-        // OTP verified successfully, proceed to next step
-        onNext();
+        // OTP verified successfully, proceed to next step with OTP
+        onNext({ ...userInfo, otp });
       } else {
         setError(result?.message || 'Invalid OTP. Please try again.');
       }
@@ -508,14 +508,21 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
               <div className="flex justify-center">
                 <button
                   onClick={handleVerifyOTP}
-                  disabled={otp.length !== 6}
-                  className={`px-6 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                    otp.length === 6
+                  disabled={otp.length !== 6 || isLoading}
+                  className={`px-6 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border flex items-center gap-2 ${
+                    otp.length === 6 && !isLoading
                       ? 'bg-[#2d5a87] border-[#4a7ca3] text-white hover:bg-[#4a7ca3] cursor-pointer'
                       : 'bg-[#1e3a5f] border-[#4a7ca3] text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  Verify OTP
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                      Verifying...
+                    </>
+                  ) : (
+                    'Verify OTP'
+                  )}
                 </button>
               </div>
             </div>
@@ -527,11 +534,12 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
 };
 
 // Step 4: Set New PIN with Number Pad
-const ResetPinStep4 = ({ isOpen, onClose, onComplete, resetFields }) => {
+const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) => {
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [isConfirmMode, setIsConfirmMode] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   React.useEffect(() => {
     if (resetFields) {
@@ -573,7 +581,7 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, resetFields }) => {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!isConfirmMode) {
       if (newPin.length < 4) {
         setError('PIN must be at least 4 digits');
@@ -590,7 +598,33 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, resetFields }) => {
         setError('PINs do not match');
         return;
       }
-      onComplete();
+
+      // Reset the PIN
+      setIsLoading(true);
+      setError('');
+
+      try {
+        // We need to get the OTP from the previous step, but since we don't have it stored,
+        // we'll need to modify the flow to pass it through. For now, let's assume the OTP
+        // is still valid since we just verified it in step 3.
+        const result = await window.myAPI?.resetEmployeePIN(
+          userInfo.phoneNumber, 
+          userInfo.role, 
+          userInfo.otp || '000000', // This is a placeholder - we need to store the OTP
+          newPin
+        );
+        
+        if (result && result.success) {
+          onComplete();
+        } else {
+          setError(result?.message || 'Failed to reset PIN. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error resetting PIN:', error);
+        setError('Failed to reset PIN. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
