@@ -169,7 +169,11 @@ const Sidebar = ({ navigationItems }) => {
           }}
           className="w-full flex items-center cursor-pointer gap-2 py-3 text-gray-100"
         >
-          <LogOut size={20} className="font-bold" />
+          <LogOut 
+            size={20} 
+            className="font-bold flex-shrink-0" 
+            style={{ opacity: 1 }}
+          />
           <span
             className="font-medium"
             style={{
