@@ -7,19 +7,38 @@ class TwilioService {
     this.authToken = process.env.TWILIO_AUTH_TOKEN || 'your_auth_token_here';
     this.phoneNumber = process.env.TWILIO_PHONE_NUMBER || 'your_twilio_phone_number_here';
     
-    // Initialize Twilio client only if credentials are properly configured
+    // Don't initialize Twilio client at startup - only when needed
+    this.client = null;
+    this.initialized = false;
+  }
+
+  /**
+   * Initialize Twilio client only when needed
+   * @returns {boolean} - True if initialized successfully
+   */
+  initializeTwilio() {
+    if (this.initialized) {
+      return !!this.client;
+    }
+
+    this.initialized = true;
+
+    // Check if credentials are properly configured
     if (this.isConfigured()) {
       try {
         this.client = twilio(this.accountSid, this.authToken);
         console.log('[TwilioService] Twilio client initialized successfully.');
+        return true;
       } catch (error) {
         console.warn('[TwilioService] Failed to initialize Twilio client:', error.message);
         this.client = null;
+        return false;
       }
     } else {
       console.warn('[TwilioService] Twilio credentials not configured. SMS functionality will be limited.');
       console.warn('[TwilioService] Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in your .env file');
       this.client = null;
+      return false;
     }
   }
 
@@ -34,8 +53,10 @@ class TwilioService {
     try {
       console.log(`[TwilioService] Sending OTP to ${toPhoneNumber}`);
       
-      // Check if Twilio is configured
-      if (!this.isConfigured() || !this.client) {
+      // Initialize Twilio only when needed
+      const twilioReady = this.initializeTwilio();
+      
+      if (!twilioReady) {
         console.warn('[TwilioService] Twilio not configured, returning mock success for development');
         return {
           success: true,
@@ -114,8 +135,10 @@ class TwilioService {
     try {
       console.log(`[TwilioService] Sending SMS to ${toPhoneNumber}`);
       
-      // Check if Twilio is configured
-      if (!this.isConfigured() || !this.client) {
+      // Initialize Twilio only when needed
+      const twilioReady = this.initializeTwilio();
+      
+      if (!twilioReady) {
         console.warn('[TwilioService] Twilio not configured, returning mock success for development');
         return {
           success: true,
@@ -172,8 +195,10 @@ class TwilioService {
    */
   async getAccountInfo() {
     try {
-      // Check if Twilio is configured
-      if (!this.isConfigured() || !this.client) {
+      // Initialize Twilio only when needed
+      const twilioReady = this.initializeTwilio();
+      
+      if (!twilioReady) {
         return {
           success: false,
           message: 'Twilio not configured'
