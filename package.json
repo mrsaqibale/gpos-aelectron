@@ -42,7 +42,8 @@
     "react-router-dom": "^7.6.3",
     "react-simple-keyboard": "^3.8.107",
     "tailwindcss": "^4.1.11",
-    "three": "^0.179.1"
+    "three": "^0.179.1",
+    "twilio": "^5.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
