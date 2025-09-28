@@ -34,6 +34,10 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState({ code: '+353', name: 'Ireland', flag: '🇮🇪' });
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [loadingCountries, setLoadingCountries] = useState(false);
   const { themeColors, currentTheme } = useTheme();
 
   // Get theme-specific styles
