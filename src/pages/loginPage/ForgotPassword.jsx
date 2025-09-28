@@ -28,204 +28,6 @@ const scrollbarStyles = `
   }
 `;
 
-// Step 1: Role Selection Modal
-const ResetPinStep1 = ({ isOpen, onClose, onNext, resetFields }) => {
-  const [selectedRole, setSelectedRole] = useState('');
-  const { themeColors, currentTheme } = useTheme();
-
-  const roles = [
-    { id: 'Admin', name: 'Admin', icon: Crown },
-    { id: 'Manager', name: 'Manager', icon: Settings },
-    { id: 'Cashier', name: 'Cashier', icon: DollarSign, subtitle: 'Multiple Users' },
-    { id: 'Waiter', name: 'Waiter', icon: Scissors, subtitle: 'Multiple Users' },
-    { id: 'Chef', name: 'Chef', icon: ChefHat }
-  ];
-
-  // Get theme-specific styles
-  const getThemeStyles = () => {
-    switch (currentTheme) {
-      case 'default':
-        return {
-          screenBg: '#003C58',
-          logoBg: '#176B87',
-          logoText: 'white',
-          logoSubText: 'white',
-          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 10px rgba(0, 188, 212, 0.6)',
-          mainContentBorder: '2px solid var(--primary-light, #00bcd4)',
-          leftSectionBg: '#176B87',
-          rightActionButtonsBg: '#176B87',
-          roleButtonBg: '#003C58',
-          roleButtonText: 'white',
-          roleButtonBorder: '2px solid rgba(255, 255, 255, 0.3)',
-          roleButtonSelectedBg: 'white',
-          roleButtonSelectedText: '#003C58'
-        };
-      case 'blue':
-        return {
-          screenBg: 'white',
-          logoBg: '#032C7E',
-          logoText: 'white',
-          logoSubText: 'black',
-          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 20px rgba(3, 45, 129, 0.3)',
-          mainContentBorder: '2px solid #032d81',
-          leftSectionBg: '#032C7E',
-          rightActionButtonsBg: '#032C7E',
-          roleButtonBg: 'white',
-          roleButtonText: '#032D81',
-          roleButtonBorder: 'var(--primary-light, #00bcd4)',
-          roleButtonSelectedBg: '#032D81',
-          roleButtonSelectedText: 'white'
-        };
-      case 'green':
-        return {
-          screenBg: '#136F63',
-          logoBg: '#34A0A4',
-          logoText: 'white',
-          logoSubText: 'white',
-          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 10px rgba(0, 188, 212, 0.6)',
-          mainContentBorder: '2px solid var(--primary-light, #00bcd4)',
-          leftSectionBg: '#34A0A4',
-          rightActionButtonsBg: '#136F63',
-          roleButtonBg: '#136F63',
-          roleButtonText: 'white',
-          roleButtonBorder: 'var(--logo-box-bg, #176B87)',
-          roleButtonSelectedBg: 'white',
-          roleButtonSelectedText: '#34A0A4'
-        };
-      case 'black':
-        return {
-          screenBg: 'white',
-          logoBg: '#000000',
-          logoText: 'white',
-          logoSubText: 'black',
-          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 20px rgba(0, 0, 0, 0.3)',
-          mainContentBorder: '2.5px solid #e0e0e0',
-          leftSectionBg: '#000000',
-          rightActionButtonsBg: '#000000',
-          roleButtonBg: 'white',
-          roleButtonText: '#000000',
-          roleButtonBorder: '1px solid #e0e0e0',
-          roleButtonSelectedBg: '#000000',
-          roleButtonSelectedText: 'white'
-        };
-      default:
-        return {
-          screenBg: '#003C58',
-          logoBg: '#176B87',
-          logoText: 'white',
-          logoSubText: 'white',
-          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 10px rgba(0, 188, 212, 0.6)',
-          mainContentBorder: '2px solid var(--primary-light, #00bcd4)',
-          leftSectionBg: '#176B87',
-          rightActionButtonsBg: '#176B87',
-          roleButtonBg: '#003C58',
-          roleButtonText: 'white',
-          roleButtonBorder: '2px solid rgba(255, 255, 255, 0.3)',
-          roleButtonSelectedBg: 'white',
-          roleButtonSelectedText: '#003C58'
-        };
-    }
-  };
-
-  const themeStyles = getThemeStyles();
-
-  React.useEffect(() => {
-    if (resetFields) {
-      setSelectedRole('');
-    }
-  }, [resetFields]);
-
-  const handleRoleSelect = (roleId) => {
-    setSelectedRole(roleId);
-    setTimeout(() => {
-      onNext({ role: roleId });
-    }, 300);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <>
-      <style>{scrollbarStyles}</style>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div 
-          className="rounded-3xl w-full max-w-lg mx-auto relative overflow-hidden"
-          style={{
-            boxShadow: themeStyles.mainContentShadow,
-            border: themeStyles.mainContentBorder
-          }}
-        >
-          {/* Header */}
-          <div 
-            className="p-6 text-center relative"
-            style={{ backgroundColor: themeStyles.logoBg }}
-          >
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-white hover:bg-white/20 transition-colors duration-200 rounded-lg"
-              style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="w-16 h-16 rounded-2xl border-2 flex flex-col items-center justify-center mx-auto mb-4 shadow-md"
-              style={{ backgroundColor: themeStyles.logoBg, borderColor: themeStyles.logoBg }}
-            >
-              <Shield className="w-8 h-8" style={{ color: themeStyles.logoText }} />
-            </div>
-            <h2 className="text-2xl font-bold mb-1" style={{ color: themeStyles.logoText }}>Reset PIN</h2>
-            <p className="text-sm opacity-80" style={{ color: themeStyles.logoText }}>Step 1 of 4</p>
-          </div>
-
-          {/* Content */}
-          <div 
-            className="p-6"
-            style={{ backgroundColor: themeStyles.screenBg }}
-          >
-            <h3 className="text-lg font-semibold mb-6 text-center" style={{ color: themeStyles.logoSubText }}>
-              Select Your Role
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              {roles.map((role) => {
-                const IconComponent = role.icon;
-                const isSelected = selectedRole === role.id;
-                
-                return (
-                  <button
-                    key={role.id}
-                    onClick={() => handleRoleSelect(role.id)}
-                    className={`
-                      ${isSelected ? 'scale-[1.04] z-[1]' : 'hover:bg-transparent hover:border-white'}
-                      rounded-xl transition-all duration-300 
-                      flex flex-col items-center justify-center h-24
-                      hover:cursor-pointer transform hover:-translate-y-1 hover:scale-105 active:translate-y-0 
-                      border-[2.5px]
-                    `}
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      background: isSelected ? themeStyles.roleButtonSelectedBg : themeStyles.roleButtonBg,
-                      border: themeStyles.roleButtonBorder,
-                      boxShadow: isSelected
-                        ? `0 0 16px 2px ${themeStyles.roleButtonBorder}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
-                        : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
-                    }}
-                  >
-                    <IconComponent className="w-8 h-8 mb-1" style={{ color: isSelected ? themeStyles.roleButtonSelectedText : themeStyles.roleButtonText }} />
-                    <span className="text-lg font-bold" style={{ color: isSelected ? themeStyles.roleButtonSelectedText : themeStyles.roleButtonText }}>{role.name}</span>
-                    {role.subtitle && (
-                      <span className="text-xs opacity-70" style={{ color: isSelected ? themeStyles.roleButtonSelectedText : themeStyles.roleButtonText }}>{role.subtitle}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-};
 
 // Step 2: Phone Number Entry with Number Pad
 const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
@@ -440,7 +242,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
               <Phone className="w-8 h-8" style={{ color: themeStyles.logoText }} />
             </div>
             <h2 className="text-2xl font-bold mb-1" style={{ color: themeStyles.logoText }}>Reset PIN</h2>
-            <p className="text-sm opacity-80" style={{ color: themeStyles.logoText }}>Step 2 of 4</p>
+            <p className="text-sm opacity-80" style={{ color: themeStyles.logoText }}>Step 1 of 3</p>
           </div>
 
           {/* Content */}
@@ -767,7 +569,7 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                 <Shield className="w-5 h-5 text-white" />
               </div>
               <h2 className="text-xl font-bold text-white mb-1">Reset PIN</h2>
-              <p className="text-xs text-gray-300">Step 3 of 4</p>
+              <p className="text-xs text-gray-300">Step 2 of 3</p>
             </div>
 
             <div className="mb-4">
@@ -1142,7 +944,7 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
               <Shield className="w-8 h-8" style={{ color: themeStyles.logoText }} />
             </div>
             <h2 className="text-2xl font-bold mb-1" style={{ color: themeStyles.logoText }}>Reset PIN</h2>
-            <p className="text-sm opacity-80" style={{ color: themeStyles.logoText }}>Step 4 of 4</p>
+            <p className="text-sm opacity-80" style={{ color: themeStyles.logoText }}>Step 3 of 3</p>
           </div>
 
           {/* Content */}
@@ -1254,7 +1056,7 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
 };
 
 // Main component that manages the forgot PIN flow
-const ForgotPinModals = ({ isOpen, onClose }) => {
+const ForgotPinModals = ({ isOpen, onClose, selectedRole }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [userInfo, setUserInfo] = useState(null);
   const [resetFields, setResetFields] = useState(false);
@@ -1278,11 +1080,6 @@ const ForgotPinModals = ({ isOpen, onClose }) => {
     setCurrentStep(3);
   };
 
-  const handleStep3Next = (info) => {
-    setUserInfo(info);
-    setCurrentStep(4);
-  };
-
   const handleResetComplete = () => {
     setCurrentStep(1);
     setUserInfo(null);
@@ -1300,14 +1097,15 @@ const ForgotPinModals = ({ isOpen, onClose }) => {
 
   return (
     <>
-      <ResetPinStep1
+      <ResetPinStep2
         isOpen={isOpen && currentStep === 1}
         onClose={handleModalClose}
         onNext={handleStep1Next}
+        userInfo={{ role: selectedRole }}
         resetFields={resetFields}
       />
 
-      <ResetPinStep2
+      <ResetPinStep3
         isOpen={isOpen && currentStep === 2}
         onClose={handleModalClose}
         onNext={handleStep2Next}
@@ -1315,16 +1113,8 @@ const ForgotPinModals = ({ isOpen, onClose }) => {
         resetFields={resetFields}
       />
 
-      <ResetPinStep3
-        isOpen={isOpen && currentStep === 3}
-        onClose={handleModalClose}
-        onNext={handleStep3Next}
-        userInfo={userInfo}
-        resetFields={resetFields}
-      />
-
       <ResetPinStep4
-        isOpen={isOpen && currentStep === 4}
+        isOpen={isOpen && currentStep === 3}
         onClose={handleModalClose}
         onComplete={handleResetComplete}
         userInfo={userInfo}
