@@ -668,9 +668,8 @@ export async function sendPasswordResetOTP(phone, role) {
       return errorResponse('SMS service is not configured. Please contact administrator.');
     }
     
-    // Generate OTP
+    // Generate 6-digit OTP
     const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
     
     // Clean phone number for international format
     let formattedPhone = phone.replace(/[\s\-\(\)]/g, '');
@@ -679,13 +678,19 @@ export async function sendPasswordResetOTP(phone, role) {
       formattedPhone = '+1' + formattedPhone; // Default to US, adjust as needed
     }
     
-    // Save OTP to database
-    const stmt = db.prepare(`
-      INSERT INTO otp_verification (employee_id, phone_number, otp_code, purpose, expires_at)
-      VALUES (?, ?, ?, 'password_reset', ?)
+    // Update employee's code field with the OTP
+    const updateStmt = db.prepare(`
+      UPDATE employee 
+      SET code = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ? AND isDeleted = 0
     `);
     
-    stmt.run(employee.id, formattedPhone, otp, expiresAt.toISOString());
+    const updateResult = updateStmt.run(otp, employee.id);
+    
+    if (updateResult.changes === 0) {
+      console.error('[sendPasswordResetOTP] failed to update employee code');
+      return errorResponse('Failed to generate OTP');
+    }
     
     // Send OTP via SMS
     const smsResult = await twilioService.sendOTP(
@@ -702,8 +707,7 @@ export async function sendPasswordResetOTP(phone, role) {
     console.log('[sendPasswordResetOTP] OTP sent successfully');
     return { 
       success: true, 
-      message: 'OTP sent successfully to your registered phone number',
-      expiresIn: 10 // minutes
+      message: 'OTP sent successfully to your registered phone number'
     };
   } catch (err) {
     console.error('[sendPasswordResetOTP] error', err);

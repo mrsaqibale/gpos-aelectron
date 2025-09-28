@@ -28,7 +28,7 @@ class TwilioService {
       }
 
       // Create the message
-      const message = `Hello ${employeeName}, your GPOS System OTP code is: ${otp}. This code will expire in 10 minutes. Do not share this code with anyone.`;
+      const message = `your otp is ${otp}`;
       
       // Send the SMS
       const result = await this.client.messages.create({
