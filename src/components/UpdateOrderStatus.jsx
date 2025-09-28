@@ -1,32 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Clock, CheckCircle, Star, Truck } from 'lucide-react';
 
-const UpdateOrderStatus = ({ 
-  isOpen, 
-  onClose, 
-  order, 
-  onStatusUpdate, 
+const UpdateOrderStatus = ({
+  isOpen,
+  onClose,
+  order,
+  onStatusUpdate,
   onRiderAssignment,
   selectedStatus,
   onStatusChange,
   isUpdating = false
 }) => {
   const [showSuccess, setShowSuccess] = useState(false);
-  
+
   // Reset success state when modal opens/closes
   React.useEffect(() => {
     if (isOpen) {
       setShowSuccess(false);
     }
   }, [isOpen]);
-  
+
   const handleClose = () => {
     setShowSuccess(false);
     onClose();
   };
-  
-  if (!isOpen || !order) return null;
 
+  if (!isOpen || !order) return null;
   // Get statuses based on order type
   const getStatusesForOrderType = (orderType) => {
     switch (orderType) {
@@ -64,6 +63,15 @@ const UpdateOrderStatus = ({
         ];
     }
   };
+  const statuses = getStatusesForOrderType(order.orderType);
+  let colCount = 4;
+  if(statuses.length == 6 ){
+    colCount = 3;
+  } else {
+    colCount = 4;
+  }
+
+  const gridColsClass = `grid grid-cols-${colCount} gap-2`;
 
   const handleStatusSelect = (status) => {
     if (!status.disabled) {
@@ -85,7 +93,7 @@ const UpdateOrderStatus = ({
     if (onStatusUpdate) {
       // Show success state first
       setShowSuccess(true);
-      
+
       // Update the status normally
       onStatusUpdate(selectedStatus);
     }
@@ -93,7 +101,7 @@ const UpdateOrderStatus = ({
 
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-xl">
         {/* Header */}
         <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
           <h2 className="text-xl font-bold">Update Order Status</h2>
@@ -122,24 +130,24 @@ const UpdateOrderStatus = ({
 
         {/* Status Selection */}
         <div className="p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {getStatusesForOrderType(order.orderType).map((status) => (
-                <button
-                  key={status.key}
-                  onClick={() => handleStatusSelect(status)}
-                  className={`p-4 rounded-lg border-2 transition-all ${status.disabled
-                      ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed'
-                      : selectedStatus === status.key
-                        ? 'bg-white border-primary text-primary cursor-pointer' // Selected state
-                        : 'bg-primary text-white border-primary hover:bg-primary/90 cursor-pointer' // Default state
+          <div className={gridColsClass}>
+            {statuses.map((status) => (
+              <button
+                key={status.key}
+                onClick={() => handleStatusSelect(status)}
+                className={`p-1 rounded-lg border-2 transition-all ${status.disabled
+                  ? 'bg-gray-300 text-gray-500 border-gray-300 cursor-not-allowed'
+                  : selectedStatus === status.key
+                    ? 'bg-white border-primary text-primary cursor-pointer' // Selected state
+                    : 'bg-primary text-white border-primary hover:bg-primary/90 cursor-pointer' // Default state
                   }`}
-                  disabled={status.disabled}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    {status.icon}
-                    <span className="font-medium">{status.label}</span>
-                  </div>
-                </button>
+                disabled={status.disabled}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  {status.icon}
+                  <span className="font-medium">{status.label}</span>
+                </div>
+              </button>
             ))}
           </div>
         </div>
@@ -165,11 +173,10 @@ const UpdateOrderStatus = ({
           <button
             onClick={handleUpdateStatus}
             disabled={isUpdating}
-            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-              isUpdating
-                ? 'bg-gray-400 text-gray-400 cursor-not-allowed'
-                : 'bg-primary text-white hover:bg-primary cursor-pointer'
-            }`}
+            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${isUpdating
+              ? 'bg-gray-400 text-gray-400 cursor-not-allowed'
+              : 'bg-primary text-white hover:bg-primary cursor-pointer'
+              }`}
           >
             {isUpdating ? 'Updating...' : 'Update Status'}
           </button>

@@ -93,6 +93,8 @@ import { useSettings } from '../../contexts/SettingsContext';
 import FinalizeSaleModal from '../../components/FinalizeSaleModal';
 import MergeTableModal from '../../components/dashboard/table/MergeTableModal';
 import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsModalbox';
+import InvoiceOptions from '../../components/InvoiceOptions.jsx';
+import PlaceOrderComponent from '../../components/PlaceOrderComponent.jsx';
 
 const RunningOrders = () => {
   // Accept navigation state to pre-load an order
@@ -6176,265 +6178,19 @@ const RunningOrders = () => {
           <div className="overflow-y-auto p-3 h-100">
 
             {/* Placed Orders List */}
-            <div className="flex-1">
-              {placedOrders.length > 0 ? (
-                placedOrders
-                  .filter(order => {
-                    if (!runningOrdersSearchQuery.trim()) return true;
-                    const searchTerm = runningOrdersSearchQuery.toLowerCase().trim();
-                    return order.orderNumber.toString().toLowerCase().includes(searchTerm);
-                  })
-                  .map((order) => {
-                    // Calculate time elapsed (static calculation, no auto-update)
-                    const orderTime = new Date(order.placedAt);
-                    const diffMs = currentTime - orderTime;
-                    const diffMins = Math.floor(diffMs / (1000 * 60));
-                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                    let timeAgo;
-                    if (diffDays > 0) {
-                      timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-                    } else if (diffHours > 0) {
-                      timeAgo = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-                    } else if (diffMins > 0) {
-                      timeAgo = `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-                    } else {
-                      timeAgo = 'Just now';
-                    }
-
-                    // Get order type styling
-                    const getOrderTypeStyle = (type) => {
-                      switch (type) {
-                        case 'Dine In':
-                          return {
-                            bgColor: 'bg-blue-100',
-                            textColor: 'text-blue-700',
-                            icon: <Utensils size={12} />
-                          };
-                        case 'Collection':
-                          return {
-                            bgColor: 'bg-orange-100',
-                            textColor: 'text-orange-700',
-                            icon: <ShoppingBag size={12} />
-                          };
-                        case 'Delivery':
-                          return {
-                            bgColor: 'bg-green-100',
-                            textColor: 'text-green-700',
-                            icon: <Truck size={12} />
-                          };
-                        case 'In Store':
-                          return {
-                            bgColor: 'bg-purple-100',
-                            textColor: 'text-purple-700',
-                            icon: <Printer size={12} />
-                          };
-                        case 'Draft':
-                          return {
-                            bgColor: 'bg-yellow-100',
-                            textColor: 'text-yellow-700',
-                            icon: <FileText size={12} />
-                          };
-                        default:
-                          return {
-                            bgColor: 'bg-gray-100',
-                            textColor: 'text-gray-700',
-                            icon: <Receipt size={12} />
-                          };
-                      }
-                    };
-
-                    const orderTypeStyle = getOrderTypeStyle(order.orderType);
-
-                    return (
-                      <div
-                        key={order.id}
-                        className={`relative bg-white border border-gray-200 hover:border-primary hover:shadow-md rounded-lg p-2 cursor-pointer transition-all duration-200 ${selectedPlacedOrder?.id === order.id
-                          ? 'border-primary b-2 bg-primaryExtraLight shadow-md'
-                          : 'hover:bg-gray-50'
-                          }`}
-                        onClick={() => setSelectedPlacedOrder(order)}
-                      >
-                        {/* Dropdown arrow */}
-                        <div
-                          className="absolute top-3 right-3 cursor-pointer"
-                          onClick={(e) => handleToggleOrderExpansion(order.id, e)}
-                        >
-                          {expandedOrders.has(order.id) ? (
-                            <ChevronUp size={20} className="text-blue-500" />
-                          ) : (
-                            <ChevronDown size={20} className="text-gray-400" />
-                          )}
-                        </div>
-
-                        {/* Order header */}
-                        <div className={`flex items-start justify-between ${expandedOrders.has(order.id) ? 'bg-blue-50 p-3 border-b border-blue-200  -m-3 rounded-t-lg' : ''}`}>
-                          <div className="flex-1">
-                            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-2 mb-2">
-                              <h3 className="font-semibold text-gray-800 text-xs sm:text-xs md:text-xs lg:text-sm">
-                                #{order.orderNumber}
-                              </h3>
-                              <div>
-                                <span className={`inline-flex items-center gap-1 p-2 rounded-full text-xs font-medium ${orderTypeStyle.bgColor} ${orderTypeStyle.textColor}`}>
-                                  {orderTypeStyle.icon}
-                                  {order.orderType === 'Dine In' ? `${order.orderType} - ${order.table}` : order.orderType}
-                                </span>
-
-                              </div>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <div className="">
-                                <p className="text-xs sm:text-xs md:text-xs lg:text-sm font-medium text-gray-800">
-                                  {order.customer.name}
-                                </p>
-                                <p className="text-xs text-gray-500">{timeAgo}</p>
-                              </div>
-                              <span className={`inline-block px-1 py-1 text-xs font-medium rounded-full ${getStatusBadgeStyle(order.status || 'Pending')}`}>
-                                {order.status || 'PENDING'}
-                              </span>
-                            </div>
-
-                          </div>
-
-                        </div>
-
-                        {/* Expanded Order Details */}
-                        {expandedOrders.has(order.id) && (
-                          <div className=" pt-4">
-                            {/* Order Items */}
-                            <div className="space-y-2 mb-4">
-                              <h4 className="text-xs sm:text-xs md:text-xs lg:text-sm font-semibold text-gray-800 mb-2">Order Items:</h4>
-                              {order.items.map((item, index) => (
-                                <div key={index} className="flex justify-between items-start text-xs sm:text-xs md:text-xs lg:text-sm">
-                                  <div className="flex-1">
-                                    <div className="flex items-center">
-                                      <span className="font-medium text-gray-800"><span className="text-blue-600 ml-1">x{item.quantity}</span> {item.food?.name || 'Unknown Food'}</span>
-                                    </div>
-
-                                    {/* Show variations if any */}
-                                    {item.variations && Object.keys(item.variations).length > 0 && (
-                                      <div className="text-xs text-gray-600 mt-1">
-                                        {Object.entries(item.variations).map(([variationId, selectedOption]) => {
-                                          const variation = foodDetails?.variations?.find(v => v.id === parseInt(variationId));
-                                          const variationName = variation?.name || variationId;
-                                          const selections = Array.isArray(selectedOption) ? selectedOption : [selectedOption];
-
-                                          return (
-                                            <div key={variationId} className="flex items-center gap-1">
-                                              <span className="text-gray-500">• {variationName}:</span>
-                                              <span className="text-gray-700">
-                                                {selections.map((optionId, idx) => {
-                                                  const option = variation?.options?.find(o => o.id === parseInt(optionId));
-                                                  return (
-                                                    <span key={optionId}>
-                                                      {option?.option_name || optionId}
-                                                      {idx < selections.length - 1 ? ', ' : ''}
-                                                    </span>
-                                                  );
-                                                })}
-                                              </span>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-
-                                    {/* Show addons if any */}
-                                    {item.adons && item.adons.length > 0 && (
-                                      <div className="text-xs text-gray-600 mt-1">
-                                        {item.adons.map((addonId, idx) => {
-                                          const addon = foodDetails?.adons?.find(a => a.id === parseInt(addonId));
-                                          const addonName = addon?.name || addonId;
-                                          const addonPrice = addon?.price;
-
-                                          return (
-                                            <div key={idx} className="flex items-center gap-1">
-                                              <span className="text-gray-500">• Addon:</span>
-                                              <span className="text-gray-700">{addonName}</span>
-                                              {addonPrice && <span className="text-gray-500">(+€{addonPrice.toFixed(2)})</span>}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="font-medium text-gray-800">€{item.totalPrice.toFixed(2)}</span>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Total Section */}
-                            <div className="border-t border-gray-200 pt-2 mb-2">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs sm:text-xs md:text-xs lg:text-sm font-semibold text-gray-800">Total:</span>
-                                <span className="text-xs sm:text-xs md:text-sm lg:text-md font-bold text-gray-800">€{order.total.toFixed(2)}</span>
-                              </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-3">
-                              {order.isDraft ? (
-                                // Draft order actions
-                                <>
-                                  <button
-                                    className="bg-gray-600 text-white text-xs sm:text-sm md:text-xs lg:text-sm font-medium p-1 rounded-lg hover:bg-gray-700 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Handle view details
-                                      setSelectedPlacedOrder(order);
-                                    }}
-                                  >
-                                    View Details
-                                  </button>
-                                  <button
-                                    className="bg-green-600 text-white text-xs sm:text-sm md:text-xs lg:text-sm font-medium p-1 rounded-lg hover:bg-green-700 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Handle convert to order
-                                      handleConvertDraftToOrder(order);
-                                    }}
-                                  >
-                                    Convert to Order
-                                  </button>
-                                </>
-                              ) : (
-                                // Regular order actions
-                                <>
-                                  <button
-                                    className="flex-1 bg-gray-600 text-white text-xs sm:text-sm md:text-xs lg:text-sm font-medium py-1 rounded-lg hover:bg-gray-700 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Handle view details
-                                      setSelectedPlacedOrder(order);
-                                    }}
-                                  >
-                                    View Details
-                                  </button>
-                                  <button
-                                    className="flex-1 bg-blue-600 text-white text-xs sm:text-sm md:text-xs lg:text-sm font-medium p-1 rounded-lg hover:bg-blue-700 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      // Handle mark as action
-                                      handleOpenStatusUpdateModal(order, e);
-                                    }}
-                                  >
-                                    Mark As
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-500 text-xs sm:text-sm md:text-xs lg:text-sm">No active orders</div>
-                  <div className="text-gray-400 text-xs mt-2">Place orders to see active orders here</div>
-                </div>
-              )}
-            </div>
+            <PlaceOrderComponent
+              placedOrders={placedOrders}
+              runningOrdersSearchQuery={runningOrdersSearchQuery}
+              currentTime={new Date()}
+              expandedOrders={expandedOrders}
+              selectedPlacedOrder={selectedPlacedOrder}
+              setSelectedPlacedOrder={setSelectedPlacedOrder}
+              handleToggleOrderExpansion={handleToggleOrderExpansion}
+              getStatusBadgeStyle={getStatusBadgeStyle}
+              foodDetails={foodDetails}
+              handleConvertDraftToOrder={handleConvertDraftToOrder}
+              handleOpenStatusUpdateModal={handleOpenStatusUpdateModal}
+            />
           </div>
           {/* Order Action Buttons - Below Running Orders Box */}
           <div className="flex justify-center p-2">
@@ -6445,6 +6201,41 @@ const RunningOrders = () => {
             <div className="flex flex-col gap-2 w-full">
               {/* First Row - Bill and Invoice */}
               <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-2">
+                {selectedPlacedOrder?.isDraft ? (
+                  // Draft order actions
+                  <>
+                    <button
+                      className="bg-green-600 text-white text-xs sm:text-sm md:text-xs lg:text-xs font-medium p-1 rounded-lg hover:bg-green-700 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle convert to order
+                        handleConvertDraftToOrder(selectedPlacedOrder);
+                      }}
+                      disabled={!selectedPlacedOrder}
+                    >
+                      PLACE
+                    </button>
+                  </>
+                ) : (
+                  // Regular order actions
+                  <>
+                    <button
+                      className={`text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                      }`}
+                      // className="flex-1 bg-blue-600 text-white text-xs sm:text-sm md:text-xs lg:text-sm font-medium p-1 rounded-lg hover:bg-blue-700 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle mark as action
+                        handleOpenStatusUpdateModal(selectedPlacedOrder, e);
+                      }}
+                      disabled={!selectedPlacedOrder}
+                    >
+                      STATUS
+                    </button>
+                  </>
+                )}
                 <button
                   data-invoice-button
                   onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
@@ -6453,7 +6244,7 @@ const RunningOrders = () => {
                   <Receipt size={14} />
                   BILL
                 </button>
-                <button
+                {/* <button
                   onClick={() => {
                     if (selectedPlacedOrder) {
                       setIsInvoiceAfterPayment(false); // This is NOT after payment
@@ -6464,7 +6255,7 @@ const RunningOrders = () => {
                   className={`text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <FileText size={14} />
                   INVOICE
-                </button>
+                </button> */}
                 {/* Second Row - Order Details, Modify Order, Cancel */}
                 <button
                   onClick={handleOpenOrderDetailsModal}
@@ -6473,7 +6264,7 @@ const RunningOrders = () => {
                     }`}
                 >
                   <Eye size={14} />
-                  Details
+                  DETAILS
                 </button>
                 <button
                   onClick={async () => {
@@ -6498,9 +6289,9 @@ const RunningOrders = () => {
                   }
                 >
                   <Edit size={14} />
-                  Modify
+                  LOAD
                 </button>
-                <button
+                {/* <button
                   onClick={handleCancelOrder}
                   disabled={!selectedPlacedOrder}
                   className={`text-[13px] col-span-2 mx-auto font-bold rounded-lg p-1 flex items-center justify-center gap-2 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#C42232] text-white cursor-pointer hover:bg-[#b01a28]' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
@@ -6508,81 +6299,25 @@ const RunningOrders = () => {
                 >
                   <X size={14} />
                   CANCEL ORDER
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
 
           {/* Invoice Options Dropdown */}
           {showInvoiceOptions && selectedPlacedOrder && (
-            <div data-invoice-options className="absolute bottom-37 left-10 transform -translate-x-7 bg-gray-200 rounded-lg p-2 shadow-lg z-10">
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => {
-                    resetFinalizeSaleModalForSinglePay();
-                    setIsSinglePayMode(false); // Don't set to true for existing orders
-                    // Load the selected order's data into the cart for payment processing
-                    if (selectedPlacedOrder && selectedPlacedOrder.items) {
-                      // Convert order items back to cart items format
-                      const cartItemsFromOrder = selectedPlacedOrder.items.map((item, index) => {
-                        // Parse variations and addons from JSON if they're strings
-                        let variations = {};
-                        let adons = [];
-
-                        try {
-                          if (typeof item.variations === 'string') {
-                            variations = JSON.parse(item.variations);
-                          } else {
-                            variations = item.variations || {};
-                          }
-
-                          if (typeof item.adons === 'string') {
-                            adons = JSON.parse(item.adons);
-                          } else {
-                            adons = item.adons || [];
-                          }
-                        } catch (error) {
-                          console.error('Error parsing variations/addons for item:', item, error);
-                        }
-
-                        return {
-                          id: Date.now() + index, // Generate unique IDs
-                          food: item.food,
-                          variations: variations,
-                          adons: adons,
-                          quantity: item.quantity,
-                          totalPrice: item.totalPrice,
-                          addedAt: new Date().toISOString()
-                        };
-                      });
-
-                      // Load order data into cart for payment processing
-                      setCartItems(cartItemsFromOrder);
-                      setCartItemId(Date.now() + cartItemsFromOrder.length + 1);
-
-                      // Load customer information
-                      if (selectedPlacedOrder.customer) {
-                        setSelectedCustomer(selectedPlacedOrder.customer);
-                      }
-
-                      // Load applied coupon if any
-                      if (selectedPlacedOrder.coupon) {
-                        setAppliedCoupon(selectedPlacedOrder.coupon);
-                      }
-                    }
-                    setShowFinalizeSaleModal(true);
-                    setShowInvoiceOptions(false);
-                  }}
-                  className="w-32 bg-gray-300 text-black font-medium rounded px-1 text-center hover:bg-gray-400 transition-colors text-xs">
-                  Single Pay
-                </button>
-                <button
-                  onClick={handleOpenSplitBillModal}
-                  className="w-32 bg-gray-300 text-black font-medium rounded px-1 text-center hover:bg-gray-400 transition-colors text-xs">
-                  Split Bill
-                </button>
-              </div>
-            </div>
+            <InvoiceOptions
+              resetFinalizeSaleModalForSinglePay={resetFinalizeSaleModalForSinglePay}
+              setIsSinglePayMode={setIsSinglePayMode}
+              selectedPlacedOrder={selectedPlacedOrder}
+              setCartItems={setCartItems}
+              setCartItemId={setCartItemId}
+              setSelectedCustomer={setSelectedCustomer}
+              setAppliedCoupon={setAppliedCoupon}
+              setShowFinalizeSaleModal={setShowFinalizeSaleModal}
+              setShowInvoiceOptions={setShowInvoiceOptions}
+              handleOpenSplitBillModal={handleOpenSplitBillModal}
+            />
           )}
         </div>
 
@@ -7029,7 +6764,7 @@ const RunningOrders = () => {
               </div> */}
 
               {/* Primary Action Buttons */}
-              <div className="grid grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+              <div className="grid grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
                 {/* Hide UPDATE ORDER button when modifying paid orders */}
                 {!(isModifyingOrder && modifyingOrderPaymentInfo) && (
                   <button
@@ -7037,7 +6772,7 @@ const RunningOrders = () => {
                       playButtonSound();
                       handlePlaceOrder();
                     }}
-                    className="bg-[#fb8b02] text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-sm font-bold rounded flex items-center gap-2 hover:bg-[#e67a00] transition-colors"
+                    className="bg-[#fb8b02] text-white btn-lifted p-1 text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-bold rounded flex items-center gap-2 hover:bg-[#e67a00] transition-colors"
                   >
                     <ShoppingCart size={16} />
                     {isModifyingOrder ? 'UPDATE ORDER' : 'PLACE ORDER'}
@@ -7048,7 +6783,7 @@ const RunningOrders = () => {
                     playButtonSound();
                     handlePayment();
                   }}
-                  className={`${isModifyingOrder && modifyingOrderPaymentInfo ? 'col-span-2' : 'col-span-1'} bg-[#16A34A] text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#15803d] transition-colors`}
+                  className={`${isModifyingOrder && modifyingOrderPaymentInfo ? 'col-span-2' : 'col-span-1'} bg-[#16A34A] text-white btn-lifted p-2 text-xs sm:text-sm md:text-lg:text-xs xl:text-sm font-bold rounded flex items-center justify-center gap-2 hover:bg-[#15803d] transition-colors`}
                 >
                   PAY (€{calculateCartTotal().toFixed(2)})
                 </button>
@@ -7065,23 +6800,23 @@ const RunningOrders = () => {
                 {/* Secondary Action Buttons */}
                 <button
                   onClick={handleOpenSplitBillModal}
-                  className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
+                  className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
                 >
                   <Wallet size={14} />
                   SPLIT SALE
                 </button>
                 <button
                   onClick={handleOpenCouponModal}
-                  className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
+                  className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
                 >
                   <Save size={14} />
                   HOLD
                 </button>
-                <button className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
+                <button className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
                   <Archive size={14} />
                   OPEN DRAWER
                 </button>
-                <button className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
+                <button className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
                   <ChefHat size={14} />
                   SERVICE FEE
                 </button>
@@ -9003,7 +8738,7 @@ const RunningOrders = () => {
 
       {/* Cart Details Modal */}
       {showCartDetailsModal && (
-        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-60 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
             {/* Header */}
             <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
