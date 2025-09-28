@@ -74,16 +74,45 @@ const Sidebar = ({ navigationItems }) => {
     }
   };
 
-  // Handle logout (frontend only)
+  // Handle logout with proper functionality
   const handleLogout = async () => {
     setLogoutLoading(true);
     
-    // Simulate logout process
-    setTimeout(() => {
+    try {
+      const currentEmployee = localStorage.getItem('currentEmployee');
+      if (currentEmployee) {
+        const employeeData = JSON.parse(currentEmployee);
+        if (employeeData.id) {
+          // Use the global logout function if available, otherwise call directly
+          if (window.handleEmployeeLogout) {
+            await window.handleEmployeeLogout(employeeData.id);
+          } else {
+            await window.myAPI?.updateEmployeeLogout(employeeData.id);
+          }
+        }
+      }
+      // Clear local storage
+      localStorage.removeItem('currentEmployee');
+      sessionStorage.clear();
+      
+      // Wait for 1 second to show progress
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Navigate to login
+      navigate('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still navigate to login even if logout fails
+      localStorage.removeItem('currentEmployee');
+      sessionStorage.clear();
+      
+      // Wait for 1 second to show progress
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      navigate('/login');
+    } finally {
       setLogoutLoading(false);
-      // In a real app, you would redirect to login page
-      console.log("User logged out");
-    }, 1000);
+    }
   };
 
   if (logoutLoading) {

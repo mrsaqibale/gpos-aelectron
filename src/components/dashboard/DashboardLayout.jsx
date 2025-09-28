@@ -285,10 +285,35 @@ const DashboardLayout = () => {
               {/* Logout Button */}
               <div className="px-4 mb-6 cursor-pointer">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setShowDashboardSlider(false);
-                    // Handle logout logic here
-                    console.log("Logout clicked");
+                    
+                    try {
+                      const currentEmployee = localStorage.getItem('currentEmployee');
+                      if (currentEmployee) {
+                        const employeeData = JSON.parse(currentEmployee);
+                        if (employeeData.id) {
+                          // Use the global logout function if available, otherwise call directly
+                          if (window.handleEmployeeLogout) {
+                            await window.handleEmployeeLogout(employeeData.id);
+                          } else {
+                            await window.myAPI?.updateEmployeeLogout(employeeData.id);
+                          }
+                        }
+                      }
+                      // Clear local storage
+                      localStorage.removeItem('currentEmployee');
+                      sessionStorage.clear();
+                      
+                      // Navigate to login
+                      navigate('/login');
+                    } catch (error) {
+                      console.error('Error during logout:', error);
+                      // Still navigate to login even if logout fails
+                      localStorage.removeItem('currentEmployee');
+                      sessionStorage.clear();
+                      navigate('/login');
+                    }
                   }}
                   className="w-full flex items-center cursor-pointer gap-2 py-3 text-gray-100"
                 >
