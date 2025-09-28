@@ -725,14 +725,7 @@ export function verifyPasswordResetOTP(phone, role, otp) {
       return errorResponse('Phone number, role, and OTP are required');
     }
     
-    // Clean phone number
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-    let formattedPhone = cleanPhone;
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+1' + formattedPhone; // Default to US, adjust as needed
-    }
-    
-    // First verify the employee exists
+    // First verify the employee exists and get their current code
     const employeeCheck = verifyEmployeeByPhoneAndRole(phone, role);
     if (!employeeCheck.success) {
       return employeeCheck;
@@ -740,63 +733,40 @@ export function verifyPasswordResetOTP(phone, role, otp) {
     
     const employee = employeeCheck.data;
     
-    // Find valid OTP
+    // Get employee's current code from database
     const stmt = db.prepare(`
-      SELECT id, otp_code, expires_at, is_used, attempts
-      FROM otp_verification 
-      WHERE employee_id = ? AND phone_number = ? AND purpose = 'password_reset'
-      ORDER BY created_at DESC 
-      LIMIT 1
+      SELECT id, code, updated_at
+      FROM employee 
+      WHERE id = ? AND isDeleted = 0
     `);
     
-    const otpRecord = stmt.get(employee.id, formattedPhone);
+    const employeeRecord = stmt.get(employee.id);
     
-    if (!otpRecord) {
-      console.warn('[verifyPasswordResetOTP] no OTP record found');
+    if (!employeeRecord) {
+      console.warn('[verifyPasswordResetOTP] employee record not found');
+      return errorResponse('Employee record not found');
+    }
+    
+    if (!employeeRecord.code) {
+      console.warn('[verifyPasswordResetOTP] no OTP code found');
       return errorResponse('No OTP found. Please request a new OTP.');
     }
     
-    // Check if OTP is expired
+    // Check if OTP is expired (10 minutes from updated_at)
     const now = new Date();
-    const expiresAt = new Date(otpRecord.expires_at);
+    const updatedAt = new Date(employeeRecord.updated_at);
+    const expiresAt = new Date(updatedAt.getTime() + 10 * 60 * 1000); // 10 minutes
+    
     if (now > expiresAt) {
       console.warn('[verifyPasswordResetOTP] OTP expired');
       return errorResponse('OTP has expired. Please request a new OTP.');
     }
     
-    // Check if OTP is already used
-    if (otpRecord.is_used === 1) {
-      console.warn('[verifyPasswordResetOTP] OTP already used');
-      return errorResponse('OTP has already been used. Please request a new OTP.');
-    }
-    
-    // Check attempt limit (max 3 attempts)
-    if (otpRecord.attempts >= 3) {
-      console.warn('[verifyPasswordResetOTP] too many attempts');
-      return errorResponse('Too many failed attempts. Please request a new OTP.');
-    }
-    
     // Verify OTP
-    if (otpRecord.otp_code !== otp) {
-      // Increment attempt count
-      const updateStmt = db.prepare(`
-        UPDATE otp_verification 
-        SET attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `);
-      updateStmt.run(otpRecord.id);
-      
+    if (employeeRecord.code !== otp) {
       console.warn('[verifyPasswordResetOTP] invalid OTP');
       return errorResponse('Invalid OTP. Please try again.');
     }
-    
-    // Mark OTP as used
-    const markUsedStmt = db.prepare(`
-      UPDATE otp_verification 
-      SET is_used = 1, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `);
-    markUsedStmt.run(otpRecord.id);
     
     console.log('[verifyPasswordResetOTP] OTP verified successfully');
     return { 
