@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 import fs from 'fs';
+import twilioService from '../../../services/TwilioService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -596,6 +597,286 @@ export function changeEmployeePassword(employeeId, oldPin, newPin) {
     return { success: true, message: 'PIN updated successfully' };
   } catch (err) {
     console.error('[changeEmployeePassword] error', err);
+    return errorResponse(err.message);
+  }
+}
+
+// Generate a random 6-digit OTP
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Check if phone number and role match an employee
+export function verifyEmployeeByPhoneAndRole(phone, role) {
+  try {
+    console.log('[verifyEmployeeByPhoneAndRole] called with', { phone, role });
+    
+    // Validate inputs
+    if (!phone || !role) {
+      return errorResponse('Phone number and role are required');
+    }
+    
+    // Clean phone number (remove spaces, dashes, etc.)
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    
+    const stmt = db.prepare(`
+      SELECT id, fname, lname, phone, roll, isActive, isDeleted 
+      FROM employee 
+      WHERE phone = ? AND roll = ? AND isDeleted = 0 AND isActive = 1
+    `);
+    
+    const employee = stmt.get(cleanPhone, role);
+    
+    if (!employee) {
+      console.warn('[verifyEmployeeByPhoneAndRole] employee not found');
+      return errorResponse('No employee found with this phone number and role');
+    }
+    
+    console.log('[verifyEmployeeByPhoneAndRole] employee found:', employee.id);
+    return { 
+      success: true, 
+      data: {
+        id: employee.id,
+        fname: employee.fname,
+        lname: employee.lname,
+        phone: employee.phone,
+        roll: employee.roll
+      }
+    };
+  } catch (err) {
+    console.error('[verifyEmployeeByPhoneAndRole] error', err);
+    return errorResponse(err.message);
+  }
+}
+
+// Send OTP for password reset
+export async function sendPasswordResetOTP(phone, role) {
+  try {
+    console.log('[sendPasswordResetOTP] called with', { phone, role });
+    
+    // First verify the employee exists
+    const employeeCheck = verifyEmployeeByPhoneAndRole(phone, role);
+    if (!employeeCheck.success) {
+      return employeeCheck;
+    }
+    
+    const employee = employeeCheck.data;
+    
+    // Check if Twilio is configured
+    if (!twilioService.isConfigured()) {
+      console.warn('[sendPasswordResetOTP] Twilio not configured');
+      return errorResponse('SMS service is not configured. Please contact administrator.');
+    }
+    
+    // Generate OTP
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    
+    // Clean phone number for international format
+    let formattedPhone = phone.replace(/[\s\-\(\)]/g, '');
+    if (!formattedPhone.startsWith('+')) {
+      // Assume it's a local number, you might want to add country code logic here
+      formattedPhone = '+1' + formattedPhone; // Default to US, adjust as needed
+    }
+    
+    // Save OTP to database
+    const stmt = db.prepare(`
+      INSERT INTO otp_verification (employee_id, phone_number, otp_code, purpose, expires_at)
+      VALUES (?, ?, ?, 'password_reset', ?)
+    `);
+    
+    stmt.run(employee.id, formattedPhone, otp, expiresAt.toISOString());
+    
+    // Send OTP via SMS
+    const smsResult = await twilioService.sendOTP(
+      formattedPhone, 
+      otp, 
+      `${employee.fname} ${employee.lname}`
+    );
+    
+    if (!smsResult.success) {
+      console.error('[sendPasswordResetOTP] SMS failed:', smsResult.message);
+      return errorResponse(`Failed to send OTP: ${smsResult.message}`);
+    }
+    
+    console.log('[sendPasswordResetOTP] OTP sent successfully');
+    return { 
+      success: true, 
+      message: 'OTP sent successfully to your registered phone number',
+      expiresIn: 10 // minutes
+    };
+  } catch (err) {
+    console.error('[sendPasswordResetOTP] error', err);
+    return errorResponse(err.message);
+  }
+}
+
+// Verify OTP for password reset
+export function verifyPasswordResetOTP(phone, role, otp) {
+  try {
+    console.log('[verifyPasswordResetOTP] called with', { phone, role, otp });
+    
+    // Validate inputs
+    if (!phone || !role || !otp) {
+      return errorResponse('Phone number, role, and OTP are required');
+    }
+    
+    // Clean phone number
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    let formattedPhone = cleanPhone;
+    if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+1' + formattedPhone; // Default to US, adjust as needed
+    }
+    
+    // First verify the employee exists
+    const employeeCheck = verifyEmployeeByPhoneAndRole(phone, role);
+    if (!employeeCheck.success) {
+      return employeeCheck;
+    }
+    
+    const employee = employeeCheck.data;
+    
+    // Find valid OTP
+    const stmt = db.prepare(`
+      SELECT id, otp_code, expires_at, is_used, attempts
+      FROM otp_verification 
+      WHERE employee_id = ? AND phone_number = ? AND purpose = 'password_reset'
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `);
+    
+    const otpRecord = stmt.get(employee.id, formattedPhone);
+    
+    if (!otpRecord) {
+      console.warn('[verifyPasswordResetOTP] no OTP record found');
+      return errorResponse('No OTP found. Please request a new OTP.');
+    }
+    
+    // Check if OTP is expired
+    const now = new Date();
+    const expiresAt = new Date(otpRecord.expires_at);
+    if (now > expiresAt) {
+      console.warn('[verifyPasswordResetOTP] OTP expired');
+      return errorResponse('OTP has expired. Please request a new OTP.');
+    }
+    
+    // Check if OTP is already used
+    if (otpRecord.is_used === 1) {
+      console.warn('[verifyPasswordResetOTP] OTP already used');
+      return errorResponse('OTP has already been used. Please request a new OTP.');
+    }
+    
+    // Check attempt limit (max 3 attempts)
+    if (otpRecord.attempts >= 3) {
+      console.warn('[verifyPasswordResetOTP] too many attempts');
+      return errorResponse('Too many failed attempts. Please request a new OTP.');
+    }
+    
+    // Verify OTP
+    if (otpRecord.otp_code !== otp) {
+      // Increment attempt count
+      const updateStmt = db.prepare(`
+        UPDATE otp_verification 
+        SET attempts = attempts + 1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `);
+      updateStmt.run(otpRecord.id);
+      
+      console.warn('[verifyPasswordResetOTP] invalid OTP');
+      return errorResponse('Invalid OTP. Please try again.');
+    }
+    
+    // Mark OTP as used
+    const markUsedStmt = db.prepare(`
+      UPDATE otp_verification 
+      SET is_used = 1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    markUsedStmt.run(otpRecord.id);
+    
+    console.log('[verifyPasswordResetOTP] OTP verified successfully');
+    return { 
+      success: true, 
+      message: 'OTP verified successfully',
+      employeeId: employee.id
+    };
+  } catch (err) {
+    console.error('[verifyPasswordResetOTP] error', err);
+    return errorResponse(err.message);
+  }
+}
+
+// Reset employee PIN using OTP verification
+export function resetEmployeePIN(phone, role, otp, newPin) {
+  try {
+    console.log('[resetEmployeePIN] called with', { phone, role, otp, newPin });
+    
+    // Validate new PIN
+    const isFourDigit = (v) => typeof v === 'string' && /^\d{4}$/.test(v);
+    if (!isFourDigit(newPin)) {
+      return errorResponse('New PIN must be exactly 4 numeric digits');
+    }
+    
+    // First verify the OTP
+    const otpVerification = verifyPasswordResetOTP(phone, role, otp);
+    if (!otpVerification.success) {
+      return otpVerification;
+    }
+    
+    const employeeId = otpVerification.employeeId;
+    
+    // Check if new PIN is unique
+    const pinCheck = checkPinUnique(newPin, employeeId);
+    if (!pinCheck.success) {
+      return errorResponse('Failed to check PIN uniqueness');
+    }
+    
+    if (!pinCheck.isUnique) {
+      return errorResponse('This PIN is already in use. Please choose a different PIN.');
+    }
+    
+    // Update the PIN
+    const updateStmt = db.prepare(`
+      UPDATE employee 
+      SET pin = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ? AND isDeleted = 0
+    `);
+    
+    const result = updateStmt.run(newPin, employeeId);
+    
+    if (result.changes === 0) {
+      console.error('[resetEmployeePIN] no changes made');
+      return errorResponse('Failed to update PIN');
+    }
+    
+    console.log('[resetEmployeePIN] PIN reset successfully');
+    return { 
+      success: true, 
+      message: 'PIN reset successfully. You can now login with your new PIN.'
+    };
+  } catch (err) {
+    console.error('[resetEmployeePIN] error', err);
+    return errorResponse(err.message);
+  }
+}
+
+// Clean up expired OTPs (utility function)
+export function cleanupExpiredOTPs() {
+  try {
+    const stmt = db.prepare(`
+      DELETE FROM otp_verification 
+      WHERE expires_at < CURRENT_TIMESTAMP
+    `);
+    
+    const result = stmt.run();
+    console.log(`[cleanupExpiredOTPs] cleaned up ${result.changes} expired OTPs`);
+    
+    return { 
+      success: true, 
+      message: `Cleaned up ${result.changes} expired OTPs`
+    };
+  } catch (err) {
+    console.error('[cleanupExpiredOTPs] error', err);
     return errorResponse(err.message);
   }
 }
