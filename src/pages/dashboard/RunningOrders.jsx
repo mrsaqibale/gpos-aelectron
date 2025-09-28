@@ -95,6 +95,7 @@ import MergeTableModal from '../../components/dashboard/table/MergeTableModal';
 import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsModalbox';
 import InvoiceOptions from '../../components/InvoiceOptions.jsx';
 import PlaceOrderComponent from '../../components/PlaceOrderComponent.jsx';
+import SplitBillModal from '../../components/SplitBillModal.jsx';
 
 const RunningOrders = () => {
   // Accept navigation state to pre-load an order
@@ -1761,36 +1762,36 @@ const RunningOrders = () => {
     console.log('Current selectedOrderType:', selectedOrderType);
     console.log('Customer name:', customer?.name);
     console.log('Customer id:', customer?.id);
-    
+
     // Set customer first
     setSelectedCustomer(customer);
     setShowCustomerModal(false);
     setShowCustomerSearchModal(false);
-    
+
     console.log('Customer set, selectedCustomer should be:', customer);
     console.log('Customer name after setting:', customer?.name);
-    
+
     // Check if customer needs editing based on order type
     if (customer && selectedOrderType) {
       let needsEdit = false;
-      
+
       // Only validate for Collection and Delivery orders
       // In Store and Table orders don't require validation
       if (selectedOrderType === 'Delivery') {
         const hasPhone = customer.phone && customer.phone.trim().length > 0;
         const hasAddress = customer.addresses && customer.addresses.length > 0;
-        
+
         console.log('Delivery validation - hasPhone:', hasPhone, 'hasAddress:', hasAddress);
-        
+
         if (!hasPhone || !hasAddress) {
           needsEdit = true;
         }
       }
       else if (selectedOrderType === 'Collection') {
         const hasPhone = customer.phone && customer.phone.trim().length > 0;
-        
+
         console.log('Collection validation - hasPhone:', hasPhone);
-        
+
         if (!hasPhone) {
           needsEdit = true;
         }
@@ -1800,7 +1801,7 @@ const RunningOrders = () => {
         console.log('In Store/Table order - no validation needed');
         // No validation required, customer can be selected directly
       }
-      
+
       // Show edit modal if validation fails
       if (needsEdit) {
         console.log('Opening edit modal for customer');
@@ -1808,9 +1809,9 @@ const RunningOrders = () => {
         return; // Don't trigger customer update event yet
       }
     }
-    
+
     console.log('Customer selection completed successfully');
-    
+
     // If this is a new customer (has an ID), trigger update event
     if (customer && customer.id) {
       window.dispatchEvent(new CustomEvent('customerUpdated', {
@@ -1848,21 +1849,21 @@ const RunningOrders = () => {
   const handleEditCustomer = (updatedCustomer) => {
     console.log('handleEditCustomer called with:', updatedCustomer);
     console.log('Current selectedOrderType:', selectedOrderType);
-    
+
     // Always set the customer first
     setSelectedCustomer(updatedCustomer);
-    
+
     // Validate that the updated customer has all required data for the current order type
     if (updatedCustomer && selectedOrderType) {
       let hasRequiredData = true;
-      
+
       // Check for Delivery orders
       if (selectedOrderType === 'Delivery') {
         const hasPhone = updatedCustomer.phone && updatedCustomer.phone.trim().length > 0;
         const hasAddress = updatedCustomer.addresses && updatedCustomer.addresses.length > 0;
-        
+
         console.log('Delivery validation - hasPhone:', hasPhone, 'hasAddress:', hasAddress);
-        
+
         if (!hasPhone || !hasAddress) {
           hasRequiredData = false;
         }
@@ -1870,9 +1871,9 @@ const RunningOrders = () => {
       // Check for Collection orders
       else if (selectedOrderType === 'Collection') {
         const hasPhone = updatedCustomer.phone && updatedCustomer.phone.trim().length > 0;
-        
+
         console.log('Collection validation - hasPhone:', hasPhone);
-        
+
         if (!hasPhone) {
           hasRequiredData = false;
         }
@@ -1882,12 +1883,12 @@ const RunningOrders = () => {
         console.log('In Store/Table order - no validation needed');
         hasRequiredData = true;
       }
-      
+
       console.log('Customer validation result:', hasRequiredData);
     }
-    
+
     setShowEditModal(false);
-    
+
     // Trigger a custom event to refresh customer list in CustomerSearchModal
     window.dispatchEvent(new CustomEvent('customerUpdated', {
       detail: { customer: updatedCustomer }
@@ -4842,6 +4843,7 @@ const RunningOrders = () => {
     setSplitCharge(0);
     setSplitTips(0);
   };
+  
 
   const handleSplitItemToggle = (itemId) => {
     setSplitItems(prev => prev.map(item =>
@@ -4899,6 +4901,12 @@ const RunningOrders = () => {
       tips: 0,
       total: 0
     }));
+    splitItems.forEach((item, i) => {
+      const targetBill = newSplitBills[i % numSplits];
+      targetBill.items.push(item);
+      targetBill.subtotal += item.totalPrice;
+      targetBill.total += item.totalPrice;
+    });
 
     setSplitBills(newSplitBills);
     setSelectedSplitBill(newSplitBills[0]); // Select first split by default
@@ -5016,6 +5024,7 @@ const RunningOrders = () => {
     // Only consider items that still have quantity > 0
     const itemsWithQuantity = splitItems.filter(item => item.quantity > 0);
     if (itemsWithQuantity.length === 0) return true; // All items have been paid for
+    console.log(itemsWithQuantity);
 
     return itemsWithQuantity.every(item => getRemainingQuantity(item.id) === 0);
   };
@@ -6333,9 +6342,9 @@ const RunningOrders = () => {
                   <>
                     <button
                       className={`text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                      }`}
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                        }`}
                       // className="flex-1 bg-blue-600 text-white text-xs sm:text-sm md:text-xs lg:text-sm font-medium p-1 rounded-lg hover:bg-blue-700 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -6683,7 +6692,7 @@ const RunningOrders = () => {
                 className="p-1 text-xs sm:text-sm md:text-xs lg:text-sm text-base text-[#666666] font-semibold rounded-lg border border-[#e0e0e0] flex items-center justify-center gap-1 
                          transition-colors cursor-pointer hover:border-[#007BFF] hover:bg-[#F8F9FA] hover:border-2">
                 {!selectedCustomer && <UserCheck size={14} />}
-{(() => {
+                {(() => {
                   console.log('Rendering customer button - selectedCustomer:', selectedCustomer);
                   console.log('selectedCustomer name:', selectedCustomer?.name);
                   return selectedCustomer ? selectedCustomer.name : 'Walk In Customer';
@@ -7023,304 +7032,35 @@ const RunningOrders = () => {
           />
         )}
 
+        
         {/* Split Bill Modal */}
         {showSplitBillModal && (
-          <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
-              {/* Header */}
-              <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl flex-shrink-0">
-                <h2 className="text-xl font-bold">Split Bill</h2>
-                <button
-                  onClick={handleCloseSplitBillModal}
-                  disabled={areAllItemsDistributed()}
-                  className={`p-1 rounded-full transition-colors ${areAllItemsDistributed()
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : 'text-red-500 hover:text-red-300 hover:bg-white hover:bg-opacity-20'
-                    }`}
-                >
-                  X Cancel
-                </button>
-              </div>
+          <SplitBillModal
+            isOpen={showSplitBillModal}
+            onClose={handleCloseSplitBillModal}
+            splitItems={splitItems}
+            splitBills={splitBills}
+            selectedSplitBill={selectedSplitBill}
+            setSelectedSplitBill={setSelectedSplitBill}
+            totalSplit={totalSplit}
+            setTotalSplit={setTotalSplit}
+            handleSplitGo={handleSplitGo}
+            handleRemoveItemFromSplit={handleRemoveItemFromSplit}
+            handleAddItemToSplit={handleAddItemToSplit}
+            handleRemoveSplitBill={handleRemoveSplitBill}
+            handleSplitBillCustomerChange={handleSplitBillCustomerChange}
+            areAllItemsDistributed={areAllItemsDistributed}
+            calculateMaxSplits={calculateMaxSplits}
+            getRemainingQuantity={getRemainingQuantity}
+            getItemQuantityInSplit={getItemQuantityInSplit}
+            selectedPlacedOrder={selectedPlacedOrder}
+            getTaxRate={getTaxRate}
+            setSplitBillToRemove={setSplitBillToRemove}
+            resetFinalizeSaleModalForSplitBill={resetFinalizeSaleModalForSplitBill}
+            setIsSinglePayMode={setIsSinglePayMode}
+            setShowFinalizeSaleModal={setShowFinalizeSaleModal}
+          />
 
-              {/* Content */}
-              <div className="p-6 flex-1 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-8">
-                  {/* Left Section - Order Items */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Order Items</h3>
-
-                    {/* Items Table */}
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <table className="w-full">
-                        <thead className="bg-gray-50">
-                          <tr className="text-sm font-medium text-gray-700">
-                            <th className="px-3 py-2 text-left">Item Name</th>
-                            <th className="px-3 py-2 text-center">Price</th>
-                            <th className="px-3 py-2 text-center">Qty</th>
-                            <th className="px-3 py-2 text-center">Dis.</th>
-                            <th className="px-3 py-2 text-center">Total</th>
-                            <th className="px-3 py-2 text-center">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white">
-                          {splitItems.map((item) => (
-                            <tr key={item.id} className="border-t border-gray-100">
-                              <td className="px-3 py-2 text-sm text-gray-800">
-                                <span className="truncate">{item.food?.name || 'Unknown Food'}</span>
-                              </td>
-                              <td className="px-3 py-2 text-sm text-center text-gray-600">
-                                €{(item.totalPrice / item.quantity).toFixed(2)}
-                              </td>
-                              <td className="px-3 py-2 text-sm text-center text-gray-600">
-                                {getRemainingQuantity(item.id)}
-                              </td>
-                              <td className="px-3 py-2 text-sm text-center text-gray-600">
-                                €0.00
-                              </td>
-                              <td className="px-3 py-2 text-sm text-center font-medium text-gray-800">
-                                €{item.totalPrice.toFixed(2)}
-                              </td>
-                              <td className="px-3 py-2 text-center">
-                                <div className="flex items-center justify-center gap-1">
-                                  <button
-                                    onClick={() => handleRemoveItemFromSplit(item.id, selectedSplitBill?.id)}
-                                    disabled={!selectedSplitBill || getItemQuantityInSplit(item.id, selectedSplitBill?.id) === 0}
-                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${selectedSplitBill && getItemQuantityInSplit(item.id, selectedSplitBill?.id) > 0
-                                      ? 'bg-red-500 text-white hover:bg-red-600'
-                                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                      }`}
-                                    title="Remove from selected split"
-                                  >
-                                    -
-                                  </button>
-                                  <button
-                                    onClick={() => handleAddItemToSplit(item.id, selectedSplitBill?.id)}
-                                    disabled={!selectedSplitBill || getRemainingQuantity(item.id) <= 0}
-                                    className={`w-6 h-6 flex items-center justify-center rounded text-sm font-bold transition-colors ${selectedSplitBill && getRemainingQuantity(item.id) > 0
-                                      ? 'bg-green-500 text-white hover:bg-green-600'
-                                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                      }`}
-                                    title="Add to selected split"
-                                  >
-                                    +
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Summary Section */}
-
-                    <div className="border-gray-200 pt-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-800">Total Items:</span>
-                        <span className="text-sm font-bold text-gray-800">{splitItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-800">Sub Total:</span>
-                        <span className="text-sm font-bold text-gray-800">€{selectedPlacedOrder ? (selectedPlacedOrder.total / (1 + getTaxRate() / 100)).toFixed(2) : '0.00'}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-800">Tax:</span>
-                        <span className="text-sm font-bold text-gray-800">
-                          €{selectedPlacedOrder ? (selectedPlacedOrder.total * getTaxRate() / 100 / (1 + getTaxRate() / 100)).toFixed(2) : '0.00'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-800">Total Payable:</span>
-                        <span className="text-lg font-bold text-primary">€{selectedPlacedOrder ? selectedPlacedOrder.total.toFixed(2) : '0.00'}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Section - Split Bills */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Split Bills</h3>
-
-                    {/* Split Creation */}
-                    {splitBills.length === 0 && (
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="text-sm text-blue-800 font-medium mb-2">
-                          Maximum Split(s): {calculateMaxSplits()}
-                          {calculateMaxSplits() < 10 && (
-                            <span className="text-xs text-blue-600 block mt-1">
-                              (Based on total quantity: {splitItems.reduce((sum, item) => sum + item.quantity, 0)} items)
-                            </span>
-                          )}
-                        </div>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Total Split
-                            </label>
-                            <div className="flex gap-2">
-                              <input
-                                type="number"
-                                min="1"
-                                max={calculateMaxSplits()}
-                                value={totalSplit}
-                                onChange={(e) => setTotalSplit(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()) {
-                                      handleSplitGo();
-                                    }
-                                  }
-                                }}
-                                placeholder="Enter number of splits"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                              />
-                              <button
-                                onClick={handleSplitGo}
-                                disabled={!totalSplit || parseInt(totalSplit) <= 0 || parseInt(totalSplit) > calculateMaxSplits()}
-                                className={`px-6 py-2 font-medium rounded-lg transition-colors ${totalSplit && parseInt(totalSplit) > 0 && parseInt(totalSplit) <= calculateMaxSplits()
-                                  ? 'bg-primary text-white hover:bg-primary/90'
-                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                  }`}
-                              >
-                                Go
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Split Bills Display */}
-                    {splitBills.length > 0 && (
-                      <div className="grid grid-cols-2 gap-4">
-                        {splitBills.map((splitBill) => (
-                          <div
-                            key={splitBill.id}
-                            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${selectedSplitBill?.id === splitBill.id
-                              ? 'border-primary bg-primary/5'
-                              : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                            onClick={() => setSelectedSplitBill(splitBill)}
-                          >
-                            {/* Header */}
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-800">
-                                  Split Bill {splitBill.id}
-                                </span>
-                                {selectedSplitBill?.id === splitBill.id && (
-                                  <CheckCircle size={16} className="text-green-600" />
-                                )}
-                                {splitBill.paid && (
-                                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-                                    PAID
-                                  </span>
-                                )}
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveSplitBill(splitBill.id);
-                                }}
-                                className="text-red-500 hover:text-red-700 p-1"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-
-                            {/* Customer Selection */}
-                            <div className="mb-3">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">Customer:</label>
-                              <select
-                                value={splitBill.customer}
-                                onChange={(e) => handleSplitBillCustomerChange(splitBill.id, e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
-                              >
-                                <option value="Walk-in Customer">Walk-in Customer</option>
-                                <option value="Dona M. Leighty 408-230-51">Dona M. Leighty 408-230-51</option>
-                                <option value="Donld PB 432226663">Donld PB 432226663</option>
-                                <option value="Gustavo J. Weitz 256-537-96">Gustavo J. Weitz 256-537-96</option>
-                                <option value="Mr Joe 231654849">Mr Joe 231654849</option>
-                                <option value="Mr. Heri 523154215">Mr. Heri 523154215</option>
-                                <option value="John Smith 555-1234">John Smith 555-1234</option>
-                                <option value="Jane Doe 555-5678">Jane Doe 555-5678</option>
-                                <option value="Mike Johnson 555-9012">Mike Johnson 555-9012</option>
-                                <option value="Sarah Wilson 555-3456">Sarah Wilson 555-3456</option>
-                              </select>
-                            </div>
-
-                            {/* Items */}
-                            {/* <div className="mb-3">
-                              <div className="text-xs font-medium text-gray-700 mb-2">Items:</div>
-                              {splitBill.items.length > 0 ? (
-                                <div className="space-y-1">
-                                  {splitBill.items.map((item, index) => (
-                                    <div key={index} className="text-xs text-gray-600 flex justify-between">
-                                      <span className="truncate">{item.food?.name || 'Unknown Item'}</span>
-                                      <span>Qty: {item.quantity || 0}, €{(item.totalPrice || 0).toFixed(2)}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="text-xs text-gray-400 italic">No items added</div>
-                      )}
-                    </div> */}
-
-                            {/* Summary */}
-                            <div className="text-xs space-y-1">
-                              <div className="flex justify-between">
-                                <span>Sub Total:</span>
-                                <span>€{(splitBill.subtotal || 0).toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Disc Amt(%):</span>
-                                <span>€{(splitBill.discount || 0).toFixed(2)}X</span>
-                              </div>
-                              <div className="flex justify-between font-bold border-t border-gray-200 pt-1">
-                                <span>Total Payable:</span>
-                                <span>€{(splitBill.total || 0).toFixed(2)}</span>
-                              </div>
-                            </div>
-
-                            {/* Checkout Button */}
-                            <button
-                              disabled={!areAllItemsDistributed()}
-                              className={`w-full mt-3 text-xs font-medium py-2 px-3 rounded transition-colors ${areAllItemsDistributed()
-                                ? 'bg-green-500 text-white hover:bg-green-600'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (areAllItemsDistributed()) {
-                                  // Set the current split bill for finalization
-                                  console.log('Setting selectedSplitBill:', splitBill);
-                                  setSelectedSplitBill(splitBill);
-                                  // Store the split bill ID to remove it after payment
-                                  setSplitBillToRemove(splitBill.id);
-                                  // Reset modal state and open the Finalize Sale Modal
-                                  resetFinalizeSaleModalForSplitBill();
-                                  setIsSinglePayMode(false); // Ensure it's false for split bill checkout
-                                  setShowFinalizeSaleModal(true);
-                                }
-                              }}
-                            >
-                              Checkout
-                            </button>
-                            {!areAllItemsDistributed() && (
-                              <div className="text-xs text-gray-500 mt-1 text-center">
-                                All items must be distributed before checkout
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         )}
 
         {/* Split Pizza Modal */}
@@ -8714,6 +8454,7 @@ const RunningOrders = () => {
             currencyAmount={currencyAmount}
             setCurrencyAmount={setCurrencyAmount}
             selectedCurrency={selectedCurrency}
+            handleRemoveSplitBill={handleRemoveSplitBill}
             setSelectedCurrency={setSelectedCurrency}
             currencyOptions={currencyOptions}
             addedPayments={addedPayments}

@@ -17,18 +17,20 @@ import {
   Users2,
   Bell,
   Printer,
+  MailOpen,
   Tv,
   Computer,
   ScreenShare,
-  Monitor,
   RotateCwSquare,
   ListOrderedIcon,
   ListOrdered,
   LogOut,
   Menu,
   Save as SaveIcon,
-  TrendingUp
+  TrendingUp,
+  Calendar
 } from 'lucide-react';
+import TodaySalesSummary from '../TodaySalesSummary';
 
 const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => {
   const location = useLocation();
@@ -38,7 +40,11 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
   const { draftCount } = useDraftCount();
   const { getUnreadCount } = useNotifications();
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
-  
+  const [showTodaySalesSammaryModal, setShowTodaySalesSammaryModal] = useState(false);
+  const handleCloseTodaySalesSummary = () => {
+    setShowTodaySalesSammaryModal(false);
+
+  };
   const unreadNotificationCount = getUnreadCount();
 
   if (!isOrdersRoute) return null;
@@ -57,38 +63,38 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
     //   label: 'Register'
     // },
     {
-      // icon: <FileText size={16} />,
+      icon: <FileText size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: 'Manage Orders',
+      label: 'Orders',
       path: '/dashboard/manage-orders'
     },
 
     {
-      // icon: <CreditCard size={16} />,
+      icon: <MailOpen size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: 'Online Orders'
+      label: 'Sales'
     },
+    // {
+    //   // icon: <Bell size={16} />,
+    //   style: { backgroundColor: themeColors.primary },
+    //   textColor: 'text-white',
+    //   label: `Drafts${draftCount > 0 ? ` (${draftCount})` : ''}`,
+    //   onClick: onDraftsClick
+    // },
     {
-      // icon: <Bell size={16} />,
+      icon: <Bell size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: `Drafts${draftCount > 0 ? ` (${draftCount})` : ''}`,
-      onClick: onDraftsClick
-    },
-    {
-      //  icon: <Monitor size={16} />,
-      style: { backgroundColor: themeColors.primary },
-      textColor: 'text-white',
-      label: `Notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount})` : ''}`,
+      label: `Alert ${unreadNotificationCount > 0 ? ` (${unreadNotificationCount})` : ''}`,
       onClick: () => setShowNotificationsModal(true)
     },
     {
-      // icon: <Clock size={16} />,
+      icon: <Clock size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      label: 'Reservations',
+      label: 'Pre Orders',
       path: '/dashboard/reservations'
     },
     // {
@@ -97,14 +103,21 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
     //   textColor: 'text-white',
     //   label: 'Order Screen'
     // },
-
     {
-      //  icon: <ListOrdered size={16} />,
-      label: 'Customer Display',
+      icon: <Calendar size={16} />,
       style: { backgroundColor: themeColors.primary },
       textColor: 'text-white',
-      path: '/dashboard/customer-management'
+      label: 'Today',
+      onClick: () => setShowTodaySalesSammaryModal(true)
     },
+
+    // {
+    //  icon: <ListOrdered size={16} />,
+    //   label: 'Customer Display',
+    //   style: { backgroundColor: themeColors.primary },
+    //   textColor: 'text-white',
+    //   path: '/dashboard/customer-management'
+    // },
     // {
     //   //  icon: <ListOrdered size={16} />,
     //   label: 'Recent Sales',
@@ -144,7 +157,7 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
                   if (item.path) { navigate(item.path); return; }
                   if (index === 0) navigate('/dashboard'); // fallback: home
                 }}
-                className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-1 py-3 font-semibold flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
+                className={`${item.textColor} ${item.textMargin} btn-lifted rounded-md px-2 py-3 gap-2 font-semibold flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity`}
                 style={item.style || (item.bgColor ? { backgroundColor: item.bgColor } : {})}
               >
                 {item.icon}
@@ -178,12 +191,19 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
           </div>
         </div>
       </div>
-      
+
       {/* Notifications Modal */}
-      <NotificationsModal 
-        isOpen={showNotificationsModal} 
-        onClose={() => setShowNotificationsModal(false)} 
+      <NotificationsModal
+        isOpen={showNotificationsModal}
+        onClose={() => setShowNotificationsModal(false)}
       />
+      {/* Today Sammary Modal */}
+      {showTodaySalesSammaryModal && (
+        <TodaySalesSummary
+          isOpen={showTodaySalesSammaryModal}
+          onClose={handleCloseTodaySalesSummary}
+        />
+      )}
     </>
   );
 };

@@ -13,6 +13,7 @@ const FinalizeSaleModal = ({
   setPaymentAmount,
   givenAmount,
   setGivenAmount,
+  handleRemoveSplitBill,
   changeAmount,
   setChangeAmount,
   currencyAmount,
@@ -638,13 +639,13 @@ const FinalizeSaleModal = ({
                 />
                 <span className="text-sm text-gray-700">Send SMS</span>
               </label>
-              <button
+              {/* <button
                 onClick={() => setShowCartDetailsModal(true)}
                 className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
               >
                 {isSinglePayMode ? 'Order Details' : 
                  selectedSplitBill ? 'Split Bill Details' : 'Cart Details'}
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -1055,6 +1056,8 @@ const FinalizeSaleModal = ({
                   // Note: Tables are not freed automatically - this should be done when order is manually completed
                   // Note: Order is not removed from active orders - this should be done when order is manually completed
                 } else if (selectedSplitBill) {
+                  console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
+
                   // Handle split bill payment
                   setIsInvoiceAfterPayment(true);
                   
@@ -1084,6 +1087,7 @@ const FinalizeSaleModal = ({
                   // Remove the processed split bill from the list
                   if (splitBillToRemove) {
                     setSplitBills(prev => prev.filter(split => split.id !== splitBillToRemove));
+                    handleRemoveSplitBill(splitBillToRemove);
                     setSplitBillToRemove(null);
                   }
                 }
