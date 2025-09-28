@@ -117,10 +117,30 @@ const Sidebar = ({ navigationItems }) => {
 
   if (logoutLoading) {
     return (
-      <div className="fixed inset-0 bg-[#0000008d] z-50 flex justify-center items-center">
-        <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-          <div className="w-7 h-7 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-          <p className="text-gray-700 font-medium">Logging out...</p>
+      <div className="fixed inset-0 z-50 flex justify-center items-center">
+        {/* Blurred background overlay */}
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
+        
+        {/* Progress bar container */}
+        <div className="relative bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-white/20 text-center min-w-[320px]">
+          {/* Animated progress bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-6 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full animate-pulse"></div>
+          </div>
+          
+          {/* Spinner and text */}
+          <div className="flex flex-col items-center">
+            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+            <p className="text-lg font-semibold text-gray-800 mb-2">Logging out...</p>
+            <p className="text-sm text-gray-600">Please wait while we secure your session</p>
+          </div>
+          
+          {/* Progress dots animation */}
+          <div className="flex justify-center mt-4 space-x-1">
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
         </div>
       </div>
     );
