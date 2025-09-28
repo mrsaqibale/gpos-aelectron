@@ -187,13 +187,17 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       if (showCountrySelector && !event.target.closest('.country-selector')) {
         setShowCountrySelector(false);
       }
+      // Hide cursor when clicking outside phone input
+      if (showCursor && !event.target.closest('.phone-input')) {
+        setShowCursor(false);
+      }
     };
 
-    if (showCountrySelector) {
+    if (showCountrySelector || showCursor) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showCountrySelector]);
+  }, [showCountrySelector, showCursor]);
 
   // Monitor online/offline status
   React.useEffect(() => {
@@ -212,6 +216,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   const handleNumberClick = (number) => {
     setPhoneNumber(prev => prev + number);
     setError(''); // Clear error when typing
+    setShowCursor(false); // Hide cursor when typing
   };
 
   const handleClear = () => {
@@ -222,6 +227,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   const handleBackspace = () => {
     setPhoneNumber(prev => prev.slice(0, -1));
     setError('');
+    setShowCursor(false); // Hide cursor when backspacing
   };
 
   const handleSendOTP = async () => {
@@ -409,7 +415,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                 
                 {/* Phone Number Input */}
                 <div 
-                  className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[150px] shadow-inner cursor-text"
+                  className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[150px] shadow-inner cursor-text phone-input"
                   style={{ borderColor: themeStyles.rightActionButtonsBg }}
                   onClick={() => setShowCursor(true)}
                 >
@@ -475,7 +481,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
             <div className="flex justify-center">
               <button
                 onClick={handleSendOTP}
-                disabled={isLoading}
+                disabled={isLoading || !isOnline}
                 className="w-[80%] cursor-pointer text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner"
                 style={{
                   backgroundColor: themeStyles.rightActionButtonsBg,
@@ -487,6 +493,8 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Sending...
                   </>
+                ) : !isOnline ? (
+                  'Offline - No Internet'
                 ) : (
                   'Send OTP'
                 )}
