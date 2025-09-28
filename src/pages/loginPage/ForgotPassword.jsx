@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Shield, Phone, Crown, Settings, DollarSign, Scissors, ChefHat, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Shield, Phone, Crown, Settings, DollarSign, Scissors, ChefHat, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // Custom styles for scrollbar
 const scrollbarStyles = `
@@ -383,7 +384,8 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   };
 
   const renderOtpDisplay = () => {
-    const boxes = Array.from({ length: 6 }, (_, index) => {
+    const maxBoxes = Math.max(6, otp.length); // Show at least 6 boxes, or more if OTP is longer
+    const boxes = Array.from({ length: maxBoxes }, (_, index) => {
       const hasDigit = index < otp.length;
       const digit = otp[index] || '';
       const isEmpty = !hasDigit;
@@ -403,7 +405,7 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
     });
 
     return (
-      <div className="flex justify-center items-center gap-2">
+      <div className="flex justify-center items-center gap-2 flex-wrap">
         {boxes}
       </div>
     );
@@ -565,17 +567,9 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
 
   const handleContinue = async () => {
     if (!isConfirmMode) {
-      if (newPin.length < 4) {
-        setError('PIN must be at least 4 digits');
-        return;
-      }
       setIsConfirmMode(true);
       setError('');
     } else {
-      if (confirmPin.length < 4) {
-        setError('PIN must be at least 4 digits');
-        return;
-      }
       if (newPin !== confirmPin) {
         setError('PINs do not match');
         return;
@@ -638,7 +632,8 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
   };
 
   const renderPinDisplay = (pin, label) => {
-    const boxes = Array.from({ length: 6 }, (_, index) => {
+    const maxBoxes = Math.max(6, pin.length); // Show at least 6 boxes, or more if PIN is longer
+    const boxes = Array.from({ length: maxBoxes }, (_, index) => {
       const hasDigit = index < pin.length;
       const isEmpty = !hasDigit;
       
@@ -659,11 +654,11 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
     return (
       <div className="mb-3">
         <p className="text-center text-xs text-gray-300 mb-1">{label}</p>
-        <div className="flex justify-center items-center gap-2">
+        <div className="flex justify-center items-center gap-2 flex-wrap">
           {boxes}
         </div>
         <p className="text-center text-xs text-gray-400 mt-1">
-          {pin.length}/6 digits
+          {pin.length} digits
         </p>
       </div>
     );
@@ -763,9 +758,9 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
                 )}
                 <button
                   onClick={handleContinue}
-                  disabled={(!isConfirmMode && newPin.length < 4) || (isConfirmMode && confirmPin.length < 4) || isLoading}
+                  disabled={isLoading}
                   className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border flex items-center gap-2 ${
-                    ((!isConfirmMode && newPin.length >= 4) || (isConfirmMode && confirmPin.length >= 4)) && !isLoading
+                    !isLoading
                       ? 'bg-[#2d5a87] border-[#4a7ca3] text-white hover:bg-[#4a7ca3] cursor-pointer'
                       : 'bg-[#1e3a5f] border-[#4a7ca3] text-gray-400 cursor-not-allowed'
                   }`}
