@@ -33,7 +33,7 @@ const adminItems = [
   {
     icon: <Box size={18} className="text-primary" />,
     label: "Stock Management",
-    path: "/dashboard/food-management"
+    path: "/dashboard/stock-management"
   },
 ];
 

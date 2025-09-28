@@ -20,6 +20,7 @@ import RunningOrders from './pages/dashboard/RunningOrders.jsx'
 import CustomerManagement from './pages/dashboard/CustomerManagement.jsx'
 import AdminPanel from './pages/dashboard/AdminPanel.jsx'
 import ApplicationSettings from './pages/dashboard/ApplicationSettings.jsx'
+import StockManagement from './pages/dashboard/StockManagement.jsx'
 import ChangePassword from './pages/dashboard/ChangePassword.jsx'
 import Reports from './pages/dashboard/Reports.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
@@ -127,6 +128,10 @@ const router = createHashRouter([
           {
             path: 'change-password',
             element: <ErrorBoundary><ChangePassword /></ErrorBoundary>
+          },
+          {
+            path: 'stock-management',
+            element: <ErrorBoundary><StockManagement /></ErrorBoundary>
           },
         ],
       },
