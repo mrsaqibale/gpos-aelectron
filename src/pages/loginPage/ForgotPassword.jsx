@@ -128,12 +128,56 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
 
   const themeStyles = getThemeStyles();
 
+  // Fetch countries data
+  const fetchCountries = async () => {
+    setLoadingCountries(true);
+    try {
+      const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd');
+      const data = await response.json();
+      
+      const formattedCountries = data
+        .filter(country => country.idd && country.idd.root)
+        .map(country => ({
+          code: country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : ''),
+          name: country.name.common,
+          flag: country.cca2 ? String.fromCodePoint(...country.cca2.split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '🏳️'
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      
+      setCountries(formattedCountries);
+    } catch (error) {
+      console.error('Error fetching countries:', error);
+      // Fallback to basic countries if API fails
+      setCountries([
+        { code: '+353', name: 'Ireland', flag: '🇮🇪' },
+        { code: '+44', name: 'United Kingdom', flag: '🇬🇧' },
+        { code: '+1', name: 'United States', flag: '🇺🇸' },
+        { code: '+49', name: 'Germany', flag: '🇩🇪' },
+        { code: '+33', name: 'France', flag: '🇫🇷' },
+        { code: '+39', name: 'Italy', flag: '🇮🇹' },
+        { code: '+34', name: 'Spain', flag: '🇪🇸' },
+        { code: '+31', name: 'Netherlands', flag: '🇳🇱' },
+        { code: '+32', name: 'Belgium', flag: '🇧🇪' },
+        { code: '+41', name: 'Switzerland', flag: '🇨🇭' }
+      ]);
+    } finally {
+      setLoadingCountries(false);
+    }
+  };
+
   React.useEffect(() => {
     if (resetFields) {
       setPhoneNumber('');
       setError('');
+      setSelectedCountry({ code: '+353', name: 'Ireland', flag: '🇮🇪' });
     }
   }, [resetFields]);
+
+  React.useEffect(() => {
+    if (isOpen && countries.length === 0) {
+      fetchCountries();
+    }
+  }, [isOpen]);
 
   const handleNumberClick = (number) => {
     setPhoneNumber(prev => prev + number);
@@ -155,12 +199,15 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
     setError('');
 
     try {
+      // Combine country code with phone number
+      const fullPhoneNumber = selectedCountry.code + phoneNumber;
+      
       // Call the backend to send OTP
-      const result = await window.myAPI?.sendPasswordResetOTP(phoneNumber, userInfo.role);
+      const result = await window.myAPI?.sendPasswordResetOTP(fullPhoneNumber, userInfo.role);
       
       if (result && result.success) {
         // OTP sent successfully, proceed to next step
-        onNext({ ...userInfo, phoneNumber });
+        onNext({ ...userInfo, phoneNumber: fullPhoneNumber });
       } else {
         setError(result?.message || 'Failed to send OTP. Please try again.');
       }
@@ -273,12 +320,61 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
             {/* Phone Number Display */}
             <div className="mb-6">
               <div className="flex justify-center items-center gap-2 mb-2">
-                <div className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[200px] shadow-inner"
+                {/* Country Code Selector */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowCountrySelector(!showCountrySelector)}
+                    className="flex items-center bg-white border-2 rounded-lg px-3 py-3 shadow-inner hover:bg-gray-50 transition-colors"
+                    style={{ borderColor: themeStyles.rightActionButtonsBg }}
+                  >
+                    <span className="text-lg mr-2">{selectedCountry.flag}</span>
+                    <span className="font-mono text-sm" style={{ color: themeStyles.rightActionButtonsBg }}>
+                      {selectedCountry.code}
+                    </span>
+                    <svg className="w-4 h-4 ml-1" style={{ color: themeStyles.rightActionButtonsBg }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {/* Country Dropdown */}
+                  {showCountrySelector && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border-2 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto min-w-[200px]"
+                      style={{ borderColor: themeStyles.rightActionButtonsBg }}
+                    >
+                      {loadingCountries ? (
+                        <div className="p-3 text-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 mx-auto" style={{ borderColor: themeStyles.rightActionButtonsBg }}></div>
+                          <p className="text-sm mt-2" style={{ color: themeStyles.logoSubText }}>Loading countries...</p>
+                        </div>
+                      ) : (
+                        countries.map((country) => (
+                          <button
+                            key={country.code}
+                            onClick={() => {
+                              setSelectedCountry(country);
+                              setShowCountrySelector(false);
+                            }}
+                            className="w-full flex items-center px-3 py-2 hover:bg-gray-100 text-left transition-colors"
+                          >
+                            <span className="text-lg mr-3">{country.flag}</span>
+                            <span className="font-mono text-sm mr-2" style={{ color: themeStyles.rightActionButtonsBg }}>
+                              {country.code}
+                            </span>
+                            <span className="text-sm text-gray-700">{country.name}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Phone Number Input */}
+                <div className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[150px] shadow-inner"
                   style={{ borderColor: themeStyles.rightActionButtonsBg }}
                 >
                   <Phone className="w-5 h-5 mr-3" style={{ color: themeStyles.rightActionButtonsBg }} />
                   <span className="font-mono text-lg" style={{ color: themeStyles.rightActionButtonsBg }}>
-                    {phoneNumber || "Enter phone number"}
+                    {phoneNumber || "Enter number"}
                   </span>
                 </div>
               </div>
