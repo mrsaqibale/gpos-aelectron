@@ -273,6 +273,10 @@ const POSLogin = () => {
   };
 
   const handleForgotPinClick = () => {
+    if (!selectedRole) {
+      setError('⚠ Please select a role first.');
+      return;
+    }
     setShowForgotPinModal(true);
   };
 
@@ -640,6 +644,7 @@ const POSLogin = () => {
       <ForgotPinModals
         isOpen={showForgotPinModal}
         onClose={handleForgotPinClose}
+        selectedRole={selectedRole}
       />
 
 
