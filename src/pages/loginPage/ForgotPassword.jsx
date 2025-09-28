@@ -125,10 +125,8 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   }, [resetFields]);
 
   const handleNumberClick = (number) => {
-    if (phoneNumber.length < 11) {
-      setPhoneNumber(prev => prev + number);
-      setError(''); // Clear error when typing
-    }
+    setPhoneNumber(prev => prev + number);
+    setError(''); // Clear error when typing
   };
 
   const handleClear = () => {
@@ -142,11 +140,6 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   };
 
   const handleSendOTP = async () => {
-    if (phoneNumber.length < 10) {
-      setError('Please enter a valid phone number');
-      return;
-    }
-
     setIsLoading(true);
     setError('');
 
@@ -244,7 +237,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                   </div>
                 </div>
                 <p className="text-center text-xs text-gray-400">
-                  {phoneNumber.length}/11 digits
+                  {phoneNumber.length} digits
                 </p>
               </div>
 
@@ -287,9 +280,9 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
               <div className="flex justify-center">
                 <button
                   onClick={handleSendOTP}
-                  disabled={phoneNumber.length < 10 || isLoading}
+                  disabled={isLoading}
                   className={`px-6 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border flex items-center gap-2 ${
-                    phoneNumber.length >= 10 && !isLoading
+                    !isLoading
                       ? 'bg-[#2d5a87] border-[#4a7ca3] text-white hover:bg-[#4a7ca3] cursor-pointer'
                       : 'bg-[#1e3a5f] border-[#4a7ca3] text-gray-400 cursor-not-allowed'
                   }`}
@@ -326,10 +319,8 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   }, [resetFields]);
 
   const handleNumberClick = (number) => {
-    if (otp.length < 6) {
-      setOtp(prev => prev + number);
-      setError(''); // Clear error when typing
-    }
+    setOtp(prev => prev + number);
+    setError(''); // Clear error when typing
   };
 
   const handleClear = () => {
@@ -343,11 +334,6 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   };
 
   const handleVerifyOTP = async () => {
-    if (otp.length !== 6) {
-      setError('Please enter the complete 6-digit OTP');
-      return;
-    }
-
     setIsLoading(true);
     setError('');
 
@@ -465,7 +451,7 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
               <div className="mb-3">
                 {renderOtpDisplay()}
                 <p className="text-center text-xs text-gray-400 mt-1">
-                  {otp.length}/6 digits
+                  {otp.length} digits
                 </p>
               </div>
 
@@ -508,9 +494,9 @@ const ResetPinStep3 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
               <div className="flex justify-center">
                 <button
                   onClick={handleVerifyOTP}
-                  disabled={otp.length !== 6 || isLoading}
+                  disabled={isLoading}
                   className={`px-6 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border flex items-center gap-2 ${
-                    otp.length === 6 && !isLoading
+                    !isLoading
                       ? 'bg-[#2d5a87] border-[#4a7ca3] text-white hover:bg-[#4a7ca3] cursor-pointer'
                       : 'bg-[#1e3a5f] border-[#4a7ca3] text-gray-400 cursor-not-allowed'
                   }`}
@@ -552,14 +538,10 @@ const ResetPinStep4 = ({ isOpen, onClose, onComplete, userInfo, resetFields }) =
 
   const handleNumberClick = (number) => {
     if (!isConfirmMode) {
-      if (newPin.length < 6) {
-        setNewPin(prev => prev + number);
-      }
+      setNewPin(prev => prev + number);
     } else {
-      if (confirmPin.length < 6) {
-        setConfirmPin(prev => prev + number);
-        setError(''); // Clear error when typing
-      }
+      setConfirmPin(prev => prev + number);
+      setError(''); // Clear error when typing
     }
   };
 
