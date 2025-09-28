@@ -3,14 +3,14 @@
 
 export const twilioConfig = {
   // Get these from your Twilio Console: https://console.twilio.com/
-  accountSid: process.env.TWILIO_ACCOUNT_SID || 'your_account_sid_here',
-  authToken: process.env.TWILIO_AUTH_TOKEN || 'your_auth_token_here',
+  accountSid: process.env.TWILIO_ACCOUNT_SID || 'ACf735541505a63ea52a67139fffd7efa1',
+  authToken: process.env.TWILIO_AUTH_TOKEN || '9e14981276397ac4bbcefcdf2d97a986',
   
   // Your Twilio phone number (must be purchased from Twilio)
   phoneNumber: process.env.TWILIO_PHONE_NUMBER || 'your_twilio_phone_number_here',
   
   // Default country code for phone numbers (if not provided)
-  defaultCountryCode: process.env.DEFAULT_COUNTRY_CODE || '+1',
+  defaultCountryCode: process.env.DEFAULT_COUNTRY_CODE || '+353',
   
   // OTP settings
   otpSettings: {

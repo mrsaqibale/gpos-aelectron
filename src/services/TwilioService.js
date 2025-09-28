@@ -3,8 +3,8 @@ import twilio from 'twilio';
 class TwilioService {
   constructor() {
     // Twilio credentials - these should be set as environment variables
-    this.accountSid = process.env.TWILIO_ACCOUNT_SID || 'your_account_sid_here';
-    this.authToken = process.env.TWILIO_AUTH_TOKEN || 'your_auth_token_here';
+    this.accountSid = process.env.TWILIO_ACCOUNT_SID || 'ACf735541505a63ea52a67139fffd7efa1';
+    this.authToken = process.env.TWILIO_AUTH_TOKEN || '9e14981276397ac4bbcefcdf2d97a986';
     this.phoneNumber = process.env.TWILIO_PHONE_NUMBER || 'your_twilio_phone_number_here';
     
     // Don't initialize Twilio client at startup - only when needed

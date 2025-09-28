@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Shield, Phone, Crown, Settings, DollarSign, Scissors, ChefHat, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { isValidPhoneNumber } from 'libphonenumber-js';
 
 // Custom styles for scrollbar
 const scrollbarStyles = `
@@ -32,14 +31,9 @@ const scrollbarStyles = `
 
 // Step 2: Phone Number Entry with Number Pad
 const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('08');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState({ code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' });
-  const [showCountrySelector, setShowCountrySelector] = useState(false);
-  const [countries, setCountries] = useState([]);
-  const [loadingCountries, setLoadingCountries] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showCursor, setShowCursor] = useState(false);
   const [isValidNumber, setIsValidNumber] = useState(false);
   const { themeColors, currentTheme } = useTheme();
@@ -132,247 +126,48 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
 
   const themeStyles = getThemeStyles();
 
-  // Fetch countries data with flags and phone codes
-  const fetchCountries = async () => {
-    setLoadingCountries(true);
-    try {
-      // Use a comprehensive list of countries with flags and calling codes
-      const countriesData = [
-        { code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' },
-        { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', callingCode: '+44' },
-        { code: 'US', name: 'United States', flag: '🇺🇸', callingCode: '+1' },
-        { code: 'DE', name: 'Germany', flag: '🇩🇪', callingCode: '+49' },
-        { code: 'FR', name: 'France', flag: '🇫🇷', callingCode: '+33' },
-        { code: 'IT', name: 'Italy', flag: '🇮🇹', callingCode: '+39' },
-        { code: 'ES', name: 'Spain', flag: '🇪🇸', callingCode: '+34' },
-        { code: 'NL', name: 'Netherlands', flag: '🇳🇱', callingCode: '+31' },
-        { code: 'BE', name: 'Belgium', flag: '🇧🇪', callingCode: '+32' },
-        { code: 'CH', name: 'Switzerland', flag: '🇨🇭', callingCode: '+41' },
-        { code: 'PK', name: 'Pakistan', flag: '🇵🇰', callingCode: '+92' },
-        { code: 'IN', name: 'India', flag: '🇮🇳', callingCode: '+91' },
-        { code: 'BD', name: 'Bangladesh', flag: '🇧🇩', callingCode: '+880' },
-        { code: 'CN', name: 'China', flag: '🇨🇳', callingCode: '+86' },
-        { code: 'JP', name: 'Japan', flag: '🇯🇵', callingCode: '+81' },
-        { code: 'KR', name: 'South Korea', flag: '🇰🇷', callingCode: '+82' },
-        { code: 'TH', name: 'Thailand', flag: '🇹🇭', callingCode: '+66' },
-        { code: 'MY', name: 'Malaysia', flag: '🇲🇾', callingCode: '+60' },
-        { code: 'SG', name: 'Singapore', flag: '🇸🇬', callingCode: '+65' },
-        { code: 'ID', name: 'Indonesia', flag: '🇮🇩', callingCode: '+62' },
-        { code: 'PH', name: 'Philippines', flag: '🇵🇭', callingCode: '+63' },
-        { code: 'VN', name: 'Vietnam', flag: '🇻🇳', callingCode: '+84' },
-        { code: 'AU', name: 'Australia', flag: '🇦🇺', callingCode: '+61' },
-        { code: 'CA', name: 'Canada', flag: '🇨🇦', callingCode: '+1' },
-        { code: 'BR', name: 'Brazil', flag: '🇧🇷', callingCode: '+55' },
-        { code: 'MX', name: 'Mexico', flag: '🇲🇽', callingCode: '+52' },
-        { code: 'AR', name: 'Argentina', flag: '🇦🇷', callingCode: '+54' },
-        { code: 'ZA', name: 'South Africa', flag: '🇿🇦', callingCode: '+27' },
-        { code: 'EG', name: 'Egypt', flag: '🇪🇬', callingCode: '+20' },
-        { code: 'NG', name: 'Nigeria', flag: '🇳🇬', callingCode: '+234' },
-        { code: 'KE', name: 'Kenya', flag: '🇰🇪', callingCode: '+254' },
-        { code: 'MA', name: 'Morocco', flag: '🇲🇦', callingCode: '+212' },
-        { code: 'RU', name: 'Russia', flag: '🇷🇺', callingCode: '+7' },
-        { code: 'TR', name: 'Turkey', flag: '🇹🇷', callingCode: '+90' },
-        { code: 'SA', name: 'Saudi Arabia', flag: '🇸🇦', callingCode: '+966' },
-        { code: 'AE', name: 'UAE', flag: '🇦🇪', callingCode: '+971' },
-        { code: 'AF', name: 'Afghanistan', flag: '🇦🇫', callingCode: '+93' },
-        { code: 'AL', name: 'Albania', flag: '🇦🇱', callingCode: '+355' },
-        { code: 'DZ', name: 'Algeria', flag: '🇩🇿', callingCode: '+213' },
-        { code: 'AO', name: 'Angola', flag: '🇦🇴', callingCode: '+244' },
-        { code: 'AT', name: 'Austria', flag: '🇦🇹', callingCode: '+43' },
-        { code: 'AZ', name: 'Azerbaijan', flag: '🇦🇿', callingCode: '+994' },
-        { code: 'BH', name: 'Bahrain', flag: '🇧🇭', callingCode: '+973' },
-        { code: 'BY', name: 'Belarus', flag: '🇧🇾', callingCode: '+375' },
-        { code: 'BO', name: 'Bolivia', flag: '🇧🇴', callingCode: '+591' },
-        { code: 'BA', name: 'Bosnia and Herzegovina', flag: '🇧🇦', callingCode: '+387' },
-        { code: 'BW', name: 'Botswana', flag: '🇧🇼', callingCode: '+267' },
-        { code: 'BG', name: 'Bulgaria', flag: '🇧🇬', callingCode: '+359' },
-        { code: 'KH', name: 'Cambodia', flag: '🇰🇭', callingCode: '+855' },
-        { code: 'CM', name: 'Cameroon', flag: '🇨🇲', callingCode: '+237' },
-        { code: 'CL', name: 'Chile', flag: '🇨🇱', callingCode: '+56' },
-        { code: 'CO', name: 'Colombia', flag: '🇨🇴', callingCode: '+57' },
-        { code: 'CR', name: 'Costa Rica', flag: '🇨🇷', callingCode: '+506' },
-        { code: 'HR', name: 'Croatia', flag: '🇭🇷', callingCode: '+385' },
-        { code: 'CU', name: 'Cuba', flag: '🇨🇺', callingCode: '+53' },
-        { code: 'CY', name: 'Cyprus', flag: '🇨🇾', callingCode: '+357' },
-        { code: 'CZ', name: 'Czech Republic', flag: '🇨🇿', callingCode: '+420' },
-        { code: 'DK', name: 'Denmark', flag: '🇩🇰', callingCode: '+45' },
-        { code: 'DO', name: 'Dominican Republic', flag: '🇩🇴', callingCode: '+1' },
-        { code: 'EC', name: 'Ecuador', flag: '🇪🇨', callingCode: '+593' },
-        { code: 'EE', name: 'Estonia', flag: '🇪🇪', callingCode: '+372' },
-        { code: 'ET', name: 'Ethiopia', flag: '🇪🇹', callingCode: '+251' },
-        { code: 'FI', name: 'Finland', flag: '🇫🇮', callingCode: '+358' },
-        { code: 'GE', name: 'Georgia', flag: '🇬🇪', callingCode: '+995' },
-        { code: 'GH', name: 'Ghana', flag: '🇬🇭', callingCode: '+233' },
-        { code: 'GR', name: 'Greece', flag: '🇬🇷', callingCode: '+30' },
-        { code: 'GT', name: 'Guatemala', flag: '🇬🇹', callingCode: '+502' },
-        { code: 'HN', name: 'Honduras', flag: '🇭🇳', callingCode: '+504' },
-        { code: 'HK', name: 'Hong Kong', flag: '🇭🇰', callingCode: '+852' },
-        { code: 'HU', name: 'Hungary', flag: '🇭🇺', callingCode: '+36' },
-        { code: 'IS', name: 'Iceland', flag: '🇮🇸', callingCode: '+354' },
-        { code: 'IL', name: 'Israel', flag: '🇮🇱', callingCode: '+972' },
-        { code: 'JO', name: 'Jordan', flag: '🇯🇴', callingCode: '+962' },
-        { code: 'KZ', name: 'Kazakhstan', flag: '🇰🇿', callingCode: '+7' },
-        { code: 'KW', name: 'Kuwait', flag: '🇰🇼', callingCode: '+965' },
-        { code: 'LV', name: 'Latvia', flag: '🇱🇻', callingCode: '+371' },
-        { code: 'LB', name: 'Lebanon', flag: '🇱🇧', callingCode: '+961' },
-        { code: 'LT', name: 'Lithuania', flag: '🇱🇹', callingCode: '+370' },
-        { code: 'LU', name: 'Luxembourg', flag: '🇱🇺', callingCode: '+352' },
-        { code: 'MK', name: 'North Macedonia', flag: '🇲🇰', callingCode: '+389' },
-        { code: 'MT', name: 'Malta', flag: '🇲🇹', callingCode: '+356' },
-        { code: 'MU', name: 'Mauritius', flag: '🇲🇺', callingCode: '+230' },
-        { code: 'MD', name: 'Moldova', flag: '🇲🇩', callingCode: '+373' },
-        { code: 'MN', name: 'Mongolia', flag: '🇲🇳', callingCode: '+976' },
-        { code: 'ME', name: 'Montenegro', flag: '🇲🇪', callingCode: '+382' },
-        { code: 'MZ', name: 'Mozambique', flag: '🇲🇿', callingCode: '+258' },
-        { code: 'MM', name: 'Myanmar', flag: '🇲🇲', callingCode: '+95' },
-        { code: 'NP', name: 'Nepal', flag: '🇳🇵', callingCode: '+977' },
-        { code: 'NZ', name: 'New Zealand', flag: '🇳🇿', callingCode: '+64' },
-        { code: 'NO', name: 'Norway', flag: '🇳🇴', callingCode: '+47' },
-        { code: 'OM', name: 'Oman', flag: '🇴🇲', callingCode: '+968' },
-        { code: 'PE', name: 'Peru', flag: '🇵🇪', callingCode: '+51' },
-        { code: 'PL', name: 'Poland', flag: '🇵🇱', callingCode: '+48' },
-        { code: 'PT', name: 'Portugal', flag: '🇵🇹', callingCode: '+351' },
-        { code: 'QA', name: 'Qatar', flag: '🇶🇦', callingCode: '+974' },
-        { code: 'RO', name: 'Romania', flag: '🇷🇴', callingCode: '+40' },
-        { code: 'RW', name: 'Rwanda', flag: '🇷🇼', callingCode: '+250' },
-        { code: 'SN', name: 'Senegal', flag: '🇸🇳', callingCode: '+221' },
-        { code: 'RS', name: 'Serbia', flag: '🇷🇸', callingCode: '+381' },
-        { code: 'SK', name: 'Slovakia', flag: '🇸🇰', callingCode: '+421' },
-        { code: 'SI', name: 'Slovenia', flag: '🇸🇮', callingCode: '+386' },
-        { code: 'LK', name: 'Sri Lanka', flag: '🇱🇰', callingCode: '+94' },
-        { code: 'SE', name: 'Sweden', flag: '🇸🇪', callingCode: '+46' },
-        { code: 'TZ', name: 'Tanzania', flag: '🇹🇿', callingCode: '+255' },
-        { code: 'TN', name: 'Tunisia', flag: '🇹🇳', callingCode: '+216' },
-        { code: 'UG', name: 'Uganda', flag: '🇺🇬', callingCode: '+256' },
-        { code: 'UA', name: 'Ukraine', flag: '🇺🇦', callingCode: '+380' },
-        { code: 'UY', name: 'Uruguay', flag: '🇺🇾', callingCode: '+598' },
-        { code: 'UZ', name: 'Uzbekistan', flag: '🇺🇿', callingCode: '+998' },
-        { code: 'VE', name: 'Venezuela', flag: '🇻🇪', callingCode: '+58' },
-        { code: 'ZM', name: 'Zambia', flag: '🇿🇲', callingCode: '+260' },
-        { code: 'ZW', name: 'Zimbabwe', flag: '🇿🇼', callingCode: '+263' }
-      ];
-      
-      // Sort countries alphabetically
-      const sortedCountries = countriesData.sort((a, b) => a.name.localeCompare(b.name));
-      setCountries(sortedCountries);
-    } catch (error) {
-      console.error('Error loading countries:', error);
-      // Fallback to basic countries
-      setCountries([
-        { code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' },
-        { code: 'PK', name: 'Pakistan', flag: '🇵🇰', callingCode: '+92' },
-        { code: 'IN', name: 'India', flag: '🇮🇳', callingCode: '+91' },
-        { code: 'US', name: 'United States', flag: '🇺🇸', callingCode: '+1' },
-        { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', callingCode: '+44' }
-      ]);
-    } finally {
-      setLoadingCountries(false);
-    }
-  };
-
-  // Helper function to get country name
-  const getCountryName = (countryCode) => {
-    const countryNames = {
-      'IE': 'Ireland', 'GB': 'United Kingdom', 'US': 'United States', 'DE': 'Germany',
-      'FR': 'France', 'IT': 'Italy', 'ES': 'Spain', 'NL': 'Netherlands',
-      'BE': 'Belgium', 'CH': 'Switzerland', 'CA': 'Canada', 'AU': 'Australia',
-      'JP': 'Japan', 'KR': 'South Korea', 'CN': 'China', 'IN': 'India',
-      'BR': 'Brazil', 'MX': 'Mexico', 'AR': 'Argentina', 'ZA': 'South Africa',
-      'EG': 'Egypt', 'NG': 'Nigeria', 'KE': 'Kenya', 'MA': 'Morocco',
-      'RU': 'Russia', 'TR': 'Turkey', 'SA': 'Saudi Arabia', 'AE': 'UAE',
-      'SG': 'Singapore', 'MY': 'Malaysia', 'TH': 'Thailand', 'ID': 'Indonesia',
-      'PH': 'Philippines', 'VN': 'Vietnam', 'BD': 'Bangladesh', 'PK': 'Pakistan'
-    };
-    return countryNames[countryCode] || countryCode;
-  };
-
-  // Helper function to get maximum phone number length for a country
-  const getMaxPhoneLength = (countryCode) => {
-    const phoneLengths = {
-      'IE': 9, 'GB': 10, 'US': 10, 'DE': 11, 'FR': 9, 'IT': 10, 'ES': 9,
-      'NL': 9, 'BE': 9, 'CH': 9, 'CA': 10, 'AU': 9, 'JP': 10, 'KR': 10,
-      'CN': 11, 'IN': 10, 'BR': 11, 'MX': 10, 'AR': 10, 'ZA': 9, 'EG': 10,
-      'NG': 10, 'KE': 9, 'MA': 9, 'RU': 10, 'TR': 10, 'SA': 9, 'AE': 9,
-      'SG': 8, 'MY': 9, 'TH': 9, 'ID': 11, 'PH': 10, 'VN': 9, 'BD': 10, 'PK': 10,
-      'AF': 9, 'AL': 9, 'DZ': 9, 'AO': 9, 'AT': 10, 'AZ': 9, 'BH': 8, 'BY': 9,
-      'BO': 8, 'BA': 8, 'BW': 7, 'BG': 9, 'KH': 8, 'CM': 9, 'CL': 8, 'CO': 10,
-      'CR': 8, 'HR': 9, 'CU': 8, 'CY': 8, 'CZ': 9, 'DK': 8, 'DO': 10, 'EC': 9,
-      'EE': 8, 'ET': 9, 'FI': 9, 'GE': 9, 'GH': 9, 'GR': 10, 'GT': 8, 'HN': 8,
-      'HK': 8, 'HU': 9, 'IS': 7, 'IL': 9, 'JO': 9, 'KZ': 10, 'KW': 8, 'LV': 8,
-      'LB': 8, 'LT': 8, 'LU': 9, 'MK': 8, 'MT': 8, 'MU': 7, 'MD': 8, 'MN': 8,
-      'ME': 8, 'MZ': 9, 'MM': 8, 'NP': 10, 'NZ': 8, 'NO': 8, 'OM': 8, 'PE': 9,
-      'PL': 9, 'PT': 9, 'QA': 8, 'RO': 9, 'RW': 9, 'SN': 9, 'RS': 9, 'SK': 9,
-      'SI': 8, 'LK': 9, 'SE': 9, 'TZ': 9, 'TN': 8, 'UG': 9, 'UA': 9, 'UY': 8,
-      'UZ': 9, 'VE': 10, 'ZM': 9, 'ZW': 9
-    };
-    return phoneLengths[countryCode] || 15; // Default to 15 if not found
+  // Simple phone number validation for 10 digits starting with 08
+  const validatePhoneNumber = (phone) => {
+    return phone.length === 10 && phone.startsWith('08');
   };
 
   React.useEffect(() => {
     if (resetFields) {
-      setPhoneNumber('');
+      setPhoneNumber('08');
       setError('');
-      setSelectedCountry({ code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' });
       setIsValidNumber(false);
     }
   }, [resetFields]);
 
   // Validate phone number when it changes
   React.useEffect(() => {
-    if (phoneNumber && selectedCountry.callingCode) {
-      const fullNumber = selectedCountry.callingCode + phoneNumber;
-      const isValid = isValidPhoneNumber(fullNumber);
+    if (phoneNumber) {
+      const isValid = validatePhoneNumber(phoneNumber);
       setIsValidNumber(isValid);
     } else {
       setIsValidNumber(false);
     }
-  }, [phoneNumber, selectedCountry.callingCode]);
+  }, [phoneNumber]);
 
-  React.useEffect(() => {
-    if (isOpen && countries.length === 0) {
-      fetchCountries();
-    }
-  }, [isOpen]);
-
-  // Close country selector when clicking outside
+  // Hide cursor when clicking outside phone input
   React.useEffect(() => {
     const handleClickOutside = (event) => {
-      if (showCountrySelector && !event.target.closest('.country-selector')) {
-        setShowCountrySelector(false);
-      }
-      // Hide cursor when clicking outside phone input
       if (showCursor && !event.target.closest('.phone-input')) {
         setShowCursor(false);
       }
     };
 
-    if (showCountrySelector || showCursor) {
+    if (showCursor) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showCountrySelector, showCursor]);
-
-  // Monitor online/offline status
-  React.useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  }, [showCursor]);
 
   const handleNumberClick = (number) => {
-    // Get maximum length for the selected country
-    const maxLength = getMaxPhoneLength(selectedCountry.code);
-    
     setPhoneNumber(prev => {
-      if (prev.length >= maxLength) {
-        return prev; // Don't add more digits if limit reached
+      // Don't allow more than 10 digits total
+      if (prev.length >= 10) {
+        return prev;
       }
       return prev + number;
     });
@@ -381,26 +176,26 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   };
 
   const handleClear = () => {
-    setPhoneNumber('');
+    setPhoneNumber('08');
     setError('');
   };
 
   const handleBackspace = () => {
-    setPhoneNumber(prev => prev.slice(0, -1));
+    setPhoneNumber(prev => {
+      // Don't allow deleting the "08" prefix
+      if (prev.length <= 2) {
+        return '08';
+      }
+      return prev.slice(0, -1);
+    });
     setError('');
     setShowCursor(false); // Hide cursor when backspacing
   };
 
   const handleSendOTP = async () => {
-    // Check if offline
-    if (!isOnline) {
-      setError('⚠ Turn on your internet to send the OTP');
-      return;
-    }
-
     // Check if phone number is valid
-    if (!isValidNumber) {
-      setError('⚠ Please enter a valid phone number');
+    if (!validatePhoneNumber(phoneNumber)) {
+      setError('⚠ Please enter a valid 10-digit phone number starting with 08');
       return;
     }
 
@@ -408,15 +203,12 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
     setError('');
 
     try {
-      // Combine country code with phone number
-      const fullPhoneNumber = selectedCountry.callingCode + phoneNumber;
-      
       // Call the backend to send OTP
-      const result = await window.myAPI?.sendPasswordResetOTP(fullPhoneNumber, userInfo.role);
+      const result = await window.myAPI?.sendPasswordResetOTP(phoneNumber, userInfo.role);
       
       if (result && result.success) {
         // OTP sent successfully, proceed to next step
-        onNext({ ...userInfo, phoneNumber: fullPhoneNumber });
+        onNext({ ...userInfo, phoneNumber: phoneNumber });
       } else {
         // Check for specific error messages
         if (result?.message && result.message.includes('Phone number not found')) {
@@ -431,11 +223,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       }
     } catch (error) {
       console.error('Error sending OTP:', error);
-      if (!isOnline) {
-        setError('⚠ Turn on your internet to send the OTP');
-      } else {
-        setError('Failed to send OTP. Please try again.');
-      }
+      setError('⚠ Failed to send OTP. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -541,59 +329,16 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
 
             {/* Phone Number Display */}
             <div className="mb-6">
-              <div className="flex justify-center items-center gap-2 mb-2">
-                {/* Country Code Selector */}
-                <div className="relative country-selector">
-                  <button
-                    onClick={() => setShowCountrySelector(!showCountrySelector)}
-                    className="flex items-center bg-white border-2 rounded-lg px-3 py-3 shadow-inner hover:bg-gray-50 transition-colors"
-                    style={{ borderColor: themeStyles.rightActionButtonsBg }}
-                  >
-                    <span className="text-2xl">{selectedCountry.flag}</span>
-                    <svg className="w-4 h-4 ml-2" style={{ color: themeStyles.rightActionButtonsBg }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  
-                  {/* Country Dropdown */}
-                  {showCountrySelector && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border-2 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto min-w-[280px]"
-                      style={{ borderColor: themeStyles.rightActionButtonsBg }}
-                    >
-                      {loadingCountries ? (
-                        <div className="p-3 text-center">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 mx-auto" style={{ borderColor: themeStyles.rightActionButtonsBg }}></div>
-                          <p className="text-sm mt-2" style={{ color: themeStyles.logoSubText }}>Loading countries...</p>
-                        </div>
-                      ) : (
-                        countries.map((country) => (
-                          <button
-                            key={country.code}
-                            onClick={() => {
-                              setSelectedCountry(country);
-                              setShowCountrySelector(false);
-                            }}
-                            className="w-full flex items-center px-3 py-2 hover:bg-gray-100 text-left transition-colors"
-                          >
-                            <span className="text-xl mr-3">{country.flag}</span>
-                            <span className="text-sm text-gray-700 flex-1">{country.name}</span>
-                            <span className="text-sm font-mono text-gray-500">{country.callingCode}</span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-                
+              <div className="flex justify-center items-center mb-2">
                 {/* Phone Number Input */}
                 <div 
-                  className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[200px] shadow-inner cursor-text phone-input"
+                  className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[250px] shadow-inner cursor-text phone-input"
                   style={{ borderColor: themeStyles.rightActionButtonsBg }}
                   onClick={() => setShowCursor(true)}
                 >
                   <Phone className="w-5 h-5 mr-3" style={{ color: themeStyles.rightActionButtonsBg }} />
                   <span className="font-mono text-lg" style={{ color: themeStyles.rightActionButtonsBg }}>
-                    {phoneNumber ? `${selectedCountry.callingCode} ${phoneNumber}` : `${selectedCountry.callingCode} ${'x'.repeat(getMaxPhoneLength(selectedCountry.code))}`}
+                    {phoneNumber || '08xxxxxxxx'}
                   </span>
                   {showCursor && (
                     <span className="ml-1 animate-pulse" style={{ color: themeStyles.rightActionButtonsBg }}>|</span>
@@ -601,7 +346,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                 </div>
               </div>
               <p className="text-center text-sm" style={{ color: themeStyles.logoSubText }}>
-                {phoneNumber.length}/{getMaxPhoneLength(selectedCountry.code)} digits
+                {phoneNumber.length}/10 digits (starting with 08)
               </p>
             </div>
 
@@ -653,7 +398,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
             <div className="flex justify-center">
               <button
                 onClick={handleSendOTP}
-                disabled={isLoading || !isOnline || !isValidNumber}
+                disabled={isLoading || !isValidNumber}
                 className="w-[80%] cursor-pointer text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner"
                 style={{
                   backgroundColor: themeStyles.rightActionButtonsBg,
@@ -665,8 +410,6 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
                     Sending...
                   </>
-                ) : !isOnline ? (
-                  'Offline - No Internet'
                 ) : !isValidNumber ? (
                   'Enter Valid Number'
                 ) : (
