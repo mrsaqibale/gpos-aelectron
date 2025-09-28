@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Shield, Phone, Crown, Settings, DollarSign, Scissors, ChefHat, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { parsePhoneNumber, isValidPhoneNumber, getCountryCallingCode, getCountries } from 'libphonenumber-js';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 
 // Custom styles for scrollbar
 const scrollbarStyles = `
@@ -136,48 +136,8 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
   const fetchCountries = async () => {
     setLoadingCountries(true);
     try {
-      // Get countries from libphonenumber-js
-      const phoneCountries = getCountries();
-      
-      // Fetch flags from REST Countries API
-      const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
-      const flagData = await response.json();
-      
-      // Create a map of country codes to flags
-      const flagMap = {};
-      flagData.forEach(country => {
-        if (country.cca2) {
-          try {
-            // Generate flag emoji from country code
-            const flag = String.fromCodePoint(
-              ...country.cca2.split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65)
-            );
-            flagMap[country.cca2] = flag;
-          } catch (error) {
-            console.warn(`Failed to generate flag for ${country.cca2}:`, error);
-            flagMap[country.cca2] = '🏳️';
-          }
-        }
-      });
-      
-      // Combine phone countries with flags
-      const formattedCountries = phoneCountries
-        .map(countryCode => {
-          const callingCode = getCountryCallingCode(countryCode);
-          return {
-            code: countryCode,
-            name: getCountryName(countryCode),
-            flag: flagMap[countryCode] || '🏳️',
-            callingCode: `+${callingCode}`
-          };
-        })
-        .sort((a, b) => a.name.localeCompare(b.name));
-      
-      setCountries(formattedCountries);
-    } catch (error) {
-      console.error('Error fetching countries:', error);
-      // Fallback to basic countries if API fails
-      setCountries([
+      // Use a comprehensive list of countries with flags and calling codes
+      const countriesData = [
         { code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' },
         { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', callingCode: '+44' },
         { code: 'US', name: 'United States', flag: '🇺🇸', callingCode: '+1' },
@@ -213,7 +173,97 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
         { code: 'RU', name: 'Russia', flag: '🇷🇺', callingCode: '+7' },
         { code: 'TR', name: 'Turkey', flag: '🇹🇷', callingCode: '+90' },
         { code: 'SA', name: 'Saudi Arabia', flag: '🇸🇦', callingCode: '+966' },
-        { code: 'AE', name: 'UAE', flag: '🇦🇪', callingCode: '+971' }
+        { code: 'AE', name: 'UAE', flag: '🇦🇪', callingCode: '+971' },
+        { code: 'AF', name: 'Afghanistan', flag: '🇦🇫', callingCode: '+93' },
+        { code: 'AL', name: 'Albania', flag: '🇦🇱', callingCode: '+355' },
+        { code: 'DZ', name: 'Algeria', flag: '🇩🇿', callingCode: '+213' },
+        { code: 'AO', name: 'Angola', flag: '🇦🇴', callingCode: '+244' },
+        { code: 'AT', name: 'Austria', flag: '🇦🇹', callingCode: '+43' },
+        { code: 'AZ', name: 'Azerbaijan', flag: '🇦🇿', callingCode: '+994' },
+        { code: 'BH', name: 'Bahrain', flag: '🇧🇭', callingCode: '+973' },
+        { code: 'BY', name: 'Belarus', flag: '🇧🇾', callingCode: '+375' },
+        { code: 'BO', name: 'Bolivia', flag: '🇧🇴', callingCode: '+591' },
+        { code: 'BA', name: 'Bosnia and Herzegovina', flag: '🇧🇦', callingCode: '+387' },
+        { code: 'BW', name: 'Botswana', flag: '🇧🇼', callingCode: '+267' },
+        { code: 'BG', name: 'Bulgaria', flag: '🇧🇬', callingCode: '+359' },
+        { code: 'KH', name: 'Cambodia', flag: '🇰🇭', callingCode: '+855' },
+        { code: 'CM', name: 'Cameroon', flag: '🇨🇲', callingCode: '+237' },
+        { code: 'CL', name: 'Chile', flag: '🇨🇱', callingCode: '+56' },
+        { code: 'CO', name: 'Colombia', flag: '🇨🇴', callingCode: '+57' },
+        { code: 'CR', name: 'Costa Rica', flag: '🇨🇷', callingCode: '+506' },
+        { code: 'HR', name: 'Croatia', flag: '🇭🇷', callingCode: '+385' },
+        { code: 'CU', name: 'Cuba', flag: '🇨🇺', callingCode: '+53' },
+        { code: 'CY', name: 'Cyprus', flag: '🇨🇾', callingCode: '+357' },
+        { code: 'CZ', name: 'Czech Republic', flag: '🇨🇿', callingCode: '+420' },
+        { code: 'DK', name: 'Denmark', flag: '🇩🇰', callingCode: '+45' },
+        { code: 'DO', name: 'Dominican Republic', flag: '🇩🇴', callingCode: '+1' },
+        { code: 'EC', name: 'Ecuador', flag: '🇪🇨', callingCode: '+593' },
+        { code: 'EE', name: 'Estonia', flag: '🇪🇪', callingCode: '+372' },
+        { code: 'ET', name: 'Ethiopia', flag: '🇪🇹', callingCode: '+251' },
+        { code: 'FI', name: 'Finland', flag: '🇫🇮', callingCode: '+358' },
+        { code: 'GE', name: 'Georgia', flag: '🇬🇪', callingCode: '+995' },
+        { code: 'GH', name: 'Ghana', flag: '🇬🇭', callingCode: '+233' },
+        { code: 'GR', name: 'Greece', flag: '🇬🇷', callingCode: '+30' },
+        { code: 'GT', name: 'Guatemala', flag: '🇬🇹', callingCode: '+502' },
+        { code: 'HN', name: 'Honduras', flag: '🇭🇳', callingCode: '+504' },
+        { code: 'HK', name: 'Hong Kong', flag: '🇭🇰', callingCode: '+852' },
+        { code: 'HU', name: 'Hungary', flag: '🇭🇺', callingCode: '+36' },
+        { code: 'IS', name: 'Iceland', flag: '🇮🇸', callingCode: '+354' },
+        { code: 'IL', name: 'Israel', flag: '🇮🇱', callingCode: '+972' },
+        { code: 'JO', name: 'Jordan', flag: '🇯🇴', callingCode: '+962' },
+        { code: 'KZ', name: 'Kazakhstan', flag: '🇰🇿', callingCode: '+7' },
+        { code: 'KW', name: 'Kuwait', flag: '🇰🇼', callingCode: '+965' },
+        { code: 'LV', name: 'Latvia', flag: '🇱🇻', callingCode: '+371' },
+        { code: 'LB', name: 'Lebanon', flag: '🇱🇧', callingCode: '+961' },
+        { code: 'LT', name: 'Lithuania', flag: '🇱🇹', callingCode: '+370' },
+        { code: 'LU', name: 'Luxembourg', flag: '🇱🇺', callingCode: '+352' },
+        { code: 'MK', name: 'North Macedonia', flag: '🇲🇰', callingCode: '+389' },
+        { code: 'MT', name: 'Malta', flag: '🇲🇹', callingCode: '+356' },
+        { code: 'MU', name: 'Mauritius', flag: '🇲🇺', callingCode: '+230' },
+        { code: 'MD', name: 'Moldova', flag: '🇲🇩', callingCode: '+373' },
+        { code: 'MN', name: 'Mongolia', flag: '🇲🇳', callingCode: '+976' },
+        { code: 'ME', name: 'Montenegro', flag: '🇲🇪', callingCode: '+382' },
+        { code: 'MZ', name: 'Mozambique', flag: '🇲🇿', callingCode: '+258' },
+        { code: 'MM', name: 'Myanmar', flag: '🇲🇲', callingCode: '+95' },
+        { code: 'NP', name: 'Nepal', flag: '🇳🇵', callingCode: '+977' },
+        { code: 'NZ', name: 'New Zealand', flag: '🇳🇿', callingCode: '+64' },
+        { code: 'NO', name: 'Norway', flag: '🇳🇴', callingCode: '+47' },
+        { code: 'OM', name: 'Oman', flag: '🇴🇲', callingCode: '+968' },
+        { code: 'PE', name: 'Peru', flag: '🇵🇪', callingCode: '+51' },
+        { code: 'PL', name: 'Poland', flag: '🇵🇱', callingCode: '+48' },
+        { code: 'PT', name: 'Portugal', flag: '🇵🇹', callingCode: '+351' },
+        { code: 'QA', name: 'Qatar', flag: '🇶🇦', callingCode: '+974' },
+        { code: 'RO', name: 'Romania', flag: '🇷🇴', callingCode: '+40' },
+        { code: 'RW', name: 'Rwanda', flag: '🇷🇼', callingCode: '+250' },
+        { code: 'SN', name: 'Senegal', flag: '🇸🇳', callingCode: '+221' },
+        { code: 'RS', name: 'Serbia', flag: '🇷🇸', callingCode: '+381' },
+        { code: 'SK', name: 'Slovakia', flag: '🇸🇰', callingCode: '+421' },
+        { code: 'SI', name: 'Slovenia', flag: '🇸🇮', callingCode: '+386' },
+        { code: 'LK', name: 'Sri Lanka', flag: '🇱🇰', callingCode: '+94' },
+        { code: 'SE', name: 'Sweden', flag: '🇸🇪', callingCode: '+46' },
+        { code: 'TZ', name: 'Tanzania', flag: '🇹🇿', callingCode: '+255' },
+        { code: 'TN', name: 'Tunisia', flag: '🇹🇳', callingCode: '+216' },
+        { code: 'UG', name: 'Uganda', flag: '🇺🇬', callingCode: '+256' },
+        { code: 'UA', name: 'Ukraine', flag: '🇺🇦', callingCode: '+380' },
+        { code: 'UY', name: 'Uruguay', flag: '🇺🇾', callingCode: '+598' },
+        { code: 'UZ', name: 'Uzbekistan', flag: '🇺🇿', callingCode: '+998' },
+        { code: 'VE', name: 'Venezuela', flag: '🇻🇪', callingCode: '+58' },
+        { code: 'ZM', name: 'Zambia', flag: '🇿🇲', callingCode: '+260' },
+        { code: 'ZW', name: 'Zimbabwe', flag: '🇿🇼', callingCode: '+263' }
+      ];
+      
+      // Sort countries alphabetically
+      const sortedCountries = countriesData.sort((a, b) => a.name.localeCompare(b.name));
+      setCountries(sortedCountries);
+    } catch (error) {
+      console.error('Error loading countries:', error);
+      // Fallback to basic countries
+      setCountries([
+        { code: 'IE', name: 'Ireland', flag: '🇮🇪', callingCode: '+353' },
+        { code: 'PK', name: 'Pakistan', flag: '🇵🇰', callingCode: '+92' },
+        { code: 'IN', name: 'India', flag: '🇮🇳', callingCode: '+91' },
+        { code: 'US', name: 'United States', flag: '🇺🇸', callingCode: '+1' },
+        { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', callingCode: '+44' }
       ]);
     } finally {
       setLoadingCountries(false);
@@ -243,7 +293,17 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       'NL': 9, 'BE': 9, 'CH': 9, 'CA': 10, 'AU': 9, 'JP': 10, 'KR': 10,
       'CN': 11, 'IN': 10, 'BR': 11, 'MX': 10, 'AR': 10, 'ZA': 9, 'EG': 10,
       'NG': 10, 'KE': 9, 'MA': 9, 'RU': 10, 'TR': 10, 'SA': 9, 'AE': 9,
-      'SG': 8, 'MY': 9, 'TH': 9, 'ID': 11, 'PH': 10, 'VN': 9, 'BD': 10, 'PK': 10
+      'SG': 8, 'MY': 9, 'TH': 9, 'ID': 11, 'PH': 10, 'VN': 9, 'BD': 10, 'PK': 10,
+      'AF': 9, 'AL': 9, 'DZ': 9, 'AO': 9, 'AT': 10, 'AZ': 9, 'BH': 8, 'BY': 9,
+      'BO': 8, 'BA': 8, 'BW': 7, 'BG': 9, 'KH': 8, 'CM': 9, 'CL': 8, 'CO': 10,
+      'CR': 8, 'HR': 9, 'CU': 8, 'CY': 8, 'CZ': 9, 'DK': 8, 'DO': 10, 'EC': 9,
+      'EE': 8, 'ET': 9, 'FI': 9, 'GE': 9, 'GH': 9, 'GR': 10, 'GT': 8, 'HN': 8,
+      'HK': 8, 'HU': 9, 'IS': 7, 'IL': 9, 'JO': 9, 'KZ': 10, 'KW': 8, 'LV': 8,
+      'LB': 8, 'LT': 8, 'LU': 9, 'MK': 8, 'MT': 8, 'MU': 7, 'MD': 8, 'MN': 8,
+      'ME': 8, 'MZ': 9, 'MM': 8, 'NP': 10, 'NZ': 8, 'NO': 8, 'OM': 8, 'PE': 9,
+      'PL': 9, 'PT': 9, 'QA': 8, 'RO': 9, 'RW': 9, 'SN': 9, 'RS': 9, 'SK': 9,
+      'SI': 8, 'LK': 9, 'SE': 9, 'TZ': 9, 'TN': 8, 'UG': 9, 'UA': 9, 'UY': 8,
+      'UZ': 9, 'VE': 10, 'ZM': 9, 'ZW': 9
     };
     return phoneLengths[countryCode] || 15; // Default to 15 if not found
   };
@@ -359,7 +419,11 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
         onNext({ ...userInfo, phoneNumber: fullPhoneNumber });
       } else {
         // Check for specific error messages
-        if (result?.message && result.message.includes('not found')) {
+        if (result?.message && result.message.includes('Phone number not found')) {
+          setError('⚠ Phone number not found in our records');
+        } else if (result?.message && result.message.includes('registered as')) {
+          setError(`⚠ ${result.message}`);
+        } else if (result?.message && result.message.includes('not found')) {
           setError('⚠ Enter correct phone number');
         } else {
           setError(result?.message || 'Failed to send OTP. Please try again.');

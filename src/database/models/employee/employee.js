@@ -619,17 +619,32 @@ export function verifyEmployeeByPhoneAndRole(phone, role) {
     // Clean phone number (remove spaces, dashes, etc.)
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
     
-    const stmt = db.prepare(`
+    // First check if phone number exists with any role
+    const phoneCheckStmt = db.prepare(`
+      SELECT id, fname, lname, phone, roll, isActive, isDeleted 
+      FROM employee 
+      WHERE phone = ? AND isDeleted = 0 AND isActive = 1
+    `);
+    
+    const phoneEmployee = phoneCheckStmt.get(cleanPhone);
+    
+    if (!phoneEmployee) {
+      console.warn('[verifyEmployeeByPhoneAndRole] phone number not found');
+      return errorResponse('Phone number not found in our records');
+    }
+    
+    // Check if the phone number exists with the specified role
+    const roleCheckStmt = db.prepare(`
       SELECT id, fname, lname, phone, roll, isActive, isDeleted 
       FROM employee 
       WHERE phone = ? AND roll = ? AND isDeleted = 0 AND isActive = 1
     `);
     
-    const employee = stmt.get(cleanPhone, role);
+    const employee = roleCheckStmt.get(cleanPhone, role);
     
     if (!employee) {
-      console.warn('[verifyEmployeeByPhoneAndRole] employee not found');
-      return errorResponse('No employee found with this phone number and role');
+      console.warn('[verifyEmployeeByPhoneAndRole] phone number found but role does not match');
+      return errorResponse(`This phone number is registered as ${phoneEmployee.roll}, not ${role}`);
     }
     
     console.log('[verifyEmployeeByPhoneAndRole] employee found:', employee.id);
