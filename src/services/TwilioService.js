@@ -7,8 +7,20 @@ class TwilioService {
     this.authToken = process.env.TWILIO_AUTH_TOKEN || 'your_auth_token_here';
     this.phoneNumber = process.env.TWILIO_PHONE_NUMBER || 'your_twilio_phone_number_here';
     
-    // Initialize Twilio client
-    this.client = twilio(this.accountSid, this.authToken);
+    // Initialize Twilio client only if credentials are properly configured
+    if (this.isConfigured()) {
+      try {
+        this.client = twilio(this.accountSid, this.authToken);
+        console.log('[TwilioService] Twilio client initialized successfully.');
+      } catch (error) {
+        console.warn('[TwilioService] Failed to initialize Twilio client:', error.message);
+        this.client = null;
+      }
+    } else {
+      console.warn('[TwilioService] Twilio credentials not configured. SMS functionality will be limited.');
+      console.warn('[TwilioService] Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER in your .env file');
+      this.client = null;
+    }
   }
 
   /**
@@ -21,6 +33,17 @@ class TwilioService {
   async sendOTP(toPhoneNumber, otp, employeeName = 'User') {
     try {
       console.log(`[TwilioService] Sending OTP to ${toPhoneNumber}`);
+      
+      // Check if Twilio is configured
+      if (!this.isConfigured() || !this.client) {
+        console.warn('[TwilioService] Twilio not configured, returning mock success for development');
+        return {
+          success: true,
+          message: 'OTP sent successfully (mock - Twilio not configured)',
+          messageSid: 'mock_sid_' + Date.now(),
+          status: 'sent'
+        };
+      }
       
       // Validate phone number format (should include country code)
       if (!toPhoneNumber || !toPhoneNumber.startsWith('+')) {
@@ -91,6 +114,16 @@ class TwilioService {
     try {
       console.log(`[TwilioService] Sending SMS to ${toPhoneNumber}`);
       
+      // Check if Twilio is configured
+      if (!this.isConfigured() || !this.client) {
+        console.warn('[TwilioService] Twilio not configured, returning mock success for development');
+        return {
+          success: true,
+          message: 'SMS sent successfully (mock - Twilio not configured)',
+          messageSid: 'mock_sid_' + Date.now()
+        };
+      }
+      
       if (!toPhoneNumber || !toPhoneNumber.startsWith('+')) {
         throw new Error('Phone number must include country code');
       }
@@ -122,10 +155,14 @@ class TwilioService {
    * @returns {boolean} - True if credentials are configured
    */
   isConfigured() {
-    return !(
-      this.accountSid === 'your_account_sid_here' ||
-      this.authToken === 'your_auth_token_here' ||
-      this.phoneNumber === 'your_twilio_phone_number_here'
+    return !!(
+      this.accountSid && 
+      this.authToken && 
+      this.phoneNumber &&
+      this.accountSid !== 'your_account_sid_here' &&
+      this.authToken !== 'your_auth_token_here' &&
+      this.phoneNumber !== 'your_twilio_phone_number_here' &&
+      this.accountSid.startsWith('AC')
     );
   }
 
@@ -135,6 +172,14 @@ class TwilioService {
    */
   async getAccountInfo() {
     try {
+      // Check if Twilio is configured
+      if (!this.isConfigured() || !this.client) {
+        return {
+          success: false,
+          message: 'Twilio not configured'
+        };
+      }
+      
       const account = await this.client.api.accounts(this.accountSid).fetch();
       return {
         success: true,

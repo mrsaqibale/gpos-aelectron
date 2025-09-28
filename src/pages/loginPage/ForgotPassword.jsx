@@ -283,12 +283,18 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
       return;
     }
 
+    // Check if phone number is valid
+    if (!isValidNumber) {
+      setError('⚠ Please enter a valid phone number');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
       // Combine country code with phone number
-      const fullPhoneNumber = selectedCountry.code + phoneNumber;
+      const fullPhoneNumber = selectedCountry.callingCode + phoneNumber;
       
       // Call the backend to send OTP
       const result = await window.myAPI?.sendPasswordResetOTP(fullPhoneNumber, userInfo.role);
@@ -461,13 +467,13 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                 
                 {/* Phone Number Input */}
                 <div 
-                  className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[150px] shadow-inner cursor-text phone-input"
+                  className="flex items-center bg-white border-2 rounded-lg px-4 py-3 min-w-[200px] shadow-inner cursor-text phone-input"
                   style={{ borderColor: themeStyles.rightActionButtonsBg }}
                   onClick={() => setShowCursor(true)}
                 >
                   <Phone className="w-5 h-5 mr-3" style={{ color: themeStyles.rightActionButtonsBg }} />
                   <span className="font-mono text-lg" style={{ color: themeStyles.rightActionButtonsBg }}>
-                    {phoneNumber || "Enter number"}
+                    {phoneNumber ? `${selectedCountry.callingCode} ${phoneNumber}` : `${selectedCountry.callingCode} xxxxxxx`}
                   </span>
                   {showCursor && (
                     <span className="ml-1 animate-pulse" style={{ color: themeStyles.rightActionButtonsBg }}>|</span>
@@ -527,7 +533,7 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
             <div className="flex justify-center">
               <button
                 onClick={handleSendOTP}
-                disabled={isLoading || !isOnline}
+                disabled={isLoading || !isOnline || !isValidNumber}
                 className="w-[80%] cursor-pointer text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner"
                 style={{
                   backgroundColor: themeStyles.rightActionButtonsBg,
@@ -541,6 +547,8 @@ const ResetPinStep2 = ({ isOpen, onClose, onNext, userInfo, resetFields }) => {
                   </>
                 ) : !isOnline ? (
                   'Offline - No Internet'
+                ) : !isValidNumber ? (
+                  'Enter Valid Number'
                 ) : (
                   'Send OTP'
                 )}
