@@ -36,11 +36,7 @@ const SplitBillModal = ({
                     <h2 className="text-xl font-bold">Split Bill</h2>
                     <button
                         onClick={onClose}
-                        disabled={areAllItemsDistributed()}
-                        className={`p-1 rounded-full transition-colors ${areAllItemsDistributed()
-                                ? "text-gray-400 cursor-not-allowed"
-                                : "text-red-500 hover:text-red-300 hover:bg-white hover:bg-opacity-20"
-                            }`}
+                        className="text-red-500 hover:text-red-300 hover:bg-white hover:bg-opacity-20 p-1 rounded-full transition-colors"
                     >
                         X Cancel
                     </button>
