@@ -3,7 +3,7 @@ import { X, Search, Edit, Plus, RefreshCw, Eye } from 'lucide-react';
 import VirtualKeyboard from '../VirtualKeyboard';
 import CustomAlert from '../CustomAlert';
 
-const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer, onNewCustomer, orderType }) => {
+const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer, onNewCustomer, orderType, zIndex = 50 }) => {
   const [searchName, setSearchName] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
   const [searchEmail, setSearchEmail] = useState('');
@@ -347,7 +347,7 @@ const CustomerSearchModal = ({ isOpen, onClose, onCustomerSelect, onEditCustomer
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+    <div className={`fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center p-4`} style={{ zIndex: zIndex }}>
       <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
         {/* Header */}
         <div className="bg-primary text-white p-4 flex justify-between items-center">

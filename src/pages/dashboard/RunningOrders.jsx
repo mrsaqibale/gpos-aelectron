@@ -7042,6 +7042,7 @@ const RunningOrders = () => {
           onEditCustomer={handleOpenEditModal}
           onNewCustomer={() => setShowCustomerModal(true)}
           orderType={selectedOrderType}
+          zIndex={showSplitBillModal ? 60 : 50}
         />
 
         {/* Customer Information Modal */}
