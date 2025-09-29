@@ -1,5 +1,5 @@
 import React from "react";
-import { X, CheckCircle } from "lucide-react";
+import { X, CheckCircle, User, UserCheck } from "lucide-react";
 
 const SplitBillModal = ({
     isOpen,
