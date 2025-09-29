@@ -160,17 +160,28 @@ export default function AdminPanel() {
               <button
                 key={item.label}
                 onClick={() => {
-                  if (item.action === "openCounter") {
-                    handleOpenCounter();
+                  if (item.action === "counterServer") {
+                    handleCounterServer();
                   } else {
                     handleNavigation(item.path);
                   }
                 }}
-                className="flex items-center gap-3 p-3 rounded-lg bg-[#f6fafd] hover:bg-cyan-50 transition border border-transparent focus:outline-none cursor-pointer"
+                className={`flex items-center gap-3 p-3 rounded-lg transition border border-transparent focus:outline-none cursor-pointer ${
+                  item.action === "counterServer" && serverStatus.isRunning
+                    ? "bg-green-50 hover:bg-green-100 border-green-200"
+                    : "bg-[#f6fafd] hover:bg-cyan-50"
+                }`}
                 style={{ boxShadow: "0 1px 2px 0 rgba(0,0,0,0.01)" }}
               >
                 {item.icon}
-                <span className="text-gray-700 font-medium">{item.label}</span>
+                <span className="text-gray-700 font-medium">
+                  {item.label}
+                  {item.action === "counterServer" && serverStatus.isRunning && (
+                    <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+                      RUNNING
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </div>
@@ -219,6 +230,42 @@ export default function AdminPanel() {
           </div>
         </div>
       </div>
+
+      {/* Server Status Display */}
+      {serverStatus.isRunning && serverInfo && (
+        <div className="mt-8 w-full max-w-2xl">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Server size={20} className="text-green-600" />
+                <h3 className="text-green-800 font-semibold">Counter Server Running</h3>
+              </div>
+              <button
+                onClick={() => window.electronAPI.invoke('counter:openInBrowser')}
+                className="flex items-center gap-1 text-green-600 hover:text-green-800 text-sm"
+              >
+                <ExternalLink size={14} />
+                Open
+              </button>
+            </div>
+            
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white rounded p-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-1">Local Access</h4>
+                <code className="text-xs bg-gray-100 p-1 rounded block">{serverInfo.localUrl}</code>
+              </div>
+              <div className="bg-white rounded p-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-1">Network Access</h4>
+                <code className="text-xs bg-gray-100 p-1 rounded block">{serverInfo.networkUrl}</code>
+              </div>
+            </div>
+            
+            <p className="text-sm text-green-700 mt-3">
+              💡 Share the Network URL with other devices on your network to access the counter remotely!
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
