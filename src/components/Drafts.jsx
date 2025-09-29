@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Edit, Trash2, User, Phone, Hash } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDeleteDraft, onDeleteAllDrafts }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [selectedDraft, setSelectedDraft] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const { themeColors } = useTheme();
 
   // Use current draft orders passed as props
   useEffect(() => {
