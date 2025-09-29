@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -14,6 +14,8 @@ import {
   List,
   Truck,
   Calculator,
+  Server,
+  ExternalLink,
 } from "lucide-react";
 
 const adminItems = [
@@ -43,9 +45,9 @@ const adminItems = [
     path: "/dashboard/stock-management?tab=suppliers"
   },
   {
-    icon: <Calculator size={18} className="text-primary" />,
-    label: "Counter Tool",
-    action: "openCounter"
+    icon: <Server size={18} className="text-primary" />,
+    label: "Counter Server",
+    action: "counterServer"
   },
 ];
 
@@ -69,39 +71,58 @@ const settingsItems = [
 
 export default function AdminPanel() {
   const navigate = useNavigate();
+  const [serverStatus, setServerStatus] = useState({ isRunning: false, port: 3001 });
+  const [serverInfo, setServerInfo] = useState(null);
+
+  useEffect(() => {
+    checkServerStatus();
+  }, []);
+
+  const checkServerStatus = async () => {
+    if (window.electronAPI) {
+      try {
+        const status = await window.electronAPI.invoke('counter:getServerStatus');
+        setServerStatus(status);
+      } catch (error) {
+        console.error('Error checking server status:', error);
+      }
+    }
+  };
 
   const handleNavigation = (path) => {
     navigate(path);
   };
 
-  const handleOpenCounter = async () => {
+  const handleCounterServer = async () => {
     try {
-      if (window.electronAPI) {
-        // Get counter file information
-        const counterInfo = await window.electronAPI.invoke('counter:getPath');
+      if (!serverStatus.isRunning) {
+        // Start the server
+        const result = await window.electronAPI.invoke('counter:startServer');
         
-        console.log('Counter file info:', counterInfo);
-        
-        if (!counterInfo.exists) {
-          alert(`Counter file not found at: ${counterInfo.counterPath}\n\nPlease make sure the file exists in the src folder.`);
-          return;
+        if (result.success) {
+          setServerStatus({ isRunning: true, port: result.port });
+          setServerInfo(result);
+          
+          // Show server info
+          alert(`🎯 Counter Server Started!\n\nLocal URL: ${result.localUrl}\nNetwork URL: ${result.networkUrl}\n\nShare the Network URL with other devices on your network!`);
+          
+          // Open in browser
+          await window.electronAPI.invoke('counter:openInBrowser');
+        } else {
+          alert(`Failed to start server: ${result.error}`);
         }
-        
-        const fileUrl = `file://${counterInfo.counterPath}`;
-        console.log('Opening counter in browser:', fileUrl);
-        
-        // Open the counter HTML file in the default browser
-        await window.electronAPI.shell.openExternal(fileUrl);
-        
       } else {
-        // Fallback for web environment
-        window.open('/src/counter.html', '_blank');
+        // Stop the server
+        const stopped = await window.electronAPI.invoke('counter:stopServer');
+        if (stopped) {
+          setServerStatus({ isRunning: false, port: 3001 });
+          setServerInfo(null);
+          alert('Counter server stopped.');
+        }
       }
     } catch (error) {
-      console.error('Error opening counter:', error);
-      console.error('Error details:', error.message);
-      
-      alert(`Could not open counter. Error: ${error.message}\n\nTroubleshooting steps:\n1. Check if src/counter.html exists in your project\n2. Try opening the file directly from Windows Explorer\n3. Make sure the file path is correct`);
+      console.error('Error managing counter server:', error);
+      alert(`Error: ${error.message}`);
     }
   };
 
