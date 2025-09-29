@@ -71,9 +71,12 @@ contextBridge.exposeInMainWorld('myAPI', {
   searchFoodsByName: (name, restaurantId) => ipcRenderer.invoke('food:searchByName', name, restaurantId),
   deleteFoodImage: (foodId) => ipcRenderer.invoke('food:deleteImage', foodId),
   getFoodImage: (imagePath) => ipcRenderer.invoke('food:getImage', imagePath),
+  getPizzaFoods: () => ipcRenderer.invoke('food:getPizzaFoods'),
   getFoodIngredients: (foodId) => ipcRenderer.invoke('food:getIngredients', foodId),
   updateFoodIngredients: (foodId, ingredientIds) => ipcRenderer.invoke('food:updateIngredients', foodId, ingredientIds),
   processFoodIngredients: (foodId, categoryId, ingredientNames) => ipcRenderer.invoke('food:processIngredients', foodId, categoryId, ingredientNames),
+  createFoodIngredient: (foodId, ingredientId) => ipcRenderer.invoke('food:createFoodIngredient', foodId, ingredientId),
+  removeFoodIngredient: (foodId, ingredientId) => ipcRenderer.invoke('food:removeIngredient', foodId, ingredientId),
 
   // Variations
   createVariation: (variationData) => ipcRenderer.invoke('variation:create', variationData),
@@ -103,6 +106,8 @@ contextBridge.exposeInMainWorld('myAPI', {
   tableGetAll: () => ipcRenderer.invoke('table:getAll'),
   tableGetByFloor: (floorId) => ipcRenderer.invoke('table:getByFloor', floorId),
   tableGetByFloorWithStatus: (floorId, status) => ipcRenderer.invoke('table:getByFloorWithStatus', floorId, status),
+  tableUpdateStatus: (tableId, status) => ipcRenderer.invoke('table:updateStatus', tableId, status),
+  tableUpdateMultipleStatuses: (tableIds, status) => ipcRenderer.invoke('table:updateMultipleStatuses', tableIds, status),
 
   // Floor
   floorCreate: (data) => ipcRenderer.invoke('floor:create', data),
@@ -123,6 +128,13 @@ contextBridge.exposeInMainWorld('myAPI', {
   checkPhoneUnique: (phone, excludeId) => ipcRenderer.invoke('employee:checkPhoneUnique', phone, excludeId),
   checkPinUnique: (pin, excludeId) => ipcRenderer.invoke('employee:checkPinUnique', pin, excludeId),
   validateEmployeeData: (data, excludeId) => ipcRenderer.invoke('employee:validateData', data, excludeId),
+  changeEmployeePassword: (employeeId, oldPin, newPin) => ipcRenderer.invoke('employee:changePassword', employeeId, oldPin, newPin),
+  
+  // Forgot Password
+  verifyEmployeeByPhoneAndRole: (phone, role) => ipcRenderer.invoke('employee:verifyByPhoneAndRole', phone, role),
+  sendPasswordResetOTP: (phone, role) => ipcRenderer.invoke('employee:sendPasswordResetOTP', phone, role),
+  verifyPasswordResetOTP: (phone, role, otp) => ipcRenderer.invoke('employee:verifyPasswordResetOTP', phone, role, otp),
+  resetEmployeePIN: (phone, role, otp, newPin) => ipcRenderer.invoke('employee:resetPIN', phone, role, otp, newPin),
 
   // Register
   createRegister: (data) => ipcRenderer.invoke('register:create', data),
@@ -134,6 +146,7 @@ contextBridge.exposeInMainWorld('myAPI', {
   updateRegister: (id, updates) => ipcRenderer.invoke('register:update', id, updates),
   deleteRegister: (id) => ipcRenderer.invoke('register:delete', id),
   getRegisterStatistics: (employeeId, startDate, endDate) => ipcRenderer.invoke('register:getStatistics', employeeId, startDate, endDate),
+  getLastRegister: () => ipcRenderer.invoke('register:getLast'),
 
   // Employee Login
   createEmployeeLogin: (employeeId) => ipcRenderer.invoke('employeeLogin:create', employeeId),
@@ -143,22 +156,39 @@ contextBridge.exposeInMainWorld('myAPI', {
   getAllLoginSessions: (limit, offset) => ipcRenderer.invoke('employeeLogin:getAllSessions', limit, offset),
 
                 // Customer
-              createCustomer: (data) => ipcRenderer.invoke('customer:create', data),
-              createCustomerWithAddresses: (data) => ipcRenderer.invoke('customer:createWithAddresses', data),
-              updateCustomer: (id, updates) => ipcRenderer.invoke('customer:update', id, updates),
-              getCustomerById: (id) => ipcRenderer.invoke('customer:getById', id),
-              getCustomersByHotelId: (hotelId) => ipcRenderer.invoke('customer:getByHotelId', hotelId),
-              searchCustomerByPhone: (phone) => ipcRenderer.invoke('customer:searchByPhone', phone),
-              searchCustomerByName: (name) => ipcRenderer.invoke('customer:searchByName', name),
-              getCustomerAddresses: (customerId) => ipcRenderer.invoke('address:getByCustomer', customerId),
-              deleteAddress: (id) => ipcRenderer.invoke('address:delete', id),
+  createCustomer: (data) => ipcRenderer.invoke('customer:create', data),
   createCustomerWithAddresses: (data) => ipcRenderer.invoke('customer:createWithAddresses', data),
+  updateCustomer: (id, updates) => ipcRenderer.invoke('customer:update', id, updates),
+  getCustomerById: (id) => ipcRenderer.invoke('customer:getById', id),
+  getCustomersByHotelId: (hotelId) => ipcRenderer.invoke('customer:getByHotelId', hotelId),
+  searchCustomerByPhone: (phone) => ipcRenderer.invoke('customer:searchByPhone', phone),
+  searchCustomerByName: (name) => ipcRenderer.invoke('customer:searchByName', name),
+  getCustomerAddresses: (customerId) => ipcRenderer.invoke('address:getByCustomer', customerId),
+  deleteAddress: (id) => ipcRenderer.invoke('address:delete', id),
+  
+  // Customer Management with Order Statistics
+  getCustomersWithOrderStats: (hotelId, limit, offset) => ipcRenderer.invoke('customer:getWithOrderStats', hotelId, limit, offset),
+  getCustomersCount: (hotelId) => ipcRenderer.invoke('customer:getCount', hotelId),
+  searchCustomersWithOrderStats: (searchTerm, hotelId, limit, offset) => ipcRenderer.invoke('customer:searchWithOrderStats', searchTerm, hotelId, limit, offset),
+  getCustomerOrders: (customerId, limit, offset) => ipcRenderer.invoke('customer:getOrders', customerId, limit, offset),
+  getCustomerOrderCount: (customerId) => ipcRenderer.invoke('customer:getOrderCount', customerId),
 
   // Address
   createAddress: (data) => ipcRenderer.invoke('address:create', data),
   getCustomerAddresses: (customerId) => ipcRenderer.invoke('address:getByCustomer', customerId),
   updateAddress: (id, updates) => ipcRenderer.invoke('address:update', id, updates),
   deleteAddress: (id) => ipcRenderer.invoke('address:delete', id),
+
+  // Reservation
+  createReservation: (data) => ipcRenderer.invoke('reservation:create', data),
+  updateReservation: (id, updates) => ipcRenderer.invoke('reservation:update', id, updates),
+  getReservationById: (id) => ipcRenderer.invoke('reservation:getById', id),
+  getReservationsByHotelId: (hotelId, limit, offset) => ipcRenderer.invoke('reservation:getByHotelId', hotelId, limit, offset),
+  getReservationsByStatus: (status, hotelId, limit, offset) => ipcRenderer.invoke('reservation:getByStatus', status, hotelId, limit, offset),
+  getReservationsByDateRange: (startDate, endDate, hotelId) => ipcRenderer.invoke('reservation:getByDateRange', startDate, endDate, hotelId),
+  getReservationsByCustomerId: (customerId, limit, offset) => ipcRenderer.invoke('reservation:getByCustomerId', customerId, limit, offset),
+  deleteReservation: (id) => ipcRenderer.invoke('reservation:delete', id),
+  getReservationsCount: (hotelId, status) => ipcRenderer.invoke('reservation:getCount', hotelId, status),
 
   // Orders
   createOrder: (data) => ipcRenderer.invoke('order:create', data),
@@ -168,6 +198,7 @@ contextBridge.exposeInMainWorld('myAPI', {
   getAllOrders: (limit, offset) => ipcRenderer.invoke('order:getAll', limit, offset),
   getOrdersByStatus: (status, limit, offset) => ipcRenderer.invoke('order:getByStatus', status, limit, offset),
   getOrdersByCustomer: (customerId, limit, offset) => ipcRenderer.invoke('order:getByCustomer', customerId, limit, offset),
+  getOrdersByDateRange: (startDate, endDate, limit, offset) => ipcRenderer.invoke('order:getByDateRange', startDate, endDate, limit, offset),
   cancelOrder: (id, reason, canceledBy, note) => ipcRenderer.invoke('order:cancel', id, reason, canceledBy, note),
   getOrderStatistics: (startDate, endDate) => ipcRenderer.invoke('order:getStatistics', startDate, endDate),
   deleteOrder: (id) => ipcRenderer.invoke('order:delete', id),
@@ -180,7 +211,8 @@ contextBridge.exposeInMainWorld('myAPI', {
   getOrderDetailsByOrderId: (orderId) => ipcRenderer.invoke('orderDetail:getByOrderId', orderId),
   getOrderDetailsByFoodId: (foodId, limit, offset) => ipcRenderer.invoke('orderDetail:getByFoodId', foodId, limit, offset),
   getAllOrderDetails: (limit, offset) => ipcRenderer.invoke('orderDetail:getAll', limit, offset),
-  deleteOrderDetail: (id) => ipcRenderer.invoke('orderDetail:delete', id),
+      deleteOrderDetail: (id) => ipcRenderer.invoke('orderDetail:delete', id),
+    deleteOrderDetailsByOrderId: (orderId) => ipcRenderer.invoke('orderDetail:deleteByOrderId', orderId),
   getOrderDetailsWithFood: (orderId) => ipcRenderer.invoke('orderDetail:getWithFood', orderId),
   getOrderDetailsStatistics: (startDate, endDate) => ipcRenderer.invoke('orderDetail:getStatistics', startDate, endDate),
   getTopSellingFoods: (limit, startDate, endDate) => ipcRenderer.invoke('orderDetail:getTopSellingFoods', limit, startDate, endDate),
@@ -204,6 +236,59 @@ contextBridge.exposeInMainWorld('myAPI', {
   searchVoucherByCode: (code) => ipcRenderer.invoke('voucher:searchByCode', code),
 
   // Hotel
+
+  // Attendance Management
+  attendanceCreate: (data) => ipcRenderer.invoke('attendance-create', data),
+  attendanceGetByEmployee: (employeeId, startDate, endDate) => ipcRenderer.invoke('attendance-get-by-employee', { employeeId, startDate, endDate }),
+  attendanceGetByDateRange: (startDate, endDate) => ipcRenderer.invoke('attendance-get-by-date-range', { startDate, endDate }),
+  attendanceGetByDate: (date) => ipcRenderer.invoke('attendance-get-by-date', date),
+  attendanceUpdate: (id, updateData) => ipcRenderer.invoke('attendance-update', { id, updateData }),
+  attendanceDelete: (id) => ipcRenderer.invoke('attendance-delete', id),
+  attendanceGetStatistics: (startDate, endDate) => ipcRenderer.invoke('attendance-get-statistics', { startDate, endDate }),
+  attendanceCheckTodayStatus: (employeeId, date) => ipcRenderer.invoke('attendance-check-today-status', { employeeId, date }),
+  attendanceGetEmployeeSummary: (employeeId, month, year) => ipcRenderer.invoke('attendance-get-employee-summary', { employeeId, month, year }),
+  attendanceGetLateEmployees: (date) => ipcRenderer.invoke('attendance-get-late-employees', date),
+  attendanceGetAbsentEmployees: (date) => ipcRenderer.invoke('attendance-get-absent-employees', date),
+  attendanceBulkCreate: (records) => ipcRenderer.invoke('attendance-bulk-create', records),
+
+  // Salary Payments
+  salaryPaymentCreate: (data) => ipcRenderer.invoke('salary-payment-create', data),
+  salaryPaymentGetByEmployee: (employeeId, startDate, endDate) => ipcRenderer.invoke('salary-payment-get-by-employee', { employeeId, startDate, endDate }),
+  salaryPaymentGetByDateRange: (startDate, endDate) => ipcRenderer.invoke('salary-payment-get-by-date-range', { startDate, endDate }),
+  salaryPaymentGetById: (id) => ipcRenderer.invoke('salary-payment-get-by-id', id),
+  salaryPaymentUpdate: (id, updateData) => ipcRenderer.invoke('salary-payment-update', { id, updateData }),
+  salaryPaymentDelete: (id) => ipcRenderer.invoke('salary-payment-delete', id),
+  salaryPaymentGetTotalPaid: (employeeId, startDate, endDate) => ipcRenderer.invoke('salary-payment-get-total-paid', { employeeId, startDate, endDate }),
+  salaryPaymentGetStatistics: (startDate, endDate) => ipcRenderer.invoke('salary-payment-get-statistics', { startDate, endDate }),
+  salaryPaymentGetPending: () => ipcRenderer.invoke('salary-payment-get-pending'),
+  salaryPaymentGetHistory: (employeeId, limit) => ipcRenderer.invoke('salary-payment-get-history', { employeeId, limit }),
+  salaryPaymentGetByMethod: (method, startDate, endDate) => ipcRenderer.invoke('salary-payment-get-by-method', { method, startDate, endDate }),
+  salaryPaymentGetMonthlySummary: (month, year) => ipcRenderer.invoke('salary-payment-get-monthly-summary', { month, year }),
+  salaryPaymentGetYearlySummary: (year) => ipcRenderer.invoke('salary-payment-get-yearly-summary', year),
+  salaryPaymentCheckPending: (employeeId) => ipcRenderer.invoke('salary-payment-check-pending', employeeId),
+  salaryPaymentGetMethodsSummary: (startDate, endDate) => ipcRenderer.invoke('salary-payment-get-methods-summary', { startDate, endDate }),
+
+  // Leave Requests
+  leaveRequestCreate: (data) => ipcRenderer.invoke('leave-request-create', data),
+  leaveRequestGetByEmployee: (employeeId, status) => ipcRenderer.invoke('leave-request-get-by-employee', { employeeId, status }),
+  leaveRequestGetById: (id) => ipcRenderer.invoke('leave-request-get-by-id', id),
+  leaveRequestGetAll: (filters) => ipcRenderer.invoke('leave-request-get-all', filters),
+  leaveRequestGetPending: () => ipcRenderer.invoke('leave-request-get-pending'),
+  leaveRequestGetApproved: (startDate, endDate) => ipcRenderer.invoke('leave-request-get-approved', { startDate, endDate }),
+  leaveRequestGetRejected: () => ipcRenderer.invoke('leave-request-get-rejected'),
+  leaveRequestUpdate: (id, updateData) => ipcRenderer.invoke('leave-request-update', { id, updateData }),
+  leaveRequestApprove: (id, approvedBy, approvedAt) => ipcRenderer.invoke('leave-request-approve', { id, approvedBy, approvedAt }),
+  leaveRequestReject: (id, rejectedBy, rejectionReason, rejectedAt) => ipcRenderer.invoke('leave-request-reject', { id, rejectedBy, rejectionReason, rejectedAt }),
+  leaveRequestDelete: (id) => ipcRenderer.invoke('leave-request-delete', id),
+  leaveRequestGetByDateRange: (startDate, endDate, status) => ipcRenderer.invoke('leave-request-get-by-date-range', { startDate, endDate, status }),
+  leaveRequestGetByType: (leaveType, startDate, endDate) => ipcRenderer.invoke('leave-request-get-by-type', { leaveType, startDate, endDate }),
+  leaveRequestGetStatistics: (startDate, endDate) => ipcRenderer.invoke('leave-request-get-statistics', { startDate, endDate }),
+  leaveRequestGetEmployeeBalance: (employeeId, year) => ipcRenderer.invoke('leave-request-get-employee-balance', { employeeId, year }),
+  leaveRequestCheckOverlapping: (employeeId, startDate, endDate, excludeId) => ipcRenderer.invoke('leave-request-check-overlapping', { employeeId, startDate, endDate, excludeId }),
+  leaveRequestGetMonthlySummary: (month, year) => ipcRenderer.invoke('leave-request-get-monthly-summary', { month, year }),
+  leaveRequestGetYearlySummary: (year) => ipcRenderer.invoke('leave-request-get-yearly-summary', year),
+  leaveRequestGetStatusCounts: () => ipcRenderer.invoke('leave-request-get-status-counts'),
+  leaveRequestGetNeedingApproval: () => ipcRenderer.invoke('leave-request-get-needing-approval'),
   checkHotelStatus: () => ipcRenderer.invoke('check-hotel-status'),
   getHotelInfo: () => ipcRenderer.invoke('get-hotel-info'),
   createOrUpdateHotel: (hotelData) => ipcRenderer.invoke('create-or-update-hotel', hotelData),
@@ -224,6 +309,32 @@ contextBridge.exposeInMainWorld('api', {
   getSubcategories: (hotelId) => ipcRenderer.invoke('get-subcategories', hotelId),
   createSubcategory: (data) => ipcRenderer.invoke('create-subcategory', data),
   // ...add more as needed
+
+  // Employees (mirror commonly used functions for convenience)
+  getAllEmployees: () => ipcRenderer.invoke('employee:getAll'),
+  getEmployeeById: (id) => ipcRenderer.invoke('employee:getById', id),
+
+  // Attendance (subset required by EmployeeAttendance.jsx)
+  attendanceCreate: (data) => ipcRenderer.invoke('attendance-create', data),
+  attendanceGetByEmployee: (employeeId, startDate, endDate) => ipcRenderer.invoke('attendance-get-by-employee', { employeeId, startDate, endDate }),
+  attendanceUpdate: (id, updateData) => ipcRenderer.invoke('attendance-update', { id, updateData }),
+  attendanceCheckTodayStatus: (employeeId, date) => ipcRenderer.invoke('attendance-check-today-status', { employeeId, date }),
+
+  // Salary Payments (subset required by EmployeeAttendance.jsx)
+  salaryPaymentCreate: (data) => ipcRenderer.invoke('salary-payment-create', data),
+  salaryPaymentGetByEmployee: (employeeId, startDate, endDate) => ipcRenderer.invoke('salary-payment-get-by-employee', { employeeId, startDate, endDate }),
+
+  // Leave Requests (subset required by EmployeeAttendance.jsx)
+  leaveRequestCreate: (data) => ipcRenderer.invoke('leave-request-create', data),
+  leaveRequestCheckOverlapping: (employeeId, startDate, endDate, excludeId) => ipcRenderer.invoke('leave-request-check-overlapping', { employeeId, startDate, endDate, excludeId }),
+});
+
+// Expose electronAPI for components that use it
+contextBridge.exposeInMainWorld('electronAPI', {
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+  send: (channel, ...args) => ipcRenderer.send(channel, ...args),
+  on: (channel, callback) => ipcRenderer.on(channel, callback),
+  removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
 });
 
 // others
@@ -231,3 +342,10 @@ contextBridge.exposeInMainWorld('api', {
 
 
 
+
+// Settings API
+contextBridge.exposeInMainWorld('settingsAPI', {
+  get: () => ipcRenderer.invoke('settings:get'),
+  upsert: (data) => ipcRenderer.invoke('settings:upsert', data),
+  checkTable: () => ipcRenderer.invoke('settings:checkTable'),
+});

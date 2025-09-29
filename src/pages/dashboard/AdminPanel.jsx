@@ -12,6 +12,7 @@ import {
   Box,
   Utensils,
   List,
+  Truck,
 } from "lucide-react";
 
 const adminItems = [
@@ -22,7 +23,7 @@ const adminItems = [
   },
   {
     icon: <Table size={18} className="text-primary" />,
-    label: "Tables",
+    label: "Table Management",
     path: "/dashboard/table-management"
   },
   {
@@ -33,15 +34,16 @@ const adminItems = [
   {
     icon: <Box size={18} className="text-primary" />,
     label: "Stock Management",
-    path: "/dashboard/food-management"
+    path: "/dashboard/stock-management"
+  },
+  {
+    icon: <Truck size={18} className="text-primary" />,
+    label: "Suppliers",
+    path: "/dashboard/stock-management?tab=suppliers"
   },
 ];
 
 const settingsItems = [
-  {
-    icon: <Key size={18} className="text-yellow-500" />,
-    label: "Change Password",
-  },
   {
     icon: <Settings size={18} className="text-sky-500" />,
     label: "Application Settings",
@@ -50,6 +52,12 @@ const settingsItems = [
   {
     icon: <Shield size={18} className="text-amber-600" />,
     label: "Security Settings",
+    path: "/dashboard/security-settings"
+  },
+  {
+    icon: <Key size={18} className="text-yellow-500" />,
+    label: "Change Password",
+    path: "/dashboard/change-password"
   },
 ];
 

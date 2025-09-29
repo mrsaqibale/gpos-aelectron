@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Minus, ArrowLeft } from 'lucide-react';
+import { Minus, ArrowLeft, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
 const CustomTitleBar = () => {
   // const [isMaximized, setIsMaximized] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [navigationHistory, setNavigationHistory] = useState([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
   const navigate = useNavigate();
   const location = useLocation();
   const { themeColors, changeTheme } = useTheme();
@@ -36,6 +38,41 @@ const CustomTitleBar = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Track navigation history
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    // Don't track login page in history
+    if (currentPath === '/login' || currentPath === '/') {
+      return;
+    }
+
+    // If we're navigating to dashboard from login, clear history
+    if (currentPath === '/dashboard' && navigationHistory.length === 0) {
+      setNavigationHistory(['/dashboard']);
+      setCurrentHistoryIndex(0);
+      return;
+    }
+
+    setNavigationHistory(prev => {
+      const newHistory = [...prev];
+      
+      // If we're navigating to a new page (not going back/forward)
+      if (currentHistoryIndex === -1 || newHistory[currentHistoryIndex] !== currentPath) {
+        // Remove any future history if we're not at the end
+        if (currentHistoryIndex < newHistory.length - 1) {
+          newHistory.splice(currentHistoryIndex + 1);
+        }
+        
+        // Add new path
+        newHistory.push(currentPath);
+        setCurrentHistoryIndex(newHistory.length - 1);
+      }
+      
+      return newHistory;
+    });
+  }, [location.pathname, currentHistoryIndex, navigationHistory.length]);
+
   // useEffect(() => {
   //   // Check initial maximize state
   //   const checkMaximized = async () => {
@@ -63,6 +100,38 @@ const CustomTitleBar = () => {
 
   const handleMinimize = () => {
     window.windowControls?.minimize();
+  };
+
+  // Handle back navigation
+  const handleBack = () => {
+    if (currentHistoryIndex > 0) {
+      const previousPath = navigationHistory[currentHistoryIndex - 1];
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+      navigate(previousPath);
+    }
+    // If no history (currentHistoryIndex <= 0), back button should be disabled
+    // so this function shouldn't be called, but just in case, do nothing
+  };
+
+  // Handle forward navigation
+  const handleForward = () => {
+    if (currentHistoryIndex < navigationHistory.length - 1) {
+      const nextPath = navigationHistory[currentHistoryIndex + 1];
+      setCurrentHistoryIndex(currentHistoryIndex + 1);
+      navigate(nextPath);
+    }
+  };
+
+  // Check if back button should be enabled
+  const canGoBack = () => {
+    // Only enable back button if we have navigation history and not on the first page
+    return currentHistoryIndex > 0;
+  };
+
+  // Check if forward button should be enabled
+  const canGoForward = () => {
+    // Only enable forward button if we've gone back at least once
+    return currentHistoryIndex < navigationHistory.length - 1;
   };
 
   // const handleMaximize = () => {
@@ -123,27 +192,56 @@ const CustomTitleBar = () => {
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 h-9 z-50 flex items-center justify-between px-4 select-none title-bar"
+      className="fixed top-0 left-0 right-0 h-11 z-50 flex items-center justify-between px-4 select-none title-bar"
       style={{ 
         backgroundColor: themeColors.primary,
         borderBottom: `1px solid ${themeColors.primaryLight}`
       }}
     >
-              {/* Left side - App title and logout button */}
-        <div className="flex items-center space-x-3">
-          {isOnLoginPage() ? (
-            <span className="text-white text-sm font-semibold">POS System</span>
-          ) : isLoggedIn() ? (
+              {/* Left side - Navigation buttons, App title and menu */}
+        <div className="flex items-center gap-2">
+          {/* Back and Forward Navigation Buttons */}
+          {!isOnLoginPage() && (
+            <>
+              <button
+                onClick={handleBack}
+                disabled={!canGoBack()}
+                className={`w-8 h-8 cursor-pointer flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg ${
+                  !canGoBack() ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
+                title="Go Back"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              
+              <button
+                onClick={handleForward}
+                disabled={!canGoForward()}
+                className={`w-8 h-8 cursor-pointer flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg ${
+                  !canGoForward() ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
+                title="Go Forward"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
+          {/* App Title */}
+          <span className="text-white text-sm font-semibold ml-2">POS System</span>
+
+          {/* Menu Button */}
+          {!isOnLoginPage() && (
             <button
-              onClick={handleLogout}
-              className="flex cursor-pointer items-center space-x-1 text-gray-300 hover:text-white transition-colors duration-200 rounded-sm px-2 py-1 hover:bg-red-600"
-              title="Logout"
+              onClick={() => window.dispatchEvent(new CustomEvent('openDashboardMenu'))}
+              className="w-8 h-8 cursor-pointer flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg"
+              style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
+              title="Menu"
             >
-              <ArrowLeft className="w-5 h-5 text-white" />
-              <span className="text-white text-sm font-semibold">Logout</span>
+              <Menu className="w-5 h-5" />
             </button>
-          ) : (
-            <span className="text-white text-sm font-semibold">POS System</span>
           )}
         </div>
 
@@ -173,8 +271,9 @@ const CustomTitleBar = () => {
         </span>
       </div>
 
-      {/* Right side - Theme switcher and Window controls */}
+      {/* Right side - Theme switcher, Zoom controls and Window controls */}
       <div className="flex items-center space-x-2">
+        
         {/* Theme switcher buttons */}
         <div className="flex items-center space-x-1 mr-2">
           <button
@@ -195,17 +294,22 @@ const CustomTitleBar = () => {
             style={{ background: "linear-gradient(to bottom right, #25A18E, #34A0A4)" }}
             title="Green Theme"
           />
+          <button
+            onClick={() => changeTheme("black")}
+            className="w-4 h-4 rounded-full border border-white cursor-pointer transform active:scale-95"
+            style={{ background: "linear-gradient(to bottom right, #1a1a1a, #333333)" }}
+            title="Black Theme"
+          />
         </div>
+
 
         {/* Window controls */}
         <div className="flex items-center space-x-1">
           {/* Minimize button only */}
           <button
             onClick={handleMinimize}
-            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200 rounded-sm"
-            style={{ 
-              '--hover-bg-color': themeColors.primaryLight 
-            }}
+            className="w-9 h-9 flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg"
+            style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
             title="Minimize"
           >
             <Minus className="w-4 h-4" />

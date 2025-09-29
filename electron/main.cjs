@@ -15,17 +15,27 @@ app.commandLine.appendSwitch('--disable-background-timer-throttling');
 app.commandLine.appendSwitch('--disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('--disable-renderer-backgrounding');
 
+const { registerHotelIpcHandlers } = require('./ipchandler/hotel.cjs');
 const { registerFoodIpcHandlers } = require('./ipchandler/foodipc.cjs');
 const { registerTableIpcHandlers } = require('./ipchandler/table.cjs');
 const { registerFloorIpcHandlers } = require('./ipchandler/floor.cjs');
+// Import employee IPC handlers
+// Current location: electron/main.cjs
+// Target: electron/ipchandler/employee.cjs (same level, into ipchandler folder)
 const { registerEmployeeIpcHandlers } = require('./ipchandler/employee.cjs');
 const { registerCustomerIpcHandlers } = require('./ipchandler/customer.cjs');
+const { registerReservationIpcHandlers } = require('./ipchandler/reservation.cjs');
 const { registerOrdersIpcHandlers } = require('./ipchandler/orders.cjs');
 const { registerOrderDetailsIpcHandlers } = require('./ipchandler/orderDetails.cjs');
 const { registerCouponIpcHandlers } = require('./ipchandler/coupon.cjs');
 const { registerVoucherIpcHandlers } = require('./ipchandler/voucher.cjs');
-const { registerHotelIpcHandlers } = require('./ipchandler/hotel.cjs');
-const { initDatabase } = require('./init-database.cjs');
+const { registerSettingsIpcHandlers } = require('./ipchandler/settings.cjs');
+
+// Import new attendance management IPC handlers
+require('./ipchandler/attendance.cjs');
+require('./ipchandler/salaryPayments.cjs');
+require('./ipchandler/leaveRequests.cjs');
+// const { initDatabase } = require('./init-database.cjs');
 
 async function createWindow() {
   // Get screen dimensions
@@ -39,7 +49,7 @@ async function createWindow() {
     x: 0,
     y: 0,
     minWidth: 800,
-    minHeight: 600,
+    minHeight: 740,
     resizable: true,
     // Remove default frame to create custom window controls
     frame: false,
@@ -55,55 +65,118 @@ async function createWindow() {
     },
   });
 
-  // Always try to load the Vite dev server first
-  const http = require('http');
-  const checkPort = (port) => {
-    return new Promise((resolve) => {
-      const req = http.get(`http://localhost:${port}`, (res) => {
-        req.destroy();
-        resolve(res.statusCode === 200);
-      });
-      req.on('error', () => {
-        req.destroy();
-        resolve(false);
-      });
-      req.setTimeout(2000, () => {
-        req.destroy();
-        resolve(false);
-      });
-    });
-  };
-
-  // Try common Vite ports - check from lowest to highest
-  const ports = [5173, 5174, 5175, 5176, 5177, 5178];
-  let devServerPort = null;
-
-  for (const port of ports) {
-    console.log(`Checking port ${port}...`);
-    const isAvailable = await checkPort(port);
-    if (isAvailable) {
-      devServerPort = port;
-      console.log(`Found Vite dev server on port ${devServerPort}`);
-      break;
+  // Check if we're in development or production
+  // In built app, __dirname will be inside app.asar, so we check for that
+  const devDbPath = path.join(__dirname, '../src/database/pos.db');
+  const prodDbPath = path.join(process.resourcesPath || '', 'database/pos.db');
+  const isDev = !__dirname.includes('app.asar') && fs.existsSync(devDbPath);
+  
+  console.log('Environment check:', {
+    isDev,
+    __dirname,
+    hasDevDatabase: fs.existsSync(devDbPath),
+    hasProdDatabase: fs.existsSync(prodDbPath),
+    devDbPath,
+    prodDbPath,
+    resourcesPath: process.resourcesPath
+  });
+  
+  if (isDev) {
+    // Development mode - use port 5173 directly
+    console.log('Development mode - trying to load Vite dev server on port 5173');
+    try {
+      win.loadURL('http://localhost:5173/');
+      console.log('Successfully loaded Vite dev server');
+      win.webContents.openDevTools();
+    } catch (error) {
+      console.error('Failed to load Vite dev server:', error);
+      console.log('Falling back to production build');
+      win.loadFile(path.join(__dirname, '../renderer/index.html'));
     }
-  }
-
-  if (devServerPort) {
-    console.log(`Loading Vite dev server on port ${devServerPort}`);
-    win.loadURL(`http://localhost:${devServerPort}/`);
-    win.webContents.openDevTools();
   } else {
-    console.log('Vite dev server not found, loading production build');
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    // Production mode - always load the built files
+    console.log('Production mode - loading built files');
+    win.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
   
   // Set environment for IPC handlers
   process.env.NODE_ENV = process.env.NODE_ENV || 'development';
   
-  // Expose window control functions to renderer
+  // Enhanced debugging for React and DOM loading
   win.webContents.on('did-finish-load', () => {
-    // Simple window control setup
-    console.log('Window loaded successfully');
+    console.log('✅ Window loaded successfully');
+    
+    // Check if React is loaded by injecting a script
+    win.webContents.executeJavaScript(`
+      console.log('🔍 Checking React availability...');
+      if (typeof React !== 'undefined') {
+        console.log('✅ React is loaded:', React.version);
+      } else {
+        console.log('❌ React not found');
+      }
+      
+      if (typeof window !== 'undefined') {
+        console.log('✅ Window object available');
+      }
+      
+      if (document.body && document.body.children.length > 0) {
+        console.log('✅ DOM has content:', document.body.children.length, 'children');
+      } else {
+        console.log('❌ DOM appears empty or body not ready');
+      }
+      
+      return {
+        hasReact: typeof React !== 'undefined',
+        reactVersion: typeof React !== 'undefined' ? React.version : null,
+        bodyChildren: document.body ? document.body.children.length : 0,
+        bodyHTML: document.body ? document.body.innerHTML.substring(0, 200) : 'No body'
+      };
+    `).then(result => {
+      console.log('📊 React/DOM Status:', result);
+    }).catch(error => {
+      console.error('❌ Error checking React status:', error);
+    });
+  });
+  
+  // Add debugging for white screen issues
+  win.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('❌ Failed to load:', {
+      errorCode,
+      errorDescription,
+      validatedURL
+    });
+  });
+  
+  win.webContents.on('dom-ready', () => {
+    console.log('📄 DOM ready - checking for content...');
+    
+    // Check if there's actual content loaded
+    win.webContents.executeJavaScript(`
+      return {
+        title: document.title,
+        bodyExists: !!document.body,
+        bodyEmpty: !document.body || document.body.innerHTML.trim() === '',
+        hasRootDiv: !!document.getElementById('root'),
+        rootContent: document.getElementById('root') ? document.getElementById('root').innerHTML.substring(0, 100) : 'No root div'
+      };
+    `).then(result => {
+      console.log('📊 DOM Content Check:', result);
+    }).catch(error => {
+      console.error('❌ Error checking DOM content:', error);
+    });
+  });
+  
+  win.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`💬 Console [${level}]:`, message);
+  });
+  
+  // Additional debugging for page loading
+  win.webContents.on('did-start-loading', () => {
+    console.log('🔄 Page started loading...');
+  });
+  
+  win.webContents.on('did-stop-loading', () => {
+    console.log('⏹️ Page stopped loading');
   });
   
   return win;
@@ -136,19 +209,21 @@ app.whenReady().then(async () => {
   const win = await createWindow();
 
   // Register IPC handlers
+  registerHotelIpcHandlers();
   registerFoodIpcHandlers();
   registerTableIpcHandlers();
   registerFloorIpcHandlers();
   registerEmployeeIpcHandlers();
   registerCustomerIpcHandlers();
+  registerReservationIpcHandlers();
   registerOrdersIpcHandlers();
   registerOrderDetailsIpcHandlers();
   registerCouponIpcHandlers();
   registerVoucherIpcHandlers();
-  registerHotelIpcHandlers();
+  registerSettingsIpcHandlers();
   
   // Initialize database tables
-  initDatabase();
+  // initDatabase();
 
   // Window control IPC handlers
   const { ipcMain } = require('electron');

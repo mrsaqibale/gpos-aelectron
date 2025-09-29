@@ -28,12 +28,15 @@ const Employee = () => {
     salaryPerHour: '',
     image: null,
     vehicleNumber: '',
-    vehicleType: ''
+    vehicleType: '',
+    licenseNumber: '',
+    licenseExpiry: ''
   });
   const [pinError, setPinError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [toggleLoading, setToggleLoading] = useState({});
+  const [toggleLoadingAvailable, setToggleLoadingAvailable] = useState({});
 
 
 
@@ -93,10 +96,12 @@ const Employee = () => {
       email: employee.email || '',
       pin: '',
       confirmPin: '',
-      salaryPerHour: employee.salaryPerHour || '',
+      salaryPerHour: employee.salary_per_hour || '',
       image: null,
-      vehicleNumber: employee.vehicleNumber || '',
-      vehicleType: employee.vehicleType || ''
+      vehicleNumber: employee.vnumber || '',
+      vehicleType: employee.vtype || '',
+      licenseNumber: employee.license_number || '',
+      licenseExpiry: employee.license_expiry || ''
     });
     // Set image preview if employee has an image
     if (employee.imgurl) {
@@ -143,7 +148,9 @@ const Employee = () => {
       salaryPerHour: '',
       image: null,
       vehicleNumber: '',
-      vehicleType: ''
+      vehicleType: '',
+      licenseNumber: '',
+      licenseExpiry: ''
     });
     setImagePreview(null);
     setPinError(''); // Clear any previous PIN error messages
@@ -294,15 +301,29 @@ const Employee = () => {
         pin: newEmployee.pin,
         code: newEmployee.pin, // Using PIN as code for now
         address: '',
+        isavailable: 1,
         isActive: 1,
         isDeleted: 0,
         isSyncronized: 0
       };
 
-      // Add vehicle information for Delivery Man
+      // Add vehicle and license information for Delivery Man
       if (newEmployee.role === 'Delivery Man') {
-        employeeData.vehicleNumber = newEmployee.vehicleNumber;
-        employeeData.vehicleType = newEmployee.vehicleType;
+        employeeData.vnumber = newEmployee.vehicleNumber;
+        employeeData.vtype = newEmployee.vehicleType;
+        // License details
+        if (!newEmployee.licenseExpiry) {
+          alert('License expiry date is required for Delivery Man');
+          return;
+        }
+        employeeData.license_number = newEmployee.licenseNumber || null;
+        employeeData.license_expiry = newEmployee.licenseExpiry;
+      } else {
+        // Ensure backend clears if role changed away from Delivery Man
+        employeeData.vnumber = null;
+        employeeData.vtype = null;
+        employeeData.license_number = null;
+        employeeData.license_expiry = null;
       }
 
       // Only include image data if a new image is selected
@@ -373,7 +394,9 @@ const Employee = () => {
       salaryPerHour: '',
       image: null,
       vehicleNumber: '',
-      vehicleType: ''
+      vehicleType: '',
+      licenseNumber: '',
+      licenseExpiry: ''
     });
     setImagePreview(null);
     setPinError('');
@@ -452,6 +475,29 @@ const Employee = () => {
       alert('Error toggling status. Please try again.');
     } finally {
       setToggleLoading(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const toggleAvailability = async (id) => {
+    if (toggleLoadingAvailable[id]) return;
+    try {
+      setToggleLoadingAvailable(prev => ({ ...prev, [id]: true }));
+      const employee = employees.find(emp => emp.id === id);
+      if (!employee) return;
+      let currentStatus = employee.isavailable === 1 || employee.isavailable === true || employee.isavailable === '1';
+      const newStatus = currentStatus ? 0 : 1;
+      const result = await window.myAPI?.updateEmployee(id, { isavailable: newStatus });
+      if (result && result.success) {
+        setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, isavailable: newStatus } : emp));
+        setTimeout(() => { fetchEmployees(); }, 200);
+      } else {
+        alert('Error toggling availability: ' + (result?.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error toggling availability:', error);
+      alert('Error toggling availability. Please try again.');
+    } finally {
+      setToggleLoadingAvailable(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -720,6 +766,40 @@ const Employee = () => {
                             <option value="Bicycle">Bicycle</option>
                           </select>
                         </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            License Number
+                          </label>
+                          <input
+                            type="text"
+                            name="licenseNumber"
+                            value={newEmployee.licenseNumber}
+                            onChange={handleInputChange}
+                            onFocus={() => handleAnyInputFocus(null, 'licenseNumber')}
+                            onBlur={handleInputBlur}
+                            onClick={() => handleAnyInputClick(null, 'licenseNumber')}
+                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            placeholder="Optional"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            License Expiry Date <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="licenseExpiry"
+                            value={newEmployee.licenseExpiry}
+                            onChange={handleInputChange}
+                            onFocus={() => handleAnyInputFocus(null, 'licenseExpiry')}
+                            onBlur={handleInputBlur}
+                            onClick={() => handleAnyInputClick(null, 'licenseExpiry')}
+                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                            required
+                          />
+                        </div>
                       </>
                     )}
                   </div>
@@ -930,6 +1010,9 @@ const Employee = () => {
                   Email
                 </th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+                  Available
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
                   Status
                 </th>
                 <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
@@ -986,6 +1069,25 @@ const Employee = () => {
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">{employee.email}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <label className={`relative inline-flex items-center ${toggleLoadingAvailable[employee.id] ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                      <input
+                        type="checkbox"
+                        checked={employee.isavailable === 1}
+                        onChange={() => !toggleLoadingAvailable[employee.id] && toggleAvailability(employee.id)}
+                        className="sr-only"
+                        disabled={toggleLoadingAvailable[employee.id]}
+                      />
+                      <div className={`w-10 h-5 rounded-full transition-colors ${employee.isavailable === 1 ? 'bg-primary' : 'bg-gray-200'}`}>
+                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${employee.isavailable === 1 ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`}></div>
+                      </div>
+                      {toggleLoadingAvailable[employee.id] && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                    </label>
                   </td>
                   <td className="py-3 px-4">
                     <label className={`relative inline-flex items-center ${toggleLoading[employee.id] ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>

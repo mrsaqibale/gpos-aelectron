@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useKeyboardSetting } from './useKeyboardSetting';
 
 const useVirtualKeyboard = (inputFields = []) => {
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
   const [keyboardInput, setKeyboardInput] = useState('');
   const [capsLock, setCapsLock] = useState(false);
+  const { shouldShowVirtualKeyboard } = useKeyboardSetting();
 
   // Handle caps lock changes
   useEffect(() => {
@@ -18,7 +20,8 @@ const useVirtualKeyboard = (inputFields = []) => {
   const handleInputFocus = (inputName, currentValue = '') => {
     setActiveInput(inputName);
     setKeyboardInput(currentValue || '');
-    setShowKeyboard(true);
+    // Only show keyboard if GBoard is selected
+    setShowKeyboard(shouldShowVirtualKeyboard());
   };
 
   const handleInputBlur = (e) => {
@@ -37,7 +40,8 @@ const useVirtualKeyboard = (inputFields = []) => {
       setKeyboardInput(currentValue || '');
     }
     setActiveInput(inputName);
-    setShowKeyboard(true);
+    // Only show keyboard if GBoard is selected
+    setShowKeyboard(shouldShowVirtualKeyboard());
     // Set the keyboard input value to match the current form value
     setKeyboardInput(currentValue || '');
     // Also update the form field value to ensure synchronization

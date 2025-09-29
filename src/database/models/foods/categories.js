@@ -5,11 +5,86 @@ import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../pos.db');
+
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in development mode
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../../', relativePath));
+    if (isDev) {
+      return path.join(__dirname, '../../', relativePath);
+    }
+
+    // For production builds, try multiple possible paths
+    const possiblePaths = [
+      path.join(process.resourcesPath || '', 'database', relativePath),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'app.asar.unpacked', 'database', relativePath),
+      path.join(process.cwd(), 'database', relativePath),
+      path.join(process.cwd(), 'resources', 'database', relativePath),
+      path.join(__dirname, '../../', relativePath) // Fallback to relative path
+    ];
+
+    console.log(`[${path.basename(__filename)}] Looking for: ${relativePath}`);
+    console.log(`[${path.basename(__filename)}] Current dir: ${__dirname}`);
+    console.log(`[${path.basename(__filename)}] isDev: ${isDev}`);
+
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          console.log(`✅ [${path.basename(__filename)}] Found at: ${candidate}`);
+          return candidate;
+        }
+      } catch (_) {}
+    }
+
+    // If not found, create in user's app data directory
+    const appDataBaseDir = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database');
+    if (!fs.existsSync(appDataBaseDir)) {
+      fs.mkdirSync(appDataBaseDir, { recursive: true });
+    }
+    const finalPath = path.join(appDataBaseDir, relativePath);
+
+    // Try to copy from any of the possible paths
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, finalPath);
+          console.log(`✅ [${path.basename(__filename)}] Copied to: ${finalPath}`);
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If still not found, create empty file
+    if (!fs.existsSync(finalPath)) {
+      if (relativePath.endsWith('.db')) {
+        fs.writeFileSync(finalPath, '');
+      } else {
+        fs.mkdirSync(finalPath, { recursive: true });
+      }
+    }
+
+    console.log(`✅ [${path.basename(__filename)}] Using final path: ${finalPath}`);
+    return finalPath;
+  } catch (error) {
+    console.error(`[${path.basename(__filename)}] Failed to resolve path: ${relativePath}`, error);
+    // Ultimate fallback
+    const fallback = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database', relativePath);
+    const dir = path.dirname(fallback);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return fallback;
+  }
+};
+
+const dbPath = getDynamicPath('pos.db');
 const db = new Database(dbPath);
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../../uploads');
+const uploadsDir = getDynamicPath('uploads');
 const categoryUploadsDir = path.join(uploadsDir, 'category');
 
 // Create directories if they don't exist
@@ -47,7 +122,7 @@ function saveImageFile(base64Data, originalFilename) {
 function deleteImageFile(imagePath) {
   try {
     if (imagePath && imagePath.startsWith('uploads/')) {
-      const fullPath = path.join(__dirname, '../../', imagePath);
+      const fullPath = getDynamicPath(imagePath);
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
       }
@@ -140,10 +215,11 @@ export function getCategoryImage(imagePath) {
       return { success: false, message: 'Invalid image path' };
     }
     
-    const fullPath = path.join(__dirname, '../../', imagePath);
+    // Use dynamic path resolution
+    const fullPath = getDynamicPath(imagePath);
     
     // Security check
-    const uploadsDir = path.join(__dirname, '../../uploads');
+    const uploadsDir = getDynamicPath('uploads');
     if (!fullPath.startsWith(uploadsDir)) {
       return { success: false, message: 'Access denied' };
     }

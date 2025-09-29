@@ -16,7 +16,95 @@ const POSLogin = () => {
 
   const navigate = useNavigate();
   const [showForgotPinModal, setShowForgotPinModal] = useState(false);
-  const { themeColors, changeTheme } = useTheme();
+  const { themeColors, changeTheme, currentTheme } = useTheme();
+
+  // Get theme-specific styles for PosLogin
+  const getThemeStyles = () => {
+    switch (currentTheme) {
+      case 'default':
+        return {
+          screenBg: '#003C58',
+          logoBg: '#176B87',
+          logoText: 'white',
+          logoSubText: 'white',
+          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 10px rgba(0, 188, 212, 0.6)',
+          mainContentBorder: '2px solid var(--primary-light, #00bcd4)',
+          leftSectionBg: '#176B87',
+          rightActionButtonsBg: '#176B87',
+          roleButtonBg: '#003C58',
+          roleButtonText: 'white',
+          roleButtonBorder: '2px solid rgba(255, 255, 255, 0.3)',
+          roleButtonSelectedBg: 'white',
+          roleButtonSelectedText: '#003C58'
+        };
+      case 'blue':
+        return {
+          screenBg: 'white',
+          logoBg: '#032C7E',
+          logoText: 'white',
+          logoSubText: 'black',
+          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 20px rgba(3, 45, 129, 0.3)',
+          mainContentBorder: '2px solid #032d81',
+          leftSectionBg: '#032C7E',
+          rightActionButtonsBg: '#032C7E',
+          roleButtonBg: 'white',
+          roleButtonText: '#032D81',
+          roleButtonBorder: 'var(--primary-light, #00bcd4)',
+          roleButtonSelectedBg: '#032D81',
+          roleButtonSelectedText: 'white'
+        };
+      case 'green':
+        return {
+          screenBg: '#136F63',
+          logoBg: '#34A0A4',
+          logoText: 'white',
+          logoSubText: 'white',
+          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 10px rgba(0, 188, 212, 0.6)',
+          mainContentBorder: '2px solid var(--primary-light, #00bcd4)',
+          leftSectionBg: '#34A0A4',
+          rightActionButtonsBg: '#136F63',
+          roleButtonBg: '#136F63',
+          roleButtonText: 'white',
+          roleButtonBorder: 'var(--logo-box-bg, #176B87)',
+          roleButtonSelectedBg: 'white',
+          roleButtonSelectedText: '#34A0A4'
+        };
+      case 'black':
+        return {
+          screenBg: 'white',
+          logoBg: '#000000',
+          logoText: 'white',
+          logoSubText: 'black',
+          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 20px rgba(0, 0, 0, 0.3)',
+          mainContentBorder: '2.5px solid #e0e0e0',
+          leftSectionBg: '#000000',
+          rightActionButtonsBg: '#000000',
+          roleButtonBg: 'white',
+          roleButtonText: '#000000',
+          roleButtonBorder: '1px solid #e0e0e0',
+          roleButtonSelectedBg: '#000000',
+          roleButtonSelectedText: 'white'
+        };
+      default:
+        return {
+          screenBg: '#003C58',
+          logoBg: '#176B87',
+          logoText: 'white',
+          logoSubText: 'white',
+          mainContentShadow: '0 8px 32px rgba(0,0,0,0.10), 0 0 10px rgba(0, 188, 212, 0.6)',
+          mainContentBorder: '2px solid var(--primary-light, #00bcd4)',
+          leftSectionBg: '#176B87',
+          rightActionButtonsBg: '#176B87',
+          roleButtonBg: '#003C58',
+          roleButtonText: 'white',
+          roleButtonBorder: '2px solid rgba(255, 255, 255, 0.3)',
+          roleButtonSelectedBg: 'white',
+          roleButtonSelectedText: '#003C58'
+        };
+    }
+  };
+
+  const themeStyles = getThemeStyles();
 
   const roles = [
     { id: 'Admin', name: 'Admin', icon: Crown },
@@ -78,10 +166,18 @@ const POSLogin = () => {
   };
 
   const handleClear = () => {
+    if (!selectedRole) {
+      setError('⚠ Please select a role first.');
+      return;
+    }
     setPin('');
   };
 
   const handleBackspace = () => {
+    if (!selectedRole) {
+      setError('⚠ Please select a role first.');
+      return;
+    }
     setPin(prev => prev.slice(0, -1));
   };
 
@@ -134,8 +230,16 @@ const POSLogin = () => {
             localStorage.setItem('currentEmployee', JSON.stringify(result.data));
           }
           
-          // Navigate to dashboard and trigger Check-In popup there
-          sessionStorage.setItem('triggerCheckIn', 'true');
+          // Reload app settings after successful login
+          try {
+            if (window.appSettings && typeof window.appSettings.reloadSettings === 'function') {
+              await window.appSettings.reloadSettings();
+            }
+          } catch (e) {
+            console.warn('Could not reload app settings on login:', e);
+          }
+
+          // Navigate to dashboard
           navigate('/dashboard');
         } else {
           setError('⚠ Invalid PIN or role. Please try again.');
@@ -169,6 +273,10 @@ const POSLogin = () => {
   };
 
   const handleForgotPinClick = () => {
+    if (!selectedRole) {
+      setError('⚠ Please select a role first.');
+      return;
+    }
     setShowForgotPinModal(true);
   };
 
@@ -209,9 +317,9 @@ const POSLogin = () => {
       return (
         <div
           key={index}
-          className={`w-10 h-10 border-[2px] rounded-lg flex items-center justify-center text-lg font-semibold transition-all duration-200 ${isEmpty
-              ? 'border-[#6BD8E6] bg-[#E0F7FA]'
-              : 'border-[#6BD8E6] bg-[#E0F7FA] text-black'
+          className={`w-10 h-10 border-[1px] rounded-lg flex items-center justify-center text-lg font-semibold transition-all duration-200 ${isEmpty
+              ? 'border-primary bg-[#E0F7FA]'
+              : 'border-primary bg-[#E0F7FA] text-black'
             } shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
             style={{
               boxShadow: "0 0 10px rgba(0, 188, 212, 0.6)"
@@ -228,12 +336,12 @@ const POSLogin = () => {
         <button
           onClick={togglePinVisibility}
           disabled={!selectedRole}
-          className={`ml-1 w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${selectedRole
+          className={`ml-1 w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 bg-primary hover:shadow-lg ${selectedRole
               ? 'text-[#032D3A] hover:text-white hover:bg-[#032D3A] cursor-pointer'
               : 'text-[#032D3A] cursor-not-allowed'
             }`}
         >
-          {showPin ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+          {showPin ? <EyeOff className="w-6 h-6 text-white" /> : <Eye className="w-6 h-6 text-white" />}
         </button>
       </div>
     );
@@ -242,12 +350,11 @@ const POSLogin = () => {
     const NumberButton = ({ number, onClick, style }) => (
       <button
         onClick={() => onClick(number)}
-        disabled={!selectedRole}
         className="rounded-xl py-1 px-0 shadow-lg cursor-pointer hover:shadow-xl font-bold text-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
         style={{
           backgroundColor: 'white',
-          color: themeColors.primary,
-          border: `2px solid ${themeColors.primary}`
+          color: themeStyles.rightActionButtonsBg,
+          border: `2px solid ${themeStyles.rightActionButtonsBg}`
         }}
       >
         {number}
@@ -262,18 +369,17 @@ const POSLogin = () => {
     disabled = false,
   }) => {
     const baseClasses =
-      "py-1 px-0 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
+      "px-0 rounded-lg text-sm font-semibold transition-all duration-200 border-[1.5px] flex items-center justify-center shadow-md hover:shadow-lg active:shadow-inner active:translate-y-0.5";
 
     const buttonStyle = {
-      backgroundColor: selectedRole ? (variant === "clear" ? '#ffebee' : variant === "backspace" ? themeColors.primary + '20' : themeColors.primary) : 'white',
-      color: selectedRole ? (variant === "clear" ? '#d32f2f' : 'white') : themeColors.primary,
-      border: selectedRole ? (variant === "clear" ? `2px solid #d32f2f` : variant === "backspace" ? `2px solid ${themeColors.primary}` : 'none') : `2px solid ${themeColors.primary}`,
+      backgroundColor: selectedRole ? themeStyles.rightActionButtonsBg : themeStyles.rightActionButtonsBg,
+      color: selectedRole ? 'white' : 'white',
+      border: selectedRole ? 'none' : `2px solid ${themeStyles.rightActionButtonsBg}`,
     };
 
     return (
       <button
         onClick={onClick}
-        disabled={disabled}
         className={`${baseClasses} ${className}`}
         style={buttonStyle}
       >
@@ -286,13 +392,13 @@ const POSLogin = () => {
   return (
     <>
       <div
-        className="w-full h-screen relative flex flex-col items-center justify-center px-6 py-3 transition-colors duration-300"
-        style={{ backgroundColor: 'white' }}
+        className="w-full h-screen relative flex flex-col items-center justify-center px-6 py-0 transition-colors duration-300"
+        style={{ backgroundColor: themeStyles.screenBg }}
       >
         {/* Close button for login page */}
         <button
           onClick={() => window.loginWindowControls?.close()}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-full border border-gray-300 hover:border-red-300"
+          className="absolute top-14 right-4 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-full border border-gray-300 hover:border-red-300"
           title="Close Application"
         >
           <X className="w-5 h-5" />
@@ -300,15 +406,15 @@ const POSLogin = () => {
 
         <div className="py-4 rounded-t-xl">
           <div
-            className="flex flex-col items-center justify-center text-center mt-4"
+            className="flex flex-col items-center justify-center text-center"
           >
             <div className="w-24 h-20 rounded-2xl border-2 flex flex-col items-center justify-center mb-3 shadow-md shadow-black"
-            style={{ backgroundColor: themeColors.logo, borderColor: themeColors.logo_border  }} 
+            style={{ backgroundColor: themeStyles.logoBg, borderColor: themeStyles.logoBg  }} 
             >
-              <span className="text-white font-bold text-5xl">G</span>
-              <span className="text-white font-medium text-base">POS</span>
+              <span className="font-bold text-5xl" style={{ color: themeStyles.logoText }}>G</span>
+              <span className="font-medium text-base" style={{ color: themeStyles.logoText }}>POS</span>
             </div>
-            <p className="text-lg text-black font-bold">
+            <p className="text-lg font-bold" style={{ color: themeStyles.logoSubText }}>
               Welcome to GPOS – Smart & Simplified Point of Sale
             </p>
           </div>
@@ -317,15 +423,21 @@ const POSLogin = () => {
 
 
         {/* Main Content */}
-        <div className="w-full h-[500px] max-w-4xl flex transform perspective-1000">
+        <div 
+          className="w-full h-[480px] max-w-4xl flex transform perspective-1000 rounded-3xl overflow-hidden"
+          style={{
+            boxShadow: themeStyles.mainContentShadow,
+            border: themeStyles.mainContentBorder
+          }}
+        >
 
                       {/* Left Section - Role Selection with 3D effect */}
-            <div className="w-1/2 rounded-l-3xl border-r p-6 border-[#4a7ca3] border shadow-2xl" style={{ backgroundColor: themeColors.primary }}>
+            <div className="w-1/2 p-3" style={{ backgroundColor: themeStyles.leftSectionBg }}>
             <h2 className="text-2xl mt-2 font-bold text-white mb-6 text-center">
               Select Your Role
             </h2>
 
-            <div className="grid h-[380px] grid-cols-2 gap-4">
+            <div className="grid h-[300px] grid-cols-2 gap-4">
               {roles.map((role) => {
                 const IconComponent = role.icon;
                 const isSelected = selectedRole === role.id;
@@ -337,26 +449,26 @@ const POSLogin = () => {
                       onClick={() => handleRoleSelect(role.id)}
                       className={`
                         ${isSelected
-                          ? 'text-white scale-[1.04] z-[1]'
-                          : 'text-black hover:bg-transparent hover:border-white'}
+                          ? 'scale-[1.04] z-[1]'
+                          : 'hover:bg-transparent hover:border-white'}
                          rounded-xl transition-all duration-300 
-                        flex flex-col items-center justify-center
+                        flex flex-col items-center justify-center h-24
                         hover:cursor-pointer transform hover:-translate-y-1 hover:scale-105 active:translate-y-0 
                         border-[2.5px]
                       `}
                                                                                               style={{
                           transformStyle: 'preserve-3d',
-                          background: isSelected ? themeColors.primary : 'white',
-                          borderColor: isSelected ? themeColors.loginBg : '#1e3a5f',
+                          background: isSelected ? themeStyles.roleButtonSelectedBg : themeStyles.roleButtonBg,
+                          border: themeStyles.roleButtonBorder,
                           boxShadow: isSelected
-                            ? `0 0 16px 2px ${themeColors.loginBg}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
+                            ? `0 0 16px 2px ${themeStyles.roleButtonBorder}, 0 0 0 4px rgba(52, 160, 164, 0.12)`
                             : '0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.1)'
                         }}
                     >
-                      <IconComponent className="w-8 h-8 mb-1" style={{ color: isSelected ? 'white' : 'black' }} />
-                      <span className="text-xl font-bold" style={{ color: isSelected ? 'white' : 'black' }}>{role.name}</span>
+                      <IconComponent className="w-8 h-8 mb-1" style={{ color: isSelected ? themeStyles.roleButtonSelectedText : themeStyles.roleButtonText }} />
+                      <span className="text-xl font-bold" style={{ color: isSelected ? themeStyles.roleButtonSelectedText : themeStyles.roleButtonText }}>{role.name}</span>
                                               {role.subtitle && (
-                          <span className="text-xs opacity-70" style={{ color: isSelected ? 'white' : 'black' }}>{role.subtitle}</span>
+                          <span className="text-xs opacity-70" style={{ color: isSelected ? themeStyles.roleButtonSelectedText : themeStyles.roleButtonText }}>{role.subtitle}</span>
                         )}
                     </button>
 
@@ -367,7 +479,7 @@ const POSLogin = () => {
 
           {/* Right Section - PIN Entry with 3D effect */}
           <div
-            className="w-1/2 bg-[#ffffff] text-black rounded-r-3xl border-l p-6 shadow-2xl border-1 border-[#2d5a87]"
+            className="w-1/2 bg-[#ffffff] text-black p-3"
             style={{
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
             }}
@@ -384,12 +496,12 @@ const POSLogin = () => {
               </div>
             )}
 
-            <h2 className="text-2xl mt-0 font-semibold text-black mb-2 text-center transform transition-transform hover:scale-105">
+            <h2 className="text-xl mt-0 font-semibold text-black mb-2 text-center transform transition-transform hover:scale-105">
               Enter PIN To Continue
             </h2>
 
             {/* PIN Display */}
-            <div className="mb-4">
+            <div className="mb-2">
               {renderPinDisplay()}
               <p className="text-center text-xs text-gray-400 mt-2">
                 {pin.length}/4 digits
@@ -398,16 +510,16 @@ const POSLogin = () => {
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 mx-10 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
+              <div className="mb-2 mx-10 flex items-center justify-center gap-2 bg-white text-red-500 p-2 rounded-lg border border-red-500">
                 <AlertCircle className="w-4 h-4" />
                 <span className="text-sm font-medium">{error}</span>
               </div>
             )}
 
             {/* Number Pad with 3D buttons */}
-            <div className="max-w-xs mx-auto mb-4">
+            <div className="max-w-xs mx-auto mb-2">
               {/* First 3 rows */}
-              <div className="grid grid-cols-3 gap-3 mb-3 text-white cursor-pointer">
+              <div className="grid grid-cols-3 gap-3 mb-2 text-white cursor-pointer">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
                                      <NumberButton
                      key={number}
@@ -443,14 +555,13 @@ const POSLogin = () => {
                     variant="backspace"
                     disabled={!selectedRole}
                   >
-                                         <svg className="w-7 h-7" viewBox="0 0 20 20" fill="none">
+                    <svg className="w-6 h-6" viewBox="0 0 20 20" fill="none">
                        <path
                          d="M7.5 10H15M5.5 5L2 10L5.5 15M15 5V15"
-                         stroke={themeColors.primary}
+                         stroke={selectedRole ? 'white' : 'white'}
                          strokeWidth="1.5"
                          strokeLinecap="round"
                          strokeLinejoin="round"
-                         style={{ opacity: 0.6 }}
                        />
                      </svg>
                   </ActionButton>
@@ -463,10 +574,10 @@ const POSLogin = () => {
               <button
                 onClick={handleLogin}
                 disabled={!selectedRole || pin.length < 4 || isLoading}
-                className="w-[80%] bg-[#2d5a87] cursor-pointer hover:bg-[#4a7ca3] text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner border border-[#4a7ca3]"
+                className="w-[80%] cursor-pointer text-white py-3 rounded-lg text-base font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-inner"
                                  style={{
-                     backgroundColor: themeColors.primary,
-                     borderColor: themeColors.loginBg,
+                     backgroundColor: themeStyles.rightActionButtonsBg,
+                     borderColor: themeStyles.rightActionButtonsBg,
                    }}
               >
                 {isLoading ? (
@@ -485,9 +596,9 @@ const POSLogin = () => {
             <div className="text-center">
               <button
                 onClick={handleForgotPinClick}
-                className="text-gray-300 hover:text-white text-underline cursor-pointer text-sm font-bold transition-colors hover:-translate-y-0.5"
+                className=" underline font-semibold cursor-pointer text-sm transition-colors hover:-translate-y-0.5"
                                  style={{
-                     color: themeColors.primary,
+                     color: themeStyles.rightActionButtonsBg,
                    }}
               >
                 Forgot PIN?
@@ -495,12 +606,12 @@ const POSLogin = () => {
             </div>
 
             {/* Current Time Display */}
-            <div className="text-center mt-2">
+            <div className="text-center mt-1">
               <div className="text-lg flex items-start justify-start ml-10 font-semibold text-gray-600">
                 <span
                   className="inline-flex items-center justify-center rounded-full mr-2"
                   style={{
-                    backgroundColor: themeColors.primary,
+                    backgroundColor: themeStyles.rightActionButtonsBg,
                     width: 24,
                     height: 24,
                   }}
@@ -533,6 +644,7 @@ const POSLogin = () => {
       <ForgotPinModals
         isOpen={showForgotPinModal}
         onClose={handleForgotPinClose}
+        selectedRole={selectedRole}
       />
 
 

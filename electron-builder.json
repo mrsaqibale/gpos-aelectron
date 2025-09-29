@@ -2,13 +2,14 @@
   "appId": "com.gpos.system",
   "productName": "GPOS System",
   "directories": {
-    "output": "dist",
-    "buildResources": "build"
+    "output": "dist"
   },
   "files": [
-    "dist/**/*",
+    "renderer/**/*",
     "electron/**/*",
     "src/database/**/*",
+    "src/assets/**/*",
+    "node_modules/better-sqlite3/**/*",
     "node_modules/**/*",
     "package.json"
   ],
@@ -17,23 +18,29 @@
       "from": "src/database/",
       "to": "database/",
       "filter": ["**/*"]
+    },
+    {
+      "from": "src/assets/",
+      "to": "assets/",
+      "filter": ["**/*"]
     }
+  ],
+  "asarUnpack": [
+    "node_modules/better-sqlite3/**/*"
   ],
   "win": {
     "target": [
       {
         "target": "nsis",
-        "arch": ["x64"]
+        "arch": ["x64", "ia32", "arm64"]
       },
       {
-        "target": "portable",
-        "arch": ["x64"]
+        "target": "dir",
+        "arch": ["x64", "ia32", "arm64"]
       }
     ],
-
     "requestedExecutionLevel": "asInvoker",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
-    "publisherName": "Your Company Name",
     "verifyUpdateCodeSignature": false,
     "sign": null,
     "signAndEditExecutable": false
@@ -43,32 +50,6 @@
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "POS System",
-    "uninstallDisplayName": "POS System",
-    "artifactName": "${productName}-Setup-${version}.${ext}",
-
-    "deleteAppDataOnUninstall": true,
-    "include": "build/installer.nsh"
-  },
-  "portable": {
-    "artifactName": "${productName}-Portable-${version}.${ext}"
-  },
-  "linux": {
-    "target": [
-      {
-        "target": "dir",
-        "arch": ["x64"]
-      }
-    ],
-    "category": "Office"
-  },
-  "publish": {
-    "provider": "github",
-    "owner": "your-github-username",
-    "repo": "your-repo-name",
-    "private": false,
-    "releaseType": "release"
-  },
-  "afterAllArtifactBuild": "scripts/fix-database-paths.cjs",
-  "afterSign": "scripts/notarize.cjs"
+    "shortcutName": "GPOS System"
+  }
 } 

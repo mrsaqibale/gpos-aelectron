@@ -2,12 +2,13 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
-import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
+import { createHashRouter, RouterProvider, Navigate } from "react-router-dom"
 import WelcomeScreen from './pages/loginPage/WelcomeScreen.jsx'
 import POSLogin from './pages/loginPage/PosLogin.jsx'
 import LicenseScreen from './pages/loginPage/LicenseScreen.jsx'
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx'
 import Dashboard from './pages/dashboard/Dashboard.jsx'
+import Reservations from './pages/dashboard/Reservations.jsx'
 import ManageOrders from './pages/dashboard/ManageOrders.jsx'
 import KitchenDisplaySystem from './pages/dashboard/KitchenDisplaySystem.jsx'
 import FoodList from './pages/dashboard/FoodList.jsx'
@@ -19,7 +20,15 @@ import RunningOrders from './pages/dashboard/RunningOrders.jsx'
 import CustomerManagement from './pages/dashboard/CustomerManagement.jsx'
 import AdminPanel from './pages/dashboard/AdminPanel.jsx'
 import ApplicationSettings from './pages/dashboard/ApplicationSettings.jsx'
+import StockManagement from './pages/dashboard/StockManagement.jsx'
+import ChangePassword from './pages/dashboard/ChangePassword.jsx'
+import Reports from './pages/dashboard/Reports.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
+import { SettingsProvider } from './contexts/SettingsContext.jsx'
+import { DraftProvider } from './contexts/DraftContext.jsx'
+import { RiderProvider } from './contexts/RiderContext.jsx'
+import { NotificationProvider } from './contexts/NotificationContext.jsx'
+import { ZoomProvider } from './contexts/ZoomContext.jsx'
 
 console.log('main.jsx loading...');
 
@@ -38,10 +47,10 @@ const ErrorBoundary = ({ children }) => {
   }
 };
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: '/',
-    element: <ErrorBoundary><ThemeProvider><App /></ThemeProvider></ErrorBoundary>,
+    element: <ErrorBoundary><ThemeProvider><ZoomProvider><SettingsProvider><DraftProvider><RiderProvider><NotificationProvider><App /></NotificationProvider></RiderProvider></DraftProvider></SettingsProvider></ZoomProvider></ThemeProvider></ErrorBoundary>,
     children: [
       { index: true, element: <ErrorBoundary><WelcomeScreen /></ErrorBoundary> },
       {
@@ -63,6 +72,10 @@ const router = createBrowserRouter([
           {
             path: 'manage-orders',
             element: <ErrorBoundary><ManageOrders /></ErrorBoundary>
+          },
+          {
+            path: 'reservations',
+            element: <ErrorBoundary><Reservations /></ErrorBoundary>
           },
           {
             path: 'kds',
@@ -101,12 +114,24 @@ const router = createBrowserRouter([
             element: <ErrorBoundary><RunningOrders/></ErrorBoundary>
           },
           {
+            path: 'reports',
+            element: <ErrorBoundary><Reports /></ErrorBoundary>
+          },
+          {
             path: 'admin-panel',
             element: <ErrorBoundary><AdminPanel /></ErrorBoundary>
           },
           {
             path: 'application-settings',
             element: <ErrorBoundary><ApplicationSettings /></ErrorBoundary>
+          },
+          {
+            path: 'change-password',
+            element: <ErrorBoundary><ChangePassword /></ErrorBoundary>
+          },
+          {
+            path: 'stock-management',
+            element: <ErrorBoundary><StockManagement /></ErrorBoundary>
           },
         ],
       },

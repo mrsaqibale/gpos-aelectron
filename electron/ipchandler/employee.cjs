@@ -3,22 +3,37 @@ const path = require('path');
 const fs = require('fs');
 
 // Use dynamic path resolution for both development and production
-
 const getModelPath = (modelPath) => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
-    const prodPath = path.join(__dirname, '../../database/models', modelPath);
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
     
-    if (fs.existsSync(devPath)) {
+    // Current location: electron/ipchandler/
+    // Target: src/database/models/ (go up 2 levels, then into src/database/models)
+    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
+    
+    // For built app: resources/database/models
+    const builtPath = path.join(process.resourcesPath || '', 'database/models', modelPath);
+    
+    console.log(`[employee.cjs] Looking for model: ${modelPath}`);
+    console.log(`[employee.cjs] Current dir: ${__dirname}`);
+    console.log(`[employee.cjs] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[employee.cjs] Dev path: ${devPath}`);
+    console.log(`[employee.cjs] Built path: ${builtPath}`);
+    
+    // Check if we're in a built app by looking for process.resourcesPath
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [employee.cjs] Found model at built path: ${builtPath}`);
+      return require(builtPath);
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [employee.cjs] Found model at dev path: ${devPath}`);
       return require(devPath);
-    } else if (fs.existsSync(prodPath)) {
-      return require(prodPath);
     } else {
-      throw new Error(`Model not found at either ${devPath} or ${prodPath}`);
+      console.log(`❌ [employee.cjs] Model not found, trying dev path: ${devPath}`);
+      return require(devPath);
     }
   } catch (error) {
-    console.error(`Failed to load model: ${modelPath}`, error);
+    console.error(`[employee.cjs] Failed to load model: ${modelPath}`, error);
     throw error;
   }
 };
@@ -30,10 +45,16 @@ const {
   loginEmployee, 
   getEmployeeById, 
   deleteEmployeeImage,
+  getEmployeeImage,
   checkEmailUnique,
   checkPhoneUnique,
   checkPinUnique,
-  validateEmployeeData
+  validateEmployeeData,
+  changeEmployeePassword,
+  verifyEmployeeByPhoneAndRole,
+  sendPasswordResetOTP,
+  verifyPasswordResetOTP,
+  resetEmployeePIN
 } = getModelPath('employee/employee.js');
 const { 
   createRegister, 
@@ -44,7 +65,8 @@ const {
   closeRegister, 
   updateRegister, 
   deleteRegister, 
-  getRegisterStatistics 
+  getRegisterStatistics,
+  getLastRegister
 } = getModelPath('employee/register.js');
 const { 
   createEmployeeLogin, 
@@ -92,49 +114,66 @@ function registerEmployeeIpcHandlers() {
   ipcMain.handle('employee:validateData', async (event, data, excludeId) => validateEmployeeData(data, excludeId));
   
   // Get employee image data
-  ipcMain.handle('employee:getImage', async (event, imagePath) => {
+  ipcMain.handle('employee:getImage', async (event, imagePath) => getEmployeeImage(imagePath));
+
+  // Change employee password (PIN)
+  ipcMain.handle('employee:changePassword', async (event, employeeId, oldPin, newPin) => {
     try {
-      if (!imagePath || !imagePath.startsWith('uploads/')) {
-        return { success: false, message: 'Invalid image path' };
-      }
-      
-      const fullPath = path.resolve(__dirname, '../../src/database', imagePath);
-      
-      // Security check
-      const uploadsDir = path.resolve(__dirname, '../../src/database/uploads');
-      if (!fullPath.startsWith(uploadsDir)) {
-        return { success: false, message: 'Access denied' };
-      }
-      
-      if (fs.existsSync(fullPath)) {
-        const imageBuffer = fs.readFileSync(fullPath);
-        const base64Data = imageBuffer.toString('base64');
-        const mimeType = getMimeType(fullPath);
-        return { 
-          success: true, 
-          data: `data:${mimeType};base64,${base64Data}` 
-        };
-      } else {
-        return { success: false, message: 'Image not found' };
-      }
+      return changeEmployeePassword(employeeId, oldPin, newPin);
     } catch (error) {
-      console.error('Error getting employee image:', error);
+      console.error('Error in employee:changePassword handler:', error);
       return { success: false, message: error.message };
     }
   });
-  
-  // Helper function to get MIME type
-  function getMimeType(filePath) {
-    const ext = path.extname(filePath).toLowerCase();
-    const mimeTypes = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp'
-    };
-    return mimeTypes[ext] || 'image/jpeg';
-  }
+
+  // Forgot password handlers
+  ipcMain.handle('employee:verifyByPhoneAndRole', async (event, phone, role) => {
+    try {
+      console.log('Verifying employee by phone and role:', { phone, role });
+      const result = verifyEmployeeByPhoneAndRole(phone, role);
+      console.log('Employee verification result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in employee:verifyByPhoneAndRole handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  ipcMain.handle('employee:sendPasswordResetOTP', async (event, phone, role) => {
+    try {
+      console.log('Sending password reset OTP:', { phone, role });
+      const result = await sendPasswordResetOTP(phone, role);
+      console.log('Send OTP result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in employee:sendPasswordResetOTP handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  ipcMain.handle('employee:verifyPasswordResetOTP', async (event, phone, role, otp) => {
+    try {
+      console.log('Verifying password reset OTP:', { phone, role, otp });
+      const result = verifyPasswordResetOTP(phone, role, otp);
+      console.log('Verify OTP result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in employee:verifyPasswordResetOTP handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  ipcMain.handle('employee:resetPIN', async (event, phone, role, otp, newPin) => {
+    try {
+      console.log('Resetting employee PIN:', { phone, role, otp, newPin: '***' });
+      const result = resetEmployeePIN(phone, role, otp, newPin);
+      console.log('Reset PIN result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error in employee:resetPIN handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
 
   // Register handlers
   ipcMain.handle('register:create', async (event, data) => createRegister(data));
@@ -146,6 +185,7 @@ function registerEmployeeIpcHandlers() {
   ipcMain.handle('register:update', async (event, id, updates) => updateRegister(id, updates));
   ipcMain.handle('register:delete', async (event, id) => deleteRegister(id));
   ipcMain.handle('register:getStatistics', async (event, employeeId, startDate, endDate) => getRegisterStatistics(employeeId, startDate, endDate));
+  ipcMain.handle('register:getLast', async () => getLastRegister());
 
   // Employee Login handlers
   ipcMain.handle('employeeLogin:create', async (event, employeeId) => createEmployeeLogin(employeeId));

@@ -30,6 +30,7 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   padding: 8px; /* Restore original padding */
+  padding-left: 0; /* Sidebar flush to the left */
   background-color: var(--color-dashboardBackground, #f0f8ff);
 }
 
@@ -39,6 +40,7 @@ html, body {
   display: flex;
   flex-direction: column;
   padding: 6px; 
+  padding-left: 0; /* Sidebar flush to the left */
 }
 
 .dashboard-main {
@@ -230,6 +232,37 @@ body.modal-open {
   align-items: center;
 }
 
+/* Print styles for Invoice */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .invoice-print-content,
+  .invoice-print-content * {
+    visibility: visible;
+  }
+  
+  .invoice-print-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    padding: 20px;
+    margin: 0;
+  }
+  
+  .invoice-print-content .print-p-0 {
+    padding: 0 !important;
+  }
+  
+  .invoice-print-content .print-border-0 {
+    border: none !important;
+  }
+}
+
 /* Override any default keyboard width constraints */
 .hg-theme-default {
   width: 100% !important;
@@ -404,3 +437,25 @@ body.modal-open {
     padding: 4px;
   }
 }
+
+/* Reservations list item styles */
+.reservation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #e0e0e0;
+  transition: all 0.2s ease;
+}
+
+.reservation-item:hover {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reservation-item.confirmed { border-left-color: #28a745; }
+.reservation-item.pending { border-left-color: #ffc107; }
+.reservation-item.cancelled { border-left-color: #dc3545; }

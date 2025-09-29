@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
-import VirtualKeyboard from '../../components/VirtualKeyboard';
+import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
+import OrderDetailsModal from '../../components/OrderDetailsModal';
+import Invoice from '../../components/Invoice';
 
 const CustomerManagement = () => {
   // State for filters
@@ -8,232 +9,176 @@ const CustomerManagement = () => {
   const [orderEndDate, setOrderEndDate] = useState('');
   const [customerJoiningDate, setCustomerJoiningDate] = useState('');
   const [sortBy, setSortBy] = useState('');
-  const [chooseFirst, setChooseFirst] = useState('');
 
   // Customer list state
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [customersPerPage] = useState(7);
+  const [customersPerPage, setCustomersPerPage] = useState(10);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [updatingCustomer, setUpdatingCustomer] = useState(null); // Track which customer is being updated
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  
+  // Order details modal state
+  const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderDetails, setOrderDetails] = useState([]);
 
-  // Keyboard state
-  const [showKeyboard, setShowKeyboard] = useState(false);
-  const [activeInput, setActiveInput] = useState('');
+  // Print modal state
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printOrder, setPrintOrder] = useState(null);
+  const [printOrderDetails, setPrintOrderDetails] = useState([]);
 
-  // Sample sorting options
+
+  // Updated sorting options
   const sortingOptions = [
     { value: 'loyal_customers', label: 'Loyal Customers' },
-    { value: 'impulse_customers', label: 'Impulse Customers' },
-    { value: 'discount_customer', label: 'Discount Customers' }
+    { value: 'not_loyal_customers', label: 'Not Loyal Customers' },
+    { value: 'max_orders_first', label: 'Maximum Orders' },
+    { value: 'min_orders_first', label: 'Minimum Orders' }
   ];
 
-  // Generate dummy orders for each customer based on their total orders
-  const generateCustomerOrders = (customerId, totalOrders, totalAmount) => {
-    const orders = [];
-    const baseOrderId = 100000 + (customerId * 10);
-    const averageOrderAmount = totalAmount / totalOrders;
-    
-    for (let i = 0; i < totalOrders; i++) {
-      // Vary the order amount slightly around the average
-      const variation = (Math.random() - 0.5) * 0.4; // ±20% variation
-      const orderAmount = Math.max(5, averageOrderAmount * (1 + variation));
+  // Pagination options
+  const paginationOptions = [10, 20, 30, 50, 100];
+
+
+  // Load customers from database based on filters
+  const loadCustomers = async (search = '') => {
+    setLoading(true);
+    try {
+      let result;
       
-      orders.push({
-        id: (baseOrderId + i).toString(),
-        status: 'Confirmed',
-        totalAmount: parseFloat(orderAmount.toFixed(2)),
-        date: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Random date within last 90 days
-      });
+      // Check if order date range filter is applied
+      if (orderStartDate && orderEndDate) {
+        // Use order date range filtering
+        result = await window.electronAPI.invoke('customer:getByOrderDateRange', 1, orderStartDate, orderEndDate, 1000, 0);
+      } else if (search.trim()) {
+        // For search, we still use the search function but get more results
+        result = await window.electronAPI.invoke('customer:searchWithOrderStats', search, 1, 1000, 0);
+      } else {
+        // Get all customers without pagination
+        result = await window.electronAPI.invoke('customer:getWithOrderStats', 1, 1000, 0);
+      }
+      
+      if (result.success) {
+        setCustomers(result.data);
+        // Apply frontend filtering (for other filters like joining date and sorting)
+        applyFrontendFilters(result.data);
+      } else {
+        console.error('Failed to load customers:', result.message);
+        setCustomers([]);
+        setFilteredCustomers([]);
+      }
+    } catch (error) {
+      console.error('Error loading customers:', error);
+      setCustomers([]);
+      setFilteredCustomers([]);
+    } finally {
+      setLoading(false);
     }
-    
-    return orders.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
   };
 
-  // Dummy customer data
-  const dummyCustomers = [
-    {
-      id: 1,
-      name: 'Laura',
-      email: 'Lbcarew@gmail.com',
-      phone: '0871601656',
-      totalOrders: 4,
-      totalAmount: 100.70,
-      joiningDate: '2025-06-21',
-      isLoyal: true,
-      address: 'Windmill, Cashel, Co. Tipperary, E25 YK57, Ireland'
-    },
-    {
-      id: 2,
-      name: 'Selena Connor',
-      email: 'selenaconnor@gmail.com',
-      phone: '0881234567',
-      totalOrders: 3,
-      totalAmount: 2387.55,
-      joiningDate: '2025-05-24',
-      isLoyal: true,
-      address: 'Main Street, Dublin, Co. Dublin, D01 AB12, Ireland'
-    },
-    {
-      id: 3,
-      name: 'john dolan',
-      email: 'dolan.john28@gmail.com',
-      phone: '0894562363',
-      totalOrders: 2,
-      totalAmount: 85.50,
-      joiningDate: '2025-06-28',
-      isLoyal: true,
-      address: 'Oak Avenue, Cork, Co. Cork, T12 CD34, Ireland'
-    },
-    {
-      id: 4,
-      name: 'James Donald',
-      email: 'jamesdonald@gmail.com',
-      phone: '0862294367',
-      totalOrders: 1,
-      totalAmount: 35.49,
-      joiningDate: '2025-06-11',
-      isLoyal: true,
-      address: 'River Road, Galway, Co. Galway, H91 EF56, Ireland'
-    },
-    {
-      id: 5,
-      name: 'Stephen Fahy',
-      email: 'fahystephen47@gmail.com',
-      phone: '0877005711',
-      totalOrders: 1,
-      totalAmount: 25.94,
-      joiningDate: '2025-06-13',
-      isLoyal: true,
-      address: 'Hill Street, Limerick, Co. Limerick, V94 GH78, Ireland'
-    },
-    {
-      id: 6,
-      name: 'Marie Johnston',
-      email: 'mariecgillane@gmail.com',
-      phone: '0834004467',
-      totalOrders: 1,
-      totalAmount: 44.57,
-      joiningDate: '2025-06-13',
-      isLoyal: true,
-      address: 'Park Lane, Waterford, Co. Waterford, X91 IJ90, Ireland'
-    },
-    {
-      id: 7,
-      name: 'Michael O\'Connor',
-      email: 'michael.oconnor@email.com',
-      phone: '0861234567',
-      totalOrders: 5,
-      totalAmount: 320.80,
-      joiningDate: '2025-05-15',
-      isLoyal: true,
-      address: 'Church Street, Kilkenny, Co. Kilkenny, R95 KL12, Ireland'
-    },
-    {
-      id: 8,
-      name: 'Sarah Walsh',
-      email: 'sarah.walsh@email.com',
-      phone: '0879876543',
-      totalOrders: 2,
-      totalAmount: 156.25,
-      joiningDate: '2025-06-05',
-      isLoyal: false,
-      address: 'Bridge Street, Wexford, Co. Wexford, Y35 MN34, Ireland'
-    },
-    {
-      id: 9,
-      name: 'David Murphy',
-      email: 'david.murphy@email.com',
-      phone: '0854567890',
-      totalOrders: 8,
-      totalAmount: 892.30,
-      joiningDate: '2025-04-20',
-      isLoyal: true,
-      address: 'High Street, Sligo, Co. Sligo, F91 PQ56, Ireland'
-    },
-    {
-      id: 10,
-      name: 'Emma Ryan',
-      email: 'emma.ryan@email.com',
-      phone: '0831234567',
-      totalOrders: 3,
-      totalAmount: 245.60,
-      joiningDate: '2025-06-10',
-      isLoyal: true,
-      address: 'Queen Street, Derry, Co. Derry, BT48 RS78, Ireland'
-    },
-    {
-      id: 11,
-      name: 'James Byrne',
-      email: 'james.byrne@email.com',
-      phone: '0867890123',
-      totalOrders: 1,
-      totalAmount: 67.89,
-      joiningDate: '2025-06-25',
-      isLoyal: true,
-      address: 'King Street, Belfast, Co. Antrim, BT1 TU90, Ireland'
-    },
-    {
-      id: 12,
-      name: 'Lisa Kelly',
-      email: 'lisa.kelly@email.com',
-      phone: '0874567890',
-      totalOrders: 6,
-      totalAmount: 456.78,
-      joiningDate: '2025-05-08',
-      isLoyal: true,
-      address: 'Castle Street, Armagh, Co. Armagh, BT61 VW12, Ireland'
-    },
-    {
-      id: 13,
-      name: 'Patrick O\'Sullivan',
-      email: 'patrick.osullivan@email.com',
-      phone: '0851234567',
-      totalOrders: 4,
-      totalAmount: 234.56,
-      joiningDate: '2025-06-18',
-      isLoyal: false,
-      address: 'Market Square, Tralee, Co. Kerry, V92 XY34, Ireland'
-    },
-    {
-      id: 14,
-      name: 'Aoife McCarthy',
-      email: 'aoife.mccarthy@email.com',
-      phone: '0869876543',
-      totalOrders: 2,
-      totalAmount: 123.45,
-      joiningDate: '2025-06-22',
-      isLoyal: true,
-      address: 'Harbour Road, Drogheda, Co. Louth, A92 ZA56, Ireland'
+  // Apply frontend filtering and sorting
+  const applyFrontendFilters = (customerData) => {
+    let filtered = [...customerData];
+
+    // Apply customer joining date filtering (order date filtering is handled by database)
+    if (customerJoiningDate) {
+      filtered = filtered.filter(customer => {
+        const joiningDate = new Date(customer.joiningDate);
+        const filterDate = new Date(customerJoiningDate);
+        return joiningDate.toDateString() === filterDate.toDateString();
+      });
     }
-  ];
+
+    // Apply sorting
+    if (sortBy) {
+      filtered.sort((a, b) => {
+        switch (sortBy) {
+          case 'loyal_customers':
+            return b.isloyal - a.isloyal; // Loyal customers first
+          case 'not_loyal_customers':
+            return a.isloyal - b.isloyal; // Non-loyal customers first
+          case 'max_orders_first':
+            return b.totalOrders - a.totalOrders; // Highest orders first
+          case 'min_orders_first':
+            return a.totalOrders - b.totalOrders; // Lowest orders first
+          default:
+            return 0;
+        }
+      });
+    }
+
+    setFilteredCustomers(filtered);
+    setTotalCustomers(filtered.length);
+  };
+
+  // Load customer orders for modal
+  const loadCustomerOrders = async (customerId) => {
+    try {
+      const result = await window.electronAPI.invoke('customer:getOrders', customerId, 50, 0);
+      if (result.success) {
+        setCustomerOrders(result.data);
+      } else {
+        console.error('Failed to load customer orders:', result.message);
+        setCustomerOrders([]);
+      }
+    } catch (error) {
+      console.error('Error loading customer orders:', error);
+      setCustomerOrders([]);
+    }
+  };
 
   // Initialize customers data
   useEffect(() => {
-    setCustomers(dummyCustomers);
-    setFilteredCustomers(dummyCustomers);
+    loadCustomers();
   }, []);
 
-  // Filter customers based on search term
+  // Handle search with debouncing
   useEffect(() => {
-    const filtered = customers.filter(customer =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm)
-    );
-    setFilteredCustomers(filtered);
-    setCurrentPage(1); // Reset to first page when searching
-  }, [searchTerm, customers]);
+    const timeoutId = setTimeout(() => {
+      loadCustomers(searchTerm);
+      setCurrentPage(1);
+    }, 500);
 
-  // Get current customers for pagination
-  const indexOfLastCustomer = currentPage * customersPerPage;
-  const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
-  const currentCustomers = filteredCustomers.slice(indexOfFirstCustomer, indexOfLastCustomer);
-  const totalPages = Math.ceil(filteredCustomers.length / customersPerPage);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  // Handle order date range changes (requires database reload)
+  useEffect(() => {
+    if (orderStartDate && orderEndDate) {
+      loadCustomers(searchTerm);
+      setCurrentPage(1);
+    } else if (!orderStartDate && !orderEndDate && customers.length === 0) {
+      // Load all customers if no order date filter and no customers loaded
+      loadCustomers(searchTerm);
+    }
+  }, [orderStartDate, orderEndDate]);
+
+  // Handle other filtering and sorting changes (frontend only)
+  useEffect(() => {
+    if (customers.length > 0) {
+      applyFrontendFilters(customers);
+      setCurrentPage(1);
+    }
+  }, [customerJoiningDate, sortBy, customers]);
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalCustomers / customersPerPage);
+  const indexOfFirstCustomer = (currentPage - 1) * customersPerPage + 1;
+  const indexOfLastCustomer = Math.min(currentPage * customersPerPage, totalCustomers);
+  
+  // Get paginated customers for display
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * customersPerPage,
+    currentPage * customersPerPage
+  );
 
   // Format date
   const formatDate = (dateString) => {
@@ -251,21 +196,74 @@ const CustomerManagement = () => {
   };
 
   // Handle customer status toggle
-  const handleStatusToggle = (customerId) => {
-    setCustomers(prevCustomers =>
-      prevCustomers.map(customer =>
-        customer.id === customerId
-          ? { ...customer, isLoyal: !customer.isLoyal }
-          : customer
-      )
-    );
+  const handleStatusToggle = async (customerId) => {
+    try {
+      console.log('Toggling loyalty for customer ID:', customerId);
+      setUpdatingCustomer(customerId); // Set loading state
+      
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        console.log('Current customer loyalty status:', customer.isloyal);
+        const newLoyaltyStatus = !customer.isloyal;
+        console.log('New loyalty status:', newLoyaltyStatus);
+        
+        // Optimistically update the UI immediately for smooth experience
+        setCustomers(prevCustomers => 
+          prevCustomers.map(c => 
+            c.id === customerId 
+              ? { ...c, isloyal: newLoyaltyStatus }
+              : c
+          )
+        );
+        
+        const result = await window.electronAPI.invoke('customer:update', customerId, { isloyal: newLoyaltyStatus ? 1 : 0 });
+        console.log('Update result:', result);
+        
+        if (result.success) {
+          console.log('Successfully updated customer loyalty status');
+          // No need to reload - UI is already updated optimistically
+        } else {
+          console.error('Failed to update customer status:', result.message);
+          // Revert the optimistic update on failure
+          setCustomers(prevCustomers => 
+            prevCustomers.map(c => 
+              c.id === customerId 
+                ? { ...c, isloyal: customer.isloyal } // Revert to original state
+                : c
+            )
+          );
+          alert(`Failed to update customer status: ${result.message}`);
+        }
+      } else {
+        console.error('Customer not found with ID:', customerId);
+        alert('Customer not found');
+      }
+    } catch (error) {
+      console.error('Error updating customer status:', error);
+      // Revert the optimistic update on error
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        setCustomers(prevCustomers => 
+          prevCustomers.map(c => 
+            c.id === customerId 
+              ? { ...c, isloyal: customer.isloyal } // Revert to original state
+              : c
+          )
+        );
+      }
+      alert(`Error updating customer status: ${error.message}`);
+    } finally {
+      setUpdatingCustomer(null); // Clear loading state
+    }
   };
 
   // Handle modal open
-  const handleModalOpen = (customer) => {
+  const handleModalOpen = async (customer) => {
     console.log('Opening modal for customer:', customer);
     setSelectedCustomer(customer);
     setShowModal(true);
+    // Load customer orders when modal opens
+    await loadCustomerOrders(customer.id);
   };
 
   // Handle modal close
@@ -274,54 +272,90 @@ const CustomerManagement = () => {
     setSelectedCustomer(null);
   };
 
-
-  // Handle keyboard input
-  const handleInputFocus = (inputName) => {
-    setActiveInput(inputName);
-    setShowKeyboard(true);
-  };
-
-  const handleInputBlur = (e) => {
-    // Check if the focus is moving to a keyboard element
-    if (e.relatedTarget && e.relatedTarget.closest('.hg-theme-default')) {
-      return;
-    }
-    
-    // Small delay to allow keyboard interactions to complete
-    setTimeout(() => {
-      setShowKeyboard(false);
-      setActiveInput('');
-    }, 300);
-  };
-
-  const handleAnyInputFocus = (e, inputName) => {
-    handleInputFocus(inputName);
-  };
-
-  const handleAnyInputClick = (e, inputName) => {
-    if (!showKeyboard || activeInput !== inputName) {
-      handleInputFocus(inputName);
+  // Handle order details modal open
+  const handleOrderDetailsOpen = async (order) => {
+    try {
+      setSelectedOrder(order);
+      setShowOrderDetailsModal(true);
+      
+      // Fetch order details with food information
+      const result = await window.electronAPI.invoke('orderDetail:getWithFood', order.id);
+      if (result.success) {
+        setOrderDetails(result.data);
+      } else {
+        console.error('Failed to load order details:', result.message);
+        setOrderDetails([]);
+      }
+    } catch (error) {
+      console.error('Error loading order details:', error);
+      setOrderDetails([]);
     }
   };
 
-  const onKeyboardChange = (input, inputName) => {
-    if (inputName === 'chooseFirst') {
-      setChooseFirst(input);
+  // Handle order details modal close
+  const handleOrderDetailsClose = () => {
+    setShowOrderDetailsModal(false);
+    setSelectedOrder(null);
+    setOrderDetails([]);
+  };
+
+  // Handle print modal open
+  const handlePrintOpen = async (order) => {
+    try {
+      setShowPrintModal(true);
+      
+      // Fetch order details with food information for printing
+      const result = await window.electronAPI.invoke('orderDetail:getWithFood', order.id);
+      if (result.success) {
+        // Structure the order data properly for the Invoice component
+        const structuredOrder = {
+          ...order,
+          items: result.data.map(item => ({
+            quantity: item.quantity,
+            totalPrice: item.total_price,
+            food: {
+              name: item.food_name || 'Unknown Item'
+            },
+            variations: item.variations ? JSON.parse(item.variations) : {},
+            adons: item.adons ? JSON.parse(item.adons) : []
+          })),
+          orderNumber: order.order_number || order.id,
+          orderType: order.order_type || 'Collection',
+          placedAt: order.created_at,
+          createdAt: order.created_at,
+          customer: {
+            name: order.customer_name || 'Walk-in Customer',
+            phone: order.customer_phone,
+            email: order.customer_email,
+            address: order.customer_address,
+            addresses: order.customer_addresses ? JSON.parse(order.customer_addresses) : []
+          },
+          table: order.table_number || 'None',
+          notes: order.notes
+        };
+        
+        setPrintOrder(structuredOrder);
+        setPrintOrderDetails(result.data);
+      } else {
+        console.error('Failed to load order details for printing:', result.message);
+        setPrintOrder(order);
+        setPrintOrderDetails([]);
+      }
+    } catch (error) {
+      console.error('Error loading order details for printing:', error);
+      setPrintOrder(order);
+      setPrintOrderDetails([]);
     }
   };
 
-  const handleKeyboardClose = () => {
-    setShowKeyboard(false);
-    setActiveInput('');
+  // Handle print modal close
+  const handlePrintClose = () => {
+    setShowPrintModal(false);
+    setPrintOrder(null);
+    setPrintOrderDetails([]);
   };
 
 
-
-  // Handle number input change
-  const handleNumberChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Only allow numbers
-    setChooseFirst(value);
-  };
 
   return (
     <div className="space-y-6">
@@ -338,28 +372,30 @@ const CustomerManagement = () => {
         <div className="grid grid-cols-4 gap-6">
           
           {/* Order Date Filter */}
-          <div className="relative">
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Order Date
+              Order Date Range
             </label>
-            <div className="grid grid-cols-2 gap-4 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+            <div className="grid grid-cols-2 gap-2">
               {/* Start Date */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 ">Start Date</label>
                 <input
                   type="date"
                   value={orderStartDate}
                   onChange={(e) => setOrderStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="Start Date"
                 />
               </div>
               
               {/* End Date */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 ">End Date</label>
                 <input
                   type="date"
                   value={orderEndDate}
                   onChange={(e) => setOrderEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="End Date"
                 />
               </div>
             </div>
@@ -389,7 +425,7 @@ const CustomerManagement = () => {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
               >
-                <option value="">Select Customer Sorting Order</option>
+                <option value="">Select Sorting Order</option>
                 {sortingOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -400,26 +436,29 @@ const CustomerManagement = () => {
             </div>
           </div>
 
-          {/* Choose First Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose First
-            </label>
-            <input
-              type="text"
-              name="chooseFirst"
-              placeholder="Ex : 100"
-              value={chooseFirst}
-              onChange={handleNumberChange}
-              onFocus={() => handleAnyInputFocus(null, 'chooseFirst')}
-              onBlur={handleInputBlur}
-              onClick={() => handleAnyInputClick(null, 'chooseFirst')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-            />
+          {/* Refresh Button */}
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                // Clear all filters
+                setOrderStartDate('');
+                setOrderEndDate('');
+                setCustomerJoiningDate('');
+                setSortBy('');
+                setSearchTerm('');
+                setCurrentPage(1);
+                // Load fresh data
+                loadCustomers('');
+              }}
+              className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
           </div>
         </div>
-
-        
       </div>
 
       {/* Customer List */}
@@ -428,9 +467,25 @@ const CustomerManagement = () => {
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-800">Customer list</h3>
-            <span className="text-sm text-gray-500">({filteredCustomers.length} customers)</span>
+            <span className="text-sm text-gray-500">({totalCustomers} customers)</span>
           </div>
           <div className="flex items-center gap-3">
+            {/* Pagination Options */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <select
+                value={customersPerPage}
+                onChange={(e) => {
+                  setCustomersPerPage(parseInt(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {paginationOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
             {/* Search */}
             <div className="relative">
               <input
@@ -442,12 +497,6 @@ const CustomerManagement = () => {
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             </div>
-            {/* Export Button */}
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm">
-              <Download size={16} />
-              Export
-              <ChevronDown size={14} />
-            </button>
           </div>
         </div>
 
@@ -482,10 +531,23 @@ const CustomerManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {currentCustomers.map((customer, index) => (
-                <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {indexOfFirstCustomer + index + 1}
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="py-8 text-center text-gray-500">
+                    Loading customers...
+                  </td>
+                </tr>
+              ) : paginatedCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-8 text-center text-gray-500">
+                    No customers found
+                  </td>
+                </tr>
+              ) : (
+                paginatedCustomers.map((customer, index) => (
+                  <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {indexOfFirstCustomer + index}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
@@ -502,7 +564,7 @@ const CustomerManagement = () => {
                     {customer.totalOrders}
                   </td>
                   <td className="py-3 px-4 text-sm font-medium text-gray-800">
-                    {customer.totalAmount.toFixed(2)} €
+                      {parseFloat(customer.totalAmount || 0).toFixed(2)} €
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600">
                     {formatDate(customer.joiningDate)}
@@ -510,15 +572,20 @@ const CustomerManagement = () => {
                   <td className="py-3 px-4">
                     <button
                       onClick={() => handleStatusToggle(customer.id)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        customer.isLoyal ? 'bg-primary' : 'bg-gray-300'
-                      }`}
+                      disabled={updatingCustomer === customer.id}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ease-in-out ${
+                          customer.isloyal ? 'bg-primary' : 'bg-gray-300'
+                      } ${updatingCustomer === customer.id ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
                     >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          customer.isLoyal ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
+                      {updatingCustomer === customer.id ? (
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                      ) : (
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-200 ease-in-out ${
+                              customer.isloyal ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      )}
                     </button>
                   </td>
                   <td className="py-3 px-4">
@@ -530,7 +597,8 @@ const CustomerManagement = () => {
                     </button>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -539,7 +607,7 @@ const CustomerManagement = () => {
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
             <div className="text-sm text-gray-500">
-              Showing {indexOfFirstCustomer + 1} to {Math.min(indexOfLastCustomer, filteredCustomers.length)} of {filteredCustomers.length} customers
+              Showing {indexOfFirstCustomer} to {indexOfLastCustomer} of {totalCustomers} customers
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -627,36 +695,57 @@ const CustomerManagement = () => {
                       </tr>
                     </thead>
                                          <tbody>
-                       {generateCustomerOrders(selectedCustomer.id, selectedCustomer.totalOrders, selectedCustomer.totalAmount).map((order, index) => (
+                      {customerOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="py-8 text-center text-gray-500">
+                            No orders found for this customer
+                          </td>
+                        </tr>
+                      ) : (
+                        customerOrders.map((order, index) => (
                          <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
                            <td className="py-3 px-4 text-sm text-gray-600">
                              {index + 1}
                            </td>
                            <td className="py-3 px-4">
                              <span className="text-primary font-medium cursor-pointer hover:underline">
-                               {order.id}
+                                {order.order_number || order.id}
                              </span>
                            </td>
                            <td className="py-3 px-4">
-                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                               {order.status}
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                order.order_status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                order.order_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                order.order_status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {order.order_status || 'Confirmed'}
                              </span>
                            </td>
                            <td className="py-3 px-4 text-sm font-medium text-gray-800">
-                             {order.totalAmount.toFixed(2)} €
+                              {parseFloat(order.order_amount || 0).toFixed(2)} €
                            </td>
                            <td className="py-3 px-4">
                              <div className="flex gap-2">
-                               <button className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors">
+                               <button 
+                                 onClick={() => handleOrderDetailsOpen(order)}
+                                 className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                                 title="View Order Details"
+                               >
                                  <Eye size={14} />
                                </button>
-                               <button className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
+                               <button 
+                                 onClick={() => handlePrintOpen(order)}
+                                 className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                                 title="Print Invoice"
+                               >
                                  <Printer size={14} />
                                </button>
                              </div>
                            </td>
                          </tr>
-                       ))}
+                        ))
+                      )}
                      </tbody>
                   </table>
                 </div>
@@ -712,17 +801,21 @@ const CustomerManagement = () => {
         </div>
       )}
 
-      {/* Virtual Keyboard */}
-      <VirtualKeyboard
-        isVisible={showKeyboard}
-        onClose={handleKeyboardClose}
-        activeInput={activeInput}
-        onInputChange={onKeyboardChange}
-        onInputBlur={handleInputBlur}
-        inputValue={chooseFirst || ''}
-        placeholder="Type here..."
+      {/* Order Details Modal */}
+      <OrderDetailsModal
+        isOpen={showOrderDetailsModal}
+        onClose={handleOrderDetailsClose}
+        order={selectedOrder}
+        orderDetails={orderDetails}
       />
 
+      {/* Print Invoice Modal */}
+      <Invoice
+        order={printOrder}
+        isOpen={showPrintModal}
+        onClose={handlePrintClose}
+        paymentStatus="PAID"
+      />
 
     </div>
   );

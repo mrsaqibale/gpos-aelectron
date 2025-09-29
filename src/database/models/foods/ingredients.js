@@ -1,10 +1,86 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../pos.db');
+
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in development mode
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../../', relativePath));
+    if (isDev) {
+      return path.join(__dirname, '../../', relativePath);
+    }
+
+    // For production builds, try multiple possible paths
+    const possiblePaths = [
+      path.join(process.resourcesPath || '', 'database', relativePath),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'app.asar.unpacked', 'database', relativePath),
+      path.join(process.cwd(), 'database', relativePath),
+      path.join(process.cwd(), 'resources', 'database', relativePath),
+      path.join(__dirname, '../../', relativePath) // Fallback to relative path
+    ];
+
+    console.log(`[${path.basename(__filename)}] Looking for: ${relativePath}`);
+    console.log(`[${path.basename(__filename)}] Current dir: ${__dirname}`);
+    console.log(`[${path.basename(__filename)}] isDev: ${isDev}`);
+
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          console.log(`✅ [${path.basename(__filename)}] Found at: ${candidate}`);
+          return candidate;
+        }
+      } catch (_) {}
+    }
+
+    // If not found, create in user's app data directory
+    const appDataBaseDir = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database');
+    if (!fs.existsSync(appDataBaseDir)) {
+      fs.mkdirSync(appDataBaseDir, { recursive: true });
+    }
+    const finalPath = path.join(appDataBaseDir, relativePath);
+
+    // Try to copy from any of the possible paths
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, finalPath);
+          console.log(`✅ [${path.basename(__filename)}] Copied to: ${finalPath}`);
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If still not found, create empty file
+    if (!fs.existsSync(finalPath)) {
+      if (relativePath.endsWith('.db')) {
+        fs.writeFileSync(finalPath, '');
+      } else {
+        fs.mkdirSync(finalPath, { recursive: true });
+      }
+    }
+
+    console.log(`✅ [${path.basename(__filename)}] Using final path: ${finalPath}`);
+    return finalPath;
+  } catch (error) {
+    console.error(`[${path.basename(__filename)}] Failed to resolve path: ${relativePath}`, error);
+    // Ultimate fallback
+    const fallback = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database', relativePath);
+    const dir = path.dirname(fallback);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return fallback;
+  }
+};
+
+const dbPath = getDynamicPath('pos.db');
 const db = new Database(dbPath);
 
 // Create a new ingredient
@@ -459,6 +535,28 @@ export function processFoodIngredients(foodId, categoryId, ingredientNames) {
     return result;
   } catch (error) {
     console.error('Error processing food ingredients:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Remove food-ingredient relationship (soft delete)
+export function removeFoodIngredient(foodId, ingredientId) {
+  try {
+    const stmt = db.prepare(`
+      UPDATE food_ingredients 
+      SET isdeleted = 1, updated_at = ? 
+      WHERE food_id = ? AND ingredient_id = ? AND isdeleted = 0
+    `);
+    
+    const result = stmt.run(new Date().toISOString(), foodId, ingredientId);
+    
+    if (result.changes > 0) {
+      return { success: true, message: 'Food-ingredient relationship removed successfully' };
+    } else {
+      return { success: false, message: 'Food-ingredient relationship not found' };
+    }
+  } catch (error) {
+    console.error('Error removing food-ingredient relationship:', error);
     return { success: false, message: error.message };
   }
 }

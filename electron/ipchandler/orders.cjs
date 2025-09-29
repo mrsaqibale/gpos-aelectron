@@ -1,4 +1,42 @@
 const { ipcMain } = require('electron');
+const path = require('path');
+const fs = require('fs');
+
+// Use dynamic path resolution for both development and production
+const getModelPath = (modelPath) => {
+  try {
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+    
+    // Current location: electron/ipchandler/
+    // Target: src/database/models/ (go up 2 levels, then into src/database/models)
+    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
+    
+    // For built app: resources/database/models
+    const builtPath = path.join(process.resourcesPath || '', 'database/models', modelPath);
+    
+    console.log(`[orders.cjs] Looking for model: ${modelPath}`);
+    console.log(`[orders.cjs] Current dir: ${__dirname}`);
+    console.log(`[orders.cjs] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[orders.cjs] Dev path: ${devPath}`);
+    console.log(`[orders.cjs] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [orders.cjs] Found model at built path: ${builtPath}`);
+      return require(builtPath);
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [orders.cjs] Found model at dev path: ${devPath}`);
+      return require(devPath);
+    } else {
+      console.log(`❌ [orders.cjs] Model not found, trying dev path: ${devPath}`);
+      return require(devPath);
+    }
+  } catch (error) {
+    console.error(`[orders.cjs] Failed to load model: ${modelPath}`, error);
+    throw error;
+  }
+};
+
 const { 
   createOrder, 
   updateOrder, 
@@ -9,8 +47,9 @@ const {
   updateOrderStatus, 
   cancelOrder, 
   deleteOrder, 
-  getOrderStatistics 
-} = require('../../src/database/models/orders/orders.js');
+  getOrderStatistics,
+  getOrdersByDateRange
+} = getModelPath('orders/orders.js');
 
 function registerOrdersIpcHandlers() {
   // Handle create order
@@ -75,6 +114,17 @@ function registerOrdersIpcHandlers() {
       return result;
     } catch (error) {
       console.error('Error in order:getByStatus handler:', error);
+      return { success: false, message: error.message };
+    }
+  });
+
+  // Handle get orders by date range
+  ipcMain.handle('order:getByDateRange', async (event, startDate, endDate, limit, offset) => {
+    try {
+      const result = getOrdersByDateRange(startDate, endDate, limit, offset);
+      return result;
+    } catch (error) {
+      console.error('Error in order:getByDateRange handler:', error);
       return { success: false, message: error.message };
     }
   });

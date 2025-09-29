@@ -9,22 +9,74 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../', relativePath);
-    const prodPath = path.join(__dirname, '../../../', relativePath);
-    
-    if (fs.existsSync(devPath)) {
-      return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
-    } else {
-      // Fallback to development path
-      return devPath;
+    // Check if we're in development mode
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../../', relativePath));
+    if (isDev) {
+      return path.join(__dirname, '../../', relativePath);
     }
+
+    // For production builds, try multiple possible paths
+    const possiblePaths = [
+      path.join(process.resourcesPath || '', 'database', relativePath),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'app.asar.unpacked', 'database', relativePath),
+      path.join(process.cwd(), 'database', relativePath),
+      path.join(process.cwd(), 'resources', 'database', relativePath),
+      path.join(__dirname, '../../', relativePath) // Fallback to relative path
+    ];
+
+    console.log(`[${path.basename(__filename)}] Looking for: ${relativePath}`);
+    console.log(`[${path.basename(__filename)}] Current dir: ${__dirname}`);
+    console.log(`[${path.basename(__filename)}] isDev: ${isDev}`);
+
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          console.log(`✅ [${path.basename(__filename)}] Found at: ${candidate}`);
+          return candidate;
+        }
+      } catch (_) {}
+    }
+
+    // If not found, create in user's app data directory
+    const appDataBaseDir = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database');
+    if (!fs.existsSync(appDataBaseDir)) {
+      fs.mkdirSync(appDataBaseDir, { recursive: true });
+    }
+    const finalPath = path.join(appDataBaseDir, relativePath);
+
+    // Try to copy from any of the possible paths
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, finalPath);
+          console.log(`✅ [${path.basename(__filename)}] Copied to: ${finalPath}`);
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If still not found, create empty file
+    if (!fs.existsSync(finalPath)) {
+      if (relativePath.endsWith('.db')) {
+        fs.writeFileSync(finalPath, '');
+      } else {
+        fs.mkdirSync(finalPath, { recursive: true });
+      }
+    }
+
+    console.log(`✅ [${path.basename(__filename)}] Using final path: ${finalPath}`);
+    return finalPath;
   } catch (error) {
-    console.error(`Failed to resolve path: ${relativePath}`, error);
-    // Fallback to development path
-    return path.join(__dirname, '../../', relativePath);
+    console.error(`[${path.basename(__filename)}] Failed to resolve path: ${relativePath}`, error);
+    // Ultimate fallback
+    const fallback = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database', relativePath);
+    const dir = path.dirname(fallback);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return fallback;
   }
 };
 
@@ -44,9 +96,10 @@ export function createOrderDetail(orderDetailData) {
     const stmt = db.prepare(`
       INSERT INTO order_details (
         food_id, order_id, price, food_details, item_note, variation,
-        add_ons, ingredients, discount_on_food, discount_type, quantity,
-        tax_amount, total_add_on_price, issynicronized, isdeleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        add_ons, discount_on_food, discount_type, quantity,
+        tax_amount, total_add_on_price, issynicronized, isdeleted,
+        iscreateyourown, isopen
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const values = [
@@ -57,14 +110,15 @@ export function createOrderDetail(orderDetailData) {
       orderDetailData.item_note || null,
       orderDetailData.variation || null,
       orderDetailData.add_ons || null,
-      orderDetailData.ingredients || null,
       orderDetailData.discount_on_food || 0,
       orderDetailData.discount_type || null,
       orderDetailData.quantity || 1,
       orderDetailData.tax_amount || 0,
       orderDetailData.total_add_on_price || 0,
-      orderDetailData.issynicronized || false,
-      orderDetailData.isdeleted || false
+      (orderDetailData.issynicronized || false) ? 1 : 0,
+      (orderDetailData.isdeleted || false) ? 1 : 0,
+      (orderDetailData.iscreateyourown || false) ? 1 : 0,
+      (orderDetailData.isopen || false) ? 1 : 0
     ];
     
     const info = stmt.run(...values);
@@ -90,9 +144,10 @@ export function createMultipleOrderDetails(orderDetailsArray) {
     const stmt = db.prepare(`
       INSERT INTO order_details (
         food_id, order_id, price, food_details, item_note, variation,
-        add_ons, ingredients, discount_on_food, discount_type, quantity,
-        tax_amount, total_add_on_price, issynicronized, isdeleted
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        add_ons, discount_on_food, discount_type, quantity,
+        tax_amount, total_add_on_price, issynicronized, isdeleted,
+        iscreateyourown, isopen
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     const insertMany = db.transaction((details) => {
@@ -106,15 +161,18 @@ export function createMultipleOrderDetails(orderDetailsArray) {
           detail.item_note || null,
           detail.variation || null,
           detail.add_ons || null,
-          detail.ingredients || null,
           detail.discount_on_food || 0,
           detail.discount_type || null,
           detail.quantity || 1,
           detail.tax_amount || 0,
           detail.total_add_on_price || 0,
-          detail.issynicronized || false,
-          detail.isdeleted || false
+          (detail.issynicronized || false) ? 1 : 0,
+          (detail.isdeleted || false) ? 1 : 0,
+          (detail.iscreateyourown || false) ? 1 : 0,
+          (detail.isopen || false) ? 1 : 0
         ];
+        
+        console.log('Order detail values:', values);
         
         const info = stmt.run(...values);
         results.push({
@@ -279,12 +337,13 @@ export function deleteOrderDetail(id) {
 // Get order details with food information
 export function getOrderDetailsWithFood(orderId) {
   try {
+    console.log(`Getting order details for order ${orderId}...`);
     const stmt = db.prepare(`
       SELECT 
         od.*,
         f.name as food_name,
         f.description as food_description,
-        f.imgurl as food_image,
+        f.image as food_image,
         c.name as category_name
       FROM order_details od
       LEFT JOIN food f ON od.food_id = f.id
@@ -293,6 +352,7 @@ export function getOrderDetailsWithFood(orderId) {
       ORDER BY od.created_at ASC
     `);
     const orderDetails = stmt.all(orderId);
+    console.log(`Found ${orderDetails.length} order details for order ${orderId}:`, orderDetails.map(d => ({ id: d.id, food_id: d.food_id, food_name: d.food_name })));
     
     return { success: true, data: orderDetails };
   } catch (err) {
@@ -370,6 +430,23 @@ export function getTopSellingFoods(limit = 10, startDate = null, endDate = null)
     return { success: true, data: topFoods };
   } catch (err) {
     console.error('Error getting top selling foods:', err.message);
+    return errorResponse(err.message);
+  }
+}
+
+// Delete order details by order ID
+export function deleteOrderDetailsByOrderId(orderId) {
+  try {
+    const stmt = db.prepare(`
+      DELETE FROM order_details 
+      WHERE order_id = ? AND isdeleted = 0
+    `);
+    const result = stmt.run(orderId);
+    
+    console.log(`Deleted ${result.changes} order details for order ${orderId}`);
+    return { success: true, message: `Deleted ${result.changes} order details` };
+  } catch (err) {
+    console.error('Error deleting order details:', err.message);
     return errorResponse(err.message);
   }
 }

@@ -1,10 +1,86 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../pos.db');
+
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in development mode
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../../', relativePath));
+    if (isDev) {
+      return path.join(__dirname, '../../', relativePath);
+    }
+
+    // For production builds, try multiple possible paths
+    const possiblePaths = [
+      path.join(process.resourcesPath || '', 'database', relativePath),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'app.asar.unpacked', 'database', relativePath),
+      path.join(process.cwd(), 'database', relativePath),
+      path.join(process.cwd(), 'resources', 'database', relativePath),
+      path.join(__dirname, '../../', relativePath) // Fallback to relative path
+    ];
+
+    console.log(`[${path.basename(__filename)}] Looking for: ${relativePath}`);
+    console.log(`[${path.basename(__filename)}] Current dir: ${__dirname}`);
+    console.log(`[${path.basename(__filename)}] isDev: ${isDev}`);
+
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          console.log(`✅ [${path.basename(__filename)}] Found at: ${candidate}`);
+          return candidate;
+        }
+      } catch (_) {}
+    }
+
+    // If not found, create in user's app data directory
+    const appDataBaseDir = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database');
+    if (!fs.existsSync(appDataBaseDir)) {
+      fs.mkdirSync(appDataBaseDir, { recursive: true });
+    }
+    const finalPath = path.join(appDataBaseDir, relativePath);
+
+    // Try to copy from any of the possible paths
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, finalPath);
+          console.log(`✅ [${path.basename(__filename)}] Copied to: ${finalPath}`);
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If still not found, create empty file
+    if (!fs.existsSync(finalPath)) {
+      if (relativePath.endsWith('.db')) {
+        fs.writeFileSync(finalPath, '');
+      } else {
+        fs.mkdirSync(finalPath, { recursive: true });
+      }
+    }
+
+    console.log(`✅ [${path.basename(__filename)}] Using final path: ${finalPath}`);
+    return finalPath;
+  } catch (error) {
+    console.error(`[${path.basename(__filename)}] Failed to resolve path: ${relativePath}`, error);
+    // Ultimate fallback
+    const fallback = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database', relativePath);
+    const dir = path.dirname(fallback);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return fallback;
+  }
+};
+
+const dbPath = getDynamicPath('pos.db');
 const db = new Database(dbPath);
 
 // Universal error response
@@ -218,6 +294,71 @@ export function getTablesByFloorWithStatus(floorId, status = 'Free') {
       
       return { success: true, data: processedTables };
     }
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+} 
+
+// Update table status
+export function updateTableStatus(tableId, status) {
+  try {
+    // Check if status column exists
+    const tableInfo = db.prepare("PRAGMA table_info(restaurant_table)").all();
+    const hasStatus = tableInfo.some(col => col.name === 'status');
+    
+    if (hasStatus) {
+      const stmt = db.prepare(`
+        UPDATE restaurant_table 
+        SET status = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ? AND isdeleted = 0
+      `);
+      const result = stmt.run(status, tableId);
+      
+      if (result.changes === 0) {
+        return errorResponse('No table updated or table not found.');
+      }
+      
+      return { 
+        success: true, 
+        message: `Table status updated to ${status}`,
+        changes: result.changes
+      };
+    } else {
+      return errorResponse('Status column does not exist in restaurant_table.');
+    }
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Update multiple table statuses
+export function updateMultipleTableStatuses(tableIds, status) {
+  try {
+    // Check if status column exists
+    const tableInfo = db.prepare("PRAGMA table_info(restaurant_table)").all();
+    const hasStatus = tableInfo.some(col => col.name === 'status');
+    
+    if (!hasStatus) {
+      return errorResponse('Status column does not exist in restaurant_table.');
+    }
+    
+    const stmt = db.prepare(`
+      UPDATE restaurant_table 
+      SET status = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id IN (${tableIds.map(() => '?').join(',')}) AND isdeleted = 0
+    `);
+    
+    const result = stmt.run(status, ...tableIds);
+    
+    if (result.changes === 0) {
+      return errorResponse('No tables updated.');
+    }
+    
+    return { 
+      success: true, 
+      message: `Updated ${result.changes} table(s) status to ${status}`,
+      changes: result.changes
+    };
   } catch (err) {
     return errorResponse(err.message);
   }

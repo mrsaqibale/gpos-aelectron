@@ -1,10 +1,86 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dbPath = path.join(__dirname, '../../pos.db');
+
+// Dynamic path resolution for both development and production
+const getDynamicPath = (relativePath) => {
+  try {
+    // Check if we're in development mode
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../../', relativePath));
+    if (isDev) {
+      return path.join(__dirname, '../../', relativePath);
+    }
+
+    // For production builds, try multiple possible paths
+    const possiblePaths = [
+      path.join(process.resourcesPath || '', 'database', relativePath),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'app.asar.unpacked', 'database', relativePath),
+      path.join(process.cwd(), 'database', relativePath),
+      path.join(process.cwd(), 'resources', 'database', relativePath),
+      path.join(__dirname, '../../', relativePath) // Fallback to relative path
+    ];
+
+    console.log(`[${path.basename(__filename)}] Looking for: ${relativePath}`);
+    console.log(`[${path.basename(__filename)}] Current dir: ${__dirname}`);
+    console.log(`[${path.basename(__filename)}] isDev: ${isDev}`);
+
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          console.log(`✅ [${path.basename(__filename)}] Found at: ${candidate}`);
+          return candidate;
+        }
+      } catch (_) {}
+    }
+
+    // If not found, create in user's app data directory
+    const appDataBaseDir = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database');
+    if (!fs.existsSync(appDataBaseDir)) {
+      fs.mkdirSync(appDataBaseDir, { recursive: true });
+    }
+    const finalPath = path.join(appDataBaseDir, relativePath);
+
+    // Try to copy from any of the possible paths
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, finalPath);
+          console.log(`✅ [${path.basename(__filename)}] Copied to: ${finalPath}`);
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If still not found, create empty file
+    if (!fs.existsSync(finalPath)) {
+      if (relativePath.endsWith('.db')) {
+        fs.writeFileSync(finalPath, '');
+      } else {
+        fs.mkdirSync(finalPath, { recursive: true });
+      }
+    }
+
+    console.log(`✅ [${path.basename(__filename)}] Using final path: ${finalPath}`);
+    return finalPath;
+  } catch (error) {
+    console.error(`[${path.basename(__filename)}] Failed to resolve path: ${relativePath}`, error);
+    // Ultimate fallback
+    const fallback = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database', relativePath);
+    const dir = path.dirname(fallback);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return fallback;
+  }
+};
+
+const dbPath = getDynamicPath('pos.db');
 const db = new Database(dbPath);
 
 // Universal error response
@@ -29,20 +105,34 @@ export function createCustomer({ name, phone, email, address, isloyal = false, a
 // Update a customer by id
 export function updateCustomer(id, updates) {
   try {
+    console.log('[customer.js] updateCustomer called with ID:', id, 'updates:', updates);
     const fields = [];
     const values = [];
     for (const key in updates) {
       fields.push(`${key} = ?`);
-      values.push(updates[key]);
+      // Convert boolean values to integers for SQLite compatibility
+      let value = updates[key];
+      if (typeof value === 'boolean') {
+        value = value ? 1 : 0;
+      }
+      values.push(value);
     }
     fields.push('updated_at = CURRENT_TIMESTAMP');
     const sql = `UPDATE customer SET ${fields.join(', ')} WHERE id = ? AND isDelete = 0`;
     values.push(id);
+    console.log('[customer.js] SQL:', sql);
+    console.log('[customer.js] Values:', values);
     const stmt = db.prepare(sql);
     const result = stmt.run(...values);
-    if (result.changes === 0) return errorResponse('No customer updated.');
+    console.log('[customer.js] Update result:', result);
+    if (result.changes === 0) {
+      console.log('[customer.js] No customer updated - customer might not exist or already deleted');
+      return errorResponse('No customer updated.');
+    }
+    console.log('[customer.js] Successfully updated customer');
     return { success: true };
   } catch (err) {
+    console.error('[customer.js] Error updating customer:', err);
     return errorResponse(err.message);
   }
 }
@@ -53,7 +143,7 @@ export function getCustomerById(id) {
     const stmt = db.prepare(`
       SELECT 
         c.*,
-        GROUP_CONCAT(a.id || ':' || a.address || ':' || a.code) as addresses
+        GROUP_CONCAT(a.id || ':' || a.address || ':' || IFNULL(a.code,'') || ':' || IFNULL(a.latitude,'') || ':' || IFNULL(a.longitude,'')) as addresses
       FROM customer c
       LEFT JOIN addresses a ON c.id = a.customer_id AND a.isdeleted = 0
       WHERE c.id = ? AND c.isDelete = 0
@@ -65,8 +155,14 @@ export function getCustomerById(id) {
     // Parse addresses string into array of objects
     if (customer.addresses) {
       customer.addresses = customer.addresses.split(',').map(addr => {
-        const [id, address, code] = addr.split(':');
-        return { id: parseInt(id), address, code: code || null };
+        const [id, address, code, latitude, longitude] = addr.split(':');
+        return {
+          id: parseInt(id),
+          address,
+          code: code || null,
+          latitude: latitude !== '' ? parseFloat(latitude) : null,
+          longitude: longitude !== '' ? parseFloat(longitude) : null
+        };
       });
     } else {
       customer.addresses = [];
@@ -84,7 +180,7 @@ export function getCustomersByHotelId(hotel_id) {
     const stmt = db.prepare(`
       SELECT 
         c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy,
-        GROUP_CONCAT(a.id || ':' || a.address || ':' || a.code) as addresses
+        GROUP_CONCAT(a.id || ':' || a.address || ':' || IFNULL(a.code,'') || ':' || IFNULL(a.latitude,'') || ':' || IFNULL(a.longitude,'')) as addresses
       FROM customer c
       LEFT JOIN addresses a ON c.id = a.customer_id AND a.isdeleted = 0
       WHERE c.hotel_id = ? AND c.isDelete = 0
@@ -97,8 +193,14 @@ export function getCustomersByHotelId(hotel_id) {
     customers.forEach(customer => {
       if (customer.addresses) {
         customer.addresses = customer.addresses.split(',').map(addr => {
-          const [id, address, code] = addr.split(':');
-          return { id: parseInt(id), address, code: code || null };
+          const [id, address, code, latitude, longitude] = addr.split(':');
+          return {
+            id: parseInt(id),
+            address,
+            code: code || null,
+            latitude: latitude !== '' ? parseFloat(latitude) : null,
+            longitude: longitude !== '' ? parseFloat(longitude) : null
+          };
         });
       } else {
         customer.addresses = [];
@@ -120,7 +222,7 @@ export function searchCustomerByPhone(phone) {
     const stmt = db.prepare(`
       SELECT 
         c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy,
-        GROUP_CONCAT(a.id || ':' || a.address || ':' || a.code) as addresses
+        GROUP_CONCAT(a.id || ':' || a.address || ':' || IFNULL(a.code,'') || ':' || IFNULL(a.latitude,'') || ':' || IFNULL(a.longitude,'')) as addresses
       FROM customer c
       LEFT JOIN addresses a ON c.id = a.customer_id AND a.isdeleted = 0
       WHERE c.phone LIKE ? AND c.isDelete = 0
@@ -132,8 +234,14 @@ export function searchCustomerByPhone(phone) {
     customers.forEach(customer => {
       if (customer.addresses) {
         customer.addresses = customer.addresses.split(',').map(addr => {
-          const [id, address, code] = addr.split(':');
-          return { id: parseInt(id), address, code: code || null };
+          const [id, address, code, latitude, longitude] = addr.split(':');
+          return {
+            id: parseInt(id),
+            address,
+            code: code || null,
+            latitude: latitude !== '' ? parseFloat(latitude) : null,
+            longitude: longitude !== '' ? parseFloat(longitude) : null
+          };
         });
       } else {
         customer.addresses = [];
@@ -155,7 +263,7 @@ export function searchCustomerByName(name) {
     const stmt = db.prepare(`
       SELECT 
         c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy,
-        GROUP_CONCAT(a.id || ':' || a.address || ':' || a.code) as addresses
+        GROUP_CONCAT(a.id || ':' || a.address || ':' || IFNULL(a.code,'') || ':' || IFNULL(a.latitude,'') || ':' || IFNULL(a.longitude,'')) as addresses
       FROM customer c
       LEFT JOIN addresses a ON c.id = a.customer_id AND a.isdeleted = 0
       WHERE LOWER(c.name) LIKE LOWER(?) AND c.isDelete = 0
@@ -167,8 +275,14 @@ export function searchCustomerByName(name) {
     customers.forEach(customer => {
       if (customer.addresses) {
         customer.addresses = customer.addresses.split(',').map(addr => {
-          const [id, address, code] = addr.split(':');
-          return { id: parseInt(id), address, code: code || null };
+          const [id, address, code, latitude, longitude] = addr.split(':');
+          return {
+            id: parseInt(id),
+            address,
+            code: code || null,
+            latitude: latitude !== '' ? parseFloat(latitude) : null,
+            longitude: longitude !== '' ? parseFloat(longitude) : null
+          };
         });
       } else {
         customer.addresses = [];
@@ -207,8 +321,8 @@ export function createCustomerWithAddresses({ customer, addresses = [] }) {
       const addressIds = [];
       if (addresses.length > 0) {
         const addressStmt = db.prepare(`
-          INSERT INTO addresses (customer_id, address, code, addedby)
-          VALUES (?, ?, ?, ?)
+          INSERT INTO addresses (customer_id, address, code, latitude, longitude, addedby)
+          VALUES (?, ?, ?, ?, ?, ?)
         `);
         
         for (const address of addresses) {
@@ -216,6 +330,8 @@ export function createCustomerWithAddresses({ customer, addresses = [] }) {
             customerId,
             address.address,
             address.code || null,
+            address.latitude ?? null,
+            address.longitude ?? null,
             address.addedby || customer.addedBy
           );
           addressIds.push(addressInfo.lastInsertRowid);
@@ -237,13 +353,13 @@ export function createCustomerWithAddresses({ customer, addresses = [] }) {
 }
 
 // Create a single address for an existing customer
-export function createAddress({ customer_id, address, code, addedby }) {
+export function createAddress({ customer_id, address, code, latitude, longitude, addedby }) {
   try {
     const stmt = db.prepare(`
-      INSERT INTO addresses (customer_id, address, code, addedby)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO addresses (customer_id, address, code, latitude, longitude, addedby)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    const info = stmt.run(customer_id, address, code || null, addedby);
+    const info = stmt.run(customer_id, address, code || null, latitude ?? null, longitude ?? null, addedby);
     return { success: true, id: info.lastInsertRowid };
   } catch (err) {
     return errorResponse(err.message);
@@ -296,4 +412,297 @@ export function deleteAddress(id) {
   } catch (err) {
     return errorResponse(err.message);
   }
-} 
+}
+
+// Get customers with order statistics for management table
+export function getCustomersWithOrderStats(hotel_id = 1, limit = 50, offset = 0) {
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      LEFT JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? AND c.isDelete = 0
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    const customers = stmt.all(hotel_id, limit, offset);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get total count of customers for pagination
+export function getCustomersCount(hotel_id = 1) {
+  try {
+    const stmt = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM customer 
+      WHERE hotel_id = ? AND isDelete = 0
+    `);
+    const result = stmt.get(hotel_id);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Search customers with order statistics
+export function searchCustomersWithOrderStats(searchTerm, hotel_id = 1, limit = 50, offset = 0) {
+  try {
+    if (!searchTerm) {
+      return getCustomersWithOrderStats(hotel_id, limit, offset);
+    }
+    
+    const stmt = db.prepare(`
+      SELECT 
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      LEFT JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? AND c.isDelete = 0 
+        AND (LOWER(c.name) LIKE LOWER(?) OR LOWER(c.email) LIKE LOWER(?) OR c.phone LIKE ?)
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    const searchPattern = `%${searchTerm}%`;
+    const phonePattern = `${searchTerm}%`;
+    const customers = stmt.all(hotel_id, searchPattern, searchPattern, phonePattern, limit, offset);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get customer orders for modal display
+export function getCustomerOrders(customer_id, limit = 50, offset = 0) {
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        id,
+        order_number,
+        order_status,
+        order_amount,
+        payment_status,
+        payment_method,
+        created_at,
+        order_type,
+        table_details
+      FROM orders 
+      WHERE customer_id = ? AND isdeleted = 0
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    const orders = stmt.all(customer_id, limit, offset);
+    
+    return { success: true, data: orders };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get customer order count
+export function getCustomerOrderCount(customer_id) {
+  try {
+    const stmt = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM orders 
+      WHERE customer_id = ? AND isdeleted = 0
+    `);
+    const result = stmt.get(customer_id);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get customers with order statistics and date filtering
+export function getCustomersWithOrderStatsAndDateFilter(hotel_id = 1, orderStartDate = null, orderEndDate = null, customerJoiningDate = null, sortBy = null, limit = 50, offset = 0) {
+  try {
+    let whereConditions = ['c.hotel_id = ?', 'c.isDelete = 0'];
+    let params = [hotel_id];
+    
+    // Add order date filtering
+    if (orderStartDate && orderEndDate) {
+      whereConditions.push('o.created_at BETWEEN ? AND ?');
+      params.push(orderStartDate, orderEndDate + ' 23:59:59');
+    } else if (orderStartDate) {
+      whereConditions.push('o.created_at >= ?');
+      params.push(orderStartDate);
+    } else if (orderEndDate) {
+      whereConditions.push('o.created_at <= ?');
+      params.push(orderEndDate + ' 23:59:59');
+    }
+    
+    // Add customer joining date filtering
+    if (customerJoiningDate) {
+      // Handle different date formats - convert to YYYY-MM-DD format
+      const formattedDate = new Date(customerJoiningDate).toISOString().split('T')[0];
+      whereConditions.push('DATE(c.created_at) = ?');
+      params.push(formattedDate);
+    }
+    
+    // Build ORDER BY clause based on sortBy
+    let orderBy = 'c.created_at DESC';
+    if (sortBy === 'loyal_customers') {
+      orderBy = 'c.isloyal DESC, c.created_at DESC';
+    } else if (sortBy === 'not_loyal_customers') {
+      orderBy = 'c.isloyal ASC, c.created_at DESC';
+    } else if (sortBy === 'max_orders_first') {
+      orderBy = 'totalOrders DESC, c.created_at DESC';
+    } else if (sortBy === 'min_orders_first') {
+      orderBy = 'totalOrders ASC, c.created_at DESC';
+    }
+    
+    const stmt = db.prepare(`
+      SELECT 
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      LEFT JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE ${whereConditions.join(' AND ')}
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY ${orderBy}
+      LIMIT ? OFFSET ?
+    `);
+    
+    params.push(limit, offset);
+    const customers = stmt.all(...params);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get total count of customers with date filtering
+export function getCustomersCountWithDateFilter(hotel_id = 1, orderStartDate = null, orderEndDate = null, customerJoiningDate = null) {
+  try {
+    let whereConditions = ['c.hotel_id = ?', 'c.isDelete = 0'];
+    let params = [hotel_id];
+    
+    // Add order date filtering
+    if (orderStartDate && orderEndDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at BETWEEN ? AND ?)');
+      params.push(orderStartDate, orderEndDate + ' 23:59:59');
+    } else if (orderStartDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at >= ?)');
+      params.push(orderStartDate);
+    } else if (orderEndDate) {
+      whereConditions.push('EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.isdeleted = 0 AND o.created_at <= ?)');
+      params.push(orderEndDate + ' 23:59:59');
+    }
+    
+    // Add customer joining date filtering
+    if (customerJoiningDate) {
+      // Handle different date formats - convert to YYYY-MM-DD format
+      const formattedDate = new Date(customerJoiningDate).toISOString().split('T')[0];
+      whereConditions.push('DATE(c.created_at) = ?');
+      params.push(formattedDate);
+    }
+    
+    const stmt = db.prepare(`
+      SELECT COUNT(DISTINCT c.id) as count 
+      FROM customer c
+      WHERE ${whereConditions.join(' AND ')}
+    `);
+    const result = stmt.get(...params);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get customers who placed orders between specific dates
+export function getCustomersByOrderDateRange(hotel_id = 1, startDate, endDate, limit = 1000, offset = 0) {
+  try {
+    if (!startDate || !endDate) {
+      return errorResponse('Start date and end date are required');
+    }
+
+    const stmt = db.prepare(`
+      SELECT DISTINCT
+        c.id,
+        c.name,
+        c.phone,
+        c.email,
+        c.address,
+        c.isloyal,
+        c.addedBy,
+        c.created_at as joiningDate,
+        COALESCE(COUNT(o.id), 0) as totalOrders,
+        COALESCE(SUM(o.order_amount), 0) as totalAmount,
+        COALESCE(MAX(o.created_at), c.created_at) as lastOrderDate
+      FROM customer c
+      INNER JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? 
+        AND c.isDelete = 0
+        AND DATE(o.created_at) BETWEEN DATE(?) AND DATE(?)
+      GROUP BY c.id, c.name, c.phone, c.email, c.address, c.isloyal, c.addedBy, c.created_at
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `);
+    
+    const customers = stmt.all(hotel_id, startDate, endDate, limit, offset);
+    
+    return { success: true, data: customers };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
+
+// Get count of customers who placed orders between specific dates
+export function getCustomersCountByOrderDateRange(hotel_id = 1, startDate, endDate) {
+  try {
+    if (!startDate || !endDate) {
+      return errorResponse('Start date and end date are required');
+    }
+
+    const stmt = db.prepare(`
+      SELECT COUNT(DISTINCT c.id) as count 
+      FROM customer c
+      INNER JOIN orders o ON c.id = o.customer_id AND o.isdeleted = 0
+      WHERE c.hotel_id = ? 
+        AND c.isDelete = 0
+        AND DATE(o.created_at) BETWEEN DATE(?) AND DATE(?)
+    `);
+    
+    const result = stmt.get(hotel_id, startDate, endDate);
+    return { success: true, count: result.count };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}

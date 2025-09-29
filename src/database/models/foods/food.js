@@ -9,22 +9,74 @@ const __dirname = path.dirname(__filename);
 // Dynamic path resolution for both development and production
 const getDynamicPath = (relativePath) => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../', relativePath);
-    const prodPath = path.join(__dirname, '../../../', relativePath);
-    
-    if (fs.existsSync(devPath)) {
-      return devPath;
-    } else if (fs.existsSync(prodPath)) {
-      return prodPath;
-    } else {
-      // Fallback to development path
-      return devPath;
+    // Check if we're in development mode
+    const isDev = !__dirname.includes('app.asar') && fs.existsSync(path.join(__dirname, '../../', relativePath));
+    if (isDev) {
+      return path.join(__dirname, '../../', relativePath);
     }
+
+    // For production builds, try multiple possible paths
+    const possiblePaths = [
+      path.join(process.resourcesPath || '', 'database', relativePath),
+      path.join(process.resourcesPath || '', 'app.asar.unpacked', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'database', relativePath),
+      path.join(__dirname, '..', '..', 'resources', 'app.asar.unpacked', 'database', relativePath),
+      path.join(process.cwd(), 'database', relativePath),
+      path.join(process.cwd(), 'resources', 'database', relativePath),
+      path.join(__dirname, '../../', relativePath) // Fallback to relative path
+    ];
+
+    console.log(`[${path.basename(__filename)}] Looking for: ${relativePath}`);
+    console.log(`[${path.basename(__filename)}] Current dir: ${__dirname}`);
+    console.log(`[${path.basename(__filename)}] isDev: ${isDev}`);
+
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          console.log(`✅ [${path.basename(__filename)}] Found at: ${candidate}`);
+          return candidate;
+        }
+      } catch (_) {}
+    }
+
+    // If not found, create in user's app data directory
+    const appDataBaseDir = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database');
+    if (!fs.existsSync(appDataBaseDir)) {
+      fs.mkdirSync(appDataBaseDir, { recursive: true });
+    }
+    const finalPath = path.join(appDataBaseDir, relativePath);
+
+    // Try to copy from any of the possible paths
+    for (const candidate of possiblePaths) {
+      try {
+        if (candidate && fs.existsSync(candidate)) {
+          fs.copyFileSync(candidate, finalPath);
+          console.log(`✅ [${path.basename(__filename)}] Copied to: ${finalPath}`);
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If still not found, create empty file
+    if (!fs.existsSync(finalPath)) {
+      if (relativePath.endsWith('.db')) {
+        fs.writeFileSync(finalPath, '');
+      } else {
+        fs.mkdirSync(finalPath, { recursive: true });
+      }
+    }
+
+    console.log(`✅ [${path.basename(__filename)}] Using final path: ${finalPath}`);
+    return finalPath;
   } catch (error) {
-    console.error(`Failed to resolve path: ${relativePath}`, error);
-    // Fallback to development path
-    return path.join(__dirname, '../../', relativePath);
+    console.error(`[${path.basename(__filename)}] Failed to resolve path: ${relativePath}`, error);
+    // Ultimate fallback
+    const fallback = path.join(process.env.APPDATA || process.env.HOME || '', 'GPOS System', 'database', relativePath);
+    const dir = path.dirname(fallback);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return fallback;
   }
 };
 
@@ -45,6 +97,18 @@ const db = new Database(dbPath);
 // Universal error response
 export function errorResponse(message) {
   return { success: false, message };
+}
+
+// Helper function to normalize status values
+function normalizeStatus(status) {
+  if (status === 'active' || status === true || status === 'true') {
+    return 1;
+  }
+  if (status === 'inactive' || status === false || status === 'false') {
+    return 0;
+  }
+  // If it's already an integer, return as is
+  return status === 1 ? 1 : 0;
 }
 
 // Helper function to save image file
@@ -114,7 +178,7 @@ export function createFood(foodData) {
       foodData.available_time_starts || null,
       foodData.available_time_ends || null,
       foodData.veg || 0,
-      foodData.status || 'active',
+      normalizeStatus(foodData.status),
       foodData.restaurant_id || 1,
       foodData.position || 0,
       now,
@@ -225,6 +289,15 @@ export function getFoodById(id) {
     `);
     const adons = adonsStmt.all(id);
 
+    // Get ingredients for this food
+    const ingredientsStmt = db.prepare(`
+      SELECT i.* 
+      FROM ingredients i
+      INNER JOIN food_ingredients fi ON i.id = fi.ingredient_id
+      WHERE fi.food_id = ? AND i.isdeleted = 0 AND fi.isdeleted = 0
+    `);
+    const ingredients = ingredientsStmt.all(id);
+
     return {
       success: true,
       data: {
@@ -233,7 +306,8 @@ export function getFoodById(id) {
         subcategory,
         variations,
         allergins,
-        adons
+        adons,
+        ingredients
       }
     };
   } catch (err) {
@@ -300,8 +374,23 @@ export function updateFood(id, { foodData, variations = [] }) {
       const fields = [];
       const values = [];
       for (const key in foodData) {
-        fields.push(`${key} = ?`);
-        values.push(foodData[key]);
+        if (foodData[key] !== undefined) { // Only include defined values
+          fields.push(`${key} = ?`);
+          // Convert values to proper types for SQLite
+          let value = foodData[key];
+          if (value === null || value === '') {
+            value = null;
+          } else if (typeof value === 'boolean') {
+            value = value ? 1 : 0;
+          } else if (key === 'status') {
+            // Normalize status to integer
+            value = normalizeStatus(value);
+          } else if (typeof value === 'object') {
+            // Skip complex objects - they should be handled separately
+            continue;
+          }
+          values.push(value);
+        }
       }
       fields.push('updated_at = ?');
       values.push(new Date().toISOString());
@@ -357,7 +446,9 @@ export function updateFood(id, { foodData, variations = [] }) {
               variation.type || 'single',
               variation.min || 1,
               variation.max || 1,
-              variation.is_required || false
+              variation.is_required || false,
+              new Date().toISOString(),
+              new Date().toISOString()
             );
             variationId = variationInfo.lastInsertRowid;
           }
@@ -555,9 +646,59 @@ export function searchFoodsByName(name, restaurant_id = 1) {
   } catch (err) {
     return errorResponse(err.message);
   }
+}
+
+// Get food image
+export function getFoodImage(imagePath) {
+  try {
+    if (!imagePath || !imagePath.startsWith('uploads/')) {
+      return { success: false, message: 'Invalid image path' };
+    }
+    
+    const fullPath = getDynamicPath(imagePath);
+    
+    // Security check
+    const uploadsDir = getDynamicPath('uploads');
+    if (!fullPath.startsWith(uploadsDir)) {
+      return { success: false, message: 'Access denied' };
+    }
+    
+    if (fs.existsSync(fullPath)) {
+      const imageBuffer = fs.readFileSync(fullPath);
+      const base64Data = imageBuffer.toString('base64');
+      const ext = path.extname(fullPath).toLowerCase();
+      const mimeType = ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
+      return { 
+        success: true,
+        data: `data:${mimeType};base64,${base64Data}`,
+        mimeType: mimeType
+      };
+    } else {
+      return { success: false, message: 'Image not found' };
+    }
+  } catch (err) {
+    console.error('Error loading food image:', err);
+    return { success: false, message: 'Failed to load image' };
+  }
 } 
 
-
-
-
+// Get all foods with isPizza = 1
+export function getPizzaFoods() {
+  try {
+    const stmt = db.prepare(`
+      SELECT * FROM food 
+      WHERE isPizza = 1 AND status = 1 AND isdeleted = 0
+      ORDER BY position ASC, name ASC
+    `);
+    
+    const foods = stmt.all();
+    
+    return {
+      success: true,
+      data: foods
+    };
+  } catch (err) {
+    return errorResponse(err.message);
+  }
+}
 

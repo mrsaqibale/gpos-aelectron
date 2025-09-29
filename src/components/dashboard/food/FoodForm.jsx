@@ -14,12 +14,12 @@ const FoodForm = ({ food, onSubmit }) => {
     subcategory_id: '',
     veg: '', // 0 for Non-Veg, 1 for Veg
     isPizza: false, // New field for pizza toggle
-    status: 'active',
+    status: 1,
     restaurant_id: 1,
     position: '',
     price: '',
     tax: '',
-    tax_type: 'percentage',
+    tax_type: 'custom',
     discount: '',
     discount_type: 'percentage',
     available_time_starts: '',
@@ -41,6 +41,8 @@ const FoodForm = ({ food, onSubmit }) => {
   });
 
   const [imagePreview, setImagePreview] = useState(null);
+  // Tax source: 'food', 'standard', 'custom'
+  const [taxSource, setTaxSource] = useState('custom');
   const [errors, setErrors] = useState({});
   const [focusedField, setFocusedField] = useState('');
 
@@ -337,29 +339,38 @@ const FoodForm = ({ food, onSubmit }) => {
         image: food.image || null,
         category_id: food.category_id || '',
         subcategory_id: food.subcategory_id || '',
-        type: food.type || '',
+        veg: food.veg || 0,
         isPizza: food.isPizza === 1 || food.isPizza === true || false,
-        allergenIngredients: food.allergenIngredients || '',
-        addons: food.addons || [],
-        availableFrom: food.availableFrom || '',
-        availableTo: food.availableTo || '',
-        unitPrice: food.unitPrice || 0,
-        discountType: food.discountType || 'percent',
-        discountValue: food.discountValue || 0,
-        maxPurchaseQty: food.maxPurchaseQty || '',
-        stockType: food.stockType || 'unlimited',
+        status: food.status === 1 ? 1 : 0,
+        restaurant_id: food.restaurant_id || 1,
         position: food.position || '',
-        variations: food.variations || [],
-        allowNotes: food.allowNotes || false,
-        productNote: food.productNote || '',
+        price: food.price || '',
+        tax: food.tax || '',
+        tax_type: (food.tax_type && ['food','standard','custom'].includes(String(food.tax_type))) ? food.tax_type : 'custom',
+        discount: food.discount || '',
+        discount_type: food.discount_type || 'percentage',
+        available_time_starts: food.available_time_starts || '',
+        available_time_ends: food.available_time_ends || '',
         sku: food.sku || '',
         barcode: food.barcode || '',
-        trackInventory: food.trackInventory || false,
-        quantity: food.quantity || 0,
-        lowInventory: food.lowInventory || 5,
-        recommended: food.recommended || false,
-        status: food.status !== undefined ? food.status : true
+        stock_type: food.stock_type || 'unlimited',
+        item_stock: food.item_stock || '',
+        sell_count: food.sell_count || 0,
+        maxPurchaseQty: food.maximum_cart_quantity || '',
+        allowNotes: food.product_note_enabled === 1 || food.product_note_enabled === true || false,
+        productNote: food.product_note || '',
+        trackInventory: food.track_inventory === 1 || food.track_inventory === true || false,
+        lowInventory: food.low_inventory_threshold || 5,
+        recommended: food.recommended === 1 || food.recommended === true || false,
+        variations: food.variations || []
       });
+
+      // Initialize tax source from existing record if present
+      if (food.tax_type && ['food','standard','custom'].includes(String(food.tax_type))) {
+        setTaxSource(food.tax_type);
+      } else {
+        setTaxSource('custom');
+      }
 
       // Load image preview
       if (food.image) {
@@ -439,6 +450,35 @@ const FoodForm = ({ food, onSubmit }) => {
     }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
+
+  // Read tax values from global settings (with tolerant keys)
+  const settings = typeof window !== 'undefined' ? (window.appSettings?.current || {}) : {};
+  const foodTaxFromSettings = Number(
+    settings?.food_tax ?? settings?.foodTax ?? settings?.food_tax_percentage ?? settings?.foodTaxPercent ?? 0
+  );
+  const standardTaxFromSettings = Number(
+    settings?.standard_tax ?? settings?.standardTax ?? settings?.standard_tax_percentage ?? settings?.standardTaxPercent ?? 0
+  );
+  const deliveryTaxFromSettings = Number(
+    settings?.delivery_tax ?? settings?.deliveryTax ?? settings?.delivery_tax_percentage ?? settings?.deliveryTaxPercent ?? 0
+  );
+  const serviceTaxFromSettings = Number(
+    settings?.service_tax ?? settings?.serviceTax ?? settings?.service_tax_percentage ?? settings?.serviceTaxPercent ?? 0
+  );
+
+  // When taxSource or settings change and source is not custom, sync the tax value
+  useEffect(() => {
+    if (taxSource === 'food') {
+      setFormData(prev => ({ ...prev, tax: isNaN(foodTaxFromSettings) ? '' : foodTaxFromSettings }));
+    } else if (taxSource === 'standard') {
+      setFormData(prev => ({ ...prev, tax: isNaN(standardTaxFromSettings) ? '' : standardTaxFromSettings }));
+    }
+  }, [taxSource, foodTaxFromSettings, standardTaxFromSettings]);
+
+  // Always store tax source in tax_type for DB
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, tax_type: taxSource }));
+  }, [taxSource]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -897,16 +937,29 @@ const FoodForm = ({ food, onSubmit }) => {
         product_note: formData.productNote || null
       };
 
-      const result = await window.myAPI?.createFood(foodData);
+      let result;
+      let foodId;
+
+      if (food) {
+        // Update existing food
+        console.log('Updating food with ID:', food.id);
+        result = await window.myAPI?.updateFood(food.id, { foodData, variations: formData.variations });
+        foodId = food.id;
+      } else {
+        // Create new food
+        console.log('Creating new food');
+        result = await window.myAPI?.createFood(foodData);
+        foodId = result?.food_id;
+      }
 
       if (result && result.success) {
-        console.log('Food created successfully:', result);
+        console.log(food ? 'Food updated successfully:' : 'Food created successfully:', result);
 
-        // Save food-allergin relationships if allergens are selected
+        // Handle relationships (allergens, adons, ingredients) for both create and update
         if (selectedAllergins.length > 0) {
           try {
             const allerginIds = selectedAllergins.map(allergin => allergin.id);
-            const relationshipResult = await window.myAPI?.updateFoodAllergins(result.food_id, allerginIds);
+            const relationshipResult = await window.myAPI?.updateFoodAllergins(foodId, allerginIds);
 
             if (relationshipResult && relationshipResult.success) {
               console.log('Food-allergin relationships saved successfully');
@@ -916,13 +969,20 @@ const FoodForm = ({ food, onSubmit }) => {
           } catch (error) {
             console.error('Error saving food-allergin relationships:', error);
           }
+        } else {
+          // Clear allergens if none selected
+          try {
+            await window.myAPI?.updateFoodAllergins(foodId, []);
+          } catch (error) {
+            console.error('Error clearing food-allergin relationships:', error);
+          }
         }
 
         // Save food-addon relationships if adons are selected
         if (selectedAdons.length > 0) {
           try {
             const adonIds = selectedAdons.map(adon => adon.id);
-            const adonResult = await window.myAPI?.updateFoodAdons(result.food_id, adonIds);
+            const adonResult = await window.myAPI?.updateFoodAdons(foodId, adonIds);
 
             if (adonResult && adonResult.success) {
               console.log('Food-addon relationships saved successfully');
@@ -932,12 +992,19 @@ const FoodForm = ({ food, onSubmit }) => {
           } catch (error) {
             console.error('Error saving food-addon relationships:', error);
           }
+        } else {
+          // Clear adons if none selected
+          try {
+            await window.myAPI?.updateFoodAdons(foodId, []);
+          } catch (error) {
+            console.error('Error clearing food-addon relationships:', error);
+          }
         }
 
         // Save food-ingredient relationships if ingredients are selected
         if (selectedIngredients.length > 0 && formData.category_id) {
           try {
-            console.log('Processing ingredients for food:', result.food_id);
+            console.log('Processing ingredients for food:', foodId);
             console.log('Selected ingredients:', selectedIngredients);
             console.log('Category ID:', formData.category_id);
 
@@ -946,7 +1013,7 @@ const FoodForm = ({ food, onSubmit }) => {
             console.log('Ingredient names to process:', ingredientNames);
 
             const ingredientResult = await window.myAPI?.processFoodIngredients(
-              result.food_id,
+              foodId,
               parseInt(formData.category_id),
               ingredientNames
             );
@@ -967,14 +1034,14 @@ const FoodForm = ({ food, onSubmit }) => {
           console.log('formData.category_id:', formData.category_id);
         }
 
-        // Save variations and variation options if they exist
-        if (formData.variations && formData.variations.length > 0) {
+        // Save variations and variation options if they exist (only for create, update is handled in updateFood)
+        if (!food && formData.variations && formData.variations.length > 0) {
           try {
             for (const variation of formData.variations) {
               if (variation.name && variation.options && variation.options.length > 0) {
                 // Create variation
                 const variationData = {
-                  food_id: result.food_id,
+                  food_id: foodId,
                   name: variation.name,
                   type: variation.type || 'single',
                   min: parseInt(variation.min) || 1,
@@ -992,7 +1059,7 @@ const FoodForm = ({ food, onSubmit }) => {
                   for (const option of variation.options) {
                     if (option.option_name) {
                       const optionData = {
-                        food_id: result.food_id,
+                        food_id: foodId,
                         variation_id: variationId,
                         option_name: option.option_name,
                         option_price: parseFloat(option.option_price) || 0,
@@ -1020,14 +1087,19 @@ const FoodForm = ({ food, onSubmit }) => {
           }
         }
 
-        navigate('/dashboard/food-management');
+        // Call the onSubmit callback if provided, otherwise navigate
+        if (onSubmit) {
+          onSubmit(result);
+        } else {
+          navigate('/dashboard/food-management');
+        }
       } else {
-        console.error('Failed to create food:', result?.message);
-        alert('Failed to create food: ' + (result?.message || 'Unknown error'));
+        console.error(food ? 'Failed to update food:' : 'Failed to create food:', result?.message);
+        alert(food ? 'Failed to update food: ' + (result?.message || 'Unknown error') : 'Failed to create food: ' + (result?.message || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Error creating food:', error);
-      alert('Error creating food: ' + error.message);
+      console.error(food ? 'Error updating food:' : 'Error creating food:', error);
+      alert(food ? 'Error updating food: ' + error.message : 'Error creating food: ' + error.message);
     } finally {
       setSubmitting(false);
     }
@@ -1441,7 +1513,25 @@ const FoodForm = ({ food, onSubmit }) => {
                 {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                {/* Tax Source */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax Source</label>
+                  <div className="relative">
+                    <select
+                      value={taxSource}
+                      onChange={(e) => setTaxSource(e.target.value)}
+                      className={`${getInputClasses('tax_source')} appearance-none pr-8`}
+                    >
+                      <option value="food">{`Food Tax ${!isNaN(foodTaxFromSettings) ? `(${foodTaxFromSettings}%)` : ''}`}</option>
+                      <option value="standard">{`Standard Tax ${!isNaN(standardTaxFromSettings) ? `(${standardTaxFromSettings}%)` : ''}`}</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Tax Value */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tax (%)</label>
                   <input
@@ -1451,28 +1541,14 @@ const FoodForm = ({ food, onSubmit }) => {
                     onChange={handleChange}
                     onFocus={() => setFocusedField('tax')}
                     onBlur={() => setFocusedField('')}
-                    className={getInputClasses('tax')}
+                    className={`${getInputClasses('tax')} ${taxSource !== 'custom' ? 'opacity-50 cursor-not-allowed' : ''}`}
                     step="0.01"
                     min="0"
+                    disabled={taxSource !== 'custom'}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax Type</label>
-                  <div className="relative">
-                    <select
-                      name="tax_type"
-                      value={formData.tax_type}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('tax_type')}
-                      onBlur={() => setFocusedField('')}
-                      className={`${getInputClasses('tax_type')} appearance-none pr-8`}
-                    >
-                      <option value="percentage">Percentage</option>
-                      <option value="fixed">Fixed Amount</option>
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
+
+                {/* Removed Tax Type dropdown; tax_type now stores tax source (food|standard|custom) */}
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
@@ -1961,7 +2037,15 @@ const FoodForm = ({ food, onSubmit }) => {
         <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
           <button
             type="button"
-            onClick={() => navigate('/dashboard/food-management')}
+            onClick={() => {
+              if (onSubmit) {
+                // If onSubmit is provided, we're in modal mode, so close the modal
+                onSubmit(null); // Pass null to indicate cancellation
+              } else {
+                // Otherwise navigate back
+                navigate('/dashboard/food-management');
+              }
+            }}
             className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primaryLight transition-colors"
           >
             Cancel
@@ -1971,7 +2055,7 @@ const FoodForm = ({ food, onSubmit }) => {
             disabled={submitting}
             className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primaryDark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Creating...' : (food ? 'Update Food Item' : 'Add Food Item')}
+            {submitting ? (food ? 'Updating...' : 'Creating...') : (food ? 'Update Food Item' : 'Add Food Item')}
           </button>
         </div>
       </form>

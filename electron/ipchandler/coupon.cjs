@@ -1,4 +1,42 @@
 const { ipcMain } = require('electron');
+const path = require('path');
+const fs = require('fs');
+
+// Use dynamic path resolution for both development and production
+const getModelPath = (modelPath) => {
+  try {
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
+    
+    // Current location: electron/ipchandler/
+    // Target: src/database/models/ (go up 2 levels, then into src/database/models)
+    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
+    
+    // For built app: resources/database/models
+    const builtPath = path.join(process.resourcesPath || '', 'database/models', modelPath);
+    
+    console.log(`[coupon.cjs] Looking for model: ${modelPath}`);
+    console.log(`[coupon.cjs] Current dir: ${__dirname}`);
+    console.log(`[coupon.cjs] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[coupon.cjs] Dev path: ${devPath}`);
+    console.log(`[coupon.cjs] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [coupon.cjs] Found model at built path: ${builtPath}`);
+      return require(builtPath);
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [coupon.cjs] Found model at dev path: ${devPath}`);
+      return require(devPath);
+    } else {
+      console.log(`❌ [coupon.cjs] Model not found, trying dev path: ${devPath}`);
+      return require(devPath);
+    }
+  } catch (error) {
+    console.error(`[coupon.cjs] Failed to load model: ${modelPath}`, error);
+    throw error;
+  }
+};
+
 const { 
   createCoupon, 
   updateCoupon, 
@@ -7,7 +45,7 @@ const {
   getCouponsByCustomerId, 
   deleteCoupon, 
   searchCouponByCode 
-} = require('../../src/database/models/coupon/coupon.js');
+} = getModelPath('coupon/coupon.js');
 
 function registerCouponIpcHandlers() {
   // Create coupon

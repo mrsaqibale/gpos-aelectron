@@ -3,22 +3,36 @@ const path = require('path');
 const fs = require('fs');
 
 // Use dynamic path resolution for both development and production
-
 const getModelPath = (modelPath) => {
   try {
-    // Check if we're in development by looking for src/database
-    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
-    const prodPath = path.join(__dirname, '../../database/models', modelPath);
+    // Check if we're in a built app (app.asar) or have resourcesPath
+    const isBuiltApp = __dirname.includes('app.asar') || process.resourcesPath;
     
-    if (fs.existsSync(devPath)) {
+    // Current location: electron/ipchandler/
+    // Target: src/database/models/ (go up 2 levels, then into src/database/models)
+    const devPath = path.join(__dirname, '../../src/database/models', modelPath);
+    
+    // For built app: resources/database/models
+    const builtPath = path.join(process.resourcesPath || '', 'database/models', modelPath);
+    
+    console.log(`[foodipc.cjs] Looking for model: ${modelPath}`);
+    console.log(`[foodipc.cjs] Current dir: ${__dirname}`);
+    console.log(`[foodipc.cjs] isBuiltApp: ${isBuiltApp}`);
+    console.log(`[foodipc.cjs] Dev path: ${devPath}`);
+    console.log(`[foodipc.cjs] Built path: ${builtPath}`);
+    
+    if (isBuiltApp && process.resourcesPath && fs.existsSync(builtPath)) {
+      console.log(`✅ [foodipc.cjs] Found model at built path: ${builtPath}`);
+      return require(builtPath);
+    } else if (fs.existsSync(devPath)) {
+      console.log(`✅ [foodipc.cjs] Found model at dev path: ${devPath}`);
       return require(devPath);
-    } else if (fs.existsSync(prodPath)) {
-      return require(prodPath);
     } else {
-      throw new Error(`Model not found at either ${devPath} or ${prodPath}`);
+      console.log(`❌ [foodipc.cjs] Model not found, trying dev path: ${devPath}`);
+      return require(devPath);
     }
   } catch (error) {
-    console.error(`Failed to load model: ${modelPath}`, error);
+    console.error(`[foodipc.cjs] Failed to load model: ${modelPath}`, error);
     throw error;
   }
 };
@@ -57,7 +71,9 @@ const {
   deleteFood,
   updateFoodPosition,
   searchFoodsByName,
-  deleteFoodImage
+  deleteFoodImage,
+  getFoodImage,
+  getPizzaFoods
 } = getModelPath('foods/food.js');
 
 const { 
@@ -84,7 +100,8 @@ const {
   createFoodIngredient,
   getFoodIngredients,
   updateFoodIngredients,
-  processFoodIngredients
+  processFoodIngredients,
+  removeFoodIngredient
 } = getModelPath('foods/ingredients.js');
 
 // Category IPC
@@ -139,11 +156,15 @@ ipcMain.handle('food:delete', (event, id) => deleteFood(id));
 ipcMain.handle('food:updatePosition', (event, id, position) => updateFoodPosition(id, position));
 ipcMain.handle('food:searchByName', (event, name, restaurantId) => searchFoodsByName(name, restaurantId));
 ipcMain.handle('food:deleteImage', (event, foodId) => deleteFoodImage(foodId));
+ipcMain.handle('food:getImage', (event, imagePath) => getFoodImage(imagePath));
+ipcMain.handle('food:getPizzaFoods', (event) => getPizzaFoods());
 
 // Food-Ingredient relationship IPC
 ipcMain.handle('food:getIngredients', (event, foodId) => getFoodIngredients(foodId));
 ipcMain.handle('food:updateIngredients', (event, foodId, ingredientIds) => updateFoodIngredients(foodId, ingredientIds));
 ipcMain.handle('food:processIngredients', (event, foodId, categoryId, ingredientNames) => processFoodIngredients(foodId, categoryId, ingredientNames));
+ipcMain.handle('food:createFoodIngredient', (event, foodId, ingredientId) => createFoodIngredient(foodId, ingredientId));
+ipcMain.handle('food:removeIngredient', (event, foodId, ingredientId) => removeFoodIngredient(foodId, ingredientId));
 
 // Variation IPC
 ipcMain.handle('variation:create', (event, variationData) => createVariation(variationData));
@@ -166,50 +187,6 @@ ipcMain.handle('ingredient:getByCategoryPaginated', (event, categoryId, limit, o
 ipcMain.handle('ingredient:removeCategoryIngredient', (event, categoryId, ingredientId) => removeCategoryIngredient(categoryId, ingredientId));
 ipcMain.handle('ingredient:getAllWithCategories', (event, hotelId) => getAllIngredientsWithCategories(hotelId));
 
-// Get food image data
-ipcMain.handle('food:getImage', async (event, imagePath) => {
-  try {
-    if (!imagePath || !imagePath.startsWith('uploads/')) {
-      return { success: false, message: 'Invalid image path' };
-    }
-    
-    const fullPath = path.resolve(__dirname, '../../src/database', imagePath);
-    
-    // Security check
-    const uploadsDir = path.resolve(__dirname, '../../src/database/uploads');
-    if (!fullPath.startsWith(uploadsDir)) {
-      return { success: false, message: 'Access denied' };
-    }
-    
-    if (fs.existsSync(fullPath)) {
-      const imageBuffer = fs.readFileSync(fullPath);
-      const base64Data = imageBuffer.toString('base64');
-      const mimeType = getMimeType(fullPath);
-      return { 
-        success: true, 
-        data: `data:${mimeType};base64,${base64Data}` 
-      };
-    } else {
-      return { success: false, message: 'Image not found' };
-    }
-  } catch (error) {
-    console.error('Error getting food image:', error);
-    return { success: false, message: error.message };
-  }
-});
-
-// Helper function to get MIME type
-function getMimeType(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  const mimeTypes = {
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.png': 'image/png',
-    '.gif': 'image/gif',
-    '.webp': 'image/webp'
-  };
-  return mimeTypes[ext] || 'image/jpeg';
-}
 
 // Export registration function for consistency
 function registerFoodIpcHandlers() {

@@ -20,14 +20,21 @@ const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded
       try {
         setLoading(true);
         setError(false);
-        
-        // Check if imagePath exists and is a valid string
-        if (imagePath && typeof imagePath === 'string' && imagePath.startsWith('uploads/')) {
-          const result = await window.myAPI?.getFoodImage(imagePath);
-          if (result && result.success) {
-            setImageSrc(result.data);
+
+        if (imagePath && typeof imagePath === 'string') {
+          if (imagePath.startsWith('uploads/')) {
+            const result = await window.myAPI?.getFoodImage(imagePath);
+            if (result && result.success) {
+              setImageSrc(result.data);
+            } else {
+              setError(true);
+            }
+          } else if (imagePath.startsWith('data:image')) {
+            // Already a data URL
+            setImageSrc(imagePath);
           } else {
-            setError(true);
+            // Unknown format; try to use as-is
+            setImageSrc(imagePath);
           }
         } else {
           setError(true);
@@ -40,7 +47,6 @@ const FoodImage = ({ imagePath, alt, className = "w-10 h-10 object-cover rounded
       }
     };
 
-    // Only load image if imagePath is provided
     if (imagePath) {
       loadImage();
     } else {
@@ -105,7 +111,7 @@ const FoodList = () => {
           price: food.price || 0,
           type: food.veg === 1 ? 'Veg' : 'Non-Veg',
           recommended: false, // This field might need to be added to the database
-          status: food.status === 'active' || food.status === 1 || food.status === true,
+          status: food.status === 1,
           stock: food.stock_type || (food.item_stock > 0 ? 'limited' : 'unlimited'),
           position: food.position || 0
         }));
@@ -128,9 +134,21 @@ const FoodList = () => {
     fetchFoodData();
   }, []);
 
-  const handleEditFood = (food) => {
-    setEditingFood(food);
-    setShowFoodForm(true);
+  const handleEditFood = async (food) => {
+    try {
+      // Fetch complete food data including relationships
+      const result = await window.myAPI?.getFoodById(food.id);
+      if (result && result.success) {
+        setEditingFood(result.data);
+        setShowFoodForm(true);
+      } else {
+        console.error('Failed to fetch food details:', result?.message);
+        alert('Failed to load food details for editing');
+      }
+    } catch (error) {
+      console.error('Error fetching food details:', error);
+      alert('Error loading food details for editing');
+    }
   };
 
   const handleDeleteClick = (food) => {
@@ -325,6 +343,34 @@ const FoodList = () => {
 
       {activeTab === 'foodList' && (
         <div className="overflow-x-auto bg-white py-5 px-4 rounded-lg shadow-sm">
+          {showFoodForm && (
+            <div className="mb-6">
+              <FoodForm 
+                food={editingFood} 
+                onSubmit={(updatedFood) => {
+                  if (updatedFood === null) {
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                  } else if (editingFood) {
+                    setFoodItems(foodItems.map(item => 
+                      item.id === updatedFood.id ? updatedFood : item
+                    ));
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                    fetchFoodData();
+                  } else {
+                    setFoodItems([...foodItems, {
+                      ...updatedFood,
+                      id: Math.max(...foodItems.map(i => i.id)) + 1
+                    }]);
+                    setShowFoodForm(false);
+                    setEditingFood(null);
+                    fetchFoodData();
+                  }
+                }}
+              />
+            </div>
+          )}
           {/* Search and Filters */}
           <div className="mb-6 flex justify-end items-center">
             <div className="flex items-center gap-3">
@@ -505,14 +551,12 @@ const FoodList = () => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex gap-2">
-                      <Link to={`/dashboard/food-management/edit-food/${item.id}`}>
-                        <button 
-                          onClick={() => handleEditFood(item)}
-                          className="text-primary hover:text-primaryDark cursor-pointer transition-colors"
-                        >
-                          <Edit size={16} />
-                        </button>
-                      </Link>
+                      <button 
+                        onClick={() => handleEditFood(item)}
+                        className="text-primary hover:text-primaryDark cursor-pointer transition-colors"
+                      >
+                        <Edit size={16} />
+                      </button>
                       <button 
                         onClick={() => handleDeleteClick(item)}
                         className="text-red-500 hover:text-red-700 cursor-pointer transition-colors"
@@ -540,29 +584,7 @@ const FoodList = () => {
        {activeTab === 'addons' && <AddonManagement/>}
       {activeTab === 'ingredients' && <Ingredients />}
 
-      {showFoodForm && (
-        <FoodForm 
-          food={editingFood} 
-          onClose={() => {
-            setShowFoodForm(false);
-            setEditingFood(null);
-          }}
-          onSave={(updatedFood) => {
-            if (editingFood) {
-              setFoodItems(foodItems.map(item => 
-                item.id === updatedFood.id ? updatedFood : item
-              ));
-            } else {
-              setFoodItems([...foodItems, {
-                ...updatedFood,
-                id: Math.max(...foodItems.map(i => i.id)) + 1
-              }]);
-            }
-            setShowFoodForm(false);
-            setEditingFood(null);
-          }}
-        />
-      )}
+      
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && foodToDelete && (

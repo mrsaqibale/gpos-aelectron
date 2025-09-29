@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import useCustomAlert from "../../hooks/useCustomAlert";
+import CustomAlert from "../../components/CustomAlert";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -20,11 +22,15 @@ import {
   Edit,
   Trash,
   Square,
+  Upload,
 } from "lucide-react";
 
 const ApplicationSettings = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("finance");
+  const [isLoading, setIsLoading] = useState(false);
+  const latestSettingsRef = useRef(null);
+  const { alertState, showSuccess, showError, hideAlert } = useCustomAlert();
   const [settings, setSettings] = useState({
     defaultTheme: "Blue Theme",
     selectKeyboard: "System Keyboard",
@@ -35,11 +41,14 @@ const ApplicationSettings = () => {
   });
 
   const [businessSettings, setBusinessSettings] = useState({
-    businessName: "Restaurant Name",
     currency: "Euro (€)",
     currencySymbolPosition: "Right (123€)",
     digitAfterDecimalPoint: "2",
     taxRate: "23",
+    standardTax: "23",
+    foodTax: "0",
+    deliveryTax: "0",
+    serviceTax: "0",
     timeZone: "Ireland Dublin",
     timeFormat: "12 hour",
   });
@@ -56,9 +65,7 @@ const ApplicationSettings = () => {
     inStoreOrders: true,
     takeawayOrders: true,
     deliveryOrders: true,
-    cashierCanCancelOrder: "No",
-    cashierCanDeleteOrder: "Yes",
-    cancellationReasonRequired: "Yes",
+    cashierCanCancelOrder: "No"
   });
 
   const [deliverySettings, setDeliverySettings] = useState({
@@ -67,6 +74,102 @@ const ApplicationSettings = () => {
     maximumDeliveryRange: "15",
     minimumDeliveryOrderAmount: "20.00",
   });
+
+  // Load settings from DB and populate state
+  const mapDbToState = (db) => {
+    // Business Info
+    setBusinessInfo({
+      businessName: db?.business_name || "Restaurant Name",
+      phoneNumber: db?.phone_number || "",
+      country: db?.country || "Ireland",
+      description: db?.description || "Welcome to our restaurant! We serve delicious food with excellent service in a warm and welcoming atmosphere.",
+      logoFile: null,
+      logoPreview: db?.logo_file ? `local-file://${db.logo_file}` : (db?.logo_preview || ""),
+      address: db?.address || "123 Main Street, Dublin, Ireland",
+      latitude: db?.latitude != null ? String(db.latitude) : "53.3498",
+      longitude: db?.longitude != null ? String(db.longitude) : "-6.2603",
+    });
+
+    // Business (Finance & Tax)
+    setBusinessSettings({
+      currency: db?.currency || "Euro (€)",
+      currencySymbolPosition: db?.currency_symbol_position || "Right (123€)",
+      digitAfterDecimalPoint: db?.digit_after_decimal_point != null ? String(db.digit_after_decimal_point) : "2",
+      taxRate: db?.tax_rate != null ? String(db.tax_rate) : "23",
+      standardTax: db?.standard_tax != null ? String(db.standard_tax) : "23",
+      foodTax: db?.food_tax != null ? String(db.food_tax) : "0",
+      deliveryTax: db?.delivery_tax != null ? String(db.delivery_tax) : "0",
+      serviceTax: db?.service_tax != null ? String(db.service_tax) : "0",
+      timeZone: db?.time_zone || "Ireland Dublin",
+      timeFormat: db?.time_format || "12 hour",
+    });
+
+    // Order
+    setOrderSettings({
+      minimumOrderAmount: db?.minimum_order_amount != null ? String(db.minimum_order_amount) : "10.00",
+      orderPlaceSetting: db?.order_place_setting || "Both",
+      deliveryMinTime: db?.delivery_min_time != null ? String(db.delivery_min_time) : "25",
+      deliveryMaxTime: db?.delivery_max_time != null ? String(db.delivery_max_time) : "45",
+      deliveryUnit: db?.delivery_unit || "Minute",
+      dineInTime: db?.dine_in_time != null ? String(db.dine_in_time) : "0",
+      dineInUnit: db?.dine_in_unit || "Minutes",
+      dineInOrders: Boolean(db?.dine_in_orders ?? true),
+      inStoreOrders: Boolean(db?.in_store_orders ?? true),
+      takeawayOrders: Boolean(db?.takeaway_orders ?? true),
+      deliveryOrders: Boolean(db?.delivery_orders ?? true),
+      cashierCanCancelOrder: db?.cashier_can_cancel_order || "No",
+    });
+
+    // Delivery
+    setDeliverySettings({
+      freeDeliveryIn: db?.free_delivery_in != null ? String(db.free_delivery_in) : "5",
+      deliveryFeePerKm: db?.delivery_fee_per_km != null ? String(db.delivery_fee_per_km) : "2.50",
+      maximumDeliveryRange: db?.maximum_delivery_range != null ? String(db.maximum_delivery_range) : "15",
+      minimumDeliveryOrderAmount: db?.minimum_delivery_order_amount != null ? String(db.minimum_delivery_order_amount) : "20.00",
+    });
+
+    // Schedule
+    setScheduleSettings({
+      monday: { open: db?.monday_open || "12:00", close: db?.monday_close || "23:59" },
+      tuesday: { open: db?.tuesday_open || "12:00", close: db?.tuesday_close || "23:59" },
+      wednesday: { open: db?.wednesday_open || "12:00", close: db?.wednesday_close || "23:59" },
+      thursday: { open: db?.thursday_open || "12:00", close: db?.thursday_close || "23:59" },
+      friday: { open: db?.friday_open || "12:00", close: db?.friday_close || "23:59" },
+      saturday: { open: db?.saturday_open || "12:00", close: db?.saturday_close || "23:59" },
+      sunday: { open: db?.sunday_open || "12:00", close: db?.sunday_close || "23:59" },
+    });
+
+    // Appearance
+    setSettings({
+      defaultTheme: db?.default_theme || "Blue Theme",
+      selectKeyboard: db?.select_keyboard || "System Keyboard",
+      selectOrderBell: db?.select_order_bell || "Bell 1",
+      autoSaveInterval: db?.auto_save_interval != null ? String(db.auto_save_interval) : "5",
+      soundAlert: Boolean(db?.sound_alert ?? false),
+      notifications: Boolean(db?.notifications ?? true),
+    });
+  };
+
+  const loadSettingsFromDb = async () => {
+    try {
+      setIsLoading(true);
+      const res = await window.settingsAPI.get();
+      if (res?.success) {
+        latestSettingsRef.current = res.data || null;
+        if (res.data) {
+          mapDbToState(res.data);
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Load on mount and whenever tab changes per requirement
+    loadSettingsFromDb();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const [scheduleSettings, setScheduleSettings] = useState({
     monday: { open: "12:00", close: "23:59" },
@@ -78,6 +181,21 @@ const ApplicationSettings = () => {
     sunday: { open: "12:00", close: "23:59" },
   });
 
+  // Business Information state
+  const [businessInfo, setBusinessInfo] = useState({
+    businessName: "Restaurant Name",
+    phoneNumber: "",
+    country: "Ireland",
+    description:
+      "Welcome to our restaurant! We serve delicious food with excellent service in a warm and welcoming atmosphere.",
+    logoFile: null,
+    logoPreview: "",
+    address: "123 Main Street, Dublin, Ireland",
+    latitude: "53.3498",
+    longitude: "-6.2603",
+  });
+  const fileInputRef = useRef(null);
+
   // Schedule modal state
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [editingDay, setEditingDay] = useState(null);
@@ -88,6 +206,11 @@ const ApplicationSettings = () => {
   const [deletingDay, setDeletingDay] = useState(null);
 
   const navigationTabs = [
+    {
+      id: "businessInfo",
+      label: "Business Information",
+      icon: <Store size={16} />,
+    },
     {
       id: "appearance",
       label: "Appearance",
@@ -141,6 +264,56 @@ const ApplicationSettings = () => {
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleBusinessInfoChange = (key, value) => {
+    setBusinessInfo(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleLogoButtonClick = () => {
+    fileInputRef?.current?.click();
+  };
+
+  const handleLogoChange = (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result; // base64 data URL
+      setBusinessInfo(prev => ({ ...prev, logoFile: dataUrl, logoPreview: dataUrl }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      console.warn("Geolocation not supported");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setBusinessInfo(prev => ({
+          ...prev,
+          latitude: String(latitude.toFixed(6)),
+          longitude: String(longitude.toFixed(6))
+        }));
+      },
+      (err) => {
+        console.warn("Geolocation error:", err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const handleOpenInMaps = () => {
+    const { latitude, longitude, address } = businessInfo;
+    const q = address ? encodeURIComponent(address) : `${latitude},${longitude}`;
+    const url = `https://www.google.com/maps/search/?api=1&query=${q}`;
+    window.open(url, "_blank");
   };
 
   const handleScheduleSettingChange = (day, type, value) => {
@@ -210,80 +383,103 @@ const ApplicationSettings = () => {
     setDeletingDay(null);
   };
 
-  const handleSave = () => {
-    // Save settings logic here
-    if (activeTab === "finance") {
-      console.log("Business settings saved:", businessSettings);
-    } else if (activeTab === "order") {
-      console.log("Order settings saved:", orderSettings);
-    } else if (activeTab === "delivery") {
-      console.log("Delivery settings saved:", deliverySettings);
-    } else if (activeTab === "schedule") {
-      console.log("Schedule settings saved:", scheduleSettings);
+  const handleSave = async () => {
+    // Collect all data and upsert to DB
+    const payload = {
+      // Business Information
+      businessName: businessInfo.businessName,
+      phoneNumber: businessInfo.phoneNumber,
+      country: businessInfo.country,
+      description: businessInfo.description,
+      logo_preview: businessInfo.logoPreview,
+      // When a new logo is selected, send it as base64 + original filename
+      ...(businessInfo.logoFile ? { logoFile: businessInfo.logoFile, originalLogoFilename: businessInfo.logoFile.name || 'logo.png' } : {}),
+      address: businessInfo.address,
+      latitude: businessInfo.latitude,
+      longitude: businessInfo.longitude,
+      // Business Settings
+      currency: businessSettings.currency,
+      currencySymbolPosition: businessSettings.currencySymbolPosition,
+      digitAfterDecimalPoint: businessSettings.digitAfterDecimalPoint,
+      taxRate: businessSettings.taxRate,
+      standardTax: businessSettings.standardTax,
+      foodTax: businessSettings.foodTax,
+      deliveryTax: businessSettings.deliveryTax,
+      serviceTax: businessSettings.serviceTax,
+      timeZone: businessSettings.timeZone,
+      timeFormat: businessSettings.timeFormat,
+      // Order Settings
+      minimumOrderAmount: orderSettings.minimumOrderAmount,
+      orderPlaceSetting: orderSettings.orderPlaceSetting,
+      deliveryMinTime: orderSettings.deliveryMinTime,
+      deliveryMaxTime: orderSettings.deliveryMaxTime,
+      deliveryUnit: orderSettings.deliveryUnit,
+      dineInTime: orderSettings.dineInTime,
+      dineInUnit: orderSettings.dineInUnit,
+      dineInOrders: orderSettings.dineInOrders,
+      inStoreOrders: orderSettings.inStoreOrders,
+      takeawayOrders: orderSettings.takeawayOrders,
+      deliveryOrders: orderSettings.deliveryOrders,
+      cashierCanCancelOrder: orderSettings.cashierCanCancelOrder,
+      // Delivery Settings
+      freeDeliveryIn: deliverySettings.freeDeliveryIn,
+      deliveryFeePerKm: deliverySettings.deliveryFeePerKm,
+      maximumDeliveryRange: deliverySettings.maximumDeliveryRange,
+      minimumDeliveryOrderAmount: deliverySettings.minimumDeliveryOrderAmount,
+      // Schedule
+      monday_open: scheduleSettings.monday.open,
+      monday_close: scheduleSettings.monday.close,
+      tuesday_open: scheduleSettings.tuesday.open,
+      tuesday_close: scheduleSettings.tuesday.close,
+      wednesday_open: scheduleSettings.wednesday.open,
+      wednesday_close: scheduleSettings.wednesday.close,
+      thursday_open: scheduleSettings.thursday.open,
+      thursday_close: scheduleSettings.thursday.close,
+      friday_open: scheduleSettings.friday.open,
+      friday_close: scheduleSettings.friday.close,
+      saturday_open: scheduleSettings.saturday.open,
+      saturday_close: scheduleSettings.saturday.close,
+      sunday_open: scheduleSettings.sunday.open,
+      sunday_close: scheduleSettings.sunday.close,
+      // Appearance
+      defaultTheme: settings.defaultTheme,
+      selectKeyboard: settings.selectKeyboard,
+      selectOrderBell: settings.selectOrderBell,
+      autoSaveInterval: settings.autoSaveInterval,
+      soundAlert: settings.soundAlert,
+      notifications: settings.notifications,
+    };
+
+    const result = await window.settingsAPI.upsert(payload);
+    if (result?.success) {
+      showSuccess('Settings updated successfully!', { duration: 1500 });
+      try {
+        if (window.appSettings && typeof window.appSettings.reloadSettings === 'function') {
+          await window.appSettings.reloadSettings();
+        }
+      } catch (e) {
+        console.warn('Could not reload app settings after save:', e);
+      }
     } else {
-      console.log("Settings saved:", settings);
+      showError(result?.message || 'Failed to update settings');
     }
+    await loadSettingsFromDb();
   };
 
-  const handleReset = () => {
-    if (activeTab === "finance") {
-      setBusinessSettings({
-        businessName: "Restaurant Name",
-        currency: "Euro (€)",
-        currencySymbolPosition: "Right (123€)",
-        digitAfterDecimalPoint: "2",
-        taxRate: "23",
-        timeZone: "Ireland Dublin",
-        timeFormat: "12 hour",
-      });
-    } else if (activeTab === "order") {
-      setOrderSettings({
-        minimumOrderAmount: "10.00",
-        orderPlaceSetting: "Both",
-        deliveryMinTime: "25",
-        deliveryMaxTime: "45",
-        deliveryUnit: "Minute",
-        dineInTime: "0",
-        dineInUnit: "Minutes",
-        dineInOrders: true,
-        inStoreOrders: true,
-        takeawayOrders: true,
-        deliveryOrders: true,
-        cashierCanCancelOrder: "No",
-        cashierCanDeleteOrder: "Yes",
-        cancellationReasonRequired: "Yes",
-      });
-    } else if (activeTab === "delivery") {
-      setDeliverySettings({
-        freeDeliveryIn: "5",
-        deliveryFeePerKm: "2.50",
-        maximumDeliveryRange: "15",
-        minimumDeliveryOrderAmount: "20.00",
-      });
-    } else if (activeTab === "schedule") {
-      setScheduleSettings({
-        monday: { open: "12:00", close: "23:59" },
-        tuesday: { open: "12:00", close: "23:59" },
-        wednesday: { open: "12:00", close: "23:59" },
-        thursday: { open: "12:00", close: "23:59" },
-        friday: { open: "12:00", close: "23:59" },
-        saturday: { open: "12:00", close: "23:59" },
-        sunday: { open: "12:00", close: "23:59" },
-      });
-    } else {
-      setSettings({
-        defaultTheme: "Blue Theme",
-        selectKeyboard: "System Keyboard",
-        selectOrderBell: "Bell 1",
-        autoSaveInterval: "5",
-        soundAlert: false,
-        notifications: true,
-      });
-    }
+  const handleReset = async () => {
+    // Reload from DB, discarding unsaved changes, per requirement
+    await loadSettingsFromDb();
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      <CustomAlert 
+        message={alertState.message}
+        isVisible={alertState.isVisible}
+        onClose={hideAlert}
+        duration={alertState.duration}
+        type={alertState.type}
+      />
       {/* Navigation Tabs */}
       <div className="bg-white flex justify-center rounded-lg shadow-sm mb-6">
         <div className="flex items-center p-2 ">
@@ -322,7 +518,12 @@ const ApplicationSettings = () => {
              </button>
              <div>
                                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  {activeTab === "finance" ? (
+                  {activeTab === "businessInfo" ? (
+                    <>
+                      <Store size={24} className="text-primary" />
+                      Business Information
+                    </>
+                  ) : activeTab === "finance" ? (
                     <>
                       <Building size={24} className="text-primary" />
                       Business Configuration
@@ -350,7 +551,9 @@ const ApplicationSettings = () => {
                   )}
                 </h1>
                 <p className="text-gray-500 text-sm mt-1">
-                  {activeTab === "finance" 
+                  {activeTab === "businessInfo" 
+                    ? "Configure your business details and location information"
+                    : activeTab === "finance" 
                     ? "Set up business-specific settings."
                     : activeTab === "order"
                     ? "Configure order processing and delivery settings."
@@ -366,24 +569,171 @@ const ApplicationSettings = () => {
 
                      {/* Settings Grid */}
                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-              {activeTab === "finance" ? (
+              {activeTab === "businessInfo" ? (
+                <>
+                  {/* Basic Information */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 md:col-span-2">
+                    <h3 className="text-base font-semibold text-gray-800 mb-4">Basic Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                        <input
+                          type="text"
+                          value={businessInfo.businessName}
+                          onChange={(e) => handleBusinessInfoChange("businessName", e.target.value)}
+                          placeholder="Enter business name"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                        <input
+                          type="text"
+                          value={businessInfo.phoneNumber}
+                          onChange={(e) => handleBusinessInfoChange("phoneNumber", e.target.value)}
+                          placeholder="Enter phone number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                        <select
+                          value={businessInfo.country}
+                          onChange={(e) => handleBusinessInfoChange("country", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        >
+                          <option value="Ireland">Ireland</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="United States">United States</option>
+                          <option value="Germany">Germany</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t border-gray-200" />
+
+                    <h3 className="text-base font-semibold text-gray-800 mb-4">Address & Location</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                        <input
+                          type="text"
+                          value={businessInfo.address}
+                          onChange={(e) => handleBusinessInfoChange("address", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
+                        <input
+                          type="text"
+                          value={businessInfo.latitude}
+                          onChange={(e) => handleBusinessInfoChange("latitude", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
+                        <input
+                          type="text"
+                          value={businessInfo.longitude}
+                          onChange={(e) => handleBusinessInfoChange("longitude", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      <button
+                        onClick={handleGetCurrentLocation}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                      >
+                        <MapPin size={16} /> Get Current Location
+                      </button>
+                      <button
+                        onClick={handleOpenInMaps}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                      >
+                        <MapPin size={16} /> Open in Maps
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Description & Logo */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-5 md:col-span-2">
+                    <h3 className="text-base font-semibold text-gray-900 mb-5">Description & Logo</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                      {/* Description column (2/3) */}
+                      <div className="lg:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <div className="rounded-lg border border-gray-200 overflow-hidden">
+                          <textarea
+                            rows={8}
+                            value={businessInfo.description}
+                            onChange={(e) => handleBusinessInfoChange("description", e.target.value)}
+                            maxLength={600}
+                            placeholder="Tell customers what makes your place special..."
+                            className="w-full min-h-[180px] px-4 py-3 outline-none border-0 focus:ring-2 focus:ring-primary"
+                          />
+                          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+                            <span>Tip: Friendly, clear, and under 600 characters.</span>
+                            <span>{businessInfo.description?.length || 0}/600</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Logo column (1/3) */}
+                      <div className="lg:col-span-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Business Logo</label>
+                        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="aspect-square w-32 md:w-36 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shadow-sm">
+                              {businessInfo.logoPreview ? (
+                    <img src={businessInfo.logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                              ) : (
+                                <span className="text-xs text-gray-400">No logo</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 h-4 truncate w-full text-center">
+                              {businessInfo.logoFile?.name || "No file chosen"}
+                            </p>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                  onChange={handleLogoChange}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleLogoButtonClick}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                              >
+                                <Upload size={16} /> Upload
+                              </button>
+                              {businessInfo.logoPreview && (
+                                <button
+                                  onClick={() => handleBusinessInfoChange("logoPreview", "")}
+                                  className="inline-flex items-center gap-2 px-3 py-2 bg-white text-gray-700 border border-gray-200 rounded-md hover:bg-gray-100"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-gray-500 text-center">
+                              Use a square image (≥ 256×256). PNG with transparent background looks best.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Removed separate Address & Location card by merging above */}
+                </>
+              ) : activeTab === "finance" ? (
                 // Finance & Tax Settings
                 <>
-                  {/* Business Name */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Business Name
-                    </label>
-                    <select
-                      value={businessSettings.businessName}
-                      onChange={(e) => handleBusinessSettingChange("businessName", e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <option value="Restaurant Name">Restaurant Name</option>
-                      <option value="Cafe Name">Cafe Name</option>
-                      <option value="Bar Name">Bar Name</option>
-                    </select>
-                  </div>
+                  {/* Removed Business Name per request */}
 
                   {/* Currency */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -433,24 +783,66 @@ const ApplicationSettings = () => {
                     </select>
                   </div>
 
-                  {/* Tax Rate */}
+                  {/* Removed simple Tax Rate per request */}
+
+                  {/* Standard Tax */}
                   <div className="bg-white border border-gray-200 rounded-lg p-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tax Rate (%)
+                      Standard Tax (%)
                     </label>
-                    <select
-                      value={businessSettings.taxRate}
-                      onChange={(e) => handleBusinessSettingChange("taxRate", e.target.value)}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={businessSettings.standardTax}
+                      onChange={(e) => handleBusinessSettingChange("standardTax", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                      <option value="0">0</option>
-                      <option value="5">5</option>
-                      <option value="10">10</option>
-                      <option value="15">15</option>
-                      <option value="20">20</option>
-                      <option value="23">23</option>
-                      <option value="25">25</option>
-                    </select>
+                    />
+                  </div>
+
+                  {/* Food Tax */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Food Tax (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={businessSettings.foodTax}
+                      onChange={(e) => handleBusinessSettingChange("foodTax", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Delivery Tax */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Delivery Tax (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={businessSettings.deliveryTax}
+                      onChange={(e) => handleBusinessSettingChange("deliveryTax", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Service Tax */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Service Tax (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={businessSettings.serviceTax}
+                      onChange={(e) => handleBusinessSettingChange("serviceTax", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
                   </div>
 
                   {/* Time Zone */}
@@ -629,8 +1021,8 @@ const ApplicationSettings = () => {
                     </div>
                   </div>
 
-                  {/* In-Store Orders */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  {/* In-Store Orders - Hidden */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 hidden">
                     <div className="flex items-center gap-2 mb-2">
                       <Store size={16} className="text-primary" />
                       <label className="block text-sm font-medium text-gray-700">
@@ -721,47 +1113,10 @@ const ApplicationSettings = () => {
                      </select>
                    </div>
 
-                   {/* Cashier Can Delete Order */}
-                   <div className="bg-white border border-gray-200 rounded-lg p-4">
-                     <div className="flex items-center gap-2 mb-2">
-                       <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                         <Trash2 size={12} className="text-white" />
-                       </div>
-                       <label className="block text-sm font-medium text-gray-700">
-                         Cashier Can Delete Order
-                       </label>
-                     </div>
-                     <select
-                       value={orderSettings.cashierCanDeleteOrder}
-                       onChange={(e) => handleOrderSettingChange("cashierCanDeleteOrder", e.target.value)}
-                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-primary font-medium"
-                     >
-                       <option value="No">No</option>
-                       <option value="Yes">Yes</option>
-                     </select>
-                   </div>
-
-                   {/* Cancellation Reason Required */}
-                   <div className="bg-white border border-gray-200 rounded-lg p-4">
-                     <div className="flex items-center gap-2 mb-2">
-                       <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                         <ClipboardList size={12} className="text-white" />
-                       </div>
-                       <label className="block text-sm font-medium text-gray-700">
-                         Cancellation Reason Required
-                       </label>
-                     </div>
-                     <select
-                       value={orderSettings.cancellationReasonRequired}
-                       onChange={(e) => handleOrderSettingChange("cancellationReasonRequired", e.target.value)}
-                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-primary font-medium"
-                     >
-                       <option value="No">No</option>
-                       <option value="Yes">Yes</option>
-                                             </select>
-                      </div>
-                    </>
-                  ) : activeTab === "delivery" ? (
+                   {/* Removed Cashier Can Delete Order and Cancellation Reason Required per request */}
+                  
+                  </>
+                ) : activeTab === "delivery" ? (
                     // Delivery Management Settings
                     <>
                       {/* Free Delivery In (KM) */}
@@ -1146,7 +1501,7 @@ const ApplicationSettings = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                       <option value="System Keyboard">System Keyboard</option>
-                      <option value="System Keyboard">GBoard</option>
+                      <option value="GBoard">GBoard</option>
                     </select>
                   </div>
 

@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, ChevronDown, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, Clock, Calendar, CheckCircle, XCircle, Eye, X } from 'lucide-react';
+import { Users, ChevronDown, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, Clock, Calendar, Eye, X } from 'lucide-react';
 import VirtualKeyboard from '../../VirtualKeyboard';
 import CustomAlert from '../../CustomAlert';
+
+// Use the preload API for IPC calls
+const { api } = window;
 
 const EmployeeAttendance = () => {
   // State for filters
@@ -13,6 +16,8 @@ const EmployeeAttendance = () => {
   
   // Salary payment state
   const [paySalary, setPaySalary] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentNote, setPaymentNote] = useState('');
 
   // Employee attendance list state
   const [employees, setEmployees] = useState([]);
@@ -29,6 +34,18 @@ const EmployeeAttendance = () => {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [selectedEmployeeForAttendance, setSelectedEmployeeForAttendance] = useState('');
   const [attendanceAction, setAttendanceAction] = useState('');
+  const [attendanceActionOptions, setAttendanceActionOptions] = useState(['Check In', 'Check Out']);
+
+  // Salary history modal state
+  const [showSalaryHistoryModal, setShowSalaryHistoryModal] = useState(false);
+  const [salaryHistory, setSalaryHistory] = useState([]);
+
+  // Leave request modal state
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveType, setLeaveType] = useState('');
+  const [leaveStartDate, setLeaveStartDate] = useState('');
+  const [leaveEndDate, setLeaveEndDate] = useState('');
+  const [leaveReason, setLeaveReason] = useState('');
 
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
@@ -39,13 +56,33 @@ const EmployeeAttendance = () => {
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
 
-  // Sample sorting options
+  // Enhanced sorting options
   const sortingOptions = [
     { value: 'present_today', label: 'Present Today' },
     { value: 'absent_today', label: 'Absent Today' },
     { value: 'late_today', label: 'Late Today' },
     { value: 'most_attendance', label: 'Most Attendance' },
-    { value: 'least_attendance', label: 'Least Attendance' }
+    { value: 'least_attendance', label: 'Least Attendance' },
+    { value: 'highest_salary', label: 'Highest Salary' },
+    { value: 'lowest_salary', label: 'Lowest Salary' },
+    { value: 'unpaid_salary', label: 'Unpaid Salary' },
+    { value: 'recent_joiners', label: 'Recent Joiners' }
+  ];
+
+  // Leave types
+  const leaveTypes = [
+    { value: 'sick', label: 'Sick Leave' },
+    { value: 'annual', label: 'Annual Leave' },
+    { value: 'personal', label: 'Personal Leave' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  // Payment methods
+  const paymentMethods = [
+    { value: 'cash', label: 'Cash' },
+    { value: 'bank_transfer', label: 'Bank Transfer' },
+    { value: 'check', label: 'Check' },
+    { value: 'digital_payment', label: 'Digital Payment' }
   ];
 
   // Generate dummy attendance records for each employee
@@ -93,15 +130,10 @@ const EmployeeAttendance = () => {
     return attendance.sort((a, b) => new Date(b.date) - new Date(a.date));
   };
 
-  // Memoized attendance records for the selected employee
-  const selectedEmployeeAttendance = useMemo(() => {
-    if (selectedEmployee) {
-      return generateEmployeeAttendance(selectedEmployee.id, selectedEmployee.totalDays, selectedEmployee.presentDays, selectedEmployee.lateDays);
-    }
-    return [];
-  }, [selectedEmployee?.id, selectedEmployee?.totalDays, selectedEmployee?.presentDays, selectedEmployee?.lateDays]);
+  // Real attendance records list for modal
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
 
-  // Dummy employee attendance data
+  // Enhanced dummy employee attendance data with salary history
   const dummyEmployees = [
     {
       id: 1,
@@ -117,7 +149,12 @@ const EmployeeAttendance = () => {
       salary: 3500,
       joiningDate: '2024-01-15',
       isPaid: true,
-      address: '123 Main Street, Dublin, Co. Dublin, D01 AB12, Ireland'
+      address: '123 Main Street, Dublin, Co. Dublin, D01 AB12, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2024-01-31', amount: 3500, method: 'bank_transfer', note: 'January 2024 Salary' },
+        { id: 2, date: '2024-02-29', amount: 3500, method: 'bank_transfer', note: 'February 2024 Salary' },
+        { id: 3, date: '2024-03-31', amount: 3500, method: 'bank_transfer', note: 'March 2024 Salary' }
+      ]
     },
     {
       id: 2,
@@ -133,7 +170,11 @@ const EmployeeAttendance = () => {
       salary: 2800,
       joiningDate: '2024-02-20',
       isPaid: false,
-      address: '456 Oak Avenue, Cork, Co. Cork, T12 CD34, Ireland'
+      address: '456 Oak Avenue, Cork, Co. Cork, T12 CD34, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2024-02-29', amount: 2800, method: 'cash', note: 'February 2024 Salary' },
+        { id: 2, date: '2024-03-31', amount: 2800, method: 'cash', note: 'March 2024 Salary' }
+      ]
     },
     {
       id: 3,
@@ -149,7 +190,14 @@ const EmployeeAttendance = () => {
       salary: 3200,
       joiningDate: '2023-11-10',
       isPaid: true,
-      address: '789 River Road, Galway, Co. Galway, H91 EF56, Ireland'
+      address: '789 River Road, Galway, Co. Galway, H91 EF56, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2023-11-30', amount: 3200, method: 'bank_transfer', note: 'November 2023 Salary' },
+        { id: 2, date: '2023-12-31', amount: 3200, method: 'bank_transfer', note: 'December 2023 Salary' },
+        { id: 3, date: '2024-01-31', amount: 3200, method: 'bank_transfer', note: 'January 2024 Salary' },
+        { id: 4, date: '2024-02-29', amount: 3200, method: 'bank_transfer', note: 'February 2024 Salary' },
+        { id: 5, date: '2024-03-31', amount: 3200, method: 'bank_transfer', note: 'March 2024 Salary' }
+      ]
     },
     {
       id: 4,
@@ -165,7 +213,10 @@ const EmployeeAttendance = () => {
       salary: 2600,
       joiningDate: '2024-03-05',
       isPaid: false,
-      address: '321 Hill Street, Limerick, Co. Limerick, V94 GH78, Ireland'
+      address: '321 Hill Street, Limerick, Co. Limerick, V94 GH78, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2024-03-31', amount: 2600, method: 'cash', note: 'March 2024 Salary' }
+      ]
     },
     {
       id: 5,
@@ -181,27 +232,130 @@ const EmployeeAttendance = () => {
       salary: 3100,
       joiningDate: '2023-12-15',
       isPaid: true,
-      address: '654 Park Lane, Waterford, Co. Waterford, X91 IJ90, Ireland'
+      address: '654 Park Lane, Waterford, Co. Waterford, X91 IJ90, Ireland',
+      salaryHistory: [
+        { id: 1, date: '2023-12-31', amount: 3100, method: 'bank_transfer', note: 'December 2023 Salary' },
+        { id: 2, date: '2024-01-31', amount: 3100, method: 'bank_transfer', note: 'January 2024 Salary' },
+        { id: 3, date: '2024-02-29', amount: 3100, method: 'bank_transfer', note: 'February 2024 Salary' },
+        { id: 4, date: '2024-03-31', amount: 3100, method: 'bank_transfer', note: 'March 2024 Salary' }
+      ]
     }
   ];
 
   // Initialize employees data
   useEffect(() => {
-    setEmployees(dummyEmployees);
-    setFilteredEmployees(dummyEmployees);
+    loadEmployees();
   }, []);
 
-  // Filter employees based on search term
+  // Load employees from database
+  const loadEmployees = async () => {
+    try {
+      if (api) {
+        const result = await api.getAllEmployees();
+        const rawEmployees = Array.isArray(result) ? result : (result?.data || []);
+
+        // Filter only active and not-deleted employees (robust against 0/1, true/false, '0'/'1', null)
+        const activeEmployees = rawEmployees.filter(emp => {
+          const activeVal = typeof emp.isActive === 'string' ? parseInt(emp.isActive, 10) : emp.isActive;
+          const deletedVal = typeof emp.isDeleted === 'string' ? parseInt(emp.isDeleted, 10) : emp.isDeleted;
+          const isActiveOk = activeVal === 1 || activeVal === true || activeVal === '1' || activeVal == null;
+          const isDeletedOk = deletedVal === 0 || deletedVal === false || deletedVal === '0' || deletedVal == null;
+          return isActiveOk && isDeletedOk;
+        });
+
+        // Transform database data to match our component structure
+        const transformedEmployees = activeEmployees.map(emp => ({
+          id: emp.id,
+          employeeId: emp.code || `EMP${emp.id.toString().padStart(3, '0')}`,
+          name: `${emp.fname} ${emp.lname}`,
+          email: emp.email || '',
+          phone: emp.phone || '',
+          role: emp.roll || 'Employee',
+          totalDays: 0,
+          presentDays: 0,
+          lateDays: 0,
+          totalHours: 0,
+          salary: emp.salary || 0,
+          joiningDate: emp.created_at || new Date().toISOString().split('T')[0],
+          isPaid: false,
+          address: emp.address || '',
+          salaryHistory: []
+        }));
+
+        // Load additional data for each employee
+        const employeesWithDetails = await Promise.all(
+          transformedEmployees.map(async (emp) => {
+            try {
+              const attendanceResult = await api.attendanceGetByEmployee(emp.id);
+              const salaryResult = await api.salaryPaymentGetByEmployee(emp.id);
+
+              const attendance = Array.isArray(attendanceResult) ? attendanceResult : (attendanceResult?.data || []);
+              const totalDays = attendance.length;
+              const presentDays = attendance.filter(record => record.status === 'present').length;
+              const lateDays = attendance.filter(record => record.status === 'late').length;
+              const totalHours = attendance.reduce((sum, record) => sum + (record.total_hours || 0), 0);
+
+              const salaryHistoryRaw = Array.isArray(salaryResult) ? salaryResult : (salaryResult?.data || []);
+              const totalPaid = salaryHistoryRaw.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+              const isPaid = totalPaid >= emp.salary;
+
+              return { ...emp, totalDays, presentDays, lateDays, totalHours, isPaid, salaryHistory: salaryHistoryRaw };
+            } catch (error) {
+              console.error(`Error loading details for employee ${emp.id}:`, error);
+              return emp;
+            }
+          })
+        );
+
+        setEmployees(employeesWithDetails);
+        setFilteredEmployees(employeesWithDetails);
+      } 
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      // Do not fallback to dummy; show no employees to avoid fake data in production
+      setEmployees([]);
+      setFilteredEmployees([]);
+    }
+  };
+
+  // Filter and sort employees based on search term and sort criteria
   useEffect(() => {
-    const filtered = employees.filter(employee =>
+    let filtered = employees.filter(employee =>
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.phone.includes(searchTerm) ||
       employee.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Apply sorting
+    if (sortBy) {
+      switch (sortBy) {
+        case 'highest_salary':
+          filtered.sort((a, b) => b.salary - a.salary);
+          break;
+        case 'lowest_salary':
+          filtered.sort((a, b) => a.salary - b.salary);
+          break;
+        case 'unpaid_salary':
+          filtered = filtered.filter(emp => !emp.isPaid);
+          break;
+        case 'recent_joiners':
+          filtered.sort((a, b) => new Date(b.joiningDate) - new Date(a.joiningDate));
+          break;
+        case 'most_attendance':
+          filtered.sort((a, b) => (b.presentDays / b.totalDays) - (a.presentDays / a.totalDays));
+          break;
+        case 'least_attendance':
+          filtered.sort((a, b) => (a.presentDays / a.totalDays) - (b.presentDays / b.totalDays));
+          break;
+        default:
+          break;
+      }
+    }
+
     setFilteredEmployees(filtered);
     setCurrentPage(1);
-  }, [searchTerm, employees]);
+  }, [searchTerm, employees, sortBy]);
 
   // Get current employees for pagination
   const indexOfLastEmployee = currentPage * employeesPerPage;
@@ -236,9 +390,22 @@ const EmployeeAttendance = () => {
   };
 
   // Handle modal open
-  const handleModalOpen = (employee) => {
+  const handleModalOpen = async (employee) => {
     setSelectedEmployee(employee);
     setShowModal(true);
+    try {
+      if (api) {
+        const res = await api.attendanceGetByEmployee(employee.id);
+        const records = Array.isArray(res) ? res : (res?.data || []);
+        records.sort((a, b) => new Date(`${b.date} ${b.checkin || '00:00:00'}`) - new Date(`${a.date} ${a.checkin || '00:00:00'}`));
+        setAttendanceRecords(records);
+      } else {
+        setAttendanceRecords([]);
+      }
+    } catch (err) {
+      console.error('Error loading attendance records:', err);
+      setAttendanceRecords([]);
+    }
   };
 
   // Handle modal close
@@ -249,10 +416,14 @@ const EmployeeAttendance = () => {
   };
 
   // Handle attendance modal open
-  const handleAttendanceModalOpen = () => {
+  const handleAttendanceModalOpen = async () => {
+    try {
+      await loadEmployees();
+    } catch (e) {}
     setShowAttendanceModal(true);
     setSelectedEmployeeForAttendance('');
     setAttendanceAction('');
+    setAttendanceActionOptions(['Check In', 'Check Out']);
   };
 
   // Handle attendance modal close
@@ -263,7 +434,7 @@ const EmployeeAttendance = () => {
   };
 
   // Handle attendance save
-  const handleAttendanceSave = () => {
+  const handleAttendanceSave = async () => {
     if (!selectedEmployeeForAttendance || !attendanceAction) {
       setAlertMessage('Please select both employee and action');
       setAlertType('error');
@@ -272,26 +443,124 @@ const EmployeeAttendance = () => {
     }
 
     const selectedEmp = employees.find(emp => emp.id.toString() === selectedEmployeeForAttendance);
-    const currentTime = new Date().toLocaleTimeString('en-GB', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
+    const currentTime = new Date().toISOString();
     const currentDate = new Date().toISOString().split('T')[0];
 
-    // Here you would typically make an API call to save the attendance record
-    console.log('Attendance record:', {
-      employeeId: selectedEmployeeForAttendance,
-      employeeName: selectedEmp?.name,
-      action: attendanceAction,
-      time: currentTime,
-      date: currentDate
-    });
+    try {
+      if (api) {
+        // Check if employee already has attendance for today
+        const existingAttendance = await api.attendanceCheckTodayStatus(selectedEmployeeForAttendance, currentDate);
 
-    setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${currentTime}`);
-    setAlertType('success');
-    setShowAlert(true);
-    handleAttendanceModalClose();
+        let status = 'present';
+        let checkin = null;
+        let checkout = null;
+
+        if (attendanceAction === 'Check In') {
+          // Allow multiple check-ins per day only if last session is closed (has checkout)
+          if (existingAttendance.success && existingAttendance.data && !existingAttendance.data.checkout) {
+            setAlertMessage('Already checked in. Please Check Out first.');
+            setAlertType('error');
+            setShowAlert(true);
+            return;
+          }
+          checkin = currentTime;
+          status = 'present';
+        } else if (attendanceAction === 'Check Out') {
+          if (!existingAttendance.success || !existingAttendance.data || existingAttendance.data.checkout) {
+            setAlertMessage('No open session to check out');
+            setAlertType('error');
+            setShowAlert(true);
+            return;
+          }
+          checkout = currentTime;
+          // Update existing record with checkout time
+          const upd = await api.attendanceUpdate(existingAttendance.data.id, { checkout });
+          if (upd?.success) {
+            if (upd.computedHours != null) {
+              const payInfo = upd.computedPay != null ? `, Pay: €${Number(upd.computedPay).toLocaleString()}` : '';
+              setAlertMessage(`Checked out. Hours: ${upd.computedHours}${payInfo}`);
+              setAlertType('success');
+              setShowAlert(true);
+            }
+          }
+        }
+
+        // Create new attendance record if checking in
+        if (attendanceAction === 'Check In') {
+          const attendanceData = {
+            employee_id: parseInt(selectedEmployeeForAttendance),
+            date: currentDate,
+            checkin,
+            checkout,
+            status,
+            added_by: 1 // Current logged-in employee ID
+          };
+
+          const result = await api.attendanceCreate(attendanceData);
+          
+          if (result.success) {
+            setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${new Date(currentTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`);
+            setAlertType('success');
+            setShowAlert(true);
+            
+            // Reload employees to update attendance data
+            await loadEmployees();
+            // Refresh modal records if details modal is open for this employee
+            try {
+              if (showModal && selectedEmployee && selectedEmployee.id === selectedEmp?.id) {
+                const res = await api.attendanceGetByEmployee(selectedEmp.id);
+                const records = Array.isArray(res) ? res : (res?.data || []);
+                records.sort((a, b) => new Date(`${b.date} ${b.checkin || '00:00:00'}`) - new Date(`${a.date} ${a.checkin || '00:00:00'}`));
+                setAttendanceRecords(records);
+              }
+            } catch (e) {}
+            
+            handleAttendanceModalClose();
+          } else {
+            setAlertMessage('Failed to save attendance record');
+            setAlertType('error');
+            setShowAlert(true);
+          }
+        } else {
+          setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${new Date(currentTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`);
+          setAlertType('success');
+          setShowAlert(true);
+          
+          // Reload employees to update attendance data
+          await loadEmployees();
+          // Refresh modal records if details modal is open for this employee
+          try {
+            if (showModal && selectedEmployee && selectedEmployee.id === selectedEmp?.id) {
+              const res = await api.attendanceGetByEmployee(selectedEmp.id);
+              const records = Array.isArray(res) ? res : (res?.data || []);
+              records.sort((a, b) => new Date(`${b.date} ${b.checkin || '00:00:00'}`) - new Date(`${a.date} ${a.checkin || '00:00:00'}`));
+              setAttendanceRecords(records);
+            }
+          } catch (e) {}
+          
+          handleAttendanceModalClose();
+        }
+      } else {
+        // Fallback for development
+        console.log('Attendance record:', {
+          employeeId: selectedEmployeeForAttendance,
+          employeeName: selectedEmp?.name,
+          action: attendanceAction,
+          time: currentTime,
+          date: currentDate
+        });
+
+        setAlertMessage(`${attendanceAction} recorded successfully for ${selectedEmp?.name} at ${new Date(currentTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}`);
+        setAlertType('success');
+        setShowAlert(true);
+        handleAttendanceModalClose();
+      }
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      setAlertMessage('Error saving attendance record');
+      setAlertType('error');
+      setShowAlert(true);
+    }
   };
 
   // Handle keyboard input
@@ -328,6 +597,8 @@ const EmployeeAttendance = () => {
       setPaySalary(input);
     } else if (inputName === 'searchTerm') {
       setSearchTerm(input);
+    } else if (inputName === 'paymentNote') {
+      setPaymentNote(input);
     }
   };
 
@@ -361,8 +632,8 @@ const EmployeeAttendance = () => {
     }
   };
 
-  // Handle salary payment
-  const handleSalaryPayment = () => {
+    // Handle salary payment
+  const handleSalaryPayment = async () => {
     if (!paySalary || parseFloat(paySalary) <= 0) {
       setAlertMessage('Please enter a valid salary amount');
       setAlertType('error');
@@ -370,27 +641,259 @@ const EmployeeAttendance = () => {
       return;
     }
     
-    // Here you would typically make an API call to save the salary payment
-    console.log('Paying salary:', paySalary, 'for employee:', selectedEmployee?.name);
+    try {
+      if (api) {
+        // Create salary payment record
+        const paymentData = {
+          employee_id: selectedEmployee.id,
+          payment_date: new Date().toISOString().split('T')[0],
+          amount: parseFloat(paySalary),
+          payment_method: paymentMethod,
+          payment_note: paymentNote || `Salary payment for ${selectedEmployee?.name}`,
+          paid_by: 1 // Current logged-in employee ID
+        };
+
+        const result = await api.salaryPaymentCreate(paymentData);
+        
+        if (result.success) {
+          // Reload employees to get updated data
+          await loadEmployees();
+          
+          // Update the selected employee in the modal
+          const updatedEmployee = employees.find(emp => emp.id === selectedEmployee.id);
+          if (updatedEmployee) {
+            setSelectedEmployee(updatedEmployee);
+          }
+          
+          // Refresh attendance records to update calculations
+          try {
+            const res = await api.attendanceGetByEmployee(selectedEmployee.id);
+            const records = Array.isArray(res) ? res : (res?.data || []);
+            records.sort((a, b) => new Date(`${b.date} ${b.checkin || '00:00:00'}`) - new Date(`${a.date} ${a.checkin || '00:00:00'}`));
+            setAttendanceRecords(records);
+          } catch (e) {
+            console.error('Error refreshing attendance records:', e);
+          }
+          
+          setAlertMessage(`Salary payment of €${parseFloat(paySalary).toLocaleString()} saved successfully for ${selectedEmployee?.name}!`);
+          setAlertType('success');
+          setShowAlert(true);
+          setPaySalary(''); // Reset the input
+          setPaymentMethod('cash');
+          setPaymentNote('');
+        } else {
+          setAlertMessage('Failed to save salary payment');
+          setAlertType('error');
+          setShowAlert(true);
+        }
+      } else {
+        // Fallback for development
+        console.log('Paying salary:', paySalary, 'for employee:', selectedEmployee?.name);
+        
+        // Create new salary payment record
+        const newPayment = {
+          id: Date.now(),
+          date: new Date().toISOString().split('T')[0],
+          amount: parseFloat(paySalary),
+          method: paymentMethod,
+          note: paymentNote || `Salary payment for ${selectedEmployee?.name}`,
+          paid_by: 1 // Current logged-in employee ID
+        };
+        
+        // Update the employee's payment status and salary history
+        if (selectedEmployee) {
+          setEmployees(prevEmployees =>
+            prevEmployees.map(employee =>
+              employee.id === selectedEmployee.id
+                ? { 
+                    ...employee, 
+                    isPaid: true,
+                    salaryHistory: [...(employee.salaryHistory || []), newPayment]
+                  }
+                : employee
+            )
+          );
+          
+          // Update the selected employee in the modal
+          setSelectedEmployee(prev => prev ? { 
+            ...prev, 
+            isPaid: true,
+            salaryHistory: [...(prev.salaryHistory || []), newPayment]
+          } : null);
+        }
+        
+        setAlertMessage(`Salary payment of €${parseFloat(paySalary).toLocaleString()} saved successfully for ${selectedEmployee?.name}!`);
+        setAlertType('success');
+        setShowAlert(true);
+        setPaySalary(''); // Reset the input
+        setPaymentMethod('cash');
+        setPaymentNote('');
+      }
+    } catch (error) {
+      console.error('Error saving salary payment:', error);
+      setAlertMessage('Error saving salary payment');
+      setAlertType('error');
+      setShowAlert(true);
+    }
+  };
+
+  // Handle salary history modal
+  const handleSalaryHistoryModal = async (employee) => {
+    setSelectedEmployee(employee);
     
-    // Update the employee's payment status
-    if (selectedEmployee) {
-      setEmployees(prevEmployees =>
-        prevEmployees.map(employee =>
-          employee.id === selectedEmployee.id
-            ? { ...employee, isPaid: true }
-            : employee
-        )
-      );
-      
-      // Update the selected employee in the modal
-      setSelectedEmployee(prev => prev ? { ...prev, isPaid: true } : null);
+    try {
+      if (api) {
+        // Load real salary history from database
+        const result = await api.salaryPaymentGetByEmployee(employee.id);
+        
+        if (result.success) {
+          // Transform database data to match component structure
+          const transformedHistory = result.data.map(payment => ({
+            id: payment.id,
+            date: payment.payment_date,
+            amount: payment.amount,
+            method: payment.payment_method,
+            note: payment.payment_note
+          }));
+          
+          setSalaryHistory(transformedHistory);
+        } else {
+          setSalaryHistory([]);
+        }
+      } else {
+        // Fallback to employee data
+        setSalaryHistory(employee.salaryHistory || []);
+      }
+    } catch (error) {
+      console.error('Error loading salary history:', error);
+      setSalaryHistory(employee.salaryHistory || []);
     }
     
-    setAlertMessage(`Salary payment of €${parseFloat(paySalary).toLocaleString()} saved successfully for ${selectedEmployee?.name}!`);
-    setAlertType('success');
-    setShowAlert(true);
-    setPaySalary(''); // Reset the input
+    setShowSalaryHistoryModal(true);
+  };
+
+  // Handle leave request modal
+  const handleLeaveModalOpen = async () => {
+    try {
+      await loadEmployees();
+    } catch (e) {}
+    setShowLeaveModal(true);
+    setLeaveType('');
+    setLeaveStartDate('');
+    setLeaveEndDate('');
+    setLeaveReason('');
+  };
+
+  // Handle leave request save
+  const handleLeaveRequestSave = async () => {
+    if (!leaveType || !leaveStartDate || !leaveEndDate) {
+      setAlertMessage('Please fill in all required fields');
+      setAlertType('error');
+      setShowAlert(true);
+      return;
+    }
+
+    const startDate = new Date(leaveStartDate);
+    const endDate = new Date(leaveEndDate);
+    
+    if (startDate > endDate) {
+      setAlertMessage('Start date cannot be after end date');
+      setAlertType('error');
+      setShowAlert(true);
+      return;
+    }
+
+    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+    try {
+      if (api) {
+        // Check for overlapping leave requests
+        const overlappingCheck = await api.leaveRequestCheckOverlapping(selectedEmployee.id, leaveStartDate, leaveEndDate);
+
+        if (overlappingCheck.success && overlappingCheck.data.hasOverlapping) {
+          setAlertMessage('Employee has overlapping leave requests for these dates');
+          setAlertType('error');
+          setShowAlert(true);
+          return;
+        }
+
+        // Create leave request
+        const leaveData = {
+          employee_id: selectedEmployee.id,
+          leave_type: leaveType,
+          start_date: leaveStartDate,
+          end_date: leaveEndDate,
+          total_days: totalDays,
+          reason: leaveReason
+        };
+
+        const result = await api.leaveRequestCreate(leaveData);
+        
+        if (result.success) {
+          setAlertMessage(`Leave request submitted successfully for ${totalDays} days`);
+          setAlertType('success');
+          setShowAlert(true);
+          handleLeaveModalClose();
+        } else {
+          setAlertMessage('Failed to submit leave request');
+          setAlertType('error');
+          setShowAlert(true);
+        }
+      } else {
+        // Fallback for development
+        console.log('Leave request:', {
+          employeeId: selectedEmployee?.id,
+          leaveType,
+          startDate: leaveStartDate,
+          endDate: leaveEndDate,
+          totalDays,
+          reason: leaveReason
+        });
+
+        setAlertMessage(`Leave request submitted successfully for ${totalDays} days`);
+        setAlertType('success');
+        setShowAlert(true);
+        handleLeaveModalClose();
+      }
+    } catch (error) {
+      console.error('Error submitting leave request:', error);
+      setAlertMessage('Error submitting leave request');
+      setAlertType('error');
+      setShowAlert(true);
+    }
+  };
+
+  // Handle leave modal close
+  const handleLeaveModalClose = () => {
+    setShowLeaveModal(false);
+    setLeaveType('');
+    setLeaveStartDate('');
+    setLeaveEndDate('');
+    setLeaveReason('');
+  };
+
+  // Calculate total salary paid
+  const calculateTotalSalaryPaid = (employee) => {
+    if (!employee.salaryHistory) return 0;
+    return employee.salaryHistory.reduce((total, payment) => total + payment.amount, 0);
+  };
+
+  // Calculate total earned amount from attendance records
+  const calculateTotalEarnedAmount = (employee) => {
+    if (!attendanceRecords || attendanceRecords.length === 0) return 0;
+    return attendanceRecords.reduce((total, record) => total + (record.earned_amount || 0), 0);
+  };
+
+  // Calculate pending amount
+  const calculatePendingAmount = (employee) => {
+    const totalEarned = calculateTotalEarnedAmount(employee);
+    const totalPaid = calculateTotalSalaryPaid(employee);
+    return Math.max(0, totalEarned - totalPaid);
+  };
+
+  // Calculate advance amount when payment exceeds pending
+  const calculateAdvanceAmount = (paymentAmount, pendingAmount) => {
+    return Math.max(0, paymentAmount - pendingAmount);
   };
 
   return (
@@ -457,8 +960,8 @@ const EmployeeAttendance = () => {
 
         </div>
 
-        {/* Employee Attendance Button */}
-        <div className="mt-6 pt-4 border-t border-gray-200">
+        {/* Action Buttons */}
+        <div className="mt-6 pt-4 border-t border-gray-200 flex gap-3">
           <button
             onClick={handleAttendanceModalOpen}
             className="px-6 py-3 bg-primary text-white font-medium rounded-lg cursor-pointer
@@ -466,6 +969,15 @@ const EmployeeAttendance = () => {
              transition-all flex items-center gap-2"
           >
             Employee Attendance
+          </button>
+          
+          <button
+            onClick={handleLeaveModalOpen}
+            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg cursor-pointer
+            hover:translate-y-[2px] 
+             transition-all flex items-center gap-2"
+          >
+            Leave Request
           </button>
         </div>
       </div>
@@ -526,23 +1038,7 @@ const EmployeeAttendance = () => {
                   Salary
                   <ChevronDown className="inline ml-1" size={12} />
                 </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Attendance Rate
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Present Days
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Late Days
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Joining Date
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Paid/Unpaid</th>
+                
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Actions</th>
               </tr>
             </thead>
@@ -579,39 +1075,7 @@ const EmployeeAttendance = () => {
                     <td className="py-3 px-4 text-sm text-gray-600">
                       €{employee.salary.toLocaleString()}
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-800">
-                          {attendancePercentage}%
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusBadge.color}`}>
-                          {statusBadge.text}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {employee.presentDays}/{employee.totalDays}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {employee.lateDays}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {formatDate(employee.joiningDate)}
-                    </td>
-                                         <td className="py-3 px-4">
-                       <button
-                         onClick={() => handlePaymentToggle(employee.id)}
-                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                           employee.isPaid ? 'bg-primary' : 'bg-gray-300'
-                         }`}
-                       >
-                         <span
-                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                             employee.isPaid ? 'translate-x-6' : 'translate-x-1'
-                           }`}
-                         />
-                       </button>
-                     </td>
+                    
                     <td className="py-3 px-4">
                       <button
                         onClick={() => handleModalOpen(employee)}
@@ -703,7 +1167,7 @@ const EmployeeAttendance = () => {
                           <ChevronDown className="inline ml-1" size={12} />
                         </th>
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                          Status
+                          Salary
                           <ChevronDown className="inline ml-1" size={12} />
                         </th>
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
@@ -720,43 +1184,31 @@ const EmployeeAttendance = () => {
                         </th>
                       </tr>
                     </thead>
-                                         <tbody>
-                       {selectedEmployeeAttendance.map((record) => (
+                    <tbody>
+                      {attendanceRecords.map((record) => {
+                        const checkInText = record.checkin ? new Date(record.checkin).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-';
+                        const checkOutText = record.checkout ? new Date(record.checkout).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }) : '-';
+                        const totalHours = record.total_hours != null ? record.total_hours : (record.checkin && record.checkout ? ((new Date(record.checkout) - new Date(record.checkin)) / (1000*60*60)).toFixed(2) : 0);
+                        return (
                         <tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4 text-sm text-gray-600">
                             {formatDate(record.date)}
                           </td>
-                          <td className="py-3 px-4">
-                            {record.status === 'Present' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <CheckCircle size={12} className="mr-1" />
-                                Present
-                              </span>
-                            )}
-                            {record.status === 'Late' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                <Clock size={12} className="mr-1" />
-                                Late
-                              </span>
-                            )}
-                            {record.status === 'Absent' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                <XCircle size={12} className="mr-1" />
-                                Absent
-                              </span>
-                            )}
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {record.earned_amount ? `€${Number(record.earned_amount).toFixed(2)}` : '-'}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600">
-                            {record.checkIn || '-'}
+                            {checkInText}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600">
-                            {record.checkOut || '-'}
+                            {checkOutText}
                           </td>
                           <td className="py-3 px-4 text-sm text-gray-600">
-                            {record.totalHours > 0 ? `${record.totalHours}h` : '-'}
+                            {totalHours > 0 ? `${totalHours}h` : '-'}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -792,47 +1244,40 @@ const EmployeeAttendance = () => {
                   </div>
                 </div>
                 
-                {/* Attendance Summary */}
-                <div className="border-t border-gray-200 pt-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-3">Attendance Summary</h5>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Days:</span>
-                      <span className="text-sm font-medium text-gray-800">{selectedEmployee.totalDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Present Days:</span>
-                      <span className="text-sm font-medium text-green-600">{selectedEmployee.presentDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Late Days:</span>
-                      <span className="text-sm font-medium text-yellow-600">{selectedEmployee.lateDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Absent Days:</span>
-                      <span className="text-sm font-medium text-red-600">{selectedEmployee.totalDays - selectedEmployee.presentDays}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Attendance Rate:</span>
-                      <span className="text-sm font-medium text-primary">{getAttendancePercentage(selectedEmployee.presentDays, selectedEmployee.totalDays)}%</span>
-                    </div>
-                  </div>
-                </div>
+
                 
                 {/* Salary Section */}
                 <div className="border-t border-gray-200 pt-4 mt-4">
                   <h5 className="text-sm font-medium text-gray-700 mb-3">Salary Information</h5>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Salary:</span>
-                      <span className="text-sm font-medium text-gray-800">€{selectedEmployee.salary.toLocaleString()}</span>
+                      <span className="text-sm text-gray-600">Total Amount:</span>
+                      <span className="text-sm font-medium text-gray-800">€{calculateTotalEarnedAmount(selectedEmployee).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Payment Status:</span>
-                      <span className={`text-sm font-medium ${selectedEmployee.isPaid ? 'text-green-600' : 'text-red-600'}`}>
-                        {selectedEmployee.isPaid ? 'Paid' : 'Unpaid'}
-                      </span>
+                      <span className="text-sm text-gray-600">Paid Amount:</span>
+                      <span className="text-sm font-medium text-green-600">€{calculateTotalSalaryPaid(selectedEmployee).toLocaleString()}</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Pending Amount:</span>
+                      <span className="text-sm font-medium text-red-600">€{calculatePendingAmount(selectedEmployee).toLocaleString()}</span>
+                    </div>
+                    {calculateAdvanceAmount(parseFloat(paySalary), calculatePendingAmount(selectedEmployee)) > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Advance Amount:</span>
+                        <span className="text-sm font-medium text-blue-600">€{calculateAdvanceAmount(parseFloat(paySalary), calculatePendingAmount(selectedEmployee)).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Salary History Button */}
+                  <div className="mt-4">
+                    <button
+                      onClick={() => handleSalaryHistoryModal(selectedEmployee)}
+                      className="w-full px-4 py-2 bg-blue-50 text-blue-700 font-medium rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+                    >
+                      View Salary History
+                    </button>
                   </div>
                   
                   {/* Pay Salary Section */}
@@ -854,7 +1299,54 @@ const EmployeeAttendance = () => {
                         step="0.01"
                         required
                       />
+                      {paySalary && parseFloat(paySalary) > 0 && (
+                        <div className="mt-2 text-sm">
+                          {parseFloat(paySalary) > calculatePendingAmount(selectedEmployee) ? (
+                            <div className="text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                              <strong>Advance Payment:</strong> This payment exceeds the pending amount by €{calculateAdvanceAmount(parseFloat(paySalary), calculatePendingAmount(selectedEmployee)).toFixed(2)}
+                            </div>
+                          ) : (
+                            <div className="text-green-600 bg-green-50 p-2 rounded border border-green-200">
+                              <strong>Regular Payment:</strong> This payment covers €{parseFloat(paySalary).toFixed(2)} of the €{calculatePendingAmount(selectedEmployee).toFixed(2)} pending amount
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Payment Method
+                      </label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                      >
+                        {paymentMethods.map((method) => (
+                          <option key={method.value} value={method.value}>
+                            {method.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Payment Note
+                      </label>
+                      <textarea
+                        value={paymentNote}
+                        onChange={(e) => setPaymentNote(e.target.value)}
+                        onFocus={() => handleInputFocus('paymentNote')}
+                        onBlur={handleInputBlur}
+                        onClick={() => handleAnyInputClick(null, 'paymentNote')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                        placeholder="Optional note about this payment"
+                        rows="2"
+                      />
+                    </div>
+
                     <button
                       onClick={handleSalaryPayment}
                       disabled={!paySalary || parseFloat(paySalary) <= 0}
@@ -909,7 +1401,39 @@ const EmployeeAttendance = () => {
                 <div className="relative">
                   <select
                     value={selectedEmployeeForAttendance}
-                    onChange={(e) => setSelectedEmployeeForAttendance(e.target.value)}
+                    onChange={async (e) => {
+                      const value = e.target.value;
+                      setSelectedEmployeeForAttendance(value);
+                      // Dynamically decide which actions are available for today
+                      try {
+                        if (api && value) {
+                          const today = new Date().toISOString().split('T')[0];
+                          const status = await api.attendanceCheckTodayStatus(value, today);
+                          if (status?.success && status.data) {
+                            // Already has a record today
+                            const hasCheckout = !!status.data.checkout;
+                            if (hasCheckout) {
+                              setAttendanceActionOptions(['Check In']);
+                              setAttendanceAction('Check In');
+                            } else {
+                              setAttendanceActionOptions(['Check Out']);
+                              setAttendanceAction('Check Out');
+                            }
+                          } else {
+                            // No record yet today
+                            setAttendanceActionOptions(['Check In']);
+                            setAttendanceAction('Check In');
+                          }
+                        } else {
+                          setAttendanceActionOptions(['Check In', 'Check Out']);
+                          setAttendanceAction('');
+                        }
+                      } catch (err) {
+                        console.error('Error checking today status:', err);
+                        setAttendanceActionOptions(['Check In', 'Check Out']);
+                        setAttendanceAction('');
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
                     required
                   >
@@ -937,8 +1461,9 @@ const EmployeeAttendance = () => {
                     required
                   >
                     <option value="">Choose action</option>
-                    <option value="Check In">Check In</option>
-                    <option value="Check Out">Check Out</option>
+                    {attendanceActionOptions.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
@@ -967,6 +1492,222 @@ const EmployeeAttendance = () => {
         </div>
       )}
 
+      {/* Salary History Modal */}
+      {showSalaryHistoryModal && selectedEmployee && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800">Salary History - {selectedEmployee.name}</h3>
+              <button onClick={() => setShowSalaryHistoryModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {/* Salary Summary */}
+              <div className="grid grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-800">€{calculateTotalEarnedAmount(selectedEmployee).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Total Amount</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">€{calculateTotalSalaryPaid(selectedEmployee).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Paid Amount</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">€{calculatePendingAmount(selectedEmployee).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Pending Amount</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">€{calculateAdvanceAmount(calculateTotalSalaryPaid(selectedEmployee), calculatePendingAmount(selectedEmployee)).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">Advance Amount</div>
+                </div>
+              </div>
+
+              {/* Salary History Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Date</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Amount</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Method</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Type</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salaryHistory.length > 0 ? (
+                      salaryHistory.map((payment) => {
+                        const paymentType = payment.amount > calculatePendingAmount(selectedEmployee) ? 'Advance' : 'Regular';
+                        const typeColor = paymentType === 'Advance' ? 'text-blue-600' : 'text-green-600';
+                        return (
+                          <tr key={payment.id} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              {formatDate(payment.date)}
+                            </td>
+                            <td className="py-3 px-4 text-sm font-medium text-green-600">
+                              €{payment.amount.toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              <span className="capitalize">{payment.method.replace('_', ' ')}</span>
+                            </td>
+                            <td className="py-3 px-4 text-sm font-medium">
+                              <span className={`${typeColor} bg-opacity-10 px-2 py-1 rounded-full text-xs`}>
+                                {paymentType}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              {payment.note || '-'}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="py-8 text-center text-gray-500">
+                          No salary payments found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Request Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800">Leave Request</h3>
+              <button onClick={handleLeaveModalClose} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Employee Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Employee <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedEmployee?.id || ''}
+                    onChange={(e) => {
+                      const emp = employees.find(emp => emp.id.toString() === e.target.value);
+                      setSelectedEmployee(emp);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="">Choose an employee</option>
+                    {employees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.employeeId} - {employee.name} ({employee.role})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
+              {/* Leave Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Leave Type <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={leaveType}
+                    onChange={(e) => setLeaveType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="">Choose leave type</option>
+                    {leaveTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                </div>
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={leaveStartDate}
+                  onChange={(e) => setLeaveStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  required
+                />
+              </div>
+
+              {/* End Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={leaveEndDate}
+                  onChange={(e) => setLeaveEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  required
+                />
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason
+                </label>
+                <textarea
+                  value={leaveReason}
+                  onChange={(e) => setLeaveReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  placeholder="Reason for leave request"
+                  rows="3"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={handleLeaveModalClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLeaveRequestSave}
+                  disabled={!selectedEmployee || !leaveType || !leaveStartDate || !leaveEndDate}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg 
+                  shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
+                  active:shadow-none active:translate-y-[4px] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
+                >
+                  Submit Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Virtual Keyboard */}
       <VirtualKeyboard
         isVisible={showKeyboard}
@@ -977,6 +1718,7 @@ const EmployeeAttendance = () => {
         inputValue={
           activeInput === 'paySalary' ? (paySalary || '') :
           activeInput === 'searchTerm' ? (searchTerm || '') :
+          activeInput === 'paymentNote' ? (paymentNote || '') :
           (chooseFirst || '')
         }
         placeholder="Type here..."

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Keyboard from 'react-simple-keyboard';
 import 'react-simple-keyboard/build/css/index.css';
 import { X } from 'lucide-react';
+import { useKeyboardSetting } from '../hooks/useKeyboardSetting';
 
 const VirtualKeyboard = ({ 
   isVisible, 
@@ -15,6 +16,7 @@ const VirtualKeyboard = ({
 }) => {
   const [keyboardInput, setKeyboardInput] = useState('');
   const [capsLock, setCapsLock] = useState(false);
+  const { shouldShowVirtualKeyboard } = useKeyboardSetting();
 
   // Reset keyboard input when activeInput changes
   useEffect(() => {
@@ -129,6 +131,11 @@ const VirtualKeyboard = ({
   };
 
   if (!isVisible) {
+    return null;
+  }
+
+  // Don't render if virtual keyboard is disabled
+  if (!shouldShowVirtualKeyboard()) {
     return null;
   }
 

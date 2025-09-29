@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS order_details (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    food_id INTEGER NOT NULL,
+    food_id INTEGER,
     order_id INTEGER NOT NULL,
     price REAL NOT NULL,
     food_details TEXT,
@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS order_details (
     total_add_on_price REAL DEFAULT 0,
     issynicronized BOOLEAN DEFAULT 0,
     isdeleted BOOLEAN DEFAULT 0,
+    iscreateyourown BOOLEAN DEFAULT 0,
+    isopen BOOLEAN DEFAULT 0,
     FOREIGN KEY (food_id) REFERENCES food(id),
     FOREIGN KEY (order_id) REFERENCES orders(id)
 ); 

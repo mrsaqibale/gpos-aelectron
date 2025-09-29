@@ -1,6 +1,6 @@
 import React, { useState, createContext, useEffect } from 'react';
 import Sidebar from './Sidebar';
-import Header from './Header';
+import ReservationsHeader from './ReservationsHeader';
 import OrdersHeader from './OrdersHeader'; // Import the new OrdersHeader component
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import CheckInFlow from '../../pages/loginPage/CheckInPopup';
@@ -8,7 +8,7 @@ import {
   LayoutDashboard,
   Search,
   Users2, Utensils, Table,
-  Tag, X, LogOut, User, Home, Settings
+  Tag, X, LogOut, User, Home, Settings, Clock, BarChart3
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -37,6 +37,8 @@ const DashboardLayout = () => {
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
+    const openMenu = () => setShowDashboardSlider(true);
+    window.addEventListener('openDashboardMenu', openMenu);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -106,43 +108,55 @@ const DashboardLayout = () => {
     const allItems = [
       {
         name: "Dashboard",
-        icon: <Home size={18} />,
+        icon: <Home size={18} className="font-bold" />,
         path: "/dashboard",
         allowedRoles: ["admin", "cashier", "manager", "chef", "waiter"]
       },
       {
-        name: "Manage-Orders",
-        icon: <LayoutDashboard size={18} />,
-        path: "/dashboard/manage-orders",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
-        name: "KDS",
-        icon: <Search size={18} />,
-        path: "/dashboard/kds",
-        allowedRoles: ["admin", "bde", "cashier"]
-      },
-      {
-        name: "Customer Management",
-        icon: <User size={18} />,
-        path: "/dashboard/customer-management",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
-        name: "Coupons",
-        icon: <Tag size={18} />,
-        path: "/dashboard/coupons",
-        allowedRoles: ["admin", "manager", "cashier"]
-      },
-      {
-        name: "sales",
-        icon: <Users2 size={18} />,
+        name: "Sales",
+        icon: <Users2 size={18} className="font-bold" />,
         path: "/dashboard/sales",
         allowedRoles: ["admin", "cashier"]
       },
       {
-        name: "Admin Panel",
-        icon: <Settings size={18} />,
+        name: "Manage Orders",
+        icon: <LayoutDashboard size={18} className="font-bold" />,
+        path: "/dashboard/manage-orders",
+        allowedRoles: ["admin", "cashier"]
+      },
+      {
+        name: "Reservations",
+        icon: <Clock size={18} className="font-bold" />,
+        path: "/dashboard/reservations",
+        allowedRoles: ["admin", "cashier"]
+      },
+      {
+        name: "Customer Management",
+        icon: <User size={18} className="font-bold" />,
+        path: "/dashboard/customer-management",
+        allowedRoles: ["admin", "cashier"]
+      },
+      {
+        name: "Coupon & Discount",
+        icon: <Tag size={18} className="font-bold" />,
+        path: "/dashboard/coupons",
+        allowedRoles: ["admin", "manager", "cashier"]
+      },
+      {
+        name: "All Reports",
+        icon: <BarChart3 size={18} className="font-bold" />,
+        path: "/dashboard/reports",
+        allowedRoles: ["admin", "manager", "cashier"]
+      },
+      {
+        name: "KDS",
+        icon: <Search size={18} className="font-bold" />,
+        path: "/dashboard/kds",
+        allowedRoles: ["admin", "bde", "cashier"]
+      },
+      {
+        name: "Admin",
+        icon: <Settings size={18} className="font-bold" />,
         path: "/dashboard/admin-panel",
         allowedRoles: ["admin"]
       },
@@ -154,6 +168,7 @@ const DashboardLayout = () => {
   // Check if current route is KDS or Orders
   const isKDSRoute = location.pathname === '/dashboard/kds';
   const isOrdersRoute = location.pathname === '/dashboard/sales';
+  const isReservationsRoute = location.pathname === '/dashboard/reservations';
   const shouldHideSidebar = isOrdersRoute;
 
   if (isLoading || !user) {
@@ -207,9 +222,43 @@ const DashboardLayout = () => {
                 {navigationItems.map((item) => (
                   <div key={item.name}>
                                          <button
-                       onClick={() => {
+                       onClick={async () => {
                          setShowDashboardSlider(false);
-                         // Navigate to the item's path using React Router
+                         
+                         // Check if this is the sales route and check register status
+                         if (item.path === '/dashboard/sales') {
+                           try {
+                             // Get the last register entry from database
+                             // Using getAllRegisters as workaround since getLastRegister might not be registered yet
+                             const allRegistersResult = await window.myAPI?.getAllRegisters();
+                             const lastRegisterResult = allRegistersResult && allRegistersResult.success && allRegistersResult.data && allRegistersResult.data.length > 0 
+                               ? { success: true, data: allRegistersResult.data[0] } // First item is the last register
+                               : { success: true, data: null };
+                             
+                             if (lastRegisterResult && lastRegisterResult.success && lastRegisterResult.data) {
+                               const lastRegister = lastRegisterResult.data;
+                               
+                               // Check if the last register is closed (isclosed = 1)
+                               // If isclosed = 1 (closed), show popup to open new register
+                               // If isclosed = 0 (open), no popup needed, go directly to sales
+                               if (lastRegister.isclosed === 1) {
+                                 setShowCheckIn(true);
+                                 return; // Don't navigate yet, wait for check-in completion
+                               }
+                             } else {
+                               // If no register found, show check-in popup
+                               setShowCheckIn(true);
+                               return;
+                             }
+                           } catch (error) {
+                             console.error('Error checking register status:', error);
+                             // On error, show check-in popup to be safe
+                             setShowCheckIn(true);
+                             return;
+                           }
+                         }
+                         
+                         // Normal navigation for other routes or if already checked in
                          navigate(item.path);
                        }}
                       className="w-full flex items-center px-4 py-3 text-sm text-gray-100 transition-colors"
@@ -235,14 +284,43 @@ const DashboardLayout = () => {
               {/* Logout Button */}
               <div className="px-4 mb-6 cursor-pointer">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setShowDashboardSlider(false);
-                    // Handle logout logic here
-                    console.log("Logout clicked");
+                    
+                    try {
+                      const currentEmployee = localStorage.getItem('currentEmployee');
+                      if (currentEmployee) {
+                        const employeeData = JSON.parse(currentEmployee);
+                        if (employeeData.id) {
+                          // Use the global logout function if available, otherwise call directly
+                          if (window.handleEmployeeLogout) {
+                            await window.handleEmployeeLogout(employeeData.id);
+                          } else {
+                            await window.myAPI?.updateEmployeeLogout(employeeData.id);
+                          }
+                        }
+                      }
+                      // Clear local storage
+                      localStorage.removeItem('currentEmployee');
+                      sessionStorage.clear();
+                      
+                      // Navigate to login
+                      navigate('/login');
+                    } catch (error) {
+                      console.error('Error during logout:', error);
+                      // Still navigate to login even if logout fails
+                      localStorage.removeItem('currentEmployee');
+                      sessionStorage.clear();
+                      navigate('/login');
+                    }
                   }}
                   className="w-full flex items-center cursor-pointer gap-2 py-3 text-gray-100"
                 >
-                  <LogOut size={20} />
+                  <LogOut 
+                    size={20} 
+                    className="font-bold flex-shrink-0" 
+                    style={{ opacity: 1 }}
+                  />
                   <span className="font-medium">
                     Logout
                   </span>
@@ -262,11 +340,17 @@ const DashboardLayout = () => {
       <div className="dashboard-container">
         {/* Check-In Popup */}
         {showCheckIn && (
-          <CheckInFlow onComplete={() => setShowCheckIn(false)} />
+          <CheckInFlow onComplete={(shouldNavigate = false) => {
+            setShowCheckIn(false);
+            // Only navigate to sales if explicitly requested (e.g., after successful register creation)
+            if (shouldNavigate) {
+              navigate('/dashboard/sales');
+            }
+          }} />
         )}
         
         <div className="dashboard-content">
-          <div className={`flex ${shouldHideSidebar? "h-full" : "h-full"} overflow-hidden rounded-xl`}>
+          <div className={`flex ${shouldHideSidebar? "h-full" : "h-full"} overflow-hidden`}>
             {/* Conditionally render Sidebar */}
             {!shouldHideSidebar && <Sidebar navigationItems={navigationItems} />}
             
@@ -277,24 +361,18 @@ const DashboardLayout = () => {
                 <OrdersHeader 
                   isOrdersRoute={isOrdersRoute} 
                   onMenuClick={() => setShowDashboardSlider(true)}
+                  showMenuButton={false}
+                  onDraftsClick={() => {
+                    // This will be handled by the RunningOrders component
+                    window.dispatchEvent(new CustomEvent('openDraftsModal'));
+                  }}
                 />
-              ) : isKDSRoute ? (
-                // Show KDS-specific Header for KDS route
+              ) : isReservationsRoute ? (
+                // Show Reservations toolbar under title bar with proper margins when sidebar is visible
                 <div className={shouldHideSidebar ? "" : "md:pl-5"}>
-                  <Header 
-                    onRecallClick={() => console.log("Recall clicked")}
-                    onNotificationsClick={() => console.log("Notifications clicked")}
-                    onViewToggle={() => console.log("View toggle clicked")}
-                    currentView="cards" // or manage this state
-                    notificationCount={3} // or manage this state
-                  />
+                  <ReservationsHeader />
                 </div>
-              ) : (
-                // Show regular Header for other routes
-                <div className={shouldHideSidebar ? "" : "md:pl-5"}>
-                  <Header />
-                </div>
-              )}
+              ) : null}
          
               <main className="dashboard-main">
                 <div className={`dashboard-scrollable rounded-br-xl ${
@@ -302,7 +380,7 @@ const DashboardLayout = () => {
                 } ${
                   shouldHideSidebar ? '' : 'md:ml-2'
                 } ${
-                  isKDSRoute ? '' : 'mt-6 md:mt-3'
+                  isOrdersRoute || isReservationsRoute ? '' : 'mt-6 md:mt-3'
                 }`}
                   style={{
                     transition: 'margin 300ms cubic-bezier(0.4, 0, 0.2, 1)',

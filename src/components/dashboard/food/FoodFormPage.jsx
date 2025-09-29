@@ -1,22 +1,43 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import FoodForm from './FoodForm';
-
-// Mock function to get food by ID - replace with your actual data source
-const mockFoodItems = [
-  { id: 1, name: 'Chicken Biryani', price: 14.95, category: 'Main Course' },
-  { id: 2, name: 'Zinger Burger', price: 8.5, category: 'Burgers' },
-  // Add more mock items as needed
-];
 
 const FoodFormPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditing = !!id;
+  const [food, setFood] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Implement getFoodById function
-  const getFoodById = (foodId) => {
-    return mockFoodItems.find(item => item.id === parseInt(foodId));
-  };
+  // Fetch food data when editing
+  useEffect(() => {
+    if (isEditing && id) {
+      const fetchFoodData = async () => {
+        try {
+          setLoading(true);
+          console.log('Fetching food data for ID:', id);
+          const result = await window.myAPI?.getFoodById(parseInt(id));
+          
+          if (result && result.success) {
+            console.log('Food data fetched successfully:', result.data);
+            setFood(result.data);
+          } else {
+            console.error('Failed to fetch food data:', result?.message);
+            alert('Failed to load food details for editing');
+            navigate('/dashboard/food-management');
+          }
+        } catch (error) {
+          console.error('Error fetching food data:', error);
+          alert('Error loading food details for editing');
+          navigate('/dashboard/food-management');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchFoodData();
+    }
+  }, [id, isEditing, navigate]);
 
   const handleSubmit = (formData) => {
     // Handle form submission
@@ -24,16 +45,21 @@ const FoodFormPage = () => {
     navigate('/dashboard/food-management'); // Redirect back to food list
   };
 
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading food details...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
-      {/* <h1 className="text-2xl font-bold mb-6">
-        {isEditing ? 'Edit Food Item' : 'Add New Food Item'}
-      </h1> */}
-      
       <FoodForm 
-        food={isEditing ? getFoodById(id) : null}
+        food={isEditing ? food : null}
         onSubmit={handleSubmit}
-        onCancel={() => navigate('/dashboard/food-management')}
       />
     </div>
   );
