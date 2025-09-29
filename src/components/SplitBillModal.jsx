@@ -166,9 +166,9 @@ const SplitBillModal = ({
                                     </span>
                                     <span className="text-sm font-bold text-gray-800">
                                         €
-                                        {selectedPlacedOrder
+                                        {splitItems.length > 0
                                             ? (
-                                                selectedPlacedOrder.total /
+                                                splitItems.reduce((sum, item) => sum + item.totalPrice, 0) /
                                                 (1 + getTaxRate() / 100)
                                             ).toFixed(2)
                                             : "0.00"}
@@ -180,9 +180,9 @@ const SplitBillModal = ({
                                     </span>
                                     <span className="text-sm font-bold text-gray-800">
                                         €
-                                        {selectedPlacedOrder
+                                        {splitItems.length > 0
                                             ? (
-                                                (selectedPlacedOrder.total *
+                                                (splitItems.reduce((sum, item) => sum + item.totalPrice, 0) *
                                                     getTaxRate()) /
                                                 100 /
                                                 (1 + getTaxRate() / 100)
@@ -196,8 +196,8 @@ const SplitBillModal = ({
                                     </span>
                                     <span className="text-lg font-bold text-primary">
                                         €
-                                        {selectedPlacedOrder
-                                            ? selectedPlacedOrder.total.toFixed(2)
+                                        {splitItems.length > 0
+                                            ? splitItems.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)
                                             : "0.00"}
                                     </span>
                                 </div>

@@ -4917,11 +4917,22 @@ const RunningOrders = () => {
       tips: 0,
       total: 0
     }));
-    splitItems.forEach((item, i) => {
-      const targetBill = newSplitBills[i % numSplits];
-      targetBill.items.push(item);
-      targetBill.subtotal += item.totalPrice;
-      targetBill.total += item.totalPrice;
+
+    // Distribute items evenly across splits
+    splitItems.forEach((item, itemIndex) => {
+      const targetBillIndex = itemIndex % numSplits;
+      const targetBill = newSplitBills[targetBillIndex];
+      
+      // Create a copy of the item for this split
+      const splitItem = {
+        ...item,
+        quantity: 1, // Each split gets 1 quantity of each item
+        totalPrice: item.totalPrice / item.quantity // Calculate per-unit price
+      };
+      
+      targetBill.items.push(splitItem);
+      targetBill.subtotal += splitItem.totalPrice;
+      targetBill.total += splitItem.totalPrice;
     });
 
     setSplitBills(newSplitBills);
