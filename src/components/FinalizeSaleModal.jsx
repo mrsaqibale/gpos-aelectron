@@ -81,6 +81,7 @@ const FinalizeSaleModal = ({
   splitBillToRemove,
   setSplitBills,
   setSplitBillToRemove,
+  updateCartAfterSplitPayment,
   // Order related props
   placedOrders,
   selectedCustomer,
@@ -1084,11 +1085,14 @@ const FinalizeSaleModal = ({
                   // Set the split order for invoice display
                   setSelectedPlacedOrder(splitOrderForInvoice);
                   
-                  // Remove the processed split bill from the list
+                  // Remove the processed split bill from the list and update cart items
                   if (splitBillToRemove) {
                     setSplitBills(prev => prev.filter(split => split.id !== splitBillToRemove));
                     handleRemoveSplitBill(splitBillToRemove);
                     setSplitBillToRemove(null);
+                    
+                    // Update cart items by removing paid quantities
+                    updateCartAfterSplitPayment(selectedSplitBill);
                   }
                 }
 

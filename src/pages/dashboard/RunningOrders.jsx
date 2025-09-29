@@ -5060,6 +5060,33 @@ const RunningOrders = () => {
     ));
   };
 
+  const updateCartAfterSplitPayment = (paidSplitBill) => {
+    // Update cart items by removing the quantities that were paid in the split bill
+    setCartItems(prev => prev.map(cartItem => {
+      // Find if this cart item was paid in the split bill
+      const paidItem = paidSplitBill.items.find(splitItem => 
+        splitItem.food?.id === cartItem.food?.id
+      );
+      
+      if (paidItem) {
+        // Reduce the quantity in cart by the amount paid
+        const newQuantity = cartItem.quantity - paidItem.quantity;
+        if (newQuantity <= 0) {
+          // If quantity becomes 0 or negative, remove the item completely
+          return null;
+        } else {
+          // Update the quantity and recalculate total price
+          return {
+            ...cartItem,
+            quantity: newQuantity,
+            totalPrice: (cartItem.totalPrice / cartItem.quantity) * newQuantity
+          };
+        }
+      }
+      return cartItem; // No change if item wasn't in the paid split
+    }).filter(item => item !== null)); // Remove null items (items with 0 quantity)
+  };
+
   const handleRemoveSplitBill = (splitBillId) => {
     // Get the split bill being removed to return its items to the pool
     const splitToRemove = splitBills.find(split => split.id === splitBillId);
