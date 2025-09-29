@@ -984,7 +984,7 @@ const FinalizeSaleModal = ({
                       const paymentUpdates = {
                         payment_status: 'paid',
                         payment_method: selectedPaymentMethod,
-                        order_status: 'completed'
+                        order_status: 'new'
                       };
                       
                       const updateResult = await window.myAPI.updateOrder(createdOrderId, paymentUpdates);
@@ -1114,9 +1114,13 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
                   }
                 }
 
+              // Don't clear cart for split bills - let the cart update logic handle it
+              if (!selectedSplitBill) {
+                clearCart();
+              }
+              
               onClose();
               setIsSinglePayMode(false);
-              clearCart();
               resetFinalizeSaleModal();
               
               // Show invoice modal after successful payment

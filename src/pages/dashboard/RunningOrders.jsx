@@ -5104,36 +5104,8 @@ const RunningOrders = () => {
 
   const handlePlaceSplitBillOrder = async (splitBill, paymentInfo) => {
     try {
-      // Map selected status to database status (same logic as regular handlePlaceOrder)
-      let dbStatus = 'pending';
-      switch (selectedNewOrderStatus) {
-        case 'New':
-          dbStatus = 'new';
-          break;
-        case 'In Progress':
-          dbStatus = 'in_progress';
-          break;
-        case 'Ready':
-          dbStatus = 'ready';
-          break;
-        case 'On the way':
-          dbStatus = 'on_the_way';
-          break;
-        case 'Delivered':
-          dbStatus = 'delivered';
-          break;
-        case 'Completed':
-          dbStatus = 'completed';
-          break;
-        case 'Pending':
-          dbStatus = 'pending';
-          break;
-        case 'Complete':
-          dbStatus = 'completed';
-          break;
-        default:
-          dbStatus = selectedNewOrderStatus.toLowerCase().replace(' ', '_');
-      }
+      // Split bill orders always get "New" status regardless of main screen selection
+      let dbStatus = 'new';
 
       // Map order type to database format
       let orderType = 'instore';
@@ -5194,7 +5166,8 @@ const RunningOrders = () => {
         custom_ingredients: item.customIngredients || []
       }));
 
-      // Place the order in database
+      // Place the order in database (same API as regular orders)
+      console.log('Placing split bill order with data:', orderData);
       const result = await window.myAPI?.placeOrder(orderData);
       
       if (result && result.success) {
