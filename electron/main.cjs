@@ -246,6 +246,38 @@ app.whenReady().then(async () => {
     win.close();
   });
 
+  // Shell operations
+  ipcMain.handle('shell:openExternal', async (event, url) => {
+    const { shell } = require('electron');
+    return shell.openExternal(url);
+  });
+
+  // Path operations
+  ipcMain.handle('path:join', async (event, ...args) => {
+    return path.join(...args);
+  });
+
+  // App path operations
+  ipcMain.handle('app:getAppPath', async () => {
+    return app.getAppPath();
+  });
+
+  // File existence check
+  ipcMain.handle('file:exists', async (event, filePath) => {
+    return fs.existsSync(filePath);
+  });
+
+  // Get counter file path
+  ipcMain.handle('counter:getPath', async () => {
+    const appPath = app.getAppPath();
+    const counterPath = path.join(appPath, 'src', 'counter.html');
+    return {
+      appPath,
+      counterPath,
+      exists: fs.existsSync(counterPath)
+    };
+  });
+
   // ipcMain.handle('window:isMaximized', () => {
   //   return win.isMaximized();
   // });

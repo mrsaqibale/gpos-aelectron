@@ -13,6 +13,7 @@ import {
   Utensils,
   List,
   Truck,
+  Calculator,
 } from "lucide-react";
 
 const adminItems = [
@@ -41,6 +42,11 @@ const adminItems = [
     label: "Suppliers",
     path: "/dashboard/stock-management?tab=suppliers"
   },
+  {
+    icon: <Calculator size={18} className="text-primary" />,
+    label: "Counter Tool",
+    action: "openCounter"
+  },
 ];
 
 const settingsItems = [
@@ -66,6 +72,37 @@ export default function AdminPanel() {
 
   const handleNavigation = (path) => {
     navigate(path);
+  };
+
+  const handleOpenCounter = async () => {
+    try {
+      if (window.electronAPI) {
+        // Get counter file information
+        const counterInfo = await window.electronAPI.invoke('counter:getPath');
+        
+        console.log('Counter file info:', counterInfo);
+        
+        if (!counterInfo.exists) {
+          alert(`Counter file not found at: ${counterInfo.counterPath}\n\nPlease make sure the file exists in the src folder.`);
+          return;
+        }
+        
+        const fileUrl = `file://${counterInfo.counterPath}`;
+        console.log('Opening counter in browser:', fileUrl);
+        
+        // Open the counter HTML file in the default browser
+        await window.electronAPI.shell.openExternal(fileUrl);
+        
+      } else {
+        // Fallback for web environment
+        window.open('/src/counter.html', '_blank');
+      }
+    } catch (error) {
+      console.error('Error opening counter:', error);
+      console.error('Error details:', error.message);
+      
+      alert(`Could not open counter. Error: ${error.message}\n\nTroubleshooting steps:\n1. Check if src/counter.html exists in your project\n2. Try opening the file directly from Windows Explorer\n3. Make sure the file path is correct`);
+    }
   };
 
   return (
@@ -101,7 +138,13 @@ export default function AdminPanel() {
             {adminItems.map((item) => (
               <button
                 key={item.label}
-                onClick={() => handleNavigation(item.path)}
+                onClick={() => {
+                  if (item.action === "openCounter") {
+                    handleOpenCounter();
+                  } else {
+                    handleNavigation(item.path);
+                  }
+                }}
                 className="flex items-center gap-3 p-3 rounded-lg bg-[#f6fafd] hover:bg-cyan-50 transition border border-transparent focus:outline-none cursor-pointer"
                 style={{ boxShadow: "0 1px 2px 0 rgba(0,0,0,0.01)" }}
               >
