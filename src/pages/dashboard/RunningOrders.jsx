@@ -5404,29 +5404,10 @@ const RunningOrders = () => {
 
   const resetFinalizeSaleModalForSplitBill = () => {
     setSelectedPaymentMethod('Cash');
-    
-    // Set payment amount to split bill total if split bill is selected
-    if (selectedSplitBill) {
-      const splitBillTotal = calculateSplitBillTotal();
-      setPaymentAmount(splitBillTotal.toString());
-      setGivenAmount(splitBillTotal.toString());
-      setChangeAmount('0.00');
-      console.log('Setting payment amount to split bill total:', splitBillTotal);
-      
-      // Automatically add the payment to addedPayments array
-      const autoPayment = {
-        method: 'Cash',
-        amount: splitBillTotal,
-        timestamp: new Date().toISOString()
-      };
-      setAddedPayments([autoPayment]);
-      console.log('Auto-added payment to addedPayments:', autoPayment);
-    } else {
-      setPaymentAmount('');
-      setGivenAmount('');
-      setChangeAmount('');
-      setAddedPayments([]);
-    }
+    setPaymentAmount('');
+    setGivenAmount('');
+    setChangeAmount('');
+    setAddedPayments([]);
     setFinalizeDiscountAmount('');
     setSendSMS(false);
     setSelectedCurrency('EUR');

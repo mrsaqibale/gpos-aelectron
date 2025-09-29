@@ -117,25 +117,6 @@ const FinalizeSaleModal = ({
     }
   }, [isModifyingOrder, modifyingOrderPaymentInfo, setSelectedPaymentMethod]);
 
-  // Set payment amount for split bills when modal opens
-  React.useEffect(() => {
-    if (selectedSplitBill && !isSinglePayMode && paymentAmount === '') {
-      const splitBillTotal = calculateSplitBillTotal();
-      console.log('Auto-setting payment amount for split bill:', splitBillTotal);
-      setPaymentAmount(splitBillTotal.toString());
-      setGivenAmount(splitBillTotal.toString());
-      setChangeAmount('0.00');
-      
-      // Automatically add the payment to addedPayments array
-      const autoPayment = {
-        method: selectedPaymentMethod,
-        amount: splitBillTotal,
-        timestamp: new Date().toISOString()
-      };
-      setAddedPayments([autoPayment]);
-      console.log('Auto-added payment in useEffect:', autoPayment);
-    }
-  }, [selectedSplitBill, isSinglePayMode, paymentAmount, calculateSplitBillTotal, setPaymentAmount, setGivenAmount, setChangeAmount, selectedPaymentMethod, setAddedPayments]);
 
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
@@ -975,7 +956,11 @@ const FinalizeSaleModal = ({
             Cancel
           </button>
           <button
-            disabled={addedPayments.length === 0 || calculateDueAmount() > 0}
+            disabled={
+              // For single pay mode, check if payment amount is valid
+              (isSinglePayMode ? (parseFloat(paymentAmount) <= 0) : (addedPayments.length === 0)) || 
+              calculateDueAmount() > 0
+            }
             onClick={async () => {
               console.log('=== PAYMENT SUBMIT CLICKED ===');
               console.log('isSinglePayMode:', isSinglePayMode);
@@ -1207,7 +1192,9 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
               }
             }}
             className={`flex-1 px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-              addedPayments.length === 0 || calculateDueAmount() > 0
+              // For single pay mode, check if payment amount is valid
+              (isSinglePayMode ? (parseFloat(paymentAmount) <= 0) : (addedPayments.length === 0)) || 
+              calculateDueAmount() > 0
                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700'
             }`}
