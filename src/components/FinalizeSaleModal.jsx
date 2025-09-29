@@ -957,11 +957,26 @@ const FinalizeSaleModal = ({
           <button
             disabled={addedPayments.length === 0 || calculateDueAmount() > 0}
             onClick={async () => {
+              console.log('=== PAYMENT SUBMIT CLICKED ===');
+              console.log('isSinglePayMode:', isSinglePayMode);
+              console.log('selectedSplitBill:', selectedSplitBill);
+              console.log('selectedPlacedOrder:', selectedPlacedOrder);
+              console.log('cartItems length:', cartItems?.length);
+              console.log('paymentAmount:', paymentAmount);
+              console.log('selectedPaymentMethod:', selectedPaymentMethod);
+              
               try {
               // Handle payment submission
                 const paymentAmountValue = parseFloat(paymentAmount) || 0;
                 const givenAmountValue = parseFloat(givenAmount) || 0;
                 const changeAmountValue = parseFloat(changeAmount) || 0;
+                
+                console.log('Payment values:', {
+                  paymentAmountValue,
+                  givenAmountValue,
+                  changeAmountValue,
+                  selectedPaymentMethod
+                });
 
                 // If this is a single pay mode (direct payment without placing order first)
                 if (isSinglePayMode) {
@@ -972,14 +987,18 @@ const FinalizeSaleModal = ({
                   setIsInvoiceAfterPayment(true);
                   
                   // Create order first, then update with payment
+                  console.log('About to call handlePlaceOrder...');
                   const createdOrderId = await handlePlaceOrder();
-                  console.log('Order created with ID:', createdOrderId);
+                  console.log('handlePlaceOrder returned:', createdOrderId);
                   
                   // Check if order was created successfully
                   if (!createdOrderId) {
+                    console.error('Order creation failed - no order ID returned');
                     showError('Failed to create order for payment');
                     return;
                   }
+                  
+                  console.log('Order created successfully with ID:', createdOrderId);
                   
                   // For single pay mode, we now have the order ID directly
                   try {
@@ -991,11 +1010,19 @@ const FinalizeSaleModal = ({
                         order_status: 'new'
                       };
                       
+                      console.log('Updating order with payment info:', paymentUpdates);
+                      console.log('Order ID to update:', createdOrderId);
+                      
                       const updateResult = await window.myAPI.updateOrder(createdOrderId, paymentUpdates);
+                      console.log('Update result:', updateResult);
+                      
                       if (!updateResult.success) {
+                        console.error('Order update failed:', updateResult);
                         showError('Failed to update order payment: ' + updateResult.message);
                         return;
                       }
+                      
+                      console.log('Order updated successfully with payment info');
                       
                       // Free the associated tables when order is completed through payment
                       try {

@@ -3292,9 +3292,13 @@ const RunningOrders = () => {
 
       // Check if API is available
       if (!window.myAPI) {
+        console.error('API not available - window.myAPI is undefined');
         showError('API not available. Please refresh the page.');
         return;
       }
+      
+      console.log('API is available:', !!window.myAPI);
+      console.log('createOrder method available:', !!window.myAPI.createOrder);
 
       // Map order type based on selection
       console.log('Mapping order type. selectedOrderType:', selectedOrderType);
@@ -3437,16 +3441,18 @@ const RunningOrders = () => {
         }
       } else {
         // Create new order
-        console.log('Creating new order');
+        console.log('Creating new order with data:', orderData);
         const orderResult = await window.myAPI.createOrder(orderData);
+        console.log('createOrder result:', orderResult);
 
         if (!orderResult.success) {
+          console.error('Order creation failed:', orderResult);
           showError('Failed to create order: ' + orderResult.message);
           return;
         }
 
         orderId = orderResult.id;
-        console.log('Order created successfully');
+        console.log('Order created successfully with ID:', orderId);
 
         // Update table status to Reserved if this is a table order
         if (tableIdsToReserve.length > 0) {
@@ -5177,16 +5183,20 @@ const RunningOrders = () => {
         adons: item.adons || [],
         custom_ingredients: item.customIngredients || []
       }));
+      
+      console.log('Split bill items being saved:', orderData.items);
 
-      // Place the order in database (same API as regular orders)
-      console.log('Placing split bill order with data:', orderData);
-      const result = await window.myAPI?.placeOrder(orderData);
+      // Place the order in database (use same API as regular orders)
+      console.log('Creating split bill order with data:', orderData);
+      const result = await window.myAPI?.createOrder(orderData);
+      console.log('Split bill createOrder result:', result);
       
       if (result && result.success) {
-        console.log('Split bill order placed successfully:', result);
+        console.log('Split bill order created successfully:', result);
         showSuccess(`Split Bill ${splitBill.id} order placed successfully!`);
-        return result.data?.id; // Return order ID
+        return result.id; // Return order ID (createOrder returns result.id, not result.data.id)
       } else {
+        console.error('Split bill order creation failed:', result);
         showError('Failed to place split bill order: ' + (result?.message || 'Unknown error'));
         return null;
       }
@@ -5394,9 +5404,20 @@ const RunningOrders = () => {
 
   const resetFinalizeSaleModalForSplitBill = () => {
     setSelectedPaymentMethod('Cash');
-    setPaymentAmount('');
-    setGivenAmount('');
-    setChangeAmount('');
+    
+    // Set payment amount to split bill total if split bill is selected
+    if (selectedSplitBill) {
+      const splitBillTotal = calculateSplitBillTotal();
+      setPaymentAmount(splitBillTotal.toString());
+      setGivenAmount(splitBillTotal.toString());
+      setChangeAmount('0.00');
+      console.log('Setting payment amount to split bill total:', splitBillTotal);
+    } else {
+      setPaymentAmount('');
+      setGivenAmount('');
+      setChangeAmount('');
+    }
+    
     setAddedPayments([]);
     setFinalizeDiscountAmount('');
     setSendSMS(false);
