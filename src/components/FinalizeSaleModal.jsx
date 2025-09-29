@@ -117,6 +117,17 @@ const FinalizeSaleModal = ({
     }
   }, [isModifyingOrder, modifyingOrderPaymentInfo, setSelectedPaymentMethod]);
 
+  // Synchronize paymentAmount with addedPayments for single pay mode
+  React.useEffect(() => {
+    if (isSinglePayMode && addedPayments.length > 0 && paymentAmount === '') {
+      const totalFromAddedPayments = addedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      console.log('Syncing paymentAmount with addedPayments total:', totalFromAddedPayments);
+      setPaymentAmount(totalFromAddedPayments.toString());
+      setGivenAmount(totalFromAddedPayments.toString());
+      setChangeAmount('0.00');
+    }
+  }, [isSinglePayMode, addedPayments, paymentAmount, setPaymentAmount, setGivenAmount, setChangeAmount]);
+
 
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
@@ -314,7 +325,10 @@ const FinalizeSaleModal = ({
                   <input
                     type="number"
                     value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    onChange={(e) => {
+                      console.log('Payment amount onChange:', e.target.value);
+                      setPaymentAmount(e.target.value);
+                    }}
                     onFocus={(e) => handleNumericInputFocus(e, 'paymentAmount', paymentAmount)}
                     onClick={(e) => handleNumericInputFocus(e, 'paymentAmount', paymentAmount)}
                     onBlur={(e) => {
@@ -325,6 +339,7 @@ const FinalizeSaleModal = ({
                     }}
                     onInput={(e) => {
                       const value = e.target.value;
+                      console.log('Payment amount input changed:', value);
                       setPaymentAmount(value);
                       if (numericActiveInput === 'paymentAmount') {
                         setNumericKeyboardInput(value);
@@ -956,11 +971,18 @@ const FinalizeSaleModal = ({
             Cancel
           </button>
           <button
-            disabled={
-              // For single pay mode, check if payment amount is valid
-              (isSinglePayMode ? (parseFloat(paymentAmount) <= 0) : (addedPayments.length === 0)) || 
-              calculateDueAmount() > 0
-            }
+            disabled={(() => {
+              const isDisabled = (isSinglePayMode ? (parseFloat(paymentAmount) <= 0) : (addedPayments.length === 0)) || calculateDueAmount() > 0;
+              console.log('Submit button disabled check:', {
+                isSinglePayMode,
+                paymentAmount,
+                parseFloatPaymentAmount: parseFloat(paymentAmount),
+                addedPaymentsLength: addedPayments.length,
+                calculateDueAmount: calculateDueAmount(),
+                isDisabled
+              });
+              return isDisabled;
+            })()}
             onClick={async () => {
               console.log('=== PAYMENT SUBMIT CLICKED ===');
               console.log('isSinglePayMode:', isSinglePayMode);
@@ -968,7 +990,11 @@ const FinalizeSaleModal = ({
               console.log('selectedPlacedOrder:', selectedPlacedOrder);
               console.log('cartItems length:', cartItems?.length);
               console.log('paymentAmount:', paymentAmount);
+              console.log('paymentAmount type:', typeof paymentAmount);
+              console.log('paymentAmount length:', paymentAmount?.length);
               console.log('selectedPaymentMethod:', selectedPaymentMethod);
+              console.log('addedPayments:', addedPayments);
+              console.log('addedPayments length:', addedPayments.length);
               
               try {
               // Handle payment submission
@@ -983,12 +1009,22 @@ const FinalizeSaleModal = ({
                   selectedPaymentMethod
                 });
                 
+                // For single pay mode, if paymentAmount is empty but we have addedPayments, use the total from addedPayments
+                let finalPaymentAmount = paymentAmountValue;
+                if (isSinglePayMode && paymentAmountValue <= 0 && addedPayments.length > 0) {
+                  const totalFromAddedPayments = addedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+                  console.log('Using total from addedPayments for single pay mode:', totalFromAddedPayments);
+                  finalPaymentAmount = totalFromAddedPayments;
+                }
+                
                 // Validate payment amount
-                if (paymentAmountValue <= 0) {
-                  console.error('Payment amount is zero or invalid:', paymentAmountValue);
+                if (finalPaymentAmount <= 0) {
+                  console.error('Payment amount is zero or invalid:', finalPaymentAmount);
                   showError('Please enter a valid payment amount');
                   return;
                 }
+                
+                console.log('Final payment amount to use:', finalPaymentAmount);
 
                 // If this is a single pay mode (direct payment without placing order first)
                 if (isSinglePayMode) {
@@ -1019,7 +1055,8 @@ const FinalizeSaleModal = ({
                       const paymentUpdates = {
                         payment_status: 'paid',
                         payment_method: selectedPaymentMethod,
-                        order_status: 'new'
+                        order_status: 'new',
+                        order_amount: finalPaymentAmount // Use the final payment amount
                       };
                       
                       console.log('Updating order with payment info:', paymentUpdates);
