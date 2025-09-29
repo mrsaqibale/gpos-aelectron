@@ -5104,34 +5104,95 @@ const RunningOrders = () => {
 
   const handlePlaceSplitBillOrder = async (splitBill, paymentInfo) => {
     try {
-      // Create order data for the split bill
+      // Map selected status to database status (same logic as regular handlePlaceOrder)
+      let dbStatus = 'pending';
+      switch (selectedNewOrderStatus) {
+        case 'New':
+          dbStatus = 'new';
+          break;
+        case 'In Progress':
+          dbStatus = 'in_progress';
+          break;
+        case 'Ready':
+          dbStatus = 'ready';
+          break;
+        case 'On the way':
+          dbStatus = 'on_the_way';
+          break;
+        case 'Delivered':
+          dbStatus = 'delivered';
+          break;
+        case 'Completed':
+          dbStatus = 'completed';
+          break;
+        case 'Pending':
+          dbStatus = 'pending';
+          break;
+        case 'Complete':
+          dbStatus = 'completed';
+          break;
+        default:
+          dbStatus = selectedNewOrderStatus.toLowerCase().replace(' ', '_');
+      }
+
+      // Map order type to database format
+      let orderType = 'instore';
+      switch (selectedOrderType) {
+        case 'In Store':
+          orderType = 'instore';
+          break;
+        case 'Table':
+          orderType = 'table';
+          break;
+        case 'Collection':
+          orderType = 'collection';
+          break;
+        case 'Delivery':
+          orderType = 'delivery';
+          break;
+        default:
+          orderType = 'instore';
+      }
+
+      // Prepare order data for database (same structure as regular handlePlaceOrder)
       const orderData = {
-        items: splitBill.items.map(item => ({
-          food_id: item.food?.id,
-          quantity: item.quantity,
-          price: item.totalPrice / item.quantity, // per unit price
-          total_price: item.totalPrice,
-          variations: item.variations || [],
-          adons: item.adons || [],
-          custom_ingredients: item.customIngredients || []
-        })),
         customer_id: selectedCustomer?.id || null,
-        customer_name: selectedCustomer?.name || splitBill.customer || 'Walk-in Customer',
-        order_type: selectedOrderType || 'In Store',
-        table_id: selectedTable || null,
-        total_amount: splitBill.total,
-        subtotal: splitBill.subtotal,
-        tax_amount: splitBill.tax || 0,
-        discount_amount: splitBill.discount || 0,
-        status: 'completed', // Split bill orders are immediately completed
-        payment_status: 'paid',
+        order_amount: splitBill.total,
+        coupon_discount_amount: splitBill.discount || 0,
+        coupon_discount_title: null,
+        payment_status: 'paid', // Split bills are paid when placed
+        order_status: dbStatus, // Use the same status mapping as regular orders
+        total_tax_amount: splitBill.tax || 0,
         payment_method: paymentInfo.paymentMethod || 'Cash',
-        payment_amount: paymentInfo.paymentAmount || splitBill.total,
-        placed_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-        split_bill_id: splitBill.id,
-        split_bill_total: splitBill.total
+        delivery_address_id: null, // Will be set if delivery order
+        coupon_code: null,
+        order_note: null,
+        order_type: orderType,
+        restaurant_id: 1,
+        delivery_charge: 0,
+        additional_charge: 0,
+        discount_amount: splitBill.discount || 0,
+        tax_percentage: getTaxRate(),
+        scheduled: 0,
+        schedule_at: null,
+        failed: 0,
+        refunded: 0,
+        isdeleted: 0,
+        issyncronized: 0,
+        table_details: selectedTable ? JSON.stringify({ tables: [{ id: selectedTable, table_no: selectedTable }] }) : null,
+        placed_at: dbStatus === 'new' ? new Date().toISOString() : null
       };
+
+      // Add items data
+      orderData.items = splitBill.items.map(item => ({
+        food_id: item.food?.id,
+        quantity: item.quantity,
+        price: item.totalPrice / item.quantity,
+        total_price: item.totalPrice,
+        variations: item.variations || [],
+        adons: item.adons || [],
+        custom_ingredients: item.customIngredients || []
+      }));
 
       // Place the order in database
       const result = await window.myAPI?.placeOrder(orderData);
