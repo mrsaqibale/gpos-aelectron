@@ -660,7 +660,8 @@ const RunningOrders = () => {
         showError('Please add items to cart before saving as draft');
         return;
       }
-      setShowDraftNumberModal(true);
+      // Save directly without customer name popup
+      handleDraftOrder('Walk-in Customer');
     };
     window.addEventListener('headerSaveClicked', handleSaveClicked);
     

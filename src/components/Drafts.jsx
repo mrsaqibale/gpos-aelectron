@@ -18,10 +18,22 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
     if (!draft) return false; // Safety check for undefined draft
     
     const query = searchQuery.toLowerCase();
+    
+    // Format draft ID for search
+    const draftId = draft.orderNumber || draft.id || 'Unknown';
+    const formattedDraftId = draftId.startsWith('draft_id') 
+      ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
+      : draftId;
+    
+    // Get customer name for search
+    const customerName = draft.draftName || 
+      (draft.customer && draft.customer.name) || 
+      'Walk-in Customer';
+    
     return (
-      (draft.draftName || (draft.customer && draft.customer.name) || 'Unknown').toLowerCase().includes(query) ||
-      (draft.customer && draft.customer.phone || 'N/A').toLowerCase().includes(query) ||
-      (draft.orderNumber || draft.id || 'Unknown').toString().toLowerCase().includes(query)
+      customerName.toLowerCase().includes(query) ||
+      formattedDraftId.toLowerCase().includes(query) ||
+      (draft.customer && draft.customer.phone || 'N/A').toLowerCase().includes(query)
     );
   });
 
@@ -96,7 +108,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search Customer Name"
+                placeholder="Search Draft ID, Customer Name, or Phone"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -111,8 +123,9 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                 <table className="w-full">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">ID</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer (Phone)</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Draft ID</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -126,6 +139,17 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                       filteredDrafts.map((draft) => {
                         if (!draft) return null; // Safety check
                         
+                        // Format draft ID to show as Draft_001, Draft_002, etc.
+                        const draftId = draft.orderNumber || draft.id || 'Unknown';
+                        const formattedDraftId = draftId.startsWith('draft_id') 
+                          ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
+                          : draftId;
+                        
+                        // Get customer name or default to "Walk-in Customer"
+                        const customerName = draft.draftName || 
+                          (draft.customer && draft.customer.name) || 
+                          'Walk-in Customer';
+                        
                         return (
                           <tr
                             key={draft.id || Math.random()}
@@ -134,11 +158,14 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                               selectedDraft?.id === draft.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
                             }`}
                           >
-                            <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                              {draft.orderNumber || draft.id || 'Unknown'}
+                            <td className="px-4 py-2 text-sm font-bold text-gray-900">
+                              {formattedDraftId}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-700">
-                              {draft.draftName || (draft.customer && draft.customer.name) || 'Unknown'}
+                              {customerName}
+                            </td>
+                            <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">
+                              €{(draft.totalPayable || draft.total || 0).toFixed(2)}
                             </td>
                           </tr>
                         );
@@ -181,11 +208,22 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Draft ID:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.orderNumber || selectedDraft.id || 'Unknown'}</span>
+                    <span className="text-sm font-bold text-gray-900">
+                      {(() => {
+                        const draftId = selectedDraft.orderNumber || selectedDraft.id || 'Unknown';
+                        return draftId.startsWith('draft_id') 
+                          ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
+                          : draftId;
+                      })()}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">Draft Name:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.draftName || (selectedDraft.customer && selectedDraft.customer.name) || 'Unknown'}</span>
+                    <span className="text-sm font-medium text-gray-700">Customer:</span>
+                    <span className="text-sm text-gray-900">
+                      {selectedDraft.draftName || 
+                        (selectedDraft.customer && selectedDraft.customer.name) || 
+                        'Walk-in Customer'}
+                    </span>
                   </div>
                   {/* <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Order Type:</span>
