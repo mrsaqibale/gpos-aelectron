@@ -4597,6 +4597,9 @@ const RunningOrders = () => {
     resetFinalizeSaleModalForSinglePay();
     setIsSinglePayMode(true); // Set to true for new orders from PAY button
     setShowFinalizeSaleModal(true);
+    
+    console.log('PAY button clicked - isSinglePayMode set to true');
+    console.log('Cart items for payment:', cartItems);
   };
 
   // Function to load food image
@@ -4878,6 +4881,9 @@ const RunningOrders = () => {
     
     // Reset customer search flag when closing split modal
     setCustomerSearchFromSplit(false);
+    
+    // Ensure single pay mode is reset when closing split modal
+    setIsSinglePayMode(false);
   };
   
 
