@@ -378,10 +378,21 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                 Are you sure you want to delete this draft order? This action cannot be undone.
               </p>
               <p className="text-sm text-gray-600 mb-6">
-                Draft: <strong>{selectedDraft.orderNumber}</strong>
+                Draft: <strong>
+                  {(() => {
+                    const draftId = selectedDraft.orderNumber || selectedDraft.id || 'Unknown';
+                    return draftId.startsWith('draft_id') 
+                      ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
+                      : draftId;
+                  })()}
+                </strong>
               </p>
               <p className="text-sm text-gray-600 mb-6">
-                Customer: <strong>{selectedDraft.draftName || (selectedDraft.customer && selectedDraft.customer.name) || 'Unknown'}</strong>
+                Customer: <strong>
+                  {selectedDraft.draftName || 
+                    (selectedDraft.customer && selectedDraft.customer.name) || 
+                    'Walk-in Customer'}
+                </strong>
               </p>
             </div>
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
