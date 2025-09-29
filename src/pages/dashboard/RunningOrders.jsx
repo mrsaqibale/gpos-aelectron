@@ -411,10 +411,10 @@ const RunningOrders = () => {
 
   // Calculate maximum splits based on total quantity
   const calculateMaxSplits = () => {
-    if (!splitItems || splitItems.length === 0) return 10;
+    if (!splitItems || splitItems.length === 0) return 1;
 
     const totalQuantity = splitItems.reduce((sum, item) => sum + item.quantity, 0);
-    return Math.min(totalQuantity, 10);
+    return Math.max(1, totalQuantity - 1);
   };
 
   // Order Management State
@@ -4837,8 +4837,8 @@ const RunningOrders = () => {
     setTotalSplit('');
     setSplitBills([]);
     setSelectedSplitBill(null);
-    // Initialize split items from selected order items
-    const orderItems = selectedPlacedOrder ? selectedPlacedOrder.items : [];
+    // Initialize split items from cart items (before placing order)
+    const orderItems = cartItems.length > 0 ? cartItems : (selectedPlacedOrder ? selectedPlacedOrder.items : []);
     setSplitItems(orderItems.map(item => ({
       ...item,
       splitQuantity: 0,
