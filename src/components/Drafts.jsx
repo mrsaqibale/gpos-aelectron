@@ -98,7 +98,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
 
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl h-5/6 flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl h-4/5 flex flex-col">
         {/* Colored Top Bar */}
         <div 
           className="p-4 rounded-t-lg text-white flex justify-between items-center"
