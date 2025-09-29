@@ -153,6 +153,7 @@ const RunningOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showCustomerSearchModal, setShowCustomerSearchModal] = useState(false);
+  const [customerSearchFromSplit, setCustomerSearchFromSplit] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteCartModal, setShowDeleteCartModal] = useState(false);
@@ -7035,6 +7036,7 @@ const RunningOrders = () => {
           isOpen={showCustomerSearchModal}
           onClose={() => {
             setShowCustomerSearchModal(false);
+            setCustomerSearchFromSplit(false);
             // Only reset customer if no customer was selected during this modal session
             // Don't reset if customer was already selected before opening modal
           }}
@@ -7042,7 +7044,7 @@ const RunningOrders = () => {
           onEditCustomer={handleOpenEditModal}
           onNewCustomer={() => setShowCustomerModal(true)}
           orderType={selectedOrderType}
-          zIndex={showSplitBillModal ? 60 : 50}
+          zIndex={customerSearchFromSplit ? 60 : 50}
         />
 
         {/* Customer Information Modal */}
@@ -7117,6 +7119,7 @@ const RunningOrders = () => {
             setShowCustomerModal={setShowCustomerModal}
             showCustomerSearchModal={showCustomerSearchModal}
             setShowCustomerSearchModal={setShowCustomerSearchModal}
+            setCustomerSearchFromSplit={setCustomerSearchFromSplit}
             handleCustomerSelect={handleCustomerSelect}
             handleEditCustomer={handleEditCustomer}
           />
