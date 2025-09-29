@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPOS Counter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .counter-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .counter-title {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        .counter-display {
+            background: #f8f9fa;
+            border: 3px solid #e9ecef;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #495057;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .counter-display:hover {
+            border-color: #667eea;
+            transform: scale(1.02);
+        }
+
+        .button-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .counter-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .counter-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .counter-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .counter-btn.decrease {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            box-shadow: 0 8px 16px rgba(255, 107, 107, 0.3);
+        }
+
+        .counter-btn.decrease:hover {
+            box-shadow: 0 12px 24px rgba(255, 107, 107, 0.4);
+        }
+
+        .counter-btn.decrease:active {
+            box-shadow: 0 6px 12px rgba(255, 107, 107, 0.3);
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .reset-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+        }
+
+        .status-indicator {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status-positive {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-negative {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-zero {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+
+        .footer {
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 480px) {
+            .counter-container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .counter-title {
+                font-size: 2rem;
+            }
+
+            .counter-display {
+                font-size: 3rem;
+                padding: 20px;
+            }
+
+            .counter-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+
+            .button-container {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="counter-container">
+        <h1 class="counter-title">GPOS Counter</h1>
+        
+        <div class="counter-display" id="counterDisplay">0</div>
+        
+        <div class="button-container">
+            <button class="counter-btn decrease" id="decreaseBtn">-</button>
+            <button class="counter-btn" id="increaseBtn">+</button>
+        </div>
+        
+        <button class="reset-btn" id="resetBtn">Reset</button>
+        
+        <div class="status-indicator" id="statusIndicator">
+            Counter is at zero
+        </div>
+        
+        <div class="footer">
+            <p>GPOS System - Local Counter</p>
+            <p>Click + or - to change the value</p>
+        </div>
+    </div>
+
+    <script>
+        class Counter {
+            constructor() {
+                this.count = 0;
+                this.counterDisplay = document.getElementById('counterDisplay');
+                this.decreaseBtn = document.getElementById('decreaseBtn');
+                this.increaseBtn = document.getElementById('increaseBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                
+                this.init();
+            }
+
+            init() {
+                this.decreaseBtn.addEventListener('click', () => this.decrease());
+                this.increaseBtn.addEventListener('click', () => this.increase());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                
+                // Keyboard support
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === '-' || e.key === '_') {
+                        this.decrease();
+                    } else if (e.key === '+' || e.key === '=') {
+                        this.increase();
+                    } else if (e.key === 'r' || e.key === 'R') {
+                        this.reset();
+                    }
+                });
+                
+                this.updateDisplay();
+            }
+
+            increase() {
+                this.count++;
+                this.updateDisplay();
+                this.playClickSound();
+            }
+
+            decrease() {
+                this.count--;
+                this.updateDisplay();
+                this.playClickSound();
+            }
+
+            reset() {
+                this.count = 0;
+                this.updateDisplay();
+                this.playResetSound();
+            }
+
+            updateDisplay() {
+                this.counterDisplay.textContent = this.count;
+                this.updateStatus();
+                
+                // Add animation effect
+                this.counterDisplay.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    this.counterDisplay.style.transform = 'scale(1)';
+                }, 150);
+            }
+
+            updateStatus() {
+                const statusElement = this.statusIndicator;
+                statusElement.className = 'status-indicator';
+                
+                if (this.count > 0) {
+                    statusElement.textContent = `Positive value: +${this.count}`;
+                    statusElement.classList.add('status-positive');
+                } else if (this.count < 0) {
+                    statusElement.textContent = `Negative value: ${this.count}`;
+                    statusElement.classList.add('status-negative');
+                } else {
+                    statusElement.textContent = 'Counter is at zero';
+                    statusElement.classList.add('status-zero');
+                }
+            }
+
+            playClickSound() {
+                // Create a simple beep sound using Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            }
+
+            playResetSound() {
+                // Create a different sound for reset
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 600;
+                oscillator.type = 'square';
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            }
+        }
+
+        // Initialize the counter when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new Counter();
+            
+            // Log that the counter is ready
+            console.log('GPOS Counter initialized successfully!');
+            console.log('Use + and - buttons or keyboard keys (+/-/R) to control the counter');
+        });
+
+        // Add some fun features
+        let clickCount = 0;
+        document.addEventListener('click', () => {
+            clickCount++;
+            if (clickCount === 100) {
+                alert('🎉 Congratulations! You\'ve clicked 100 times! You\'re a clicking champion! 🎉');
+                clickCount = 0;
+            }
+        });
+
+        // Easter egg: Konami code
+        let konamiCode = [];
+        const konamiSequence = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+        
+        document.addEventListener('keydown', (e) => {
+            konamiCode.push(e.code);
+            if (konamiCode.length > konamiSequence.length) {
+                konamiCode.shift();
+            }
+            
+            if (konamiCode.join(',') === konamiSequence.join(',')) {
+                document.body.style.animation = 'rainbow 2s infinite';
+                setTimeout(() => {
+                    document.body.style.animation = '';
+                }, 5000);
+            }
+        });
+
+        // Add rainbow animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes rainbow {
+                0% { background: linear-gradient(135deg, #ff0000 0%, #ff8000 100%); }
+                16% { background: linear-gradient(135deg, #ff8000 0%, #ffff00 100%); }
+                33% { background: linear-gradient(135deg, #ffff00 0%, #80ff00 100%); }
+                50% { background: linear-gradient(135deg, #80ff00 0%, #00ff80 100%); }
+                66% { background: linear-gradient(135deg, #00ff80 0%, #0080ff 100%); }
+                83% { background: linear-gradient(135deg, #0080ff 0%, #8000ff 100%); }
+                100% { background: linear-gradient(135deg, #8000ff 0%, #ff0080 100%); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
