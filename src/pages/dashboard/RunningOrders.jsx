@@ -5102,6 +5102,55 @@ const RunningOrders = () => {
     }).filter(item => item !== null)); // Remove null items (items with 0 quantity)
   };
 
+  const handlePlaceSplitBillOrder = async (splitBill, paymentInfo) => {
+    try {
+      // Create order data for the split bill
+      const orderData = {
+        items: splitBill.items.map(item => ({
+          food_id: item.food?.id,
+          quantity: item.quantity,
+          price: item.totalPrice / item.quantity, // per unit price
+          total_price: item.totalPrice,
+          variations: item.variations || [],
+          adons: item.adons || [],
+          custom_ingredients: item.customIngredients || []
+        })),
+        customer_id: selectedCustomer?.id || null,
+        customer_name: selectedCustomer?.name || splitBill.customer || 'Walk-in Customer',
+        order_type: selectedOrderType || 'In Store',
+        table_id: selectedTable || null,
+        total_amount: splitBill.total,
+        subtotal: splitBill.subtotal,
+        tax_amount: splitBill.tax || 0,
+        discount_amount: splitBill.discount || 0,
+        status: 'completed', // Split bill orders are immediately completed
+        payment_status: 'paid',
+        payment_method: paymentInfo.paymentMethod || 'Cash',
+        payment_amount: paymentInfo.paymentAmount || splitBill.total,
+        placed_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        split_bill_id: splitBill.id,
+        split_bill_total: splitBill.total
+      };
+
+      // Place the order in database
+      const result = await window.myAPI?.placeOrder(orderData);
+      
+      if (result && result.success) {
+        console.log('Split bill order placed successfully:', result);
+        showSuccess(`Split Bill ${splitBill.id} order placed successfully!`);
+        return result.data?.id; // Return order ID
+      } else {
+        showError('Failed to place split bill order: ' + (result?.message || 'Unknown error'));
+        return null;
+      }
+    } catch (error) {
+      console.error('Error placing split bill order:', error);
+      showError('Failed to place split bill order. Please try again.');
+      return null;
+    }
+  };
+
   const handleRemoveSplitBill = (splitBillId) => {
     // Get the split bill being removed to return its items to the pool
     const splitToRemove = splitBills.find(split => split.id === splitBillId);
@@ -8581,6 +8630,7 @@ const RunningOrders = () => {
             setSplitBills={setSplitBills}
             setSplitBillToRemove={setSplitBillToRemove}
             updateCartAfterSplitPayment={updateCartAfterSplitPayment}
+            handlePlaceSplitBillOrder={handlePlaceSplitBillOrder}
             // Order related props
             placedOrders={placedOrders}
             selectedCustomer={selectedCustomer}
@@ -9381,6 +9431,7 @@ const RunningOrders = () => {
           setSplitBills={setSplitBills}
           setSplitBillToRemove={setSplitBillToRemove}
           updateCartAfterSplitPayment={updateCartAfterSplitPayment}
+          handlePlaceSplitBillOrder={handlePlaceSplitBillOrder}
           // Order related props
           placedOrders={placedOrders}
           selectedCustomer={selectedCustomer}

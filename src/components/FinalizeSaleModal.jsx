@@ -82,6 +82,7 @@ const FinalizeSaleModal = ({
   setSplitBills,
   setSplitBillToRemove,
   updateCartAfterSplitPayment,
+  handlePlaceSplitBillOrder,
   // Order related props
   placedOrders,
   selectedCustomer,
@@ -1057,42 +1058,59 @@ const FinalizeSaleModal = ({
                   // Note: Tables are not freed automatically - this should be done when order is manually completed
                   // Note: Order is not removed from active orders - this should be done when order is manually completed
                 } else if (selectedSplitBill) {
-                  console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
+console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
 
                   // Handle split bill payment
                   setIsInvoiceAfterPayment(true);
                   
-                  // For split bills, we don't update the main order in the database
-                  // Instead, we just process the payment for this specific split
-                  // The split bill is already calculated and ready for invoice
-                  
-                  // Create a temporary order object for invoice display from the split bill
-                  const splitOrderForInvoice = {
-                    id: selectedSplitBill.id,
-                    orderNumber: `${selectedPlacedOrder?.orderNumber || 'ORD-000'}-SPLIT-${selectedSplitBill.id}`,
-                    items: selectedSplitBill.items,
-                    customer: selectedSplitBill.customer || selectedPlacedOrder?.customer || { name: 'Walk-in Customer' },
-                    total: selectedSplitBill.total,
-                    coupon: appliedCoupon,
-                    orderType: selectedPlacedOrder?.orderType || 'In Store',
-                    table: selectedPlacedOrder?.table || 'None',
-                    waiter: selectedPlacedOrder?.waiter || 'Ds Waiter',
-                    status: 'Split Payment',
-                    placedAt: new Date().toISOString(),
-                    databaseId: selectedPlacedOrder?.databaseId
+                  // Prepare payment information
+                  const paymentInfo = {
+                    paymentMethod: selectedPaymentMethod,
+                    paymentAmount: parseFloat(paymentAmount) || selectedSplitBill.total,
+                    givenAmount: parseFloat(givenAmount) || 0,
+                    changeAmount: parseFloat(changeAmount) || 0,
+                    currency: selectedCurrency,
+                    currencyAmount: parseFloat(currencyAmount) || 0
                   };
                   
-                  // Set the split order for invoice display
-                  setSelectedPlacedOrder(splitOrderForInvoice);
+                  // Place the split bill order in database
+                  const orderId = await handlePlaceSplitBillOrder(selectedSplitBill, paymentInfo);
                   
-                  // Remove the processed split bill from the list and update cart items
-                  if (splitBillToRemove) {
-                    setSplitBills(prev => prev.filter(split => split.id !== splitBillToRemove));
-                    handleRemoveSplitBill(splitBillToRemove);
-                    setSplitBillToRemove(null);
+                  if (orderId) {
+                    // Create a temporary order object for invoice display from the split bill
+                    const splitOrderForInvoice = {
+                      id: orderId,
+                      orderNumber: `ORD-${orderId}-SPLIT-${selectedSplitBill.id}`,
+                      items: selectedSplitBill.items,
+                      customer: selectedSplitBill.customer || selectedPlacedOrder?.customer || { name: 'Walk-in Customer' },
+                      total: selectedSplitBill.total,
+                      coupon: appliedCoupon,
+                      orderType: selectedPlacedOrder?.orderType || 'In Store',
+                      table: selectedPlacedOrder?.table || 'None',
+                      waiter: selectedPlacedOrder?.waiter || 'Ds Waiter',
+                      status: 'Completed',
+                      paymentStatus: 'Paid',
+                      paymentMethod: paymentInfo.paymentMethod,
+                      placedAt: new Date().toISOString(),
+                      completedAt: new Date().toISOString(),
+                      databaseId: orderId
+                    };
                     
-                    // Update cart items by removing paid quantities
-                    updateCartAfterSplitPayment(selectedSplitBill);
+                    // Set the split order for invoice display
+                    setSelectedPlacedOrder(splitOrderForInvoice);
+                    
+                    // Remove the processed split bill from the list and update cart items
+                    if (splitBillToRemove) {
+                      setSplitBills(prev => prev.filter(split => split.id !== splitBillToRemove));
+                      handleRemoveSplitBill(splitBillToRemove);
+                      setSplitBillToRemove(null);
+                      
+                      // Update cart items by removing paid quantities
+                      updateCartAfterSplitPayment(selectedSplitBill);
+                    }
+                  } else {
+                    showError('Failed to place split bill order. Please try again.');
+                    return;
                   }
                 }
 
