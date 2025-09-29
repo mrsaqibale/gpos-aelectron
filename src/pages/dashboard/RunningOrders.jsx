@@ -414,7 +414,7 @@ const RunningOrders = () => {
     if (!splitItems || splitItems.length === 0) return 1;
 
     const totalQuantity = splitItems.reduce((sum, item) => sum + item.quantity, 0);
-    return Math.max(1, totalQuantity - 1);
+    return Math.max(1, totalQuantity);
   };
 
   // Order Management State
