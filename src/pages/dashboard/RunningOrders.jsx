@@ -4884,12 +4884,15 @@ const RunningOrders = () => {
     setSplitDiscount(0);
     setSplitCharge(0);
     setSplitTips(0);
+    setSplitBillToRemove(null); // Clear split bill to remove
     
     // Reset customer search flag when closing split modal
     setCustomerSearchFromSplit(false);
     
     // Ensure single pay mode is reset when closing split modal
     setIsSinglePayMode(false);
+    
+    console.log('Split bill modal closed - all split bill state reset');
   };
   
 
@@ -5121,6 +5124,11 @@ const RunningOrders = () => {
   };
 
   const handlePlaceSplitBillOrder = async (splitBill, paymentInfo) => {
+    console.log('handlePlaceSplitBillOrder called with:');
+    console.log('splitBill:', splitBill);
+    console.log('paymentInfo:', paymentInfo);
+    console.log('paymentInfo.paymentAmount:', paymentInfo.paymentAmount);
+    
     try {
       // Split bill orders always get "New" status regardless of main screen selection
       let dbStatus = 'new';
@@ -5147,7 +5155,7 @@ const RunningOrders = () => {
       // Prepare order data for database (same structure as regular handlePlaceOrder)
       const orderData = {
         customer_id: selectedCustomer?.id || null,
-        order_amount: splitBill.total,
+        order_amount: paymentInfo.paymentAmount || splitBill.total, // Use payment amount from paymentInfo
         coupon_discount_amount: splitBill.discount || 0,
         coupon_discount_title: null,
         payment_status: 'paid', // Split bills are paid when placed
