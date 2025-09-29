@@ -965,11 +965,15 @@ const FinalizeSaleModal = ({
 
                 // If this is a single pay mode (direct payment without placing order first)
                 if (isSinglePayMode) {
+                  console.log('Single pay mode - creating order first');
+                  console.log('isSinglePayMode:', isSinglePayMode);
+                  
                   // Set flag to indicate this invoice is after payment
                   setIsInvoiceAfterPayment(true);
                   
                   // Create order first, then update with payment
                   const createdOrderId = await handlePlaceOrder();
+                  console.log('Order created with ID:', createdOrderId);
                   
                   // Check if order was created successfully
                   if (!createdOrderId) {

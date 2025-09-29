@@ -3210,6 +3210,9 @@ const RunningOrders = () => {
 
   // Handle place order
   const handlePlaceOrder = async () => {
+    console.log('handlePlaceOrder called with cartItems:', cartItems);
+    console.log('cartItems length:', cartItems.length);
+    
     if (cartItems.length === 0) {
       showError('Please add items to cart before placing order');
       return;
@@ -4872,6 +4875,9 @@ const RunningOrders = () => {
     setSplitDiscount(0);
     setSplitCharge(0);
     setSplitTips(0);
+    
+    // Reset customer search flag when closing split modal
+    setCustomerSearchFromSplit(false);
   };
   
 
