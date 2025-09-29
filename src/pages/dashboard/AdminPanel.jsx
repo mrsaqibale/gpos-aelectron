@@ -39,7 +39,7 @@ const adminItems = [
   {
     icon: <Truck size={18} className="text-primary" />,
     label: "Suppliers",
-    path: "/dashboard/stock-management?tab=suppliers" // Same route but will show suppliers tab
+    path: "/dashboard/stock-management?tab=suppliers"
   },
 ];
 
