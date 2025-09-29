@@ -302,7 +302,7 @@ const SplitBillModal = ({
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setShowCustomerModal(true);
+                                                        setShowCustomerSearchModal(true);
                                                     }}
                                                     className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary bg-white hover:bg-gray-50 text-left flex items-center justify-between"
                                                 >
