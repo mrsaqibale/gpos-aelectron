@@ -1,5 +1,5 @@
 import React from "react";
-import { X, CheckCircle, User, UserCheck } from "lucide-react";
+import { X, CheckCircle } from "lucide-react";
 
 const SplitBillModal = ({
     isOpen,
@@ -299,27 +299,20 @@ const SplitBillModal = ({
                                                 <label className="block text-xs font-medium text-gray-700 mb-1">
                                                     Customer:
                                                 </label>
-                                                <select
-                                                    value={splitBill.customer}
-                                                    onChange={(e) =>
-                                                        handleSplitBillCustomerChange(
-                                                            splitBill.id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setShowCustomerModal(true);
+                                                    }}
+                                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary bg-white hover:bg-gray-50 text-left flex items-center justify-between"
                                                 >
-                                                    <option value="Walk-in Customer">
-                                                        Walk-in Customer
-                                                    </option>
-                                                    <option value="John Smith 555-1234">
-                                                        John Smith 555-1234
-                                                    </option>
-                                                    <option value="Jane Doe 555-5678">
-                                                        Jane Doe 555-5678
-                                                    </option>
-                                                </select>
+                                                    <span className="truncate">
+                                                        {selectedCustomer ? selectedCustomer.name : 'Select Customer'}
+                                                    </span>
+                                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
                                             </div>
 
                                             {/* Summary */}
