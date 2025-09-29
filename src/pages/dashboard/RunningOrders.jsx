@@ -7094,6 +7094,17 @@ const RunningOrders = () => {
             resetFinalizeSaleModalForSplitBill={resetFinalizeSaleModalForSplitBill}
             setIsSinglePayMode={setIsSinglePayMode}
             setShowFinalizeSaleModal={setShowFinalizeSaleModal}
+            // Customer selection props
+            selectedCustomer={selectedCustomer}
+            setSelectedCustomer={setSelectedCustomer}
+            selectedOrderType={selectedOrderType}
+            setSelectedOrderType={setSelectedOrderType}
+            showCustomerModal={showCustomerModal}
+            setShowCustomerModal={setShowCustomerModal}
+            showCustomerSearchModal={showCustomerSearchModal}
+            setShowCustomerSearchModal={setShowCustomerSearchModal}
+            handleCustomerSelect={handleCustomerSelect}
+            handleEditCustomer={handleEditCustomer}
           />
 
         )}
