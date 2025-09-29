@@ -1,5 +1,5 @@
 import React from "react";
-import { X, CheckCircle } from "lucide-react";
+import { X, CheckCircle, User } from "lucide-react";
 
 const SplitBillModal = ({
     isOpen,
@@ -306,9 +306,12 @@ const SplitBillModal = ({
                                                     }}
                                                     className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary bg-white hover:bg-gray-50 text-left flex items-center justify-between"
                                                 >
-                                                    <span className="truncate">
-                                                        {selectedCustomer ? selectedCustomer.name : 'Select Customer'}
-                                                    </span>
+                                                    <div className="flex items-center gap-1">
+                                                        <User size={12} className="text-gray-500" />
+                                                        <span className="truncate">
+                                                            {selectedCustomer ? selectedCustomer.name : 'Select Customer'}
+                                                        </span>
+                                                    </div>
                                                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                                     </svg>

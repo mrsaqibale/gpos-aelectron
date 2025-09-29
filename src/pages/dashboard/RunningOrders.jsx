@@ -1828,6 +1828,11 @@ const RunningOrders = () => {
 
     console.log('Customer selection completed successfully');
 
+    // If we're in split bill mode and have a selected split bill, update that split's customer
+    if (showSplitBillModal && selectedSplitBill) {
+      handleSplitBillCustomerChange(selectedSplitBill.id, customer.name);
+    }
+
     // If this is a new customer (has an ID), trigger update event
     if (customer && customer.id) {
       window.dispatchEvent(new CustomEvent('customerUpdated', {
