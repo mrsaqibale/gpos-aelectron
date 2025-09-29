@@ -8551,6 +8551,7 @@ const RunningOrders = () => {
             splitBillToRemove={splitBillToRemove}
             setSplitBills={setSplitBills}
             setSplitBillToRemove={setSplitBillToRemove}
+            updateCartAfterSplitPayment={updateCartAfterSplitPayment}
             // Order related props
             placedOrders={placedOrders}
             selectedCustomer={selectedCustomer}
@@ -9350,6 +9351,7 @@ const RunningOrders = () => {
           splitBillToRemove={splitBillToRemove}
           setSplitBills={setSplitBills}
           setSplitBillToRemove={setSplitBillToRemove}
+          updateCartAfterSplitPayment={updateCartAfterSplitPayment}
           // Order related props
           placedOrders={placedOrders}
           selectedCustomer={selectedCustomer}
