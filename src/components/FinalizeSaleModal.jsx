@@ -117,6 +117,17 @@ const FinalizeSaleModal = ({
     }
   }, [isModifyingOrder, modifyingOrderPaymentInfo, setSelectedPaymentMethod]);
 
+  // Set payment amount for split bills when modal opens
+  React.useEffect(() => {
+    if (selectedSplitBill && !isSinglePayMode && paymentAmount === '') {
+      const splitBillTotal = calculateSplitBillTotal();
+      console.log('Auto-setting payment amount for split bill:', splitBillTotal);
+      setPaymentAmount(splitBillTotal.toString());
+      setGivenAmount(splitBillTotal.toString());
+      setChangeAmount('0.00');
+    }
+  }, [selectedSplitBill, isSinglePayMode, paymentAmount, calculateSplitBillTotal, setPaymentAmount, setGivenAmount, setChangeAmount]);
+
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[95vh] flex flex-col">
@@ -977,6 +988,13 @@ const FinalizeSaleModal = ({
                   changeAmountValue,
                   selectedPaymentMethod
                 });
+                
+                // Validate payment amount
+                if (paymentAmountValue <= 0) {
+                  console.error('Payment amount is zero or invalid:', paymentAmountValue);
+                  showError('Please enter a valid payment amount');
+                  return;
+                }
 
                 // If this is a single pay mode (direct payment without placing order first)
                 if (isSinglePayMode) {
