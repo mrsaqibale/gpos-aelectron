@@ -76,13 +76,13 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
       textColor: 'text-white',
       label: 'Sales'
     },
-    // {
-    //   // icon: <Bell size={16} />,
-    //   style: { backgroundColor: themeColors.primary },
-    //   textColor: 'text-white',
-    //   label: `Drafts${draftCount > 0 ? ` (${draftCount})` : ''}`,
-    //   onClick: onDraftsClick
-    // },
+    {
+      icon: <SaveIcon size={16} />,
+      style: { backgroundColor: themeColors.primary },
+      textColor: 'text-white',
+      label: `Drafts${draftCount > 0 ? ` (${draftCount})` : ''}`,
+      onClick: onDraftsClick
+    },
     {
       icon: <Bell size={16} />,
       style: { backgroundColor: themeColors.primary },
