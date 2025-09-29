@@ -241,18 +241,6 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                         'Walk-in Customer'}
                     </span>
                   </div>
-                  {/* <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">Order Type:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.orderType}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">Waiter:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.waiter}</span>
-                  </div> */}
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">Customer:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.customer && selectedDraft.customer.name || 'Unknown'}</span>
-                  </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Phone:</span>
                     <span className="text-sm text-gray-900">{selectedDraft.customer && selectedDraft.customer.phone || 'N/A'}</span>
@@ -373,6 +361,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
 
