@@ -4837,6 +4837,7 @@ const RunningOrders = () => {
     setTotalSplit('');
     setSplitBills([]);
     setSelectedSplitBill(null);
+    
     // Initialize split items from cart items (before placing order)
     const orderItems = cartItems.length > 0 ? cartItems : (selectedPlacedOrder ? selectedPlacedOrder.items : []);
     setSplitItems(orderItems.map(item => ({
@@ -4844,6 +4845,13 @@ const RunningOrders = () => {
       splitQuantity: 0,
       isSelected: false
     })));
+    
+    // Set order type when opening split screen for before orders
+    if (cartItems.length > 0) {
+      // Use current selectedOrderType from the main screen
+      // This ensures split bills inherit the same order type
+    }
+    
     setSplitDiscount(0);
     setSplitCharge(0);
     setSplitTips(0);
