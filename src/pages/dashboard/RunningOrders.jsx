@@ -669,7 +669,7 @@ const RunningOrders = () => {
       window.removeEventListener('openCustomerInfo', handleOpenInfo);
       window.removeEventListener('headerSaveClicked', handleSaveClicked);
     };
-  }, [selectedOrderType, cartItems.length]);
+  }, [selectedOrderType, cartItems.length, showError]);
 
   // Fetch foods by category
   const fetchFoodsByCategory = async (categoryId) => {
