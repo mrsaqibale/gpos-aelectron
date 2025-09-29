@@ -5030,15 +5030,10 @@ const RunningOrders = () => {
   };
 
   const areAllItemsDistributed = () => {
-    if (!splitItems || splitItems.length === 0) return false;
+    if (!splitBills || splitBills.length === 0) return false;
 
-    // Check if all remaining items have been fully distributed (remaining quantity = 0)
-    // Only consider items that still have quantity > 0
-    const itemsWithQuantity = splitItems.filter(item => item.quantity > 0);
-    if (itemsWithQuantity.length === 0) return true; // All items have been paid for
-    console.log(itemsWithQuantity);
-
-    return itemsWithQuantity.every(item => getRemainingQuantity(item.id) === 0);
+    // Check if any split bill has at least 1 item
+    return splitBills.some(split => split.items && split.items.length > 0);
   };
 
   const updateSplitBillTotals = (splitBillId) => {
