@@ -4918,22 +4918,7 @@ const RunningOrders = () => {
       total: 0
     }));
 
-    // Distribute items evenly across splits
-    splitItems.forEach((item, itemIndex) => {
-      const targetBillIndex = itemIndex % numSplits;
-      const targetBill = newSplitBills[targetBillIndex];
-      
-      // Create a copy of the item for this split
-      const splitItem = {
-        ...item,
-        quantity: 1, // Each split gets 1 quantity of each item
-        totalPrice: item.totalPrice / item.quantity // Calculate per-unit price
-      };
-      
-      targetBill.items.push(splitItem);
-      targetBill.subtotal += splitItem.totalPrice;
-      targetBill.total += splitItem.totalPrice;
-    });
+    // Don't automatically distribute items - let user manually add items to splits
 
     setSplitBills(newSplitBills);
     setSelectedSplitBill(newSplitBills[0]); // Select first split by default
