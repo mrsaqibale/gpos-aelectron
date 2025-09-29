@@ -4951,8 +4951,9 @@ const RunningOrders = () => {
             )
           };
         } else {
-          // Add new item
-          const newItem = { ...item, quantity: 1 };
+          // Add new item with quantity 1 and proper per-unit pricing
+          const perUnitPrice = item.totalPrice / item.quantity;
+          const newItem = { ...item, quantity: 1, totalPrice: perUnitPrice };
           return {
             ...split,
             items: [...split.items, newItem]
