@@ -17,27 +17,28 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
   }, [isOpen, currentDraftOrders]);
 
     const filteredDrafts = currentDraftOrders.filter(draft => {
-    if (!searchQuery.trim()) return true;
     if (!draft) return false; // Safety check for undefined draft
     
-    const query = searchQuery.toLowerCase();
+    // Customer search filter
+    const customerMatches = !customerSearchQuery.trim() || (() => {
+      const customerName = draft.draftName || 
+        (draft.customer && draft.customer.name) || 
+        'Walk-in Customer';
+      const customerQuery = customerSearchQuery.toLowerCase();
+      return customerName.toLowerCase().includes(customerQuery) ||
+        (draft.customer && draft.customer.phone || 'N/A').toLowerCase().includes(customerQuery);
+    })();
     
-    // Format draft ID for search
-    const draftId = draft.orderNumber || draft.id || 'Unknown';
-    const formattedDraftId = draftId.startsWith('draft_id') 
-      ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
-      : draftId;
+    // Item search filter
+    const itemMatches = !itemSearchQuery.trim() || (() => {
+      const itemQuery = itemSearchQuery.toLowerCase();
+      return draft.items && draft.items.some(item => {
+        const itemName = item.food?.name || item.name || 'Unknown Item';
+        return itemName.toLowerCase().includes(itemQuery);
+      });
+    })();
     
-    // Get customer name for search
-    const customerName = draft.draftName || 
-      (draft.customer && draft.customer.name) || 
-      'Walk-in Customer';
-    
-    return (
-      customerName.toLowerCase().includes(query) ||
-      formattedDraftId.toLowerCase().includes(query) ||
-      (draft.customer && draft.customer.phone || 'N/A').toLowerCase().includes(query)
-    );
+    return customerMatches && itemMatches;
   });
 
   const handleDraftSelect = (draft) => {
