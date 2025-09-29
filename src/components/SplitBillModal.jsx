@@ -24,7 +24,18 @@ const SplitBillModal = ({
     setSplitBillToRemove,
     resetFinalizeSaleModalForSplitBill,
     setIsSinglePayMode,
-    setShowFinalizeSaleModal
+    setShowFinalizeSaleModal,
+    // Customer selection props
+    selectedCustomer,
+    setSelectedCustomer,
+    selectedOrderType,
+    setSelectedOrderType,
+    showCustomerModal,
+    setShowCustomerModal,
+    showCustomerSearchModal,
+    setShowCustomerSearchModal,
+    handleCustomerSelect,
+    handleEditCustomer
 }) => {
     if (!isOpen) return null; // modal toggle
 
