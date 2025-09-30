@@ -6171,6 +6171,9 @@ const RunningOrders = () => {
             }
             return item;
           }));
+          
+          // CRITICAL: Remove paid items from the main cart
+          updateCartAfterSplitPayment(paidSplit);
         }
 
         setSplitBillToRemove(null);
@@ -7749,9 +7752,22 @@ const RunningOrders = () => {
             isOpen={showEditModal}
             onClose={() => {
               setShowEditModal(false);
-              // If user closes edit modal without saving, revert to In Store order type
+              // Only revert to In Store if customer data is INVALID for current order type
               if (selectedOrderType === 'Delivery' || selectedOrderType === 'Collection') {
-                if (shouldShowOrderType('instore')) {
+                // Check if customer has valid data for the selected order type
+                let hasValidData = false;
+                
+                if (selectedOrderType === 'Delivery') {
+                  const hasPhone = selectedCustomer?.phone && selectedCustomer.phone.trim().length > 0;
+                  const hasAddress = selectedCustomer?.addresses && selectedCustomer.addresses.length > 0;
+                  hasValidData = hasPhone && hasAddress;
+                } else if (selectedOrderType === 'Collection') {
+                  const hasPhone = selectedCustomer?.phone && selectedCustomer.phone.trim().length > 0;
+                  hasValidData = hasPhone;
+                }
+                
+                // Only revert to In Store if customer data is still invalid
+                if (!hasValidData && shouldShowOrderType('instore')) {
                   setSelectedOrderType('In Store');
                 }
               }

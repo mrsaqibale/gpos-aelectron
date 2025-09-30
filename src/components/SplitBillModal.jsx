@@ -162,10 +162,14 @@ const SplitBillModal = ({
                                         Total Items:
                                     </span>
                                     <span className="text-sm font-bold text-gray-800">
-                                        {splitItems.reduce(
-                                            (sum, item) => sum + item.quantity,
-                                            0
-                                        )}
+                                        {splitItems.reduce((sum, item) => {
+                                            const remainingQty = getRemainingQuantity(item.id);
+                                            const distributedQty = splitBills.reduce((splitSum, splitBill) => {
+                                                const splitItem = splitBill.items.find(i => i.food?.id === item.food?.id);
+                                                return splitSum + (splitItem ? splitItem.quantity : 0);
+                                            }, 0);
+                                            return sum + remainingQty + distributedQty;
+                                        }, 0)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between items-center">
@@ -176,7 +180,16 @@ const SplitBillModal = ({
                                         €
                                         {splitItems.length > 0
                                             ? (
-                                                splitItems.reduce((sum, item) => sum + item.totalPrice, 0) /
+                                                splitItems.reduce((sum, item) => {
+                                                    const remainingQty = getRemainingQuantity(item.id);
+                                                    const distributedQty = splitBills.reduce((splitSum, splitBill) => {
+                                                        const splitItem = splitBill.items.find(i => i.food?.id === item.food?.id);
+                                                        return splitSum + (splitItem ? splitItem.quantity : 0);
+                                                    }, 0);
+                                                    const totalQty = remainingQty + distributedQty;
+                                                    const perUnitPrice = item.totalPrice / item.quantity;
+                                                    return sum + (perUnitPrice * totalQty);
+                                                }, 0) /
                                                 (1 + getTaxRate() / 100)
                                             ).toFixed(2)
                                             : "0.00"}
@@ -190,7 +203,16 @@ const SplitBillModal = ({
                                         €
                                         {splitItems.length > 0
                                             ? (
-                                                (splitItems.reduce((sum, item) => sum + item.totalPrice, 0) *
+                                                (splitItems.reduce((sum, item) => {
+                                                    const remainingQty = getRemainingQuantity(item.id);
+                                                    const distributedQty = splitBills.reduce((splitSum, splitBill) => {
+                                                        const splitItem = splitBill.items.find(i => i.food?.id === item.food?.id);
+                                                        return splitSum + (splitItem ? splitItem.quantity : 0);
+                                                    }, 0);
+                                                    const totalQty = remainingQty + distributedQty;
+                                                    const perUnitPrice = item.totalPrice / item.quantity;
+                                                    return sum + (perUnitPrice * totalQty);
+                                                }, 0) *
                                                     getTaxRate()) /
                                                 100 /
                                                 (1 + getTaxRate() / 100)
@@ -205,7 +227,16 @@ const SplitBillModal = ({
                                     <span className="text-lg font-bold text-primary">
                                         €
                                         {splitItems.length > 0
-                                            ? splitItems.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)
+                                            ? splitItems.reduce((sum, item) => {
+                                                const remainingQty = getRemainingQuantity(item.id);
+                                                const distributedQty = splitBills.reduce((splitSum, splitBill) => {
+                                                    const splitItem = splitBill.items.find(i => i.food?.id === item.food?.id);
+                                                    return splitSum + (splitItem ? splitItem.quantity : 0);
+                                                }, 0);
+                                                const totalQty = remainingQty + distributedQty;
+                                                const perUnitPrice = item.totalPrice / item.quantity;
+                                                return sum + (perUnitPrice * totalQty);
+                                            }, 0).toFixed(2)
                                             : "0.00"}
                                     </span>
                                 </div>
