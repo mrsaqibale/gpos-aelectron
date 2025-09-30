@@ -402,6 +402,9 @@ const RunningOrders = () => {
   const [showDraftsModal, setShowDraftsModal] = useState(false);
   const [currentDraftOrders, setCurrentDraftOrders] = useState([]);
   const [showDraftNumberModal, setShowDraftNumberModal] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState(null); // Track current draft ID for updates
+  const [currentDraftPosition, setCurrentDraftPosition] = useState(null); // Track original position of loaded draft
+  const [currentDraftNumber, setCurrentDraftNumber] = useState(null); // Track draft order number for display
   const [splitItems, setSplitItems] = useState([]);
   const [splitDiscount, setSplitDiscount] = useState(0);
   const [splitCharge, setSplitCharge] = useState(0);
@@ -2647,7 +2650,7 @@ const RunningOrders = () => {
   };
 
   // Clear cart function
-  const clearCart = () => {
+  const clearCart = (clearDraftId = false) => {
     console.log('=== CLEAR CART FUNCTION CALLED ===');
     console.log('Current cartItems before clearing:', cartItems);
     console.log('Cart items count before clearing:', cartItems.length);
@@ -2677,6 +2680,14 @@ const RunningOrders = () => {
     setIsModifyingOrder(false);
     setModifyingOrderId(null);
 
+    // Clear current draft ID, position, and number if starting a completely new order
+    if (clearDraftId) {
+      setCurrentDraftId(null);
+      setCurrentDraftPosition(null);
+      setCurrentDraftNumber(null);
+      console.log('Cleared current draft ID, position, and number for new order');
+    }
+
     console.log('Cart cleared successfully - itemCount was:', itemCount);
     console.log('Cart state should now be empty');
 
@@ -2684,6 +2695,11 @@ const RunningOrders = () => {
     if (itemCount > 0) {
       showSuccess(`All ${itemCount} item${itemCount === 1 ? '' : 's'} removed from cart!`);
     }
+  };
+
+  // Start new order function (clears draft ID and cart)
+  const startNewOrder = () => {
+    clearCart(true); // Clear cart and draft ID for new order
   };
 
   // Fetch all ingredients for custom food
@@ -4033,7 +4049,8 @@ const RunningOrders = () => {
     }
 
     try {
-      console.log('Creating draft order for customer:', userName);
+      const isUpdatingExistingDraft = currentDraftId !== null;
+      console.log(isUpdatingExistingDraft ? 'Updating existing draft order:' : 'Creating new draft order for customer:', userName, isUpdatingExistingDraft ? `with ID: ${currentDraftId}` : '');
 
       // Check if API is available
       if (!window.myAPI) {
@@ -4047,8 +4064,17 @@ const RunningOrders = () => {
       const discount = calculateCartDiscount();
       const total = calculateCartTotal();
 
-      // Get next draft ID
-      const draftId = await getNextDraftId();
+      let draftId, orderId;
+      
+      if (isUpdatingExistingDraft) {
+        // Use the stored draft number and create new order with same ID
+        draftId = currentDraftNumber; // Use the stored draft number
+        // For edited drafts, we'll create a new order but use the same draft number
+        console.log('Recreating draft with same number:', draftId, 'for ID:', currentDraftId);
+      } else {
+        // Get next draft ID for new draft
+        draftId = await getNextDraftId();
+      }
 
       // Prepare order data for database
       const orderData = {
@@ -4080,16 +4106,24 @@ const RunningOrders = () => {
         order_number: draftId // Set the draft ID as order number
       };
 
-      // Create draft order in database
-      const orderResult = await window.myAPI.createOrder(orderData);
+      let orderResult;
+      
+      // Always create a new order (since we deleted the old one when editing)
+      // This ensures the draft gets the same draft number even if no changes were made
+      orderResult = await window.myAPI.createOrder(orderData);
 
       if (!orderResult.success) {
-        showError('Failed to create draft order: ' + orderResult.message);
+        showError('Failed to save draft order: ' + orderResult.message);
         return;
       }
 
-      const orderId = orderResult.id;
-      console.log('Draft order created successfully with ID:', orderId);
+      orderId = orderResult.id;
+      
+      if (isUpdatingExistingDraft) {
+        console.log('Recreated draft order successfully with new ID:', orderId, 'using same draft number:', draftId);
+      } else {
+        console.log('Draft order created successfully with ID:', orderId);
+      }
 
       // Debug cart items
       console.log('Cart items before creating order details:', cartItems);
@@ -4229,13 +4263,12 @@ const RunningOrders = () => {
       console.log('window.myAPI.createOrderDetail exists:', typeof window.myAPI.createOrderDetail);
       console.log('window.myAPI.createMultipleOrderDetails exists:', typeof window.myAPI.createMultipleOrderDetails);
 
-      // Create order details using batch method
-      console.log('Creating order details for draft order:', orderDetailsArray);
+      // Create order details for the new order
       let createdDetailsCount = 0;
 
       if (orderDetailsArray.length > 0) {
         try {
-          console.log('Using createMultipleOrderDetails...');
+          console.log(isUpdatingExistingDraft ? 'Creating order details for recreated draft:' : 'Creating order details for new draft:', orderDetailsArray);
           const batchResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
           console.log('Batch API response:', batchResult);
 
@@ -4286,8 +4319,8 @@ const RunningOrders = () => {
         }
       }
 
-      // Create local draft order object for UI
-      const newDraftOrder = {
+      // Create or update local draft order object for UI
+      const draftOrder = {
         id: orderId, // Use database ID
         databaseId: orderId, // Store database ID
         orderNumber: draftId, // Use the draft ID format
@@ -4311,15 +4344,43 @@ const RunningOrders = () => {
         draftName: userName // Store draft name
       };
 
-      // Add draft order to local state
-      setCurrentDraftOrders(prev => [newDraftOrder, ...prev]);
-      showSuccess('Draft order created successfully!', 'success');
+      // Update local state
+      if (isUpdatingExistingDraft) {
+        // Restore draft at its original position in the list with new database ID
+        setCurrentDraftOrders(prev => {
+          const newDrafts = [...prev];
+          
+          // If we have a valid position, insert at that position
+          if (currentDraftPosition !== null && currentDraftPosition >= 0) {
+            // Insert the draft at its original position
+            newDrafts.splice(currentDraftPosition, 0, draftOrder);
+            console.log('Restored draft at original position:', currentDraftPosition, 'with new database ID:', orderId);
+          } else {
+            // If position is not available, add to top
+            newDrafts.unshift(draftOrder);
+            console.log('Added recreated draft to top of list');
+          }
+          
+          return newDrafts;
+        });
+        showSuccess('Draft order saved successfully!', 'success');
+      } else {
+        // Add new draft order to local state (at the top)
+        setCurrentDraftOrders(prev => [draftOrder, ...prev]);
+        showSuccess('Draft order created successfully!', 'success');
+      }
 
-      // Clear cart completely for new draft orders
-      clearCart();
+      // Clear cart completely for new draft orders, but keep current draft ID for updates
+      if (!isUpdatingExistingDraft) {
+        clearCart(true); // Clear cart and reset draft ID for new orders
+      } else {
+        clearCart(); // Clear cart but keep current draft ID for continued updates
+      }
 
       // Automatically set order type to 'In Store' for new orders
-      setSelectedOrderType('In Store');
+      if (!isUpdatingExistingDraft) {
+        setSelectedOrderType('In Store');
+      }
 
     } catch (error) {
       console.error('Error creating draft order:', error);
@@ -6956,6 +7017,17 @@ const RunningOrders = () => {
           {/* Modification indicator */}
           {isModifyingOrder && (
             <></>
+          )}
+          {/* Draft Update indicator */}
+          {currentDraftId && (
+            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 mb-2 mx-2 mt-2" role="alert">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <span className="text-xs font-medium">Updating Draft: {currentDraftNumber || currentDraftId}</span>
+              </div>
+            </div>
           )}
           <div className="px-2 py-2 flex-shrink-0 space-y-2">
             {/* Order Type Buttons Row */}
@@ -9628,9 +9700,14 @@ const RunningOrders = () => {
         isOpen={showDraftsModal}
         onClose={() => setShowDraftsModal(false)}
         currentDraftOrders={currentDraftOrders}
-        onEditDraft={(draft) => {
+        onEditDraft={async (draft) => {
           // Handle editing draft in cart
           console.log('Editing draft:', draft);
+          
+          // Find the position of this draft in the list before removing it
+          const draftPosition = currentDraftOrders.findIndex(d => d.id === draft.id);
+          console.log('Draft position in list:', draftPosition);
+          
           // Load the draft into the cart
           if (draft.items && draft.items.length > 0) {
             setCartItems(draft.items);
@@ -9641,8 +9718,34 @@ const RunningOrders = () => {
           if (draft.orderType) {
             setSelectedOrderType(draft.orderType);
           }
-          // Remove the draft from currentDraftOrders since it's now in the cart
+          if (draft.coupon) {
+            setAppliedCoupon(draft.coupon);
+          }
+          
+          // Set the current draft ID, position, and number so future saves will update this draft at same position
+          setCurrentDraftId(draft.databaseId);
+          setCurrentDraftPosition(draftPosition);
+          setCurrentDraftNumber(draft.orderNumber);
+          console.log('Set current draft ID for updates:', draft.databaseId, 'at position:', draftPosition, 'with number:', draft.orderNumber);
+          
+          // DELETE the draft from database when editing
+          try {
+            if (window.myAPI) {
+              const deleteResult = await window.myAPI.deleteOrder(draft.databaseId);
+              if (deleteResult.success) {
+                console.log('Deleted draft from database for editing:', draft.databaseId);
+              } else {
+                console.error('Failed to delete draft from database:', deleteResult.message);
+              }
+            }
+          } catch (error) {
+            console.error('Error deleting draft from database:', error);
+          }
+          
+          // Remove the draft from currentDraftOrders list (it will be re-added when saved)
           setCurrentDraftOrders(prev => prev.filter(d => d.id !== draft.id));
+          console.log('Removed draft from list - will be restored at same position when saved');
+          
           setShowDraftsModal(false);
         }}
         onDeleteDraft={handleDeleteDraft}
