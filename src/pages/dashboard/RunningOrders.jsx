@@ -96,6 +96,7 @@ import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsM
 import InvoiceOptions from '../../components/InvoiceOptions.jsx';
 import PlaceOrderComponent from '../../components/PlaceOrderComponent.jsx';
 import SplitBillModal from '../../components/SplitBillModal.jsx';
+import Sidebar from '../../components/dashboard/Sidebar';
 
 const RunningOrders = () => {
   // Accept navigation state to pre-load an order
@@ -353,6 +354,9 @@ const RunningOrders = () => {
   const [cartCharge, setCartCharge] = useState(0); // Cart charge amount
   const [cartTips, setCartTips] = useState(0); // Cart tips amount
   const [orderNote, setOrderNote] = useState(''); // Order note field
+
+  // Floating Sidebar State
+  const [showFloatingSidebar, setShowFloatingSidebar] = useState(false);
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
@@ -686,10 +690,17 @@ const RunningOrders = () => {
     };
     window.addEventListener('headerSaveClicked', handleSaveClicked);
     
+    // Add event listener for dashboard menu
+    const handleDashboardMenu = () => {
+      setShowFloatingSidebar(true);
+    };
+    window.addEventListener('openDashboardMenu', handleDashboardMenu);
+    
     return () => {
       window.removeEventListener('openStatusModal', handleOpenStatusModal);
       window.removeEventListener('openCustomerInfo', handleOpenInfo);
       window.removeEventListener('headerSaveClicked', handleSaveClicked);
+      window.removeEventListener('openDashboardMenu', handleDashboardMenu);
     };
   }, [selectedOrderType, cartItems.length, showError]);
 
@@ -7126,7 +7137,14 @@ const RunningOrders = () => {
             )}
             <div className="flex items-center justify-between mb-2 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
-
+                {/* Menu Button */}
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('openDashboardMenu'))}
+                  className="w-8 h-8 cursor-pointer flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors duration-200 rounded-lg border border-gray-300"
+                  title="Menu"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
                 <span className="font-semibold text-gray-800 text-xs sm:text-sm md:text-xs lg:text-sm">🍽 Food &amp; Categories</span>
               </div>
               <div className="flex gap-2">
@@ -10142,6 +10160,31 @@ const RunningOrders = () => {
           setSplitTips={setSplitTips}
           setSplitBillToRemove={setSplitBillToRemove}
         />
+      )}
+
+      {/* Floating Sidebar */}
+      {showFloatingSidebar && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div 
+            className="flex-1 bg-black bg-opacity-50"
+            onClick={() => setShowFloatingSidebar(false)}
+          />
+          {/* Sidebar */}
+          <div className="w-80 h-full bg-white shadow-xl">
+            <Sidebar 
+              navigationItems={[
+                { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+                { name: 'Sales', path: '/dashboard/sales', icon: <ShoppingBag size={20} /> },
+                { name: 'Orders', path: '/dashboard/orders', icon: <Receipt size={20} /> },
+                { name: 'Customers', path: '/dashboard/customers', icon: <Users2 size={20} /> },
+                { name: 'Menu', path: '/dashboard/menu', icon: <Utensils size={20} /> },
+                { name: 'Reports', path: '/dashboard/reports', icon: <FileText size={20} /> },
+                { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} /> }
+              ]}
+            />
+          </div>
+        </div>
       )}
     </>
   );
