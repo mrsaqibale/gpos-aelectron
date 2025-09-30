@@ -4856,13 +4856,8 @@ const RunningOrders = () => {
     setSplitBills([]);
     setSelectedSplitBill(null);
     
-    // Initialize split items from cart items (before placing order)
-    const orderItems = cartItems.length > 0 ? cartItems : (selectedPlacedOrder ? selectedPlacedOrder.items : []);
-    setSplitItems(orderItems.map(item => ({
-      ...item,
-      splitQuantity: 0,
-      isSelected: false
-    })));
+    // Initialize split items from current cart items (these will be updated as items are moved to splits)
+    setSplitItems([...cartItems]);
     
     // Set order type when opening split screen for before orders
     if (cartItems.length > 0) {
@@ -4998,6 +4993,44 @@ const RunningOrders = () => {
       return split;
     }));
 
+    // Update the base cart items by reducing the quantity
+    setCartItems(prev => prev.map(cartItem => {
+      if (cartItem.id === itemId) {
+        const newQuantity = cartItem.quantity - 1;
+        if (newQuantity <= 0) {
+          // If quantity becomes 0, remove the item completely
+          return null;
+        } else {
+          // Update the quantity and recalculate total price
+          const perUnitPrice = cartItem.totalPrice / cartItem.quantity;
+          return {
+            ...cartItem,
+            quantity: newQuantity,
+            totalPrice: perUnitPrice * newQuantity
+          };
+        }
+      }
+      return cartItem;
+    }).filter(item => item !== null)); // Remove null items (items with 0 quantity)
+
+    // Update splitItems to reflect the new quantities
+    setSplitItems(prev => prev.map(splitItem => {
+      if (splitItem.id === itemId) {
+        const newQuantity = splitItem.quantity - 1;
+        if (newQuantity <= 0) {
+          return null;
+        } else {
+          const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+          return {
+            ...splitItem,
+            quantity: newQuantity,
+            totalPrice: perUnitPrice * newQuantity
+          };
+        }
+      }
+      return splitItem;
+    }).filter(item => item !== null));
+
     // Update split bill totals
     updateSplitBillTotals(splitBillId);
   };
@@ -5033,6 +5066,46 @@ const RunningOrders = () => {
       return split;
     }));
 
+    // Return the item to the base cart items
+    setCartItems(prev => {
+      const existingCartItem = prev.find(cartItem => cartItem.id === itemId);
+      if (existingCartItem) {
+        // Increase quantity in cart
+        const newQuantity = existingCartItem.quantity + 1;
+        const perUnitPrice = existingCartItem.totalPrice / existingCartItem.quantity;
+        return prev.map(cartItem =>
+          cartItem.id === itemId
+            ? { ...cartItem, quantity: newQuantity, totalPrice: perUnitPrice * newQuantity }
+            : cartItem
+        );
+      } else {
+        // Add item back to cart if it was completely removed
+        const perUnitPrice = item.totalPrice / item.quantity;
+        const newCartItem = { ...item, quantity: 1, totalPrice: perUnitPrice };
+        return [...prev, newCartItem];
+      }
+    });
+
+    // Update splitItems to reflect the returned quantity
+    setSplitItems(prev => {
+      const existingSplitItem = prev.find(splitItem => splitItem.id === itemId);
+      if (existingSplitItem) {
+        // Increase quantity in splitItems
+        const newQuantity = existingSplitItem.quantity + 1;
+        const perUnitPrice = existingSplitItem.totalPrice / existingSplitItem.quantity;
+        return prev.map(splitItem =>
+          splitItem.id === itemId
+            ? { ...splitItem, quantity: newQuantity, totalPrice: perUnitPrice * newQuantity }
+            : splitItem
+        );
+      } else {
+        // Add item back to splitItems if it was completely removed
+        const perUnitPrice = item.totalPrice / item.quantity;
+        const newSplitItem = { ...item, quantity: 1, totalPrice: perUnitPrice };
+        return [...prev, newSplitItem];
+      }
+    });
+
     // Update split bill totals
     updateSplitBillTotals(splitBillId);
   };
@@ -5049,20 +5122,12 @@ const RunningOrders = () => {
   };
 
   const getRemainingQuantity = (itemId) => {
-    const item = splitItems.find(item => item.id === itemId);
-    if (!item) return 0;
+    // Find the item in the current cart items (which are updated when items are added to splits)
+    const cartItem = cartItems.find(item => item.id === itemId);
+    if (!cartItem) return 0;
 
-    // Calculate total quantity used across all active splits (not paid ones)
-    const totalUsed = splitBills.reduce((total, split) => {
-      // Skip paid splits as their items are no longer available
-      if (split.paid) return total;
-
-      const existingItem = split.items.find(i => i.food?.id === item.food?.id);
-      return total + (existingItem ? (existingItem.quantity || 0) : 0);
-    }, 0);
-
-    // Return remaining quantity based on updated splitItems state
-    return Math.max(0, (item.quantity || 0) - totalUsed);
+    // Return the current quantity in cart (which decreases as items are added to splits)
+    return cartItem.quantity;
   };
 
   const areAllItemsDistributed = () => {
@@ -5097,30 +5162,11 @@ const RunningOrders = () => {
   };
 
   const updateCartAfterSplitPayment = (paidSplitBill) => {
-    // Update cart items by removing the quantities that were paid in the split bill
-    setCartItems(prev => prev.map(cartItem => {
-      // Find if this cart item was paid in the split bill
-      const paidItem = paidSplitBill.items.find(splitItem => 
-        splitItem.food?.id === cartItem.food?.id
-      );
-      
-      if (paidItem) {
-        // Reduce the quantity in cart by the amount paid
-        const newQuantity = cartItem.quantity - paidItem.quantity;
-        if (newQuantity <= 0) {
-          // If quantity becomes 0 or negative, remove the item completely
-          return null;
-        } else {
-          // Update the quantity and recalculate total price
-          return {
-            ...cartItem,
-            quantity: newQuantity,
-            totalPrice: (cartItem.totalPrice / cartItem.quantity) * newQuantity
-          };
-        }
-      }
-      return cartItem; // No change if item wasn't in the paid split
-    }).filter(item => item !== null)); // Remove null items (items with 0 quantity)
+    // Since we now remove items from cart when they're added to splits,
+    // we don't need to remove them again after payment.
+    // The cart items should already reflect the correct quantities.
+    // This function is kept for compatibility but doesn't need to do anything.
+    console.log('Split bill payment processed - cart items already updated during split creation');
   };
 
   const handlePlaceSplitBillOrder = async (splitBill, paymentInfo) => {
