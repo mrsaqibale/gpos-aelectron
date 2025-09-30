@@ -4024,8 +4024,8 @@ const RunningOrders = () => {
             }
             
             console.log('Creating draft object with ID:', validId, 'order_number:', order.order_number, 'validOrderNumber:', validOrderNumber);
-
-            return {
+            
+            const draftObject = {
               id: validId,
               databaseId: validId,
               orderNumber: validOrderNumber,
@@ -4053,6 +4053,9 @@ const RunningOrders = () => {
               totalPayable: order.order_amount || 0,
               draftName: order.draft_name || 'Unknown'
             };
+            
+            console.log('Final draft object created:', draftObject);
+            return draftObject;
           })
         );
 
@@ -9740,12 +9743,30 @@ const RunningOrders = () => {
         onEditDraft={async (draft) => {
           // Handle editing draft in cart
           console.log('Editing draft:', draft);
+          console.log('Draft properties:', {
+            id: draft.id,
+            databaseId: draft.databaseId,
+            orderNumber: draft.orderNumber,
+            hasDatabaseId: 'databaseId' in draft,
+            hasOrderNumber: 'orderNumber' in draft
+          });
+          console.log('Full draft object keys:', Object.keys(draft));
+          console.log('Full draft object:', JSON.stringify(draft, null, 2));
           
-          // Validate draft has required properties
-          if (!draft.databaseId || !draft.orderNumber) {
-            console.error('Invalid draft object - missing databaseId or orderNumber:', draft);
+          // Check if draft has the required properties, if not, try to derive them
+          let databaseId = draft.databaseId || draft.id;
+          let orderNumber = draft.orderNumber;
+          
+          if (!databaseId) {
+            console.error('No valid database ID found for draft:', draft);
             showError('Invalid draft data. Cannot edit this draft.');
             return;
+          }
+          
+          if (!orderNumber) {
+            // Generate a fallback order number
+            orderNumber = `draft_id${databaseId}`;
+            console.log('Generated fallback order number:', orderNumber);
           }
           
           // Find the position of this draft in the list before removing it
@@ -9767,20 +9788,20 @@ const RunningOrders = () => {
           }
           
           // Set the current draft ID, position, and number so future saves will update this draft at same position
-          setCurrentDraftId(draft.databaseId);
+          setCurrentDraftId(databaseId);
           setCurrentDraftPosition(draftPosition);
-          setCurrentDraftNumber(draft.orderNumber);
-          console.log('Set current draft ID for updates:', draft.databaseId, 'at position:', draftPosition, 'with number:', draft.orderNumber);
+          setCurrentDraftNumber(orderNumber);
+          console.log('Set current draft ID for updates:', databaseId, 'at position:', draftPosition, 'with number:', orderNumber);
           
           // DELETE the draft from database when editing
           try {
             if (window.myAPI) {
-              console.log('Attempting to delete draft from database:', draft.databaseId);
-              const deleteResult = await window.myAPI.deleteOrder(draft.databaseId);
+              console.log('Attempting to delete draft from database:', databaseId);
+              const deleteResult = await window.myAPI.deleteOrder(databaseId);
               console.log('Delete result:', deleteResult);
               
               if (deleteResult && deleteResult.success) {
-                console.log('Successfully deleted draft from database for editing:', draft.databaseId);
+                console.log('Successfully deleted draft from database for editing:', databaseId);
                 // Show success message to user
                 showSuccess('Draft loaded for editing');
               } else {
