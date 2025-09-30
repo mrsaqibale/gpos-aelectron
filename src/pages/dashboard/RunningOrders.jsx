@@ -3989,7 +3989,7 @@ const RunningOrders = () => {
                       adons = null;
                     }
 
-                    return {
+                    const cartItem = {
                       id: item.food_id,
                       food: {
                         id: item.food_id,
@@ -4002,6 +4002,16 @@ const RunningOrders = () => {
                       notes: item.item_note || null,
                       totalPrice: (item.price || 0) * (item.quantity || 1)
                     };
+                    
+                    console.log('Created cart item from draft:', {
+                      id: cartItem.id,
+                      name: cartItem.food.name,
+                      price: cartItem.food.price,
+                      quantity: cartItem.quantity,
+                      totalPrice: cartItem.totalPrice
+                    });
+                    
+                    return cartItem;
                   });
               }
             } catch (error) {
@@ -4012,15 +4022,19 @@ const RunningOrders = () => {
             // Ensure we have valid IDs
             const validId = order.id || Date.now(); // Fallback to timestamp if no ID
             
-            // Generate a proper draft number if not exists
+            // Generate proper sequential draft numbers (001, 002, 003, etc.)
             let validOrderNumber;
-            if (order.order_number && order.order_number.startsWith('draft_id')) {
+            if (order.order_number && order.order_number.startsWith('draft_id') && /draft_id\d{3}$/.test(order.order_number)) {
+              // Use existing properly formatted draft number (draft_id001, draft_id002, etc.)
               validOrderNumber = order.order_number;
             } else {
-              // Generate a new sequential draft ID for orders without proper order_number
-              const newDraftId = await getNextDraftId();
-              validOrderNumber = newDraftId;
-              console.log('Generated new draft number for order without order_number:', validOrderNumber);
+              // Generate a proper sequential draft ID (001, 002, 003, etc.)
+              // We'll assign sequential numbers based on the order in which drafts appear
+              // This will ensure we get proper sequential numbering
+              const draftIndex = draftOrders.indexOf(order) + 1;
+              const sequentialNum = draftIndex.toString().padStart(3, '0');
+              validOrderNumber = `draft_id${sequentialNum}`;
+              console.log('Generated sequential draft number for order ID:', order.id, 'at index:', draftIndex, '->', validOrderNumber);
             }
             
             console.log('Creating draft object with ID:', validId, 'order_number:', order.order_number, 'validOrderNumber:', validOrderNumber);
@@ -4062,8 +4076,23 @@ const RunningOrders = () => {
         // Filter out any null entries
         const validDrafts = transformedDrafts.filter(draft => draft !== null);
 
-        setCurrentDraftOrders(validDrafts);
-        console.log('Fetched draft orders:', validDrafts);
+        // Check for duplicate order numbers and fix them
+        const orderNumberMap = new Map();
+        const fixedDrafts = validDrafts.map(draft => {
+          if (orderNumberMap.has(draft.orderNumber)) {
+            // Duplicate order number found, create unique one
+            const originalNumber = draft.orderNumber;
+            const uniqueNumber = `${originalNumber}_${draft.id}`;
+            console.log(`Fixed duplicate order number: ${originalNumber} -> ${uniqueNumber}`);
+            return { ...draft, orderNumber: uniqueNumber };
+          }
+          orderNumberMap.set(draft.orderNumber, true);
+          return draft;
+        });
+
+        setCurrentDraftOrders(fixedDrafts);
+        console.log('Fetched draft orders:', fixedDrafts);
+        console.log('Draft order numbers:', fixedDrafts.map(d => ({ id: d.id, orderNumber: d.orderNumber })));
       }
     } catch (error) {
       console.error('Error fetching draft orders:', error);
@@ -4079,7 +4108,19 @@ const RunningOrders = () => {
 
     try {
       const isUpdatingExistingDraft = currentDraftId !== null;
+      console.log('=== DRAFT SAVE DEBUG START ===');
       console.log(isUpdatingExistingDraft ? 'Updating existing draft order:' : 'Creating new draft order for customer:', userName, isUpdatingExistingDraft ? `with ID: ${currentDraftId}` : '');
+      console.log('Cart items count:', cartItems.length);
+      console.log('Cart items details:', cartItems.map(item => ({
+        id: item.id,
+        name: item.food?.name || 'Unknown',
+        quantity: item.quantity,
+        price: item.food?.price || item.price || 0,
+        totalPrice: item.totalPrice,
+        isCustomPizza: item.isCustomPizza,
+        isCustomFood: item.isCustomFood
+      })));
+      console.log('Cart items raw data:', cartItems);
 
       // Check if API is available
       if (!window.myAPI) {
@@ -4096,16 +4137,10 @@ const RunningOrders = () => {
       let draftId, orderId;
       
       if (isUpdatingExistingDraft) {
-        // Use the stored draft number and create new order with same ID
-        if (currentDraftNumber && typeof currentDraftNumber === 'string' && currentDraftNumber.startsWith('draft_id')) {
-          draftId = currentDraftNumber; // Use the stored draft number
-        } else {
-          // Fallback: generate a new sequential draft ID
-          draftId = await getNextDraftId();
-          console.warn('currentDraftNumber was invalid, generated new draft ID:', draftId);
-        }
-        // For edited drafts, we'll create a new order but use the same draft number
-        console.log('Recreating draft with same number:', draftId, 'for ID:', currentDraftId);
+        // For edited drafts, always generate a new sequential draft ID
+        // This ensures we don't reuse the same draft number
+        draftId = await getNextDraftId();
+        console.log('Generated new sequential draft ID for edited draft:', draftId, 'for ID:', currentDraftId);
       } else {
         // Get next draft ID for new draft
         draftId = await getNextDraftId();
@@ -4161,6 +4196,7 @@ const RunningOrders = () => {
       }
 
       // Debug cart items
+      console.log('=== ORDER DETAILS CREATION DEBUG ===');
       console.log('Cart items before creating order details:', cartItems);
       console.log('Cart items structure:', cartItems.map(item => ({
         id: item.id,
@@ -4289,6 +4325,15 @@ const RunningOrders = () => {
             issynicronized: 0,
             isdeleted: 0
           };
+          console.log('=== CREATING ORDER DETAIL ===');
+          console.log('Original cart item:', {
+            id: item.id,
+            foodId: item.food?.id,
+            foodName: item.food?.name,
+            quantity: item.quantity,
+            price: item.food?.price,
+            totalPrice: item.totalPrice
+          });
           console.log('Created order detail object:', orderDetail);
           return orderDetail;
         });
@@ -9742,6 +9787,7 @@ const RunningOrders = () => {
         currentDraftOrders={currentDraftOrders}
         onEditDraft={async (draft) => {
           // Handle editing draft in cart
+          console.log('=== EDIT DRAFT DEBUG START ===');
           console.log('Editing draft:', draft);
           console.log('Draft properties:', {
             id: draft.id,
@@ -9750,6 +9796,14 @@ const RunningOrders = () => {
             hasDatabaseId: 'databaseId' in draft,
             hasOrderNumber: 'orderNumber' in draft
           });
+          console.log('Draft items:', draft.items);
+          console.log('Draft items details:', draft.items?.map(item => ({
+            id: item.id,
+            name: item.food?.name || 'Unknown',
+            quantity: item.quantity,
+            price: item.food?.price || item.price || 0,
+            totalPrice: item.totalPrice
+          })));
           console.log('Full draft object keys:', Object.keys(draft));
           console.log('Full draft object:', JSON.stringify(draft, null, 2));
           
@@ -9775,7 +9829,17 @@ const RunningOrders = () => {
           
           // Load the draft into the cart
           if (draft.items && draft.items.length > 0) {
+            console.log('=== LOADING DRAFT ITEMS INTO CART ===');
+            console.log('Draft items to load:', draft.items);
+            console.log('Items details:', draft.items.map(item => ({
+              id: item.id,
+              name: item.food?.name || 'Unknown',
+              quantity: item.quantity,
+              price: item.food?.price || item.price || 0,
+              totalPrice: item.totalPrice
+            })));
             setCartItems(draft.items);
+            console.log('Cart items set successfully');
           }
           if (draft.customer) {
             setSelectedCustomer(draft.customer);
