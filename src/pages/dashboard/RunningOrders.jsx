@@ -2648,6 +2648,10 @@ const RunningOrders = () => {
 
   // Clear cart function
   const clearCart = () => {
+    console.log('=== CLEAR CART FUNCTION CALLED ===');
+    console.log('Current cartItems before clearing:', cartItems);
+    console.log('Cart items count before clearing:', cartItems.length);
+    
     // Check if there are items in the cart before clearing
     const itemCount = cartItems.length;
 
@@ -2672,6 +2676,9 @@ const RunningOrders = () => {
     // Clear modification flags when starting fresh
     setIsModifyingOrder(false);
     setModifyingOrderId(null);
+
+    console.log('Cart cleared successfully - itemCount was:', itemCount);
+    console.log('Cart state should now be empty');
 
     // Show success alert if there were items in the cart
     if (itemCount > 0) {
@@ -5178,11 +5185,47 @@ const RunningOrders = () => {
   };
 
   const updateCartAfterSplitPayment = (paidSplitBill) => {
-    // Since we now remove items from cart when they're added to splits,
-    // we don't need to remove them again after payment.
-    // The cart items should already reflect the correct quantities.
-    // This function is kept for compatibility but doesn't need to do anything.
-    console.log('Split bill payment processed - cart items already updated during split creation');
+    console.log('=== UPDATE CART AFTER SPLIT PAYMENT ===');
+    console.log('Paid split bill:', paidSplitBill);
+    console.log('Current cart items before update:', cartItems);
+    
+    if (!paidSplitBill || !paidSplitBill.items || paidSplitBill.items.length === 0) {
+      console.log('No paid items to remove from cart');
+      return;
+    }
+
+    // Remove paid items from cart items
+    setCartItems(prev => {
+      const updatedCartItems = [...prev];
+      
+      paidSplitBill.items.forEach(paidItem => {
+        const cartItemIndex = updatedCartItems.findIndex(item => item.food?.id === paidItem.food?.id);
+        if (cartItemIndex !== -1) {
+          const cartItem = updatedCartItems[cartItemIndex];
+          const newQuantity = cartItem.quantity - paidItem.quantity;
+          
+          if (newQuantity <= 0) {
+            // Remove item completely if quantity becomes 0 or negative
+            updatedCartItems.splice(cartItemIndex, 1);
+            console.log(`Removed item ${paidItem.food?.name} from cart (quantity was ${cartItem.quantity}, paid ${paidItem.quantity})`);
+          } else {
+            // Update quantity and recalculate price
+            const perUnitPrice = cartItem.totalPrice / cartItem.quantity;
+            updatedCartItems[cartItemIndex] = {
+              ...cartItem,
+              quantity: newQuantity,
+              totalPrice: perUnitPrice * newQuantity
+            };
+            console.log(`Updated item ${paidItem.food?.name} quantity from ${cartItem.quantity} to ${newQuantity}`);
+          }
+        }
+      });
+      
+      console.log('Updated cart items after split payment:', updatedCartItems);
+      return updatedCartItems;
+    });
+    
+    console.log('Cart items updated after split payment');
   };
 
   const handlePlaceSplitBillOrder = async (splitBill, paymentInfo) => {
@@ -8940,6 +8983,7 @@ const RunningOrders = () => {
             setHasResetPayment={setHasResetPayment}
             setShowSplitBillModal={setShowSplitBillModal}
             setCustomerSearchFromSplit={setCustomerSearchFromSplit}
+            splitBills={splitBills}
             setSplitItems={setSplitItems}
             setSplitBills={setSplitBills}
             setSplitDiscount={setSplitDiscount}
@@ -9751,6 +9795,7 @@ const RunningOrders = () => {
           setHasResetPayment={setHasResetPayment}
           setShowSplitBillModal={setShowSplitBillModal}
           setCustomerSearchFromSplit={setCustomerSearchFromSplit}
+          splitBills={splitBills}
           setSplitItems={setSplitItems}
           setSplitBills={setSplitBills}
           setSplitDiscount={setSplitDiscount}

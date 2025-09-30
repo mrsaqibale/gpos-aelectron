@@ -81,6 +81,7 @@ const FinalizeSaleModal = ({
   // Modal state
   setShowCartDetailsModal,
   // Split bill props
+  splitBills,
   splitBillToRemove,
   setSplitBills,
   setSplitBillToRemove,
@@ -1143,7 +1144,11 @@ const FinalizeSaleModal = ({
                     return;
                   }
 
-                } else if (selectedPlacedOrder && selectedPlacedOrder.databaseId) {
+                } else if (selectedPlacedOrder && selectedPlacedOrder.databaseId && !selectedSplitBill) {
+                  console.log('=== PROCESSING EXISTING ORDER PAYMENT ===');
+                  console.log('selectedPlacedOrder:', selectedPlacedOrder);
+                  console.log('selectedPlacedOrder.databaseId:', selectedPlacedOrder.databaseId);
+                  
                   // Set flag to indicate this invoice is after payment
                   setIsInvoiceAfterPayment(true);
                   
@@ -1163,6 +1168,9 @@ const FinalizeSaleModal = ({
                   // Note: Tables are not freed automatically - this should be done when order is manually completed
                   // Note: Order is not removed from active orders - this should be done when order is manually completed
                 } else if (selectedSplitBill) {
+                  console.log('=== PROCESSING SPLIT BILL PAYMENT ===');
+                  console.log('selectedSplitBill:', selectedSplitBill);
+                  console.log('selectedPlacedOrder:', selectedPlacedOrder);
 console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
 
                   // Handle split bill payment
@@ -1214,12 +1222,26 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
                     
                     // Automatically remove the paid split bill
                     if (splitBillToRemove) {
-                      const updatedSplitBills = splitBills.filter(split => split.id !== splitBillToRemove);
+                      const updatedSplitBills = (splitBills || []).filter(split => split.id !== splitBillToRemove);
                       setSplitBills(updatedSplitBills);
                       setSplitBillToRemove(null);
                       
                       // Update cart items by removing paid quantities
+                      console.log('=== CALLING updateCartAfterSplitPayment ===');
+                      console.log('selectedSplitBill before updateCartAfterSplitPayment:', selectedSplitBill);
                       updateCartAfterSplitPayment(selectedSplitBill);
+                      console.log('=== updateCartAfterSplitPayment COMPLETED ===');
+                      
+                      // Check if cart is empty after removing paid items, then clear it
+                      const remainingCartItems = cartItems.filter(item => item.quantity > 0);
+                      if (remainingCartItems.length === 0) {
+                        console.log('No remaining items after split payment - clearing cart...');
+                        clearCart();
+                        console.log('Cart cleared after split bill payment - no items remaining');
+                      } else {
+                        console.log('Cart still has items after split bill payment:', remainingCartItems.length, 'items');
+                        console.log('Remaining items:', remainingCartItems.map(item => ({ name: item.food?.name, quantity: item.quantity })));
+                      }
                       
                       // Reset selectedSplitBill after successful payment
                       setSelectedSplitBill(null);
@@ -1249,9 +1271,22 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
                   }
                 }
 
-              // Don't clear cart for split bills - let the cart update logic handle it
+              // Clear cart after successful payment (for single pay mode only)
+              // Split bill cart clearing is handled above in the split bill section
+              console.log('=== CART CLEARING LOGIC ===');
+              console.log('selectedSplitBill:', selectedSplitBill);
+              console.log('isSinglePayMode:', isSinglePayMode);
+              console.log('cartItems before clearing:', cartItems);
+              console.log('cartItems length:', cartItems?.length);
+              
               if (!selectedSplitBill) {
+                // Single pay mode - clear entire cart
+                console.log('Clearing cart for single pay mode...');
                 clearCart();
+                console.log('Cart cleared after single pay mode payment');
+              } else {
+                // Split bill mode - cart clearing is handled above in the split bill section
+                console.log('Split bill mode - cart clearing already handled above');
               }
               
               onClose();
@@ -1287,6 +1322,19 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
               } catch (error) {
                 console.error('Error processing payment:', error);
                 showError('Failed to process payment. Please try again.');
+                
+                // Even if there's an error, we should still try to clear the cart if the order was successfully created
+                console.log('Payment error occurred - checking if cart should still be cleared...');
+                console.log('selectedSplitBill:', selectedSplitBill);
+                console.log('isSinglePayMode:', isSinglePayMode);
+                
+                // For single pay mode, if we get here it means the order creation failed, so don't clear cart
+                // For split bills, the updateCartAfterSplitPayment might have already been called
+                if (selectedSplitBill) {
+                  console.log('Split bill payment failed - cart state depends on updateCartAfterSplitPayment');
+                } else {
+                  console.log('Single pay mode payment failed - keeping cart intact');
+                }
               }
             }}
             className={`flex-1 px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
