@@ -1175,7 +1175,13 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
                   console.log('Split bill paymentInfo with finalPaymentAmount:', paymentInfo);
                   
                   // Place the split bill order in database
+                  console.log('About to call handlePlaceSplitBillOrder...');
+                  console.log('handlePlaceSplitBillOrder function available:', typeof handlePlaceSplitBillOrder);
+                  console.log('selectedSplitBill:', selectedSplitBill);
+                  console.log('paymentInfo:', paymentInfo);
+                  
                   const orderId = await handlePlaceSplitBillOrder(selectedSplitBill, paymentInfo);
+                  console.log('handlePlaceSplitBillOrder returned:', orderId);
                   
                   if (orderId) {
                     // Create a temporary order object for invoice display from the split bill

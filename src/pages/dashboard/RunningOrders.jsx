@@ -5124,10 +5124,13 @@ const RunningOrders = () => {
   };
 
   const handlePlaceSplitBillOrder = async (splitBill, paymentInfo) => {
+    console.log('=== HANDLE PLACE SPLIT BILL ORDER CALLED ===');
     console.log('handlePlaceSplitBillOrder called with:');
     console.log('splitBill:', splitBill);
     console.log('paymentInfo:', paymentInfo);
     console.log('paymentInfo.paymentAmount:', paymentInfo.paymentAmount);
+    console.log('splitBill.items:', splitBill.items);
+    console.log('splitBill.items.length:', splitBill.items?.length);
     
     try {
       // Split bill orders always get "New" status regardless of main screen selection
@@ -5181,8 +5184,95 @@ const RunningOrders = () => {
         placed_at: dbStatus === 'new' ? new Date().toISOString() : null
       };
 
-      // Add items data with proper structure for order details
-      orderData.items = splitBill.items.map(item => {
+      // Place the order in database first (same as simple pay)
+      console.log('Creating split bill order with data:', orderData);
+      const orderResult = await window.myAPI?.createOrder(orderData);
+      console.log('Split bill createOrder result:', orderResult);
+      
+      if (!orderResult || !orderResult.success) {
+        console.error('Split bill order creation failed:', orderResult);
+        showError('Failed to place split bill order: ' + (orderResult?.message || 'Unknown error'));
+        return null;
+      }
+
+      const orderId = orderResult.id;
+      console.log('Split bill order created successfully with ID:', orderId);
+
+      // Prepare order details data (same structure as simple pay)
+      const orderDetailsArray = splitBill.items.map(item => {
+        // Calculate item-specific totals
+        const itemSubtotal = item.totalPrice;
+        const itemTax = calculateTaxAmount(itemSubtotal); // Calculate tax using settings
+        const itemDiscount = 0; // Individual item discount if any
+
+        // Handle custom pizza items differently (same as simple pay)
+        if (item.isCustomPizza) {
+          // For custom pizzas, create special food details
+          const customPizzaDetails = JSON.stringify({
+            type: 'custom_pizza',
+            name: 'Split Pizza',
+            size: item.size,
+            slices: item.slices,
+            price: item.price,
+            note: item.customNote,
+            selectedPizzas: item.selectedPizzas,
+            flavorIngredients: item.flavorIngredients,
+            sliceColors: item.sliceColors
+          });
+
+          return {
+            order_id: orderId,
+            food_id: 0, // No specific food ID for custom pizzas
+            quantity: item.quantity,
+            price: item.price,
+            food_details: customPizzaDetails,
+            item_note: item.customNote,
+            variation: null,
+            add_ons: null,
+            ingredients: JSON.stringify(item.flavorIngredients),
+            discount_on_food: 0,
+            discount_type: null,
+            tax_amount: itemTax,
+            total_add_on_price: 0,
+            issynicronized: 0,
+            isdeleted: 0,
+            iscreateyourown: 1, // Mark as custom pizza
+            isopen: 0
+          };
+        }
+
+        // Handle custom food items (same as simple pay)
+        if (item.isCustomFood) {
+          const customFoodDetails = JSON.stringify({
+            type: 'custom_food',
+            name: item.customFoodName,
+            price: item.price,
+            note: item.customFoodNote,
+            ingredients: item.customFoodIngredients
+          });
+
+          return {
+            order_id: orderId,
+            food_id: 0, // No specific food ID for custom foods
+            quantity: item.quantity,
+            price: item.price,
+            food_details: customFoodDetails,
+            item_note: item.customFoodNote,
+            variation: null,
+            add_ons: null,
+            ingredients: JSON.stringify(item.customFoodIngredients),
+            discount_on_food: 0,
+            discount_type: null,
+            tax_amount: itemTax,
+            total_add_on_price: 0,
+            issynicronized: 0,
+            isdeleted: 0,
+            iscreateyourown: 0,
+            isopen: 1 // Mark as open order
+          };
+        }
+
+        // Handle regular food items (same as simple pay)
         // Prepare variations and addons as JSON
         const variations = Object.keys(item.variations || {}).length > 0 ? JSON.stringify(item.variations) : null;
         const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
@@ -5204,38 +5294,48 @@ const RunningOrders = () => {
 
         return {
           food_id: item.food?.id || 0,
-          order_id: null, // Will be set by the API
+          order_id: orderId,
           price: item.food?.price || 0,
           food_details: foodDetails,
           item_note: null,
           variation: variations,
           add_ons: addons,
-          discount_on_food: 0,
+          discount_on_food: itemDiscount,
           discount_type: null,
           quantity: item.quantity,
-          tax_amount: 0, // Will be calculated by the API
+          tax_amount: itemTax,
           total_add_on_price: 0,
           issynicronized: false,
           isdeleted: false
         };
       });
-      
-      console.log('Split bill items being saved:', orderData.items);
 
-      // Place the order in database (use same API as regular orders)
-      console.log('Creating split bill order with data:', orderData);
-      const result = await window.myAPI?.createOrder(orderData);
-      console.log('Split bill createOrder result:', result);
+      // Create order details separately (same as simple pay)
+      console.log('Creating split bill order details:', orderDetailsArray);
+      console.log('Order details array length:', orderDetailsArray.length);
+      console.log('API available check:', !!window.myAPI);
+      console.log('createMultipleOrderDetails available check:', !!window.myAPI?.createMultipleOrderDetails);
       
-      if (result && result.success) {
-        console.log('Split bill order created successfully:', result);
-        showSuccess(`Split Bill ${splitBill.id} order placed successfully!`);
-        return result.id; // Return order ID (createOrder returns result.id, not result.data.id)
-      } else {
-        console.error('Split bill order creation failed:', result);
-        showError('Failed to place split bill order: ' + (result?.message || 'Unknown error'));
+      if (!window.myAPI?.createMultipleOrderDetails) {
+        console.error('createMultipleOrderDetails API not available');
+        showError('createMultipleOrderDetails API not available');
         return null;
       }
+      
+      const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
+      console.log('Split bill order details result:', orderDetailsResult);
+
+      if (!orderDetailsResult.success) {
+        console.error('Failed to create split bill order details:', orderDetailsResult);
+        showError('Failed to create split bill order details: ' + orderDetailsResult.message);
+        return null;
+      }
+
+      console.log('Split bill order and details created successfully');
+      console.log('Order ID:', orderId);
+      console.log('Order details created:', orderDetailsResult);
+      showSuccess(`Split Bill ${splitBill.id} order placed successfully!`);
+      return orderId;
     } catch (error) {
       console.error('Error placing split bill order:', error);
       showError('Failed to place split bill order. Please try again.');
