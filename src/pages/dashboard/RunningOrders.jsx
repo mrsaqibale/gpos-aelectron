@@ -3942,6 +3942,9 @@ const RunningOrders = () => {
         // Transform database orders to UI format
         const transformedDrafts = await Promise.all(
           draftOrders.map(async (order) => {
+            console.log('Processing draft order from database:', order);
+            console.log('Order ID:', order.id, 'Order Number:', order.order_number, 'Draft Name:', order.draft_name);
+            
             // Ensure order exists and has required properties
             if (!order || !order.id) {
               console.warn('Invalid order found:', order);
@@ -4006,10 +4009,26 @@ const RunningOrders = () => {
               items = []; // Set empty array if there's an error
             }
 
+            // Ensure we have valid IDs
+            const validId = order.id || Date.now(); // Fallback to timestamp if no ID
+            
+            // Generate a proper draft number if not exists
+            let validOrderNumber;
+            if (order.order_number && order.order_number.startsWith('draft_id')) {
+              validOrderNumber = order.order_number;
+            } else {
+              // Generate a new sequential draft ID for orders without proper order_number
+              const newDraftId = await getNextDraftId();
+              validOrderNumber = newDraftId;
+              console.log('Generated new draft number for order without order_number:', validOrderNumber);
+            }
+            
+            console.log('Creating draft object with ID:', validId, 'order_number:', order.order_number, 'validOrderNumber:', validOrderNumber);
+
             return {
-              id: order.id,
-              databaseId: order.id,
-              orderNumber: order.order_number || `draft_id${order.id}`,
+              id: validId,
+              databaseId: validId,
+              orderNumber: validOrderNumber,
               items: items,
               customer: {
                 name: order.draft_name || 'Unknown',
@@ -4135,7 +4154,7 @@ const RunningOrders = () => {
       if (isUpdatingExistingDraft) {
         console.log('Recreated draft order successfully with new ID:', orderId, 'using same draft number:', draftId);
       } else {
-        console.log('Draft order created successfully with ID:', orderId);
+      console.log('Draft order created successfully with ID:', orderId);
       }
 
       // Debug cart items
@@ -4380,7 +4399,7 @@ const RunningOrders = () => {
       } else {
         // Add new draft order to local state (at the top)
         setCurrentDraftOrders(prev => [draftOrder, ...prev]);
-        showSuccess('Draft order created successfully!', 'success');
+      showSuccess('Draft order created successfully!', 'success');
       }
 
       // Clear cart completely for new draft orders, but keep current draft ID for updates
@@ -4392,7 +4411,7 @@ const RunningOrders = () => {
 
       // Automatically set order type to 'In Store' for new orders
       if (!isUpdatingExistingDraft) {
-        setSelectedOrderType('In Store');
+      setSelectedOrderType('In Store');
       }
 
       // Refresh the draft list to ensure UI is updated
@@ -9721,6 +9740,13 @@ const RunningOrders = () => {
         onEditDraft={async (draft) => {
           // Handle editing draft in cart
           console.log('Editing draft:', draft);
+          
+          // Validate draft has required properties
+          if (!draft.databaseId || !draft.orderNumber) {
+            console.error('Invalid draft object - missing databaseId or orderNumber:', draft);
+            showError('Invalid draft data. Cannot edit this draft.');
+            return;
+          }
           
           // Find the position of this draft in the list before removing it
           const draftPosition = currentDraftOrders.findIndex(d => d.id === draft.id);
