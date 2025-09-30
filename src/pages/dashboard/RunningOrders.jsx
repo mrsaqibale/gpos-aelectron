@@ -7139,11 +7139,15 @@ const RunningOrders = () => {
               <div className="flex items-center gap-2">
                 {/* Menu Button */}
                 <button
-                  onClick={() => window.dispatchEvent(new CustomEvent('openDashboardMenu'))}
-                  className="w-8 h-8 cursor-pointer flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors duration-200 rounded-lg border border-gray-300"
+                  onClick={() => {
+                    console.log('Menu button clicked');
+                    setShowFloatingSidebar(true);
+                  }}
+                  className="px-3 py-1 cursor-pointer flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200 rounded-lg border-2 border-blue-600 shadow-md text-sm font-bold"
                   title="Menu"
                 >
-                  <Menu className="w-5 h-5" />
+                  <Menu className="w-4 h-4 mr-1" />
+                  MENU
                 </button>
                 <span className="font-semibold text-gray-800 text-xs sm:text-sm md:text-xs lg:text-sm">🍽 Food &amp; Categories</span>
               </div>
