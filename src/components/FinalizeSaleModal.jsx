@@ -13,6 +13,7 @@ const FinalizeSaleModal = ({
   setPaymentAmount,
   givenAmount,
   setGivenAmount,
+  handleRemoveSplitBill,
   changeAmount,
   setChangeAmount,
   currencyAmount,
@@ -25,6 +26,7 @@ const FinalizeSaleModal = ({
   // Mode and data props
   isSinglePayMode,
   selectedSplitBill,
+  setSelectedSplitBill,
   selectedPlacedOrder,
   cartItems,
   foodDetails,
@@ -43,6 +45,8 @@ const FinalizeSaleModal = ({
   // Other props
   sendSMS,
   setSendSMS,
+  setShowSplitBillModal,
+  setCustomerSearchFromSplit,
   // Handler functions
   handleCashGivenAmountChange,
   handleCashAmountChange,
@@ -77,9 +81,16 @@ const FinalizeSaleModal = ({
   // Modal state
   setShowCartDetailsModal,
   // Split bill props
+  splitBills,
   splitBillToRemove,
   setSplitBills,
   setSplitBillToRemove,
+  setSplitItems,
+  setSplitDiscount,
+  setSplitCharge,
+  setSplitTips,
+  updateCartAfterSplitPayment,
+  handlePlaceSplitBillOrder,
   // Order related props
   placedOrders,
   selectedCustomer,
@@ -113,6 +124,24 @@ const FinalizeSaleModal = ({
       setSelectedPaymentMethod(modifyingOrderPaymentInfo.payment_method);
     }
   }, [isModifyingOrder, modifyingOrderPaymentInfo, setSelectedPaymentMethod]);
+
+  // Synchronize paymentAmount with addedPayments for single pay mode
+  React.useEffect(() => {
+    if (isSinglePayMode && addedPayments.length > 0 && paymentAmount === '') {
+      const totalFromAddedPayments = addedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      console.log('Syncing paymentAmount with addedPayments total:', totalFromAddedPayments);
+      setPaymentAmount(totalFromAddedPayments.toString());
+      setGivenAmount(totalFromAddedPayments.toString());
+      setChangeAmount('0.00');
+    }
+  }, [isSinglePayMode, addedPayments, paymentAmount, setPaymentAmount, setGivenAmount, setChangeAmount]);
+
+  // Debug payment amount changes
+  React.useEffect(() => {
+    console.log('Payment amount changed:', paymentAmount);
+    console.log('Given amount changed:', givenAmount);
+  }, [paymentAmount, givenAmount]);
+
 
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
@@ -310,7 +339,10 @@ const FinalizeSaleModal = ({
                   <input
                     type="number"
                     value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    onChange={(e) => {
+                      console.log('Payment amount onChange:', e.target.value);
+                      setPaymentAmount(e.target.value);
+                    }}
                     onFocus={(e) => handleNumericInputFocus(e, 'paymentAmount', paymentAmount)}
                     onClick={(e) => handleNumericInputFocus(e, 'paymentAmount', paymentAmount)}
                     onBlur={(e) => {
@@ -321,6 +353,7 @@ const FinalizeSaleModal = ({
                     }}
                     onInput={(e) => {
                       const value = e.target.value;
+                      console.log('Payment amount input changed:', value);
                       setPaymentAmount(value);
                       if (numericActiveInput === 'paymentAmount') {
                         setNumericKeyboardInput(value);
@@ -638,13 +671,13 @@ const FinalizeSaleModal = ({
                 />
                 <span className="text-sm text-gray-700">Send SMS</span>
               </label>
-              <button
+              {/* <button
                 onClick={() => setShowCartDetailsModal(true)}
                 className="px-4 py-2 bg-gray-300 text-black rounded-lg hover:bg-gray-400 transition-colors text-sm"
               >
                 {isSinglePayMode ? 'Order Details' : 
                  selectedSplitBill ? 'Split Bill Details' : 'Cart Details'}
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -952,27 +985,94 @@ const FinalizeSaleModal = ({
             Cancel
           </button>
           <button
-            disabled={addedPayments.length === 0 || calculateDueAmount() > 0}
+            disabled={(() => {
+              const isDisabled = (isSinglePayMode ? (parseFloat(paymentAmount) <= 0) : (addedPayments.length === 0)) || calculateDueAmount() > 0;
+              console.log('Submit button disabled check:', {
+                isSinglePayMode,
+                paymentAmount,
+                parseFloatPaymentAmount: parseFloat(paymentAmount),
+                addedPaymentsLength: addedPayments.length,
+                calculateDueAmount: calculateDueAmount(),
+                isDisabled
+              });
+              return isDisabled;
+            })()}
             onClick={async () => {
+              console.log('=== PAYMENT SUBMIT CLICKED ===');
+              console.log('isSinglePayMode:', isSinglePayMode);
+              console.log('selectedSplitBill:', selectedSplitBill);
+              console.log('selectedPlacedOrder:', selectedPlacedOrder);
+              console.log('cartItems length:', cartItems?.length);
+              console.log('paymentAmount:', paymentAmount);
+              console.log('paymentAmount type:', typeof paymentAmount);
+              console.log('paymentAmount length:', paymentAmount?.length);
+              console.log('selectedPaymentMethod:', selectedPaymentMethod);
+              console.log('addedPayments:', addedPayments);
+              console.log('addedPayments length:', addedPayments.length);
+              
               try {
               // Handle payment submission
                 const paymentAmountValue = parseFloat(paymentAmount) || 0;
                 const givenAmountValue = parseFloat(givenAmount) || 0;
                 const changeAmountValue = parseFloat(changeAmount) || 0;
+                
+                console.log('Payment values:', {
+                  paymentAmountValue,
+                  givenAmountValue,
+                  changeAmountValue,
+                  selectedPaymentMethod
+                });
+                
+                // For both single pay and split pay modes, use the appropriate payment amount
+                let finalPaymentAmount = paymentAmountValue;
+                
+                // If paymentAmount is empty but we have addedPayments, use the total from addedPayments
+                if (paymentAmountValue <= 0 && addedPayments.length > 0) {
+                  const totalFromAddedPayments = addedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+                  console.log('Using total from addedPayments:', totalFromAddedPayments);
+                  finalPaymentAmount = totalFromAddedPayments;
+                }
+                
+                // For split bills, if still no amount, try to get it from the split bill total
+                if (finalPaymentAmount <= 0 && selectedSplitBill) {
+                  const splitBillTotal = calculateSplitBillTotal();
+                  console.log('Using split bill total as payment amount:', splitBillTotal);
+                  finalPaymentAmount = splitBillTotal;
+                }
+                
+                // Validate payment amount
+                if (finalPaymentAmount <= 0) {
+                  console.error('Payment amount is zero or invalid:', finalPaymentAmount);
+                  console.error('paymentAmount:', paymentAmount);
+                  console.error('addedPayments:', addedPayments);
+                  console.error('selectedSplitBill:', selectedSplitBill);
+                  showError('Please enter a valid payment amount');
+                  return;
+                }
+                
+                console.log('Final payment amount to use:', finalPaymentAmount);
 
                 // If this is a single pay mode (direct payment without placing order first)
                 if (isSinglePayMode) {
+                  console.log('Single pay mode - creating order first');
+                  console.log('isSinglePayMode:', isSinglePayMode);
+                  
                   // Set flag to indicate this invoice is after payment
                   setIsInvoiceAfterPayment(true);
                   
                   // Create order first, then update with payment
+                  console.log('About to call handlePlaceOrder...');
                   const createdOrderId = await handlePlaceOrder();
+                  console.log('handlePlaceOrder returned:', createdOrderId);
                   
                   // Check if order was created successfully
                   if (!createdOrderId) {
+                    console.error('Order creation failed - no order ID returned');
                     showError('Failed to create order for payment');
                     return;
                   }
+                  
+                  console.log('Order created successfully with ID:', createdOrderId);
                   
                   // For single pay mode, we now have the order ID directly
                   try {
@@ -981,14 +1081,23 @@ const FinalizeSaleModal = ({
                       const paymentUpdates = {
                         payment_status: 'paid',
                         payment_method: selectedPaymentMethod,
-                        order_status: 'completed'
+                        order_status: 'new',
+                        order_amount: finalPaymentAmount // Use the final payment amount
                       };
                       
+                      console.log('Updating order with payment info:', paymentUpdates);
+                      console.log('Order ID to update:', createdOrderId);
+                      
                       const updateResult = await window.myAPI.updateOrder(createdOrderId, paymentUpdates);
+                      console.log('Update result:', updateResult);
+                      
                       if (!updateResult.success) {
+                        console.error('Order update failed:', updateResult);
                         showError('Failed to update order payment: ' + updateResult.message);
                         return;
                       }
+                      
+                      console.log('Order updated successfully with payment info');
                       
                       // Free the associated tables when order is completed through payment
                       try {
@@ -1035,7 +1144,11 @@ const FinalizeSaleModal = ({
                     return;
                   }
 
-                } else if (selectedPlacedOrder && selectedPlacedOrder.databaseId) {
+                } else if (selectedPlacedOrder && selectedPlacedOrder.databaseId && !selectedSplitBill) {
+                  console.log('=== PROCESSING EXISTING ORDER PAYMENT ===');
+                  console.log('selectedPlacedOrder:', selectedPlacedOrder);
+                  console.log('selectedPlacedOrder.databaseId:', selectedPlacedOrder.databaseId);
+                  
                   // Set flag to indicate this invoice is after payment
                   setIsInvoiceAfterPayment(true);
                   
@@ -1055,43 +1168,136 @@ const FinalizeSaleModal = ({
                   // Note: Tables are not freed automatically - this should be done when order is manually completed
                   // Note: Order is not removed from active orders - this should be done when order is manually completed
                 } else if (selectedSplitBill) {
+                  console.log('=== PROCESSING SPLIT BILL PAYMENT ===');
+                  console.log('selectedSplitBill:', selectedSplitBill);
+                  console.log('selectedPlacedOrder:', selectedPlacedOrder);
+console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
+
                   // Handle split bill payment
                   setIsInvoiceAfterPayment(true);
                   
-                  // For split bills, we don't update the main order in the database
-                  // Instead, we just process the payment for this specific split
-                  // The split bill is already calculated and ready for invoice
-                  
-                  // Create a temporary order object for invoice display from the split bill
-                  const splitOrderForInvoice = {
-                    id: selectedSplitBill.id,
-                    orderNumber: `${selectedPlacedOrder?.orderNumber || 'ORD-000'}-SPLIT-${selectedSplitBill.id}`,
-                    items: selectedSplitBill.items,
-                    customer: selectedSplitBill.customer || selectedPlacedOrder?.customer || { name: 'Walk-in Customer' },
-                    total: selectedSplitBill.total,
-                    coupon: appliedCoupon,
-                    orderType: selectedPlacedOrder?.orderType || 'In Store',
-                    table: selectedPlacedOrder?.table || 'None',
-                    waiter: selectedPlacedOrder?.waiter || 'Ds Waiter',
-                    status: 'Split Payment',
-                    placedAt: new Date().toISOString(),
-                    databaseId: selectedPlacedOrder?.databaseId
+                  // Prepare payment information
+                  const paymentInfo = {
+                    paymentMethod: selectedPaymentMethod,
+                    paymentAmount: finalPaymentAmount, // Use the final payment amount we calculated
+                    givenAmount: parseFloat(givenAmount) || 0,
+                    changeAmount: parseFloat(changeAmount) || 0,
+                    currency: selectedCurrency,
+                    currencyAmount: parseFloat(currencyAmount) || 0
                   };
                   
-                  // Set the split order for invoice display
-                  setSelectedPlacedOrder(splitOrderForInvoice);
+                  console.log('Split bill paymentInfo with finalPaymentAmount:', paymentInfo);
                   
-                  // Remove the processed split bill from the list
-                  if (splitBillToRemove) {
-                    setSplitBills(prev => prev.filter(split => split.id !== splitBillToRemove));
-                    setSplitBillToRemove(null);
+                  // Place the split bill order in database
+                  console.log('About to call handlePlaceSplitBillOrder...');
+                  console.log('handlePlaceSplitBillOrder function available:', typeof handlePlaceSplitBillOrder);
+                  console.log('selectedSplitBill:', selectedSplitBill);
+                  console.log('paymentInfo:', paymentInfo);
+                  
+                  const orderId = await handlePlaceSplitBillOrder(selectedSplitBill, paymentInfo);
+                  console.log('handlePlaceSplitBillOrder returned:', orderId);
+                  
+                  if (orderId) {
+                    // Create a temporary order object for invoice display from the split bill
+                    const splitOrderForInvoice = {
+                      id: orderId,
+                      orderNumber: `ORD-${orderId}-SPLIT-${selectedSplitBill.id}`,
+                      items: selectedSplitBill.items,
+                      customer: selectedSplitBill.customer || selectedPlacedOrder?.customer || { name: 'Walk-in Customer' },
+                      total: selectedSplitBill.total,
+                      coupon: appliedCoupon,
+                      orderType: selectedPlacedOrder?.orderType || 'In Store',
+                      table: selectedPlacedOrder?.table || 'None',
+                      waiter: selectedPlacedOrder?.waiter || 'Ds Waiter',
+                      status: 'Completed',
+                      paymentStatus: 'Paid',
+                      paymentMethod: paymentInfo.paymentMethod,
+                      placedAt: new Date().toISOString(),
+                      completedAt: new Date().toISOString(),
+                      databaseId: orderId
+                    };
+                    
+                    // Set the split order for invoice display
+                    setSelectedPlacedOrder(splitOrderForInvoice);
+                    
+                    // Automatically remove the paid split bill
+                    if (splitBillToRemove) {
+                      const updatedSplitBills = (splitBills || []).filter(split => split.id !== splitBillToRemove);
+                      setSplitBills(updatedSplitBills);
+                      setSplitBillToRemove(null);
+                      
+                      // Update cart items by removing paid quantities
+                      console.log('=== CALLING updateCartAfterSplitPayment ===');
+                      console.log('selectedSplitBill before updateCartAfterSplitPayment:', selectedSplitBill);
+                      updateCartAfterSplitPayment(selectedSplitBill);
+                      console.log('=== updateCartAfterSplitPayment COMPLETED ===');
+                      
+                      // Check if cart is empty after removing paid items, then clear it
+                      const remainingCartItems = cartItems.filter(item => item.quantity > 0);
+                      if (remainingCartItems.length === 0) {
+                        console.log('No remaining items after split payment - clearing cart...');
+                        clearCart();
+                        console.log('Cart cleared after split bill payment - no items remaining');
+                      } else {
+                        console.log('Cart still has items after split bill payment:', remainingCartItems.length, 'items');
+                        console.log('Remaining items:', remainingCartItems.map(item => ({ name: item.food?.name, quantity: item.quantity })));
+                      }
+                      
+                      // Reset selectedSplitBill after successful payment
+                      setSelectedSplitBill(null);
+                      
+                      // Check if no more split bills remain, then close the split modal
+                      if (updatedSplitBills.length === 0) {
+                        console.log('No more split bills remaining - closing split bill modal automatically');
+                        // Close the split bill modal
+                        setShowSplitBillModal(false);
+                        setTotalSplit('');
+                        setSplitItems([]);
+                        setSplitBills([]);
+                        setSelectedSplitBill(null);
+                        setSplitDiscount(0);
+                        setSplitCharge(0);
+                        setSplitTips(0);
+                        setSplitBillToRemove(null);
+                        setCustomerSearchFromSplit(false);
+                        setIsSinglePayMode(false);
+                      }
+                      
+                      console.log('Automatically removed paid split bill and reset selectedSplitBill after successful payment');
+                    }
+                  } else {
+                    showError('Failed to place split bill order. Please try again.');
+                    return;
                   }
                 }
 
+              // Clear cart after successful payment (for single pay mode only)
+              // Split bill cart clearing is handled above in the split bill section
+              console.log('=== CART CLEARING LOGIC ===');
+              console.log('selectedSplitBill:', selectedSplitBill);
+              console.log('isSinglePayMode:', isSinglePayMode);
+              console.log('cartItems before clearing:', cartItems);
+              console.log('cartItems length:', cartItems?.length);
+              
+              if (!selectedSplitBill) {
+                // Single pay mode - clear entire cart
+                console.log('Clearing cart for single pay mode...');
+                clearCart();
+                console.log('Cart cleared after single pay mode payment');
+              } else {
+                // Split bill mode - cart clearing is handled above in the split bill section
+                console.log('Split bill mode - cart clearing already handled above');
+              }
+              
               onClose();
               setIsSinglePayMode(false);
-              clearCart();
               resetFinalizeSaleModal();
+              
+              // Ensure selectedSplitBill is cleared after payment processing
+              if (selectedSplitBill) {
+                setSelectedSplitBill(null);
+                console.log('Cleared selectedSplitBill after payment processing');
+              }
               
               // Show invoice modal after successful payment
               if (isSinglePayMode && selectedPlacedOrder) {
@@ -1116,10 +1322,25 @@ const FinalizeSaleModal = ({
               } catch (error) {
                 console.error('Error processing payment:', error);
                 showError('Failed to process payment. Please try again.');
+                
+                // Even if there's an error, we should still try to clear the cart if the order was successfully created
+                console.log('Payment error occurred - checking if cart should still be cleared...');
+                console.log('selectedSplitBill:', selectedSplitBill);
+                console.log('isSinglePayMode:', isSinglePayMode);
+                
+                // For single pay mode, if we get here it means the order creation failed, so don't clear cart
+                // For split bills, the updateCartAfterSplitPayment might have already been called
+                if (selectedSplitBill) {
+                  console.log('Split bill payment failed - cart state depends on updateCartAfterSplitPayment');
+                } else {
+                  console.log('Single pay mode payment failed - keeping cart intact');
+                }
               }
             }}
             className={`flex-1 px-6 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-              addedPayments.length === 0 || calculateDueAmount() > 0
+              // For single pay mode, check if payment amount is valid
+              (isSinglePayMode ? (parseFloat(paymentAmount) <= 0) : (addedPayments.length === 0)) || 
+              calculateDueAmount() > 0
                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700'
             }`}

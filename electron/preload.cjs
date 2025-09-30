@@ -335,6 +335,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   send: (channel, ...args) => ipcRenderer.send(channel, ...args),
   on: (channel, callback) => ipcRenderer.on(channel, callback),
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
+  shell: {
+    openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url)
+  },
+  path: {
+    join: (...args) => ipcRenderer.invoke('path:join', ...args)
+  }
 });
 
 // others

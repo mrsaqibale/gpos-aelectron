@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings,
@@ -13,6 +13,9 @@ import {
   Utensils,
   List,
   Truck,
+  Calculator,
+  Server,
+  ExternalLink,
 } from "lucide-react";
 
 const adminItems = [
@@ -41,6 +44,11 @@ const adminItems = [
     label: "Suppliers",
     path: "/dashboard/stock-management?tab=suppliers"
   },
+  {
+    icon: <Server size={18} className="text-primary" />,
+    label: "Counter Server",
+    action: "counterServer"
+  },
 ];
 
 const settingsItems = [
@@ -63,9 +71,59 @@ const settingsItems = [
 
 export default function AdminPanel() {
   const navigate = useNavigate();
+  const [serverStatus, setServerStatus] = useState({ isRunning: false, port: 3001 });
+  const [serverInfo, setServerInfo] = useState(null);
+
+  useEffect(() => {
+    checkServerStatus();
+  }, []);
+
+  const checkServerStatus = async () => {
+    if (window.electronAPI) {
+      try {
+        const status = await window.electronAPI.invoke('counter:getServerStatus');
+        setServerStatus(status);
+      } catch (error) {
+        console.error('Error checking server status:', error);
+      }
+    }
+  };
 
   const handleNavigation = (path) => {
     navigate(path);
+  };
+
+  const handleCounterServer = async () => {
+    try {
+      if (!serverStatus.isRunning) {
+        // Start the server
+        const result = await window.electronAPI.invoke('counter:startServer');
+        
+        if (result.success) {
+          setServerStatus({ isRunning: true, port: result.port });
+          setServerInfo(result);
+          
+          // Show server info
+          alert(`🎯 Counter Server Started!\n\nLocal URL: ${result.localUrl}\nNetwork URL: ${result.networkUrl}\n\nShare the Network URL with other devices on your network!`);
+          
+          // Open in browser
+          await window.electronAPI.invoke('counter:openInBrowser');
+        } else {
+          alert(`Failed to start server: ${result.error}`);
+        }
+      } else {
+        // Stop the server
+        const stopped = await window.electronAPI.invoke('counter:stopServer');
+        if (stopped) {
+          setServerStatus({ isRunning: false, port: 3001 });
+          setServerInfo(null);
+          alert('Counter server stopped.');
+        }
+      }
+    } catch (error) {
+      console.error('Error managing counter server:', error);
+      alert(`Error: ${error.message}`);
+    }
   };
 
   return (
@@ -101,12 +159,29 @@ export default function AdminPanel() {
             {adminItems.map((item) => (
               <button
                 key={item.label}
-                onClick={() => handleNavigation(item.path)}
-                className="flex items-center gap-3 p-3 rounded-lg bg-[#f6fafd] hover:bg-cyan-50 transition border border-transparent focus:outline-none cursor-pointer"
+                onClick={() => {
+                  if (item.action === "counterServer") {
+                    handleCounterServer();
+                  } else {
+                    handleNavigation(item.path);
+                  }
+                }}
+                className={`flex items-center gap-3 p-3 rounded-lg transition border border-transparent focus:outline-none cursor-pointer ${
+                  item.action === "counterServer" && serverStatus.isRunning
+                    ? "bg-green-50 hover:bg-green-100 border-green-200"
+                    : "bg-[#f6fafd] hover:bg-cyan-50"
+                }`}
                 style={{ boxShadow: "0 1px 2px 0 rgba(0,0,0,0.01)" }}
               >
                 {item.icon}
-                <span className="text-gray-700 font-medium">{item.label}</span>
+                <span className="text-gray-700 font-medium">
+                  {item.label}
+                  {item.action === "counterServer" && serverStatus.isRunning && (
+                    <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+                      RUNNING
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </div>
@@ -155,6 +230,42 @@ export default function AdminPanel() {
           </div>
         </div>
       </div>
+
+      {/* Server Status Display */}
+      {serverStatus.isRunning && serverInfo && (
+        <div className="mt-8 w-full max-w-2xl">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Server size={20} className="text-green-600" />
+                <h3 className="text-green-800 font-semibold">Counter Server Running</h3>
+              </div>
+              <button
+                onClick={() => window.electronAPI.invoke('counter:openInBrowser')}
+                className="flex items-center gap-1 text-green-600 hover:text-green-800 text-sm"
+              >
+                <ExternalLink size={14} />
+                Open
+              </button>
+            </div>
+            
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white rounded p-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-1">Local Access</h4>
+                <code className="text-xs bg-gray-100 p-1 rounded block">{serverInfo.localUrl}</code>
+              </div>
+              <div className="bg-white rounded p-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-1">Network Access</h4>
+                <code className="text-xs bg-gray-100 p-1 rounded block">{serverInfo.networkUrl}</code>
+              </div>
+            </div>
+            
+            <p className="text-sm text-green-700 mt-3">
+              💡 Share the Network URL with other devices on your network to access the counter remotely!
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

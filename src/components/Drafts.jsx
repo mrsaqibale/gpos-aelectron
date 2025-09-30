@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Edit, Trash2, User, Phone, Hash } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDeleteDraft, onDeleteAllDrafts }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [selectedDraft, setSelectedDraft] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const { themeColors } = useTheme();
 
   // Use current draft orders passed as props
   useEffect(() => {
@@ -14,15 +17,28 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
   }, [isOpen, currentDraftOrders]);
 
     const filteredDrafts = currentDraftOrders.filter(draft => {
-    if (!searchQuery.trim()) return true;
     if (!draft) return false; // Safety check for undefined draft
     
-    const query = searchQuery.toLowerCase();
-    return (
-      (draft.draftName || (draft.customer && draft.customer.name) || 'Unknown').toLowerCase().includes(query) ||
-      (draft.customer && draft.customer.phone || 'N/A').toLowerCase().includes(query) ||
-      (draft.orderNumber || draft.id || 'Unknown').toString().toLowerCase().includes(query)
-    );
+    // Customer search filter
+    const customerMatches = !customerSearchQuery.trim() || (() => {
+      const customerName = draft.draftName || 
+        (draft.customer && draft.customer.name) || 
+        'Walk-in Customer';
+      const customerQuery = customerSearchQuery.toLowerCase();
+      return customerName.toLowerCase().includes(customerQuery) ||
+        (draft.customer && draft.customer.phone || 'N/A').toLowerCase().includes(customerQuery);
+    })();
+    
+    // Item search filter
+    const itemMatches = !itemSearchQuery.trim() || (() => {
+      const itemQuery = itemSearchQuery.toLowerCase();
+      return draft.items && draft.items.some(item => {
+        const itemName = item.food?.name || item.name || 'Unknown Item';
+        return itemName.toLowerCase().includes(itemQuery);
+      });
+    })();
+    
+    return customerMatches && itemMatches;
   });
 
   const handleDraftSelect = (draft) => {
@@ -82,27 +98,52 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
 
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl h-5/6 flex">
-        {/* Left Section - Draft Sales List */}
-        <div className="w-1/2 border-r border-gray-200 flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-800">Draft Sale</h2>
-          </div>
+      <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl h-4/5 flex flex-col">
+        {/* Colored Top Bar */}
+        <div 
+          className="p-4 rounded-t-lg text-white flex justify-between items-center"
+          style={{ backgroundColor: themeColors.primary }}
+        >
+          <h2 className="text-xl font-bold">Draft Orders</h2>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-200 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
 
-          {/* Search Bar */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search Customer Name"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+        <div className="flex flex-1">
+          {/* Left Section - Draft Sales List */}
+          <div className="w-1/2 border-r border-gray-200 flex flex-col">
+            {/* Search Bars */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex gap-3">
+                {/* Customer Search */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search Customer Name or Phone"
+                    value={customerSearchQuery}
+                    onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                {/* Item Search */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search Items/Products"
+                    value={itemSearchQuery}
+                    onChange={(e) => setItemSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
 
           {/* Draft Orders Table */}
           <div className="flex-1 overflow-y-auto">
@@ -111,8 +152,9 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                 <table className="w-full">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">ID</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer (Phone)</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Draft ID</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Customer</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -126,6 +168,17 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                       filteredDrafts.map((draft) => {
                         if (!draft) return null; // Safety check
                         
+                        // Format draft ID to show as Draft_001, Draft_002, etc.
+                        const draftId = String(draft.orderNumber || draft.id || 'Unknown');
+                        const formattedDraftId = draftId.startsWith('draft_id') 
+                          ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
+                          : draftId;
+                        
+                        // Get customer name or default to "Walk-in Customer"
+                        const customerName = draft.draftName || 
+                          (draft.customer && draft.customer.name) || 
+                          'Walk-in Customer';
+                        
                         return (
                           <tr
                             key={draft.id || Math.random()}
@@ -134,11 +187,14 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                               selectedDraft?.id === draft.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''
                             }`}
                           >
-                            <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                              {draft.orderNumber || draft.id || 'Unknown'}
+                            <td className="px-4 py-2 text-sm font-bold text-gray-900">
+                              {formattedDraftId}
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-700">
-                              {draft.draftName || (draft.customer && draft.customer.name) || 'Unknown'}
+                              {customerName}
+                            </td>
+                            <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">
+                              €{(draft.totalPayable || draft.total || 0).toFixed(2)}
                             </td>
                           </tr>
                         );
@@ -163,41 +219,29 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
 
         {/* Right Section - Order Details */}
         <div className="w-1/2 flex flex-col overflow-y-auto">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-800">Order Details</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
           {selectedDraft ? (
             <>
               {/* Order Information */}
-              <div className="px-6 py-2 border-b border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Draft ID:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.orderNumber || selectedDraft.id || 'Unknown'}</span>
+                    <span className="text-sm font-bold text-gray-900">
+                      {(() => {
+                        const draftId = String(selectedDraft.orderNumber || selectedDraft.id || 'Unknown');
+                        return draftId.startsWith('draft_id') 
+                          ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
+                          : draftId;
+                      })()}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">Draft Name:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.draftName || (selectedDraft.customer && selectedDraft.customer.name) || 'Unknown'}</span>
-                  </div>
-                  {/* <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">Order Type:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.orderType}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-700">Waiter:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.waiter}</span>
-                  </div> */}
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Customer:</span>
-                    <span className="text-sm text-gray-900">{selectedDraft.customer && selectedDraft.customer.name || 'Unknown'}</span>
+                    <span className="text-sm text-gray-900">
+                      {selectedDraft.draftName || 
+                        (selectedDraft.customer && selectedDraft.customer.name) || 
+                        'Walk-in Customer'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-gray-700">Phone:</span>
@@ -320,6 +364,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}
@@ -340,10 +385,21 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                 Are you sure you want to delete this draft order? This action cannot be undone.
               </p>
               <p className="text-sm text-gray-600 mb-6">
-                Draft: <strong>{selectedDraft.orderNumber}</strong>
+                Draft: <strong>
+                  {(() => {
+                    const draftId = String(selectedDraft.orderNumber || selectedDraft.id || 'Unknown');
+                    return draftId.startsWith('draft_id') 
+                      ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
+                      : draftId;
+                  })()}
+                </strong>
               </p>
               <p className="text-sm text-gray-600 mb-6">
-                Customer: <strong>{selectedDraft.draftName || (selectedDraft.customer && selectedDraft.customer.name) || 'Unknown'}</strong>
+                Customer: <strong>
+                  {selectedDraft.draftName || 
+                    (selectedDraft.customer && selectedDraft.customer.name) || 
+                    'Walk-in Customer'}
+                </strong>
               </p>
             </div>
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
