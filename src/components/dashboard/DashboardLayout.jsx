@@ -160,6 +160,12 @@ const DashboardLayout = () => {
         path: "/dashboard/admin-panel",
         allowedRoles: ["admin"]
       },
+      {
+        name: "Customer Display",
+        icon: <Settings size={18} className="font-bold" />,
+        path: "/customer",
+        allowedRoles: ["admin"]
+      }
     ];
 
     return allItems.filter(item => item.allowedRoles.includes(userRole));
