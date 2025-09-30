@@ -26,6 +26,7 @@ import ConfirmationModal from '../../components/ConfirmationModal';
 import CustomAlert from '../../components/CustomAlert';
 import Invoice from '../../components/Invoice';
 import FinalizeSaleModal from '../../components/FinalizeSaleModal';
+import ManageOrderDetailsModal from '../../components/ManageOrderDetailsModal';
 
 const ManageOrders = () => {
   const [activeTab, setActiveTab] = useState('all');
@@ -38,6 +39,8 @@ const ManageOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetails, setOrderDetails] = useState([]);
   const [orderTotals, setOrderTotals] = useState(null);
+  const [manageOrderDetailsModal, setManageOrderDetailsModal] = useState(false);
+  const [selectedOrderDetailsModal, setSelectedOrderDetailsModal] = useState(false);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [isModalAnimating, setIsModalAnimating] = useState(false);
@@ -303,6 +306,22 @@ const ManageOrders = () => {
       setInvoiceLoading(false);
     }
   };
+  const manageOrderDetails = async (order) => {
+    try {
+      setManageOrderDetailsModal(true)
+      setSelectedOrderDetailsModal(order)
+                          
+      const [detailsResult, totalsResult] = await Promise.all([
+        window.myAPI.getOrderDetailsWithFood(order.id),
+        window.myAPI.calculateOrderTotal(order.id)
+      ]);
+      if (detailsResult?.success) setOrderDetails(detailsResult.data || []);
+      else setOrderDetails([]);
+      if (totalsResult?.success) setOrderTotals(totalsResult.data || null);
+      else setOrderTotals(null);
+    } finally {
+    }
+  };
 
   const closeOrderModal = () => {
     setIsModalAnimating(false);
@@ -474,6 +493,10 @@ const ManageOrders = () => {
   const closeInvoiceModal = () => {
     setShowInvoiceModal(false);
     setSelectedOrderForInvoice(null);
+  };
+  const closeOrderDetaislModal = () => {
+    setManageOrderDetailsModal(false);
+    setSelectedOrderDetailsModal(null);
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -1181,13 +1204,13 @@ const ManageOrders = () => {
             </div>
 
             {/* Order Type Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2  items-center gap-2 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-5  items-center gap-1 mb-4">
               {['In Store', 'Dine In', 'Collection', 'Delivery', 'Online'].map((type) => {
                 const typeId = type.toLowerCase().replace(/\s+/g, '');
                 return (
                 <button
                   key={type}
-                    className={`p-3 rounded-lg text-sm font-medium transition-colors border-2 ${
+                    className={`p-2 rounded-lg text-sm font-medium transition-colors border-2 ${
                       activeTab === typeId
                         ? 'bg-white text-black border-primary cursor-pointer'
                         : 'bg-primary text-white border-primary cursor-pointer'
@@ -1282,12 +1305,12 @@ const ManageOrders = () => {
                 onBlur={handleInputBlur}
                 className="p-3 border bg-white border-gray-300 rounded-lg text-sm focus:outline-none"
               />
-              <button className="p-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+              <button className="p-3 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
                 Search by Driver
               </button>
-              <button className="p-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
+              {/* <button className="p-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors">
                 Advanced Search
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -1668,7 +1691,11 @@ const ManageOrders = () => {
                   <td className="py-3 px-4">
                     <button
                       className="text-sm font-medium text-primary underline hover:text-primaryDark"
-                      onClick={() => openInvoiceForOrder(order)}
+                      onClick={() => 
+                        {
+                          manageOrderDetails(order)
+                        }
+                      }
                     >
                       ORD-{order.id}
                     </button>
@@ -1941,7 +1968,16 @@ const ManageOrders = () => {
           onStatusUpdate={handleStatusUpdate}
         />
       )}
+      
+      {setManageOrderDetailsModal && (
+        <ManageOrderDetailsModal
+          order={selectedOrderDetailsModal}
+          isOpen={manageOrderDetailsModal}
+          onClose={closeOrderDetaislModal}
+          foodDetails={orderDetails}
 
+        />
+      )}
       {/* Invoice Modal */}
       {showInvoiceModal && selectedOrderForInvoice && (
         <Invoice
