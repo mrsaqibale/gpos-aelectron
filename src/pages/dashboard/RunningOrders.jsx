@@ -4097,22 +4097,36 @@ const RunningOrders = () => {
             // Ensure we have valid IDs
             const validId = order.id || Date.now(); // Fallback to timestamp if no ID
             
-            // Generate proper sequential draft numbers (001, 002, 003, etc.)
-            let validOrderNumber;
-            if (order.order_number && order.order_number.startsWith('draft_id') && /draft_id\d{3}$/.test(order.order_number)) {
-              // Use existing properly formatted draft number (draft_id001, draft_id002, etc.)
-              validOrderNumber = order.order_number;
-            } else {
-              // Generate a proper sequential draft ID (001, 002, 003, etc.)
-              // We'll assign sequential numbers based on the order in which drafts appear
-              // This will ensure we get proper sequential numbering
-              const draftIndex = draftOrders.indexOf(order) + 1;
-              const sequentialNum = draftIndex.toString().padStart(3, '0');
-              validOrderNumber = `draft_id${sequentialNum}`;
-              console.log('Generated sequential draft number for order ID:', order.id, 'at index:', draftIndex, '->', validOrderNumber);
+            // ALWAYS use the order_number from database - don't regenerate
+            // This ensures consistency across refreshes
+            let validOrderNumber = order.order_number;
+            
+            // Only generate if order_number is completely missing
+            if (!validOrderNumber) {
+              validOrderNumber = `draft_id${validId}`;
+              console.log('Generated fallback draft number for order ID:', validId, '->', validOrderNumber);
             }
             
             console.log('Creating draft object with ID:', validId, 'order_number:', order.order_number, 'validOrderNumber:', validOrderNumber);
+            
+            // Calculate accurate totals from actual loaded items (not from database order_amount)
+            // This ensures the displayed total matches the actual items
+            const calculatedSubTotal = items.reduce((sum, item) => {
+              return sum + (item.totalPrice || 0);
+            }, 0);
+            
+            const calculatedTax = (calculatedSubTotal * (order.tax_percentage || 0)) / 100;
+            const calculatedDiscount = order.discount_amount || 0;
+            const calculatedTotal = calculatedSubTotal + calculatedTax - calculatedDiscount;
+            
+            console.log('Calculated totals from items:', {
+              itemsCount: items.length,
+              subTotal: calculatedSubTotal,
+              tax: calculatedTax,
+              discount: calculatedDiscount,
+              total: calculatedTotal,
+              databaseAmount: order.order_amount
+            });
             
             const draftObject = {
               id: validId,
@@ -4123,7 +4137,7 @@ const RunningOrders = () => {
                 name: order.draft_name || 'Unknown',
                 phone: 'N/A'
               },
-              total: order.order_amount || 0,
+              total: calculatedTotal, // Use calculated total from items
               coupon: null,
               orderType: 'Draft',
               table: 'None',
@@ -4133,17 +4147,17 @@ const RunningOrders = () => {
               totalItems: items.reduce((sum, item) => {
                 return sum + (item && item.quantity ? item.quantity : 0);
               }, 0),
-              subTotal: (order.order_amount || 0) - (order.total_tax_amount || 0),
-              discount: order.discount_amount || 0,
-              totalDiscount: order.discount_amount || 0,
-              tax: order.total_tax_amount || 0,
+              subTotal: calculatedSubTotal, // Use calculated subtotal from items
+              discount: calculatedDiscount,
+              totalDiscount: calculatedDiscount,
+              tax: calculatedTax, // Use calculated tax from items
               charge: 0,
               tips: 0,
-              totalPayable: order.order_amount || 0,
+              totalPayable: calculatedTotal, // Use calculated total from items
               draftName: order.draft_name || 'Unknown'
             };
             
-            console.log('Final draft object created:', draftObject);
+            console.log('Final draft object created with calculated totals:', draftObject);
             return draftObject;
           })
         );
@@ -4151,23 +4165,17 @@ const RunningOrders = () => {
         // Filter out any null entries
         const validDrafts = transformedDrafts.filter(draft => draft !== null);
 
-        // Check for duplicate order numbers and fix them
-        const orderNumberMap = new Map();
-        const fixedDrafts = validDrafts.map(draft => {
-          if (orderNumberMap.has(draft.orderNumber)) {
-            // Duplicate order number found, create unique one
-            const originalNumber = draft.orderNumber;
-            const uniqueNumber = `${originalNumber}_${draft.id}`;
-            console.log(`Fixed duplicate order number: ${originalNumber} -> ${uniqueNumber}`);
-            return { ...draft, orderNumber: uniqueNumber };
-          }
-          orderNumberMap.set(draft.orderNumber, true);
-          return draft;
-        });
+        // Sort by creation date (newest first) for consistent ordering
+        validDrafts.sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt));
 
-        setCurrentDraftOrders(fixedDrafts);
-        console.log('Fetched draft orders:', fixedDrafts);
-        console.log('Draft order numbers:', fixedDrafts.map(d => ({ id: d.id, orderNumber: d.orderNumber })));
+        setCurrentDraftOrders(validDrafts);
+        console.log('Fetched draft orders:', validDrafts);
+        console.log('Draft order numbers:', validDrafts.map(d => ({ 
+          id: d.id, 
+          orderNumber: d.orderNumber,
+          totalPayable: d.totalPayable,
+          itemsTotal: d.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0)
+        })));
       }
     } catch (error) {
       console.error('Error fetching draft orders:', error);
@@ -9249,11 +9257,9 @@ const RunningOrders = () => {
             setCustomerSearchFromSplit={setCustomerSearchFromSplit}
             splitBills={splitBills}
             setSplitItems={setSplitItems}
-            setSplitBills={setSplitBills}
             setSplitDiscount={setSplitDiscount}
             setSplitCharge={setSplitCharge}
             setSplitTips={setSplitTips}
-            setSplitBillToRemove={setSplitBillToRemove}
           />
         )}
       </div>
@@ -10046,125 +10052,6 @@ const RunningOrders = () => {
         onInputBlur={handleInputBlur}
         inputValue={getValueForActiveInput(virtualKeyboardActiveInput)}
       />
-
-      {/* Finalize Sale Modal */}
-      {showFinalizeSaleModal && (
-        <FinalizeSaleModal
-          isOpen={showFinalizeSaleModal}
-          onClose={() => setShowFinalizeSaleModal(false)}
-          // Payment related props
-          selectedPaymentMethod={selectedPaymentMethod}
-          setSelectedPaymentMethod={setSelectedPaymentMethod}
-          paymentAmount={paymentAmount}
-          setPaymentAmount={setPaymentAmount}
-          givenAmount={givenAmount}
-          setGivenAmount={setGivenAmount}
-          changeAmount={changeAmount}
-          setChangeAmount={setChangeAmount}
-          currencyAmount={currencyAmount}
-          setCurrencyAmount={setCurrencyAmount}
-          selectedCurrency={selectedCurrency}
-          handleRemoveSplitBill={handleRemoveSplitBill}
-          setSelectedCurrency={setSelectedCurrency}
-          currencyOptions={currencyOptions}
-          addedPayments={addedPayments}
-          setAddedPayments={setAddedPayments}
-          // Mode and data props
-          isSinglePayMode={isSinglePayMode}
-          selectedSplitBill={selectedSplitBill}
-          setSelectedSplitBill={setSelectedSplitBill}
-          selectedPlacedOrder={selectedPlacedOrder}
-          cartItems={cartItems}
-          foodDetails={foodDetails}
-          // Coupon related props
-          appliedCoupon={appliedCoupon}
-          removeAppliedCoupon={removeAppliedCoupon}
-          couponCode={couponCode}
-          setCouponCode={setCouponCode}
-          availableCoupons={availableCoupons}
-          couponsLoading={couponsLoading}
-          // Discount related props
-          discountType={discountType}
-          setDiscountType={setDiscountType}
-          discountAmount={discountAmount}
-          setDiscountAmount={setDiscountAmount}
-          // Other props
-          sendSMS={sendSMS}
-          setSendSMS={setSendSMS}
-          // Handler functions
-          handleCashGivenAmountChange={handleCashGivenAmountChange}
-          handleCashAmountChange={handleCashAmountChange}
-          handleNumericInputFocus={handleNumericInputFocus}
-          handleNumericKeyboardChange={handleNumericKeyboardChange}
-          handleNumericKeyboardKeyPress={handleNumericKeyboardKeyPress}
-          handleAddPayment={handleAddPayment}
-          handleApplyManualDiscount={handleApplyManualDiscount}
-          handleApplyCoupon={handleApplyCoupon}
-          handleAnyInputFocus={handleAnyInputFocus}
-          handleAnyInputClick={handleAnyInputClick}
-          handleCustomInputBlur={handleCustomInputBlur}
-          // Calculation functions
-          calculateSinglePayTotals={calculateSinglePayTotals}
-          calculateSplitBillTotal={calculateSplitBillTotal}
-          calculateCartTotal={calculateCartTotal}
-          calculateSplitBillSubtotal={calculateSplitBillSubtotal}
-          calculateSplitBillTax={calculateSplitBillTax}
-          calculateSplitBillDiscount={calculateSplitBillDiscount}
-          calculateSplitBillCharge={calculateSplitBillCharge}
-          calculateSplitBillTips={calculateSplitBillTips}
-          calculateCartSubtotal={calculateCartSubtotal}
-          calculateCartTax={calculateCartTax}
-          calculateCartDiscount={calculateCartDiscount}
-          calculateDueAmount={calculateDueAmount}
-          getCurrencySymbol={getCurrencySymbol}
-          // State variables
-          numericActiveInput={numericActiveInput}
-          numericKeyboardInput={numericKeyboardInput}
-          setNumericActiveInput={setNumericActiveInput}
-          setNumericKeyboardInput={setNumericKeyboardInput}
-          // Modal state
-          setShowCartDetailsModal={setShowCartDetailsModal}
-          // Split bill props
-          splitBillToRemove={splitBillToRemove}
-          setSplitBills={setSplitBills}
-          setSplitBillToRemove={setSplitBillToRemove}
-          updateCartAfterSplitPayment={updateCartAfterSplitPayment}
-          handlePlaceSplitBillOrder={handlePlaceSplitBillOrder}
-          // Order related props
-          placedOrders={placedOrders}
-          selectedCustomer={selectedCustomer}
-          selectedOrderType={selectedOrderType}
-          selectedTable={selectedTable}
-          // Functions
-          handlePlaceOrder={handlePlaceOrder}
-          showError={showError}
-          showSuccess={showSuccess}
-          setIsInvoiceAfterPayment={setIsInvoiceAfterPayment}
-          setShowInvoiceModal={setShowInvoiceModal}
-          clearCart={clearCart}
-          resetFinalizeSaleModal={resetFinalizeSaleModal}
-          setIsSinglePayMode={setIsSinglePayMode}
-          setSelectedPlacedOrder={setSelectedPlacedOrder}
-          setCurrentOrderForInvoice={setCurrentOrderForInvoice}
-          // Modify order payment props
-          isModifyingOrder={isModifyingOrder}
-          modifyingOrderId={modifyingOrderId}
-          modifyingOrderPaymentInfo={modifyingOrderPaymentInfo}
-          showPayLaterButton={showPayLaterButton}
-          setShowPayLaterButton={setShowPayLaterButton}
-          hasResetPayment={hasResetPayment}
-          setHasResetPayment={setHasResetPayment}
-          setShowSplitBillModal={setShowSplitBillModal}
-          setCustomerSearchFromSplit={setCustomerSearchFromSplit}
-          splitBills={splitBills}
-          setSplitItems={setSplitItems}
-          setSplitBills={setSplitBills}
-          setSplitDiscount={setSplitDiscount}
-          setSplitCharge={setSplitCharge}
-          setSplitTips={setSplitTips}
-          setSplitBillToRemove={setSplitBillToRemove}
-        />
-      )}
 
       {/* Floating Sidebar */}
       {showFloatingSidebar && (

@@ -270,14 +270,14 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                 <div className="p-6">
                   <div className="bg-gray-50 rounded-lg overflow-hidden">
                     <table className="w-full">
-                      <thead className="bg-gray-100">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Item</th>
-                          <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Price</th>
-                          <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Qty Disc</th>
-                          <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Total</th>
-                        </tr>
-                      </thead>
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Item</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Price</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Qty</th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Total</th>
+                    </tr>
+                  </thead>
                       <tbody>
                         {selectedDraft.items.length === 0 ? (
                           <tr>
