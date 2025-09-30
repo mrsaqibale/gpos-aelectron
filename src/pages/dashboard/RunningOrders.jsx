@@ -5412,20 +5412,48 @@ const RunningOrders = () => {
     // Get the split bill being removed to return its items to the pool
     const splitToRemove = splitBills.find(split => split.id === splitBillId);
 
+    // If this split was not paid, return its items to the cart
+    if (splitToRemove && !splitToRemove.paid) {
+      // Return items to cart items
+      const updatedCartItems = [...cartItems];
+      splitToRemove.items.forEach(splitItem => {
+        const cartItem = updatedCartItems.find(item => item.food?.id === splitItem.food?.id);
+        if (cartItem) {
+          // Increase quantity in cart
+          cartItem.quantity += splitItem.quantity;
+          // Recalculate total price based on original per-unit price
+          const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+          cartItem.totalPrice = perUnitPrice * cartItem.quantity;
+        }
+      });
+      
+      // Update cart items with returned quantities
+      setCartItems(updatedCartItems);
+      
+      // Also update splitItems
+      const updatedSplitItems = [...splitItems];
+      splitToRemove.items.forEach(splitItem => {
+        const splitItemInList = updatedSplitItems.find(item => item.food?.id === splitItem.food?.id);
+        if (splitItemInList) {
+          // Increase quantity in splitItems
+          splitItemInList.quantity += splitItem.quantity;
+          // Recalculate total price
+          const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+          splitItemInList.totalPrice = perUnitPrice * splitItemInList.quantity;
+        }
+      });
+      
+      // Update splitItems with returned quantities
+      setSplitItems(updatedSplitItems);
+    }
+
+    // Remove the split bill
     setSplitBills(prev => prev.filter(split => split.id !== splitBillId));
 
     // Update selected split bill if the removed one was selected
     if (selectedSplitBill?.id === splitBillId) {
       const remainingSplits = splitBills.filter(split => split.id !== splitBillId);
       setSelectedSplitBill(remainingSplits[0] || null);
-    }
-
-    // If this was a paid split (not manually removed), don't return items to pool
-    // Items from paid splits should stay with the payment
-    if (!splitToRemove?.paid) {
-      // Return items to the available pool by updating splitItems
-      // This is handled by the getRemainingQuantity function which calculates
-      // remaining quantity based on current splitBills state
     }
   };
 
