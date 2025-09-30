@@ -2617,9 +2617,9 @@ const RunningOrders = () => {
     return (amount * taxRate) / 100;
   };
 
-  // Calculate cart totals
+  // Calculate cart totals (only include items with quantity > 0)
   const calculateCartSubtotal = () => {
-    return cartItems.reduce((total, item) => total + item.totalPrice, 0);
+    return cartItems.filter(item => item.quantity > 0).reduce((total, item) => total + item.totalPrice, 0);
   };
 
   const calculateCartTax = () => {
@@ -4871,10 +4871,33 @@ const RunningOrders = () => {
   };
 
   const handleCloseSplitBillModal = () => {
+    // Restore cart items to their original quantities before closing
+    // Only restore items from splits that were NOT paid
+    const originalCartItems = [...cartItems];
+    
+    // For each item that was in UNPAID splits, restore its quantity
+    splitBills.forEach(splitBill => {
+      // Only restore items from splits that were not paid
+      if (!splitBill.paid) {
+        splitBill.items.forEach(splitItem => {
+          const cartItem = originalCartItems.find(item => item.food?.id === splitItem.food?.id);
+          if (cartItem) {
+            cartItem.quantity += splitItem.quantity;
+            // Recalculate total price based on original per-unit price
+            const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+            cartItem.totalPrice = perUnitPrice * cartItem.quantity;
+          }
+        });
+      }
+    });
+    
+    // Update cart items with restored quantities (only from unpaid splits)
+    setCartItems(originalCartItems);
+    
     setShowSplitBillModal(false);
     setTotalSplit('');
     setSplitItems([]);
-    setSplitBills([]);
+    setSplitBills([]); // This will remove all splits (both paid and unpaid)
     setSelectedSplitBill(null);
     setSplitDiscount(0);
     setSplitCharge(0);
@@ -4887,7 +4910,7 @@ const RunningOrders = () => {
     // Ensure single pay mode is reset when closing split modal
     setIsSinglePayMode(false);
     
-    console.log('Split bill modal closed - all split bill state reset');
+    console.log('Split bill modal closed - items from unpaid splits restored to cart');
   };
   
 
@@ -4993,43 +5016,35 @@ const RunningOrders = () => {
       return split;
     }));
 
-    // Update the base cart items by reducing the quantity
+    // Update the base cart items by reducing the quantity (keep items even with 0 qty)
     setCartItems(prev => prev.map(cartItem => {
       if (cartItem.id === itemId) {
         const newQuantity = cartItem.quantity - 1;
-        if (newQuantity <= 0) {
-          // If quantity becomes 0, remove the item completely
-          return null;
-        } else {
-          // Update the quantity and recalculate total price
-          const perUnitPrice = cartItem.totalPrice / cartItem.quantity;
-          return {
-            ...cartItem,
-            quantity: newQuantity,
-            totalPrice: perUnitPrice * newQuantity
-          };
-        }
+        // Keep the item even if quantity becomes 0
+        const perUnitPrice = cartItem.totalPrice / cartItem.quantity;
+        return {
+          ...cartItem,
+          quantity: newQuantity,
+          totalPrice: perUnitPrice * newQuantity
+        };
       }
       return cartItem;
-    }).filter(item => item !== null)); // Remove null items (items with 0 quantity)
+    }));
 
-    // Update splitItems to reflect the new quantities
+    // Update splitItems to reflect the new quantities (keep items even with 0 qty)
     setSplitItems(prev => prev.map(splitItem => {
       if (splitItem.id === itemId) {
         const newQuantity = splitItem.quantity - 1;
-        if (newQuantity <= 0) {
-          return null;
-        } else {
-          const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
-          return {
-            ...splitItem,
-            quantity: newQuantity,
-            totalPrice: perUnitPrice * newQuantity
-          };
-        }
+        // Keep the item even if quantity becomes 0
+        const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+        return {
+          ...splitItem,
+          quantity: newQuantity,
+          totalPrice: perUnitPrice * newQuantity
+        };
       }
       return splitItem;
-    }).filter(item => item !== null));
+    }));
 
     // Update split bill totals
     updateSplitBillTotals(splitBillId);
@@ -5072,7 +5087,9 @@ const RunningOrders = () => {
       if (existingCartItem) {
         // Increase quantity in cart
         const newQuantity = existingCartItem.quantity + 1;
-        const perUnitPrice = existingCartItem.totalPrice / existingCartItem.quantity;
+        // Calculate per unit price from the original item (before any modifications)
+        const originalItem = splitItems.find(splitItem => splitItem.id === itemId);
+        const perUnitPrice = originalItem ? originalItem.totalPrice / originalItem.quantity : existingCartItem.totalPrice / Math.max(existingCartItem.quantity, 1);
         return prev.map(cartItem =>
           cartItem.id === itemId
             ? { ...cartItem, quantity: newQuantity, totalPrice: perUnitPrice * newQuantity }
@@ -5092,7 +5109,8 @@ const RunningOrders = () => {
       if (existingSplitItem) {
         // Increase quantity in splitItems
         const newQuantity = existingSplitItem.quantity + 1;
-        const perUnitPrice = existingSplitItem.totalPrice / existingSplitItem.quantity;
+        // Calculate per unit price from the original item
+        const perUnitPrice = item.totalPrice / item.quantity;
         return prev.map(splitItem =>
           splitItem.id === itemId
             ? { ...splitItem, quantity: newQuantity, totalPrice: perUnitPrice * newQuantity }
@@ -5127,7 +5145,8 @@ const RunningOrders = () => {
     if (!cartItem) return 0;
 
     // Return the current quantity in cart (which decreases as items are added to splits)
-    return cartItem.quantity;
+    // Items can have 0 quantity but still exist in the cart
+    return Math.max(0, cartItem.quantity);
   };
 
   const areAllItemsDistributed = () => {
@@ -5622,7 +5641,7 @@ const RunningOrders = () => {
     if (!isSinglePayMode) return { subtotal: 0, tax: 0, total: 0 };
 
     // Use cartItems for single pay mode (PAY button) or selectedPlacedOrder.items for existing orders
-    const items = cartItems.length > 0 ? cartItems : (selectedPlacedOrder?.items || []);
+    const items = cartItems.length > 0 ? cartItems.filter(item => item.quantity > 0) : (selectedPlacedOrder?.items || []);
 
     const subtotal = items.reduce((sum, item) => {
       return sum + (parseFloat(item.totalPrice) || 0);
@@ -7070,8 +7089,8 @@ const RunningOrders = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white flex-1 overflow-y-auto">
-                  {cartItems.length > 0 ? (
-                    cartItems.map((item) => (
+                  {cartItems.filter(item => item.quantity > 0).length > 0 ? (
+                    cartItems.filter(item => item.quantity > 0).map((item) => (
                       <tr key={item.id} className="grid grid-cols-[auto_100px_100px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
 
                         <td className="text-gray-800 text-sm">
@@ -9077,10 +9096,10 @@ const RunningOrders = () => {
                   <span className="text-gray-600">Total Item:</span>
                   <span className="font-semibold">
                     {isSinglePayMode
-                      ? (cartItems.length > 0 ? cartItems : selectedPlacedOrder?.items || []).reduce((total, item) => total + (parseInt(item.quantity) || 0), 0)
+                      ? (cartItems.length > 0 ? cartItems.filter(item => item.quantity > 0) : selectedPlacedOrder?.items || []).reduce((total, item) => total + (parseInt(item.quantity) || 0), 0)
                       : selectedSplitBill
                         ? selectedSplitBill.items.reduce((total, item) => total + (item.quantity || 0), 0)
-                        : cartItems.reduce((total, item) => total + (item.quantity || 0), 0)
+                        : cartItems.filter(item => item.quantity > 0).reduce((total, item) => total + (item.quantity || 0), 0)
                     }
                   </span>
                 </div>
