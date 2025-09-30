@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getAudioPath } from '../../utils/soundUtils.js';
 import {
@@ -332,6 +332,23 @@ const RunningOrders = () => {
   // Cart state to store added food items
   const [cartItems, setCartItems] = useState([]);
   const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
+  
+  // Ref to track the latest cart items for draft saving
+  const cartItemsRef = useRef(cartItems);
+
+  // Debug cart items changes and update ref
+  useEffect(() => {
+    console.log('=== CART ITEMS STATE CHANGED ===');
+    console.log('Cart items count:', cartItems.length);
+    console.log('Cart items:', cartItems.map(item => ({
+      id: item.id,
+      name: item.food?.name || 'Unknown',
+      quantity: item.quantity,
+      price: item.food?.price || item.price || 0
+    })));
+    // Update ref with latest cart items
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
   const [cartCharge, setCartCharge] = useState(0); // Cart charge amount
   const [cartTips, setCartTips] = useState(0); // Cart tips amount
@@ -664,7 +681,7 @@ const RunningOrders = () => {
         showError('Please add items to cart before saving as draft');
         return;
       }
-      // Save directly without customer name popup
+      // Call handleDraftOrder directly - now uses ref for latest cart state
       handleDraftOrder('Walk-in Customer');
     };
     window.addEventListener('headerSaveClicked', handleSaveClicked);
@@ -1238,13 +1255,25 @@ const RunningOrders = () => {
 
   // Handle quantity increase
   const handleQuantityIncrease = () => {
-    setFoodQuantity(prev => prev + 1);
+    console.log('=== QUANTITY INCREASE DEBUG ===');
+    console.log('Current quantity:', foodQuantity);
+    setFoodQuantity(prev => {
+      const newQuantity = prev + 1;
+      console.log('New quantity:', newQuantity);
+      return newQuantity;
+    });
   };
 
   // Handle quantity decrease
   const handleQuantityDecrease = () => {
+    console.log('=== QUANTITY DECREASE DEBUG ===');
+    console.log('Current quantity:', foodQuantity);
     if (foodQuantity > 1) {
-      setFoodQuantity(prev => prev - 1);
+      setFoodQuantity(prev => {
+        const newQuantity = prev - 1;
+        console.log('New quantity:', newQuantity);
+        return newQuantity;
+      });
     }
   };
 
@@ -1272,6 +1301,7 @@ const RunningOrders = () => {
 
     // Sound will be played by updateCartItemQuantity function when needed
 
+    console.log('=== ADD TO CART DEBUG ===');
     console.log('Adding to cart:', {
       food: selectedFood,
       variations: selectedVariations,
@@ -1279,6 +1309,8 @@ const RunningOrders = () => {
       quantity: foodQuantity,
       totalPrice: calculateTotalPrice()
     });
+    console.log('foodQuantity state:', foodQuantity);
+    console.log('selectedFood:', selectedFood);
 
     // Check if we're editing an existing cart item
     if (editingCartItem) {
@@ -1288,16 +1320,30 @@ const RunningOrders = () => {
 
     // Check if the same food item with the same variations and adons already exists in cart
     const existingCartItem = isFoodWithVariationsInCart(selectedFood, selectedVariations, selectedAdons);
+    console.log('=== CHECKING FOR EXISTING CART ITEM ===');
+    console.log('Existing cart item found:', existingCartItem);
+    console.log('Selected food:', selectedFood);
+    console.log('Selected variations:', selectedVariations);
+    console.log('Selected adons:', selectedAdons);
 
     if (existingCartItem) {
       // If item with same variations and adons exists, increase quantity
-      updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + foodQuantity);
+      const newQuantity = existingCartItem.quantity + foodQuantity;
+      console.log('=== UPDATING EXISTING ITEM QUANTITY ===');
+      console.log('Existing item quantity:', existingCartItem.quantity);
+      console.log('Adding quantity:', foodQuantity);
+      console.log('New total quantity:', newQuantity);
+      updateCartItemQuantity(existingCartItem.id, newQuantity);
       console.log('Increased quantity for existing item with variations and adons:', existingCartItem.food.name);
 
       // Show success alert
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
       // Create new cart item with all details
+      console.log('=== FINAL QUANTITY CHECK BEFORE CART ITEM CREATION ===');
+      console.log('foodQuantity state value:', foodQuantity);
+      console.log('typeof foodQuantity:', typeof foodQuantity);
+      
       const cartItem = {
         id: cartItemId,
         food: selectedFood,
@@ -1307,6 +1353,10 @@ const RunningOrders = () => {
         totalPrice: calculateTotalPrice(),
         addedAt: new Date().toISOString()
       };
+      
+      console.log('=== CREATING CART ITEM ===');
+      console.log('Cart item created:', cartItem);
+      console.log('Quantity set to:', cartItem.quantity);
 
       // Add to cart
       setCartItems(prev => {
@@ -2347,8 +2397,14 @@ const RunningOrders = () => {
 
   // Cart item operations
   const updateCartItemQuantity = (itemId, newQuantity) => {
+    console.log('=== UPDATE CART ITEM QUANTITY DEBUG ===');
+    console.log('Updating item ID:', itemId, 'to quantity:', newQuantity);
+    console.log('Current cart items:', cartItems.map(item => ({ id: item.id, quantity: item.quantity })));
+    console.log('Looking for item with ID:', itemId);
+    
     if (newQuantity <= 0) {
       // Remove item if quantity is 0 or less
+      console.log('Quantity is 0 or less, removing item');
       removeCartItem(itemId);
       return;
     }
@@ -2372,14 +2428,11 @@ const RunningOrders = () => {
       }
     }
 
-    // Debounce the actual quantity update
-    const timeout = setTimeout(() => {
-      setQuantityUpdateTimeout(null);
-    }, 100); // 100ms debounce
-    setQuantityUpdateTimeout(timeout);
-
+    // Update state immediately (remove debouncing for quantity updates)
     setCartItems(prev => prev.map(item => {
+      console.log('Checking item:', { id: item.id, quantity: item.quantity }, 'against target ID:', itemId);
       if (item.id === itemId) {
+        console.log('Found matching item, updating quantity from', item.quantity, 'to', newQuantity);
         // Handle custom pizza and custom food items
         if (item.isCustomPizza || item.isCustomFood) {
           const newTotalPrice = item.price * newQuantity;
@@ -2431,12 +2484,17 @@ const RunningOrders = () => {
         const totalPricePerItem = basePrice + variationPrice;
         const newTotalPrice = totalPricePerItem * newQuantity;
 
-        return {
+        const updatedItem = {
           ...item,
           quantity: newQuantity,
           totalPrice: newTotalPrice
         };
+        
+        console.log('Updated cart item:', updatedItem);
+        console.log('Final quantity:', updatedItem.quantity);
+        return updatedItem;
       }
+      console.log('Item ID', item.id, 'does not match target ID', itemId, '- keeping unchanged');
       return item;
     }));
   };
@@ -3989,18 +4047,24 @@ const RunningOrders = () => {
                       adons = null;
                     }
 
+                    console.log('=== PROCESSING ORDER DETAIL ITEM FROM DATABASE ===');
+                    console.log('Raw order detail from database:', item);
+                    console.log('item.quantity from database:', item.quantity);
+                    console.log('typeof item.quantity:', typeof item.quantity);
+                    console.log('item.quantity || 1 result:', item.quantity || 1);
+                    
                     const cartItem = {
-                      id: item.food_id,
+                      id: Date.now() + Math.random(), // Use unique ID for draft items
                       food: {
                         id: item.food_id,
                         name: item.food_details || 'Unknown Food',
                         price: item.price || 0
                       },
-                      quantity: item.quantity || 1,
+                      quantity: item.quantity !== null && item.quantity !== undefined ? item.quantity : 1,
                       variations: variations,
                       adons: adons,
                       notes: item.item_note || null,
-                      totalPrice: (item.price || 0) * (item.quantity || 1)
+                      totalPrice: (item.price || 0) * (item.quantity !== null && item.quantity !== undefined ? item.quantity : 1)
                     };
                     
                     console.log('Created cart item from draft:', {
@@ -4101,7 +4165,10 @@ const RunningOrders = () => {
 
   // Handle draft order
   const handleDraftOrder = async (userName) => {
-    if (cartItems.length === 0) {
+    // Use ref to get the latest cart items
+    const latestCartItems = cartItemsRef.current;
+    
+    if (latestCartItems.length === 0) {
       showError('Please add items to cart before creating draft');
       return;
     }
@@ -4110,8 +4177,8 @@ const RunningOrders = () => {
       const isUpdatingExistingDraft = currentDraftId !== null;
       console.log('=== DRAFT SAVE DEBUG START ===');
       console.log(isUpdatingExistingDraft ? 'Updating existing draft order:' : 'Creating new draft order for customer:', userName, isUpdatingExistingDraft ? `with ID: ${currentDraftId}` : '');
-      console.log('Cart items count:', cartItems.length);
-      console.log('Cart items details:', cartItems.map(item => ({
+      console.log('Cart items count:', latestCartItems.length);
+      console.log('Cart items details:', latestCartItems.map(item => ({
         id: item.id,
         name: item.food?.name || 'Unknown',
         quantity: item.quantity,
@@ -4120,7 +4187,7 @@ const RunningOrders = () => {
         isCustomPizza: item.isCustomPizza,
         isCustomFood: item.isCustomFood
       })));
-      console.log('Cart items raw data:', cartItems);
+      console.log('Cart items raw data:', latestCartItems);
 
       // Check if API is available
       if (!window.myAPI) {
@@ -4197,8 +4264,8 @@ const RunningOrders = () => {
 
       // Debug cart items
       console.log('=== ORDER DETAILS CREATION DEBUG ===');
-      console.log('Cart items before creating order details:', cartItems);
-      console.log('Cart items structure:', cartItems.map(item => ({
+      console.log('Cart items before creating order details:', latestCartItems);
+      console.log('Cart items structure:', latestCartItems.map(item => ({
         id: item.id,
         foodId: item.food?.id,
         foodName: item.food?.name,
@@ -4208,9 +4275,17 @@ const RunningOrders = () => {
         hasVariations: !!item.variations,
         hasAdons: !!item.adons
       })));
+      console.log('=== DETAILED CART ITEMS FOR SAVING ===');
+      console.log('Raw cart items:', latestCartItems);
+      console.log('Cart items with quantities:', latestCartItems.map(item => ({
+        id: item.id,
+        name: item.food?.name,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice
+      })));
 
       // Prepare order details data for the draft items
-      const orderDetailsArray = cartItems
+      const orderDetailsArray = latestCartItems
         .filter(item => {
           // For custom pizzas, check different validation criteria
           if (item.isCustomPizza) {
@@ -4334,6 +4409,8 @@ const RunningOrders = () => {
             price: item.food?.price,
             totalPrice: item.totalPrice
           });
+          console.log('item.quantity value:', item.quantity);
+          console.log('typeof item.quantity:', typeof item.quantity);
           console.log('Created order detail object:', orderDetail);
           return orderDetail;
         });
@@ -7404,14 +7481,22 @@ const RunningOrders = () => {
                           <div className="flex items-center rounded">
                             <button
                               className="text-primary flex items-center cursor-pointer justify-center transition-colors"
-                              onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                              onClick={() => {
+                                console.log('=== CART MINUS BUTTON CLICKED ===');
+                                console.log('Item ID:', item.id, 'Current quantity:', item.quantity);
+                                updateCartItemQuantity(item.id, item.quantity - 1);
+                              }}
                             >
                               <Minus size={15} />
                             </button>
                             <span className="w-8 text-center text-gray-800 py-1 text-sm">{item.quantity}</span>
                             <button
                               className="flex items-center cursor-pointer justify-center text-primary transition-colors"
-                              onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                              onClick={() => {
+                                console.log('=== CART PLUS BUTTON CLICKED ===');
+                                console.log('Item ID:', item.id, 'Current quantity:', item.quantity);
+                                updateCartItemQuantity(item.id, item.quantity + 1);
+                              }}
                             >
                               <Plus size={15} />
                             </button>
@@ -9840,6 +9925,10 @@ const RunningOrders = () => {
             })));
             setCartItems(draft.items);
             console.log('Cart items set successfully');
+            console.log('=== CART ITEMS AFTER LOADING DRAFT ===');
+            console.log('Loaded cart items:', draft.items);
+            console.log('First item quantity:', draft.items[0]?.quantity);
+            console.log('First item details:', draft.items[0]);
           }
           if (draft.customer) {
             setSelectedCustomer(draft.customer);
