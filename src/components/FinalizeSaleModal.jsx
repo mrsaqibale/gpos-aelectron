@@ -47,12 +47,6 @@ const FinalizeSaleModal = ({
   setSendSMS,
   setShowSplitBillModal,
   setCustomerSearchFromSplit,
-  setSplitItems,
-  setSplitBills,
-  setSplitDiscount,
-  setSplitCharge,
-  setSplitTips,
-  setSplitBillToRemove,
   // Handler functions
   handleCashGivenAmountChange,
   handleCashAmountChange,
@@ -90,6 +84,10 @@ const FinalizeSaleModal = ({
   splitBillToRemove,
   setSplitBills,
   setSplitBillToRemove,
+  setSplitItems,
+  setSplitDiscount,
+  setSplitCharge,
+  setSplitTips,
   updateCartAfterSplitPayment,
   handlePlaceSplitBillOrder,
   // Order related props
