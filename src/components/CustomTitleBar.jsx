@@ -232,17 +232,6 @@ const CustomTitleBar = () => {
           {/* App Title */}
           <span className="text-white text-sm font-semibold ml-2">POS System</span>
 
-          {/* Menu Button */}
-          {!isOnLoginPage() && (
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('openDashboardMenu'))}
-              className="w-8 h-8 cursor-pointer flex items-center justify-center text-white hover:bg-white/15 transition-colors duration-200 rounded-lg"
-              style={{ border: '1px solid rgba(255,255,255,0.35)', backgroundColor: 'transparent' }}
-              title="Menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-          )}
         </div>
 
       {/* Middle section - Time and Date */}

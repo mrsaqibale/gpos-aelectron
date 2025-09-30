@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { getAudioPath } from '../../utils/soundUtils.js';
 import {
@@ -96,6 +96,7 @@ import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsM
 import InvoiceOptions from '../../components/InvoiceOptions.jsx';
 import PlaceOrderComponent from '../../components/PlaceOrderComponent.jsx';
 import SplitBillModal from '../../components/SplitBillModal.jsx';
+import Sidebar from '../../components/dashboard/Sidebar';
 
 const RunningOrders = () => {
   // Accept navigation state to pre-load an order
@@ -153,6 +154,7 @@ const RunningOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showCustomerSearchModal, setShowCustomerSearchModal] = useState(false);
+  const [customerSearchFromSplit, setCustomerSearchFromSplit] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteCartModal, setShowDeleteCartModal] = useState(false);
@@ -331,10 +333,30 @@ const RunningOrders = () => {
   // Cart state to store added food items
   const [cartItems, setCartItems] = useState([]);
   const [cartItemId, setCartItemId] = useState(1); // Unique ID for cart items
+  
+  // Ref to track the latest cart items for draft saving
+  const cartItemsRef = useRef(cartItems);
+
+  // Debug cart items changes and update ref
+  useEffect(() => {
+    console.log('=== CART ITEMS STATE CHANGED ===');
+    console.log('Cart items count:', cartItems.length);
+    console.log('Cart items:', cartItems.map(item => ({
+      id: item.id,
+      name: item.food?.name || 'Unknown',
+      quantity: item.quantity,
+      price: item.food?.price || item.price || 0
+    })));
+    // Update ref with latest cart items
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
   const [editingCartItem, setEditingCartItem] = useState(null); // Track which cart item is being edited
   const [cartCharge, setCartCharge] = useState(0); // Cart charge amount
   const [cartTips, setCartTips] = useState(0); // Cart tips amount
   const [orderNote, setOrderNote] = useState(''); // Order note field
+
+  // Floating Sidebar State
+  const [showFloatingSidebar, setShowFloatingSidebar] = useState(false);
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
@@ -401,6 +423,9 @@ const RunningOrders = () => {
   const [showDraftsModal, setShowDraftsModal] = useState(false);
   const [currentDraftOrders, setCurrentDraftOrders] = useState([]);
   const [showDraftNumberModal, setShowDraftNumberModal] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState(null); // Track current draft ID for updates
+  const [currentDraftPosition, setCurrentDraftPosition] = useState(null); // Track original position of loaded draft
+  const [currentDraftNumber, setCurrentDraftNumber] = useState(null); // Track draft order number for display
   const [splitItems, setSplitItems] = useState([]);
   const [splitDiscount, setSplitDiscount] = useState(0);
   const [splitCharge, setSplitCharge] = useState(0);
@@ -411,10 +436,10 @@ const RunningOrders = () => {
 
   // Calculate maximum splits based on total quantity
   const calculateMaxSplits = () => {
-    if (!splitItems || splitItems.length === 0) return 10;
+    if (!splitItems || splitItems.length === 0) return 1;
 
     const totalQuantity = splitItems.reduce((sum, item) => sum + item.quantity, 0);
-    return Math.min(totalQuantity, 10);
+    return Math.max(1, totalQuantity);
   };
 
   // Order Management State
@@ -660,15 +685,22 @@ const RunningOrders = () => {
         showError('Please add items to cart before saving as draft');
         return;
       }
-      // Save directly without customer name popup
+      // Call handleDraftOrder directly - now uses ref for latest cart state
       handleDraftOrder('Walk-in Customer');
     };
     window.addEventListener('headerSaveClicked', handleSaveClicked);
+    
+    // Add event listener for dashboard menu
+    const handleDashboardMenu = () => {
+      setShowFloatingSidebar(true);
+    };
+    window.addEventListener('openDashboardMenu', handleDashboardMenu);
     
     return () => {
       window.removeEventListener('openStatusModal', handleOpenStatusModal);
       window.removeEventListener('openCustomerInfo', handleOpenInfo);
       window.removeEventListener('headerSaveClicked', handleSaveClicked);
+      window.removeEventListener('openDashboardMenu', handleDashboardMenu);
     };
   }, [selectedOrderType, cartItems.length, showError]);
 
@@ -1234,13 +1266,25 @@ const RunningOrders = () => {
 
   // Handle quantity increase
   const handleQuantityIncrease = () => {
-    setFoodQuantity(prev => prev + 1);
+    console.log('=== QUANTITY INCREASE DEBUG ===');
+    console.log('Current quantity:', foodQuantity);
+    setFoodQuantity(prev => {
+      const newQuantity = prev + 1;
+      console.log('New quantity:', newQuantity);
+      return newQuantity;
+    });
   };
 
   // Handle quantity decrease
   const handleQuantityDecrease = () => {
+    console.log('=== QUANTITY DECREASE DEBUG ===');
+    console.log('Current quantity:', foodQuantity);
     if (foodQuantity > 1) {
-      setFoodQuantity(prev => prev - 1);
+      setFoodQuantity(prev => {
+        const newQuantity = prev - 1;
+        console.log('New quantity:', newQuantity);
+        return newQuantity;
+      });
     }
   };
 
@@ -1268,6 +1312,7 @@ const RunningOrders = () => {
 
     // Sound will be played by updateCartItemQuantity function when needed
 
+    console.log('=== ADD TO CART DEBUG ===');
     console.log('Adding to cart:', {
       food: selectedFood,
       variations: selectedVariations,
@@ -1275,6 +1320,8 @@ const RunningOrders = () => {
       quantity: foodQuantity,
       totalPrice: calculateTotalPrice()
     });
+    console.log('foodQuantity state:', foodQuantity);
+    console.log('selectedFood:', selectedFood);
 
     // Check if we're editing an existing cart item
     if (editingCartItem) {
@@ -1284,16 +1331,30 @@ const RunningOrders = () => {
 
     // Check if the same food item with the same variations and adons already exists in cart
     const existingCartItem = isFoodWithVariationsInCart(selectedFood, selectedVariations, selectedAdons);
+    console.log('=== CHECKING FOR EXISTING CART ITEM ===');
+    console.log('Existing cart item found:', existingCartItem);
+    console.log('Selected food:', selectedFood);
+    console.log('Selected variations:', selectedVariations);
+    console.log('Selected adons:', selectedAdons);
 
     if (existingCartItem) {
       // If item with same variations and adons exists, increase quantity
-      updateCartItemQuantity(existingCartItem.id, existingCartItem.quantity + foodQuantity);
+      const newQuantity = existingCartItem.quantity + foodQuantity;
+      console.log('=== UPDATING EXISTING ITEM QUANTITY ===');
+      console.log('Existing item quantity:', existingCartItem.quantity);
+      console.log('Adding quantity:', foodQuantity);
+      console.log('New total quantity:', newQuantity);
+      updateCartItemQuantity(existingCartItem.id, newQuantity);
       console.log('Increased quantity for existing item with variations and adons:', existingCartItem.food.name);
 
       // Show success alert
       showSuccess(`${existingCartItem.food.name} quantity increased!`);
     } else {
       // Create new cart item with all details
+      console.log('=== FINAL QUANTITY CHECK BEFORE CART ITEM CREATION ===');
+      console.log('foodQuantity state value:', foodQuantity);
+      console.log('typeof foodQuantity:', typeof foodQuantity);
+      
       const cartItem = {
         id: cartItemId,
         food: selectedFood,
@@ -1303,6 +1364,10 @@ const RunningOrders = () => {
         totalPrice: calculateTotalPrice(),
         addedAt: new Date().toISOString()
       };
+      
+      console.log('=== CREATING CART ITEM ===');
+      console.log('Cart item created:', cartItem);
+      console.log('Quantity set to:', cartItem.quantity);
 
       // Add to cart
       setCartItems(prev => {
@@ -1828,6 +1893,11 @@ const RunningOrders = () => {
 
     console.log('Customer selection completed successfully');
 
+    // If we're in split bill mode and have a selected split bill, update that split's customer
+    if (showSplitBillModal && selectedSplitBill) {
+      handleSplitBillCustomerChange(selectedSplitBill.id, customer.name);
+    }
+
     // If this is a new customer (has an ID), trigger update event
     if (customer && customer.id) {
       window.dispatchEvent(new CustomEvent('customerUpdated', {
@@ -2338,8 +2408,14 @@ const RunningOrders = () => {
 
   // Cart item operations
   const updateCartItemQuantity = (itemId, newQuantity) => {
+    console.log('=== UPDATE CART ITEM QUANTITY DEBUG ===');
+    console.log('Updating item ID:', itemId, 'to quantity:', newQuantity);
+    console.log('Current cart items:', cartItems.map(item => ({ id: item.id, quantity: item.quantity })));
+    console.log('Looking for item with ID:', itemId);
+    
     if (newQuantity <= 0) {
       // Remove item if quantity is 0 or less
+      console.log('Quantity is 0 or less, removing item');
       removeCartItem(itemId);
       return;
     }
@@ -2363,14 +2439,11 @@ const RunningOrders = () => {
       }
     }
 
-    // Debounce the actual quantity update
-    const timeout = setTimeout(() => {
-      setQuantityUpdateTimeout(null);
-    }, 100); // 100ms debounce
-    setQuantityUpdateTimeout(timeout);
-
+    // Update state immediately (remove debouncing for quantity updates)
     setCartItems(prev => prev.map(item => {
+      console.log('Checking item:', { id: item.id, quantity: item.quantity }, 'against target ID:', itemId);
       if (item.id === itemId) {
+        console.log('Found matching item, updating quantity from', item.quantity, 'to', newQuantity);
         // Handle custom pizza and custom food items
         if (item.isCustomPizza || item.isCustomFood) {
           const newTotalPrice = item.price * newQuantity;
@@ -2422,12 +2495,17 @@ const RunningOrders = () => {
         const totalPricePerItem = basePrice + variationPrice;
         const newTotalPrice = totalPricePerItem * newQuantity;
 
-        return {
+        const updatedItem = {
           ...item,
           quantity: newQuantity,
           totalPrice: newTotalPrice
         };
+        
+        console.log('Updated cart item:', updatedItem);
+        console.log('Final quantity:', updatedItem.quantity);
+        return updatedItem;
       }
+      console.log('Item ID', item.id, 'does not match target ID', itemId, '- keeping unchanged');
       return item;
     }));
   };
@@ -2611,9 +2689,9 @@ const RunningOrders = () => {
     return (amount * taxRate) / 100;
   };
 
-  // Calculate cart totals
+  // Calculate cart totals (only include items with quantity > 0)
   const calculateCartSubtotal = () => {
-    return cartItems.reduce((total, item) => total + item.totalPrice, 0);
+    return cartItems.filter(item => item.quantity > 0).reduce((total, item) => total + item.totalPrice, 0);
   };
 
   const calculateCartTax = () => {
@@ -2641,7 +2719,11 @@ const RunningOrders = () => {
   };
 
   // Clear cart function
-  const clearCart = () => {
+  const clearCart = (clearDraftId = false) => {
+    console.log('=== CLEAR CART FUNCTION CALLED ===');
+    console.log('Current cartItems before clearing:', cartItems);
+    console.log('Cart items count before clearing:', cartItems.length);
+    
     // Check if there are items in the cart before clearing
     const itemCount = cartItems.length;
 
@@ -2667,10 +2749,26 @@ const RunningOrders = () => {
     setIsModifyingOrder(false);
     setModifyingOrderId(null);
 
+    // Clear current draft ID, position, and number if starting a completely new order
+    if (clearDraftId) {
+      setCurrentDraftId(null);
+      setCurrentDraftPosition(null);
+      setCurrentDraftNumber(null);
+      console.log('Cleared current draft ID, position, and number for new order');
+    }
+
+    console.log('Cart cleared successfully - itemCount was:', itemCount);
+    console.log('Cart state should now be empty');
+
     // Show success alert if there were items in the cart
     if (itemCount > 0) {
       showSuccess(`All ${itemCount} item${itemCount === 1 ? '' : 's'} removed from cart!`);
     }
+  };
+
+  // Start new order function (clears draft ID and cart)
+  const startNewOrder = () => {
+    clearCart(true); // Clear cart and draft ID for new order
   };
 
   // Fetch all ingredients for custom food
@@ -3204,6 +3302,9 @@ const RunningOrders = () => {
 
   // Handle place order
   const handlePlaceOrder = async () => {
+    console.log('handlePlaceOrder called with cartItems:', cartItems);
+    console.log('cartItems length:', cartItems.length);
+    
     if (cartItems.length === 0) {
       showError('Please add items to cart before placing order');
       return;
@@ -3283,9 +3384,13 @@ const RunningOrders = () => {
 
       // Check if API is available
       if (!window.myAPI) {
+        console.error('API not available - window.myAPI is undefined');
         showError('API not available. Please refresh the page.');
         return;
       }
+      
+      console.log('API is available:', !!window.myAPI);
+      console.log('createOrder method available:', !!window.myAPI.createOrder);
 
       // Map order type based on selection
       console.log('Mapping order type. selectedOrderType:', selectedOrderType);
@@ -3428,16 +3533,18 @@ const RunningOrders = () => {
         }
       } else {
         // Create new order
-        console.log('Creating new order');
+        console.log('Creating new order with data:', orderData);
         const orderResult = await window.myAPI.createOrder(orderData);
+        console.log('createOrder result:', orderResult);
 
         if (!orderResult.success) {
+          console.error('Order creation failed:', orderResult);
           showError('Failed to create order: ' + orderResult.message);
           return;
         }
 
         orderId = orderResult.id;
-        console.log('Order created successfully');
+        console.log('Order created successfully with ID:', orderId);
 
         // Update table status to Reserved if this is a table order
         if (tableIdsToReserve.length > 0) {
@@ -3850,7 +3957,7 @@ const RunningOrders = () => {
   const getNextDraftId = async () => {
     try {
       if (!window.myAPI) {
-        return `draft_id${Date.now()}`;
+        return `draft_id001`;
       }
 
       // Get all draft orders to find the highest number
@@ -3861,24 +3968,31 @@ const RunningOrders = () => {
 
         // Find the highest draft number
         draftOrders.forEach(order => {
-          if (order.order_number && order.order_number.startsWith('draft_id')) {
-            const number = parseInt(order.order_number.replace('draft_id', ''));
-            if (!isNaN(number) && number > maxNumber) {
+          if (order.order_number && typeof order.order_number === 'string' && order.order_number.startsWith('draft_id')) {
+            // Extract number from draft_id format
+            const numberPart = order.order_number.replace('draft_id', '');
+            const number = parseInt(numberPart);
+            
+            // Only consider valid sequential numbers (001, 002, etc.)
+            if (!isNaN(number) && number > 0 && number <= 999 && number > maxNumber) {
               maxNumber = number;
             }
           }
         });
 
-        // Return next draft ID
+        // Return next draft ID with proper padding
         const nextNumber = maxNumber + 1;
-        return `draft_id${nextNumber.toString().padStart(3, '0')}`;
+        const paddedNumber = nextNumber.toString().padStart(3, '0');
+        console.log('Generated next draft ID:', `draft_id${paddedNumber}`, 'from max number:', maxNumber);
+        return `draft_id${paddedNumber}`;
       }
 
       // If no drafts found, start with 001
+      console.log('No existing drafts found, starting with draft_id001');
       return 'draft_id001';
     } catch (error) {
       console.error('Error getting next draft ID:', error);
-      return `draft_id${Date.now()}`;
+      return 'draft_id001';
     }
   };
 
@@ -3897,6 +4011,9 @@ const RunningOrders = () => {
         // Transform database orders to UI format
         const transformedDrafts = await Promise.all(
           draftOrders.map(async (order) => {
+            console.log('Processing draft order from database:', order);
+            console.log('Order ID:', order.id, 'Order Number:', order.order_number, 'Draft Name:', order.draft_name);
+            
             // Ensure order exists and has required properties
             if (!order || !order.id) {
               console.warn('Invalid order found:', order);
@@ -3941,19 +4058,35 @@ const RunningOrders = () => {
                       adons = null;
                     }
 
-                    return {
-                      id: item.food_id,
+                    console.log('=== PROCESSING ORDER DETAIL ITEM FROM DATABASE ===');
+                    console.log('Raw order detail from database:', item);
+                    console.log('item.quantity from database:', item.quantity);
+                    console.log('typeof item.quantity:', typeof item.quantity);
+                    console.log('item.quantity || 1 result:', item.quantity || 1);
+                    
+                    const cartItem = {
+                      id: Date.now() + Math.random(), // Use unique ID for draft items
                       food: {
                         id: item.food_id,
                         name: item.food_details || 'Unknown Food',
                         price: item.price || 0
                       },
-                      quantity: item.quantity || 1,
+                      quantity: item.quantity !== null && item.quantity !== undefined ? item.quantity : 1,
                       variations: variations,
                       adons: adons,
                       notes: item.item_note || null,
-                      totalPrice: (item.price || 0) * (item.quantity || 1)
+                      totalPrice: (item.price || 0) * (item.quantity !== null && item.quantity !== undefined ? item.quantity : 1)
                     };
+                    
+                    console.log('Created cart item from draft:', {
+                      id: cartItem.id,
+                      name: cartItem.food.name,
+                      price: cartItem.food.price,
+                      quantity: cartItem.quantity,
+                      totalPrice: cartItem.totalPrice
+                    });
+                    
+                    return cartItem;
                   });
               }
             } catch (error) {
@@ -3961,10 +4094,30 @@ const RunningOrders = () => {
               items = []; // Set empty array if there's an error
             }
 
-            return {
-              id: order.id,
-              databaseId: order.id,
-              orderNumber: order.order_number || `draft_id${order.id}`,
+            // Ensure we have valid IDs
+            const validId = order.id || Date.now(); // Fallback to timestamp if no ID
+            
+            // Generate proper sequential draft numbers (001, 002, 003, etc.)
+            let validOrderNumber;
+            if (order.order_number && order.order_number.startsWith('draft_id') && /draft_id\d{3}$/.test(order.order_number)) {
+              // Use existing properly formatted draft number (draft_id001, draft_id002, etc.)
+              validOrderNumber = order.order_number;
+            } else {
+              // Generate a proper sequential draft ID (001, 002, 003, etc.)
+              // We'll assign sequential numbers based on the order in which drafts appear
+              // This will ensure we get proper sequential numbering
+              const draftIndex = draftOrders.indexOf(order) + 1;
+              const sequentialNum = draftIndex.toString().padStart(3, '0');
+              validOrderNumber = `draft_id${sequentialNum}`;
+              console.log('Generated sequential draft number for order ID:', order.id, 'at index:', draftIndex, '->', validOrderNumber);
+            }
+            
+            console.log('Creating draft object with ID:', validId, 'order_number:', order.order_number, 'validOrderNumber:', validOrderNumber);
+            
+            const draftObject = {
+              id: validId,
+              databaseId: validId,
+              orderNumber: validOrderNumber,
               items: items,
               customer: {
                 name: order.draft_name || 'Unknown',
@@ -3989,14 +4142,32 @@ const RunningOrders = () => {
               totalPayable: order.order_amount || 0,
               draftName: order.draft_name || 'Unknown'
             };
+            
+            console.log('Final draft object created:', draftObject);
+            return draftObject;
           })
         );
 
         // Filter out any null entries
         const validDrafts = transformedDrafts.filter(draft => draft !== null);
 
-        setCurrentDraftOrders(validDrafts);
-        console.log('Fetched draft orders:', validDrafts);
+        // Check for duplicate order numbers and fix them
+        const orderNumberMap = new Map();
+        const fixedDrafts = validDrafts.map(draft => {
+          if (orderNumberMap.has(draft.orderNumber)) {
+            // Duplicate order number found, create unique one
+            const originalNumber = draft.orderNumber;
+            const uniqueNumber = `${originalNumber}_${draft.id}`;
+            console.log(`Fixed duplicate order number: ${originalNumber} -> ${uniqueNumber}`);
+            return { ...draft, orderNumber: uniqueNumber };
+          }
+          orderNumberMap.set(draft.orderNumber, true);
+          return draft;
+        });
+
+        setCurrentDraftOrders(fixedDrafts);
+        console.log('Fetched draft orders:', fixedDrafts);
+        console.log('Draft order numbers:', fixedDrafts.map(d => ({ id: d.id, orderNumber: d.orderNumber })));
       }
     } catch (error) {
       console.error('Error fetching draft orders:', error);
@@ -4005,13 +4176,29 @@ const RunningOrders = () => {
 
   // Handle draft order
   const handleDraftOrder = async (userName) => {
-    if (cartItems.length === 0) {
+    // Use ref to get the latest cart items
+    const latestCartItems = cartItemsRef.current;
+    
+    if (latestCartItems.length === 0) {
       showError('Please add items to cart before creating draft');
       return;
     }
 
     try {
-      console.log('Creating draft order for customer:', userName);
+      const isUpdatingExistingDraft = currentDraftId !== null;
+      console.log('=== DRAFT SAVE DEBUG START ===');
+      console.log(isUpdatingExistingDraft ? 'Updating existing draft order:' : 'Creating new draft order for customer:', userName, isUpdatingExistingDraft ? `with ID: ${currentDraftId}` : '');
+      console.log('Cart items count:', latestCartItems.length);
+      console.log('Cart items details:', latestCartItems.map(item => ({
+        id: item.id,
+        name: item.food?.name || 'Unknown',
+        quantity: item.quantity,
+        price: item.food?.price || item.price || 0,
+        totalPrice: item.totalPrice,
+        isCustomPizza: item.isCustomPizza,
+        isCustomFood: item.isCustomFood
+      })));
+      console.log('Cart items raw data:', latestCartItems);
 
       // Check if API is available
       if (!window.myAPI) {
@@ -4025,8 +4212,17 @@ const RunningOrders = () => {
       const discount = calculateCartDiscount();
       const total = calculateCartTotal();
 
-      // Get next draft ID
-      const draftId = await getNextDraftId();
+      let draftId, orderId;
+      
+      if (isUpdatingExistingDraft) {
+        // For edited drafts, always generate a new sequential draft ID
+        // This ensures we don't reuse the same draft number
+        draftId = await getNextDraftId();
+        console.log('Generated new sequential draft ID for edited draft:', draftId, 'for ID:', currentDraftId);
+      } else {
+        // Get next draft ID for new draft
+        draftId = await getNextDraftId();
+      }
 
       // Prepare order data for database
       const orderData = {
@@ -4058,20 +4254,29 @@ const RunningOrders = () => {
         order_number: draftId // Set the draft ID as order number
       };
 
-      // Create draft order in database
-      const orderResult = await window.myAPI.createOrder(orderData);
+      let orderResult;
+      
+      // Always create a new order (since we deleted the old one when editing)
+      // This ensures the draft gets the same draft number even if no changes were made
+      orderResult = await window.myAPI.createOrder(orderData);
 
       if (!orderResult.success) {
-        showError('Failed to create draft order: ' + orderResult.message);
+        showError('Failed to save draft order: ' + orderResult.message);
         return;
       }
 
-      const orderId = orderResult.id;
+      orderId = orderResult.id;
+      
+      if (isUpdatingExistingDraft) {
+        console.log('Recreated draft order successfully with new ID:', orderId, 'using same draft number:', draftId);
+      } else {
       console.log('Draft order created successfully with ID:', orderId);
+      }
 
       // Debug cart items
-      console.log('Cart items before creating order details:', cartItems);
-      console.log('Cart items structure:', cartItems.map(item => ({
+      console.log('=== ORDER DETAILS CREATION DEBUG ===');
+      console.log('Cart items before creating order details:', latestCartItems);
+      console.log('Cart items structure:', latestCartItems.map(item => ({
         id: item.id,
         foodId: item.food?.id,
         foodName: item.food?.name,
@@ -4081,9 +4286,17 @@ const RunningOrders = () => {
         hasVariations: !!item.variations,
         hasAdons: !!item.adons
       })));
+      console.log('=== DETAILED CART ITEMS FOR SAVING ===');
+      console.log('Raw cart items:', latestCartItems);
+      console.log('Cart items with quantities:', latestCartItems.map(item => ({
+        id: item.id,
+        name: item.food?.name,
+        quantity: item.quantity,
+        totalPrice: item.totalPrice
+      })));
 
       // Prepare order details data for the draft items
-      const orderDetailsArray = cartItems
+      const orderDetailsArray = latestCartItems
         .filter(item => {
           // For custom pizzas, check different validation criteria
           if (item.isCustomPizza) {
@@ -4198,6 +4411,17 @@ const RunningOrders = () => {
             issynicronized: 0,
             isdeleted: 0
           };
+          console.log('=== CREATING ORDER DETAIL ===');
+          console.log('Original cart item:', {
+            id: item.id,
+            foodId: item.food?.id,
+            foodName: item.food?.name,
+            quantity: item.quantity,
+            price: item.food?.price,
+            totalPrice: item.totalPrice
+          });
+          console.log('item.quantity value:', item.quantity);
+          console.log('typeof item.quantity:', typeof item.quantity);
           console.log('Created order detail object:', orderDetail);
           return orderDetail;
         });
@@ -4207,13 +4431,12 @@ const RunningOrders = () => {
       console.log('window.myAPI.createOrderDetail exists:', typeof window.myAPI.createOrderDetail);
       console.log('window.myAPI.createMultipleOrderDetails exists:', typeof window.myAPI.createMultipleOrderDetails);
 
-      // Create order details using batch method
-      console.log('Creating order details for draft order:', orderDetailsArray);
+      // Create order details for the new order
       let createdDetailsCount = 0;
 
       if (orderDetailsArray.length > 0) {
         try {
-          console.log('Using createMultipleOrderDetails...');
+          console.log(isUpdatingExistingDraft ? 'Creating order details for recreated draft:' : 'Creating order details for new draft:', orderDetailsArray);
           const batchResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
           console.log('Batch API response:', batchResult);
 
@@ -4264,8 +4487,8 @@ const RunningOrders = () => {
         }
       }
 
-      // Create local draft order object for UI
-      const newDraftOrder = {
+      // Create or update local draft order object for UI
+      const draftOrder = {
         id: orderId, // Use database ID
         databaseId: orderId, // Store database ID
         orderNumber: draftId, // Use the draft ID format
@@ -4289,15 +4512,48 @@ const RunningOrders = () => {
         draftName: userName // Store draft name
       };
 
-      // Add draft order to local state
-      setCurrentDraftOrders(prev => [newDraftOrder, ...prev]);
+      // Update local state
+      if (isUpdatingExistingDraft) {
+        // Restore draft at its original position in the list with new database ID
+        setCurrentDraftOrders(prev => {
+          const newDrafts = [...prev];
+          
+          // If we have a valid position, insert at that position
+          if (currentDraftPosition !== null && currentDraftPosition >= 0) {
+            // Insert the draft at its original position
+            newDrafts.splice(currentDraftPosition, 0, draftOrder);
+            console.log('Restored draft at original position:', currentDraftPosition, 'with new database ID:', orderId);
+          } else {
+            // If position is not available, add to top
+            newDrafts.unshift(draftOrder);
+            console.log('Added recreated draft to top of list');
+          }
+          
+          return newDrafts;
+        });
+        showSuccess('Draft order saved successfully!', 'success');
+      } else {
+        // Add new draft order to local state (at the top)
+        setCurrentDraftOrders(prev => [draftOrder, ...prev]);
       showSuccess('Draft order created successfully!', 'success');
+      }
 
-      // Clear cart completely for new draft orders
-      clearCart();
+      // Clear cart completely for new draft orders, but keep current draft ID for updates
+      if (!isUpdatingExistingDraft) {
+        clearCart(true); // Clear cart and reset draft ID for new orders
+      } else {
+        clearCart(); // Clear cart but keep current draft ID for continued updates
+      }
 
       // Automatically set order type to 'In Store' for new orders
+      if (!isUpdatingExistingDraft) {
       setSelectedOrderType('In Store');
+      }
+
+      // Refresh the draft list to ensure UI is updated
+      setTimeout(() => {
+        fetchDraftOrders();
+      }, 100);
 
     } catch (error) {
       console.error('Error creating draft order:', error);
@@ -4588,6 +4844,9 @@ const RunningOrders = () => {
     resetFinalizeSaleModalForSinglePay();
     setIsSinglePayMode(true); // Set to true for new orders from PAY button
     setShowFinalizeSaleModal(true);
+    
+    console.log('PAY button clicked - isSinglePayMode set to true');
+    console.log('Cart items for payment:', cartItems);
   };
 
   // Function to load food image
@@ -4837,27 +5096,59 @@ const RunningOrders = () => {
     setTotalSplit('');
     setSplitBills([]);
     setSelectedSplitBill(null);
-    // Initialize split items from selected order items
-    const orderItems = selectedPlacedOrder ? selectedPlacedOrder.items : [];
-    setSplitItems(orderItems.map(item => ({
-      ...item,
-      splitQuantity: 0,
-      isSelected: false
-    })));
+    
+    // Initialize split items from current cart items (these will be updated as items are moved to splits)
+    setSplitItems([...cartItems]);
+    
+    // Set order type when opening split screen for before orders
+    if (cartItems.length > 0) {
+      // Use current selectedOrderType from the main screen
+      // This ensures split bills inherit the same order type
+    }
+    
     setSplitDiscount(0);
     setSplitCharge(0);
     setSplitTips(0);
   };
 
   const handleCloseSplitBillModal = () => {
+    // Restore cart items to their original quantities before closing
+    // Since paid splits are automatically removed, all remaining splits are unpaid
+    const originalCartItems = [...cartItems];
+    
+    // For each item that was in remaining splits, restore its quantity
+    splitBills.forEach(splitBill => {
+      splitBill.items.forEach(splitItem => {
+        const cartItem = originalCartItems.find(item => item.food?.id === splitItem.food?.id);
+        if (cartItem) {
+          cartItem.quantity += splitItem.quantity;
+          // Recalculate total price based on original per-unit price
+          const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+          cartItem.totalPrice = perUnitPrice * cartItem.quantity;
+        }
+      });
+    });
+    
+    // Update cart items with restored quantities
+    setCartItems(originalCartItems);
+    
     setShowSplitBillModal(false);
     setTotalSplit('');
     setSplitItems([]);
-    setSplitBills([]);
+    setSplitBills([]); // This will remove all remaining splits
     setSelectedSplitBill(null);
     setSplitDiscount(0);
     setSplitCharge(0);
     setSplitTips(0);
+    setSplitBillToRemove(null); // Clear split bill to remove
+    
+    // Reset customer search flag when closing split modal
+    setCustomerSearchFromSplit(false);
+    
+    // Ensure single pay mode is reset when closing split modal
+    setIsSinglePayMode(false);
+    
+    console.log('Split bill modal closed - all remaining unpaid splits restored to cart');
   };
   
 
@@ -4917,12 +5208,8 @@ const RunningOrders = () => {
       tips: 0,
       total: 0
     }));
-    splitItems.forEach((item, i) => {
-      const targetBill = newSplitBills[i % numSplits];
-      targetBill.items.push(item);
-      targetBill.subtotal += item.totalPrice;
-      targetBill.total += item.totalPrice;
-    });
+
+    // Don't automatically distribute items - let user manually add items to splits
 
     setSplitBills(newSplitBills);
     setSelectedSplitBill(newSplitBills[0]); // Select first split by default
@@ -4955,8 +5242,9 @@ const RunningOrders = () => {
             )
           };
         } else {
-          // Add new item
-          const newItem = { ...item, quantity: 1 };
+          // Add new item with quantity 1 and proper per-unit pricing
+          const perUnitPrice = item.totalPrice / item.quantity;
+          const newItem = { ...item, quantity: 1, totalPrice: perUnitPrice };
           return {
             ...split,
             items: [...split.items, newItem]
@@ -4964,6 +5252,36 @@ const RunningOrders = () => {
         }
       }
       return split;
+    }));
+
+    // Update the base cart items by reducing the quantity (keep items even with 0 qty)
+    setCartItems(prev => prev.map(cartItem => {
+      if (cartItem.id === itemId) {
+        const newQuantity = cartItem.quantity - 1;
+        // Keep the item even if quantity becomes 0
+        const perUnitPrice = cartItem.totalPrice / cartItem.quantity;
+        return {
+          ...cartItem,
+          quantity: newQuantity,
+          totalPrice: perUnitPrice * newQuantity
+        };
+      }
+      return cartItem;
+    }));
+
+    // Update splitItems to reflect the new quantities (keep items even with 0 qty)
+    setSplitItems(prev => prev.map(splitItem => {
+      if (splitItem.id === itemId) {
+        const newQuantity = splitItem.quantity - 1;
+        // Keep the item even if quantity becomes 0
+        const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+        return {
+          ...splitItem,
+          quantity: newQuantity,
+          totalPrice: perUnitPrice * newQuantity
+        };
+      }
+      return splitItem;
     }));
 
     // Update split bill totals
@@ -5001,6 +5319,49 @@ const RunningOrders = () => {
       return split;
     }));
 
+    // Return the item to the base cart items
+    setCartItems(prev => {
+      const existingCartItem = prev.find(cartItem => cartItem.id === itemId);
+      if (existingCartItem) {
+        // Increase quantity in cart
+        const newQuantity = existingCartItem.quantity + 1;
+        // Calculate per unit price from the original item (before any modifications)
+        const originalItem = splitItems.find(splitItem => splitItem.id === itemId);
+        const perUnitPrice = originalItem ? originalItem.totalPrice / originalItem.quantity : existingCartItem.totalPrice / Math.max(existingCartItem.quantity, 1);
+        return prev.map(cartItem =>
+          cartItem.id === itemId
+            ? { ...cartItem, quantity: newQuantity, totalPrice: perUnitPrice * newQuantity }
+            : cartItem
+        );
+      } else {
+        // Add item back to cart if it was completely removed
+        const perUnitPrice = item.totalPrice / item.quantity;
+        const newCartItem = { ...item, quantity: 1, totalPrice: perUnitPrice };
+        return [...prev, newCartItem];
+      }
+    });
+
+    // Update splitItems to reflect the returned quantity
+    setSplitItems(prev => {
+      const existingSplitItem = prev.find(splitItem => splitItem.id === itemId);
+      if (existingSplitItem) {
+        // Increase quantity in splitItems
+        const newQuantity = existingSplitItem.quantity + 1;
+        // Calculate per unit price from the original item
+        const perUnitPrice = item.totalPrice / item.quantity;
+        return prev.map(splitItem =>
+          splitItem.id === itemId
+            ? { ...splitItem, quantity: newQuantity, totalPrice: perUnitPrice * newQuantity }
+            : splitItem
+        );
+      } else {
+        // Add item back to splitItems if it was completely removed
+        const perUnitPrice = item.totalPrice / item.quantity;
+        const newSplitItem = { ...item, quantity: 1, totalPrice: perUnitPrice };
+        return [...prev, newSplitItem];
+      }
+    });
+
     // Update split bill totals
     updateSplitBillTotals(splitBillId);
   };
@@ -5017,32 +5378,20 @@ const RunningOrders = () => {
   };
 
   const getRemainingQuantity = (itemId) => {
-    const item = splitItems.find(item => item.id === itemId);
-    if (!item) return 0;
+    // Find the item in the current cart items (which are updated when items are added to splits)
+    const cartItem = cartItems.find(item => item.id === itemId);
+    if (!cartItem) return 0;
 
-    // Calculate total quantity used across all active splits (not paid ones)
-    const totalUsed = splitBills.reduce((total, split) => {
-      // Skip paid splits as their items are no longer available
-      if (split.paid) return total;
-
-      const existingItem = split.items.find(i => i.food?.id === item.food?.id);
-      return total + (existingItem ? (existingItem.quantity || 0) : 0);
-    }, 0);
-
-    // Return remaining quantity based on updated splitItems state
-    return Math.max(0, (item.quantity || 0) - totalUsed);
+    // Return the current quantity in cart (which decreases as items are added to splits)
+    // Items can have 0 quantity but still exist in the cart
+    return Math.max(0, cartItem.quantity);
   };
 
   const areAllItemsDistributed = () => {
-    if (!splitItems || splitItems.length === 0) return false;
+    if (!splitBills || splitBills.length === 0) return false;
 
-    // Check if all remaining items have been fully distributed (remaining quantity = 0)
-    // Only consider items that still have quantity > 0
-    const itemsWithQuantity = splitItems.filter(item => item.quantity > 0);
-    if (itemsWithQuantity.length === 0) return true; // All items have been paid for
-    console.log(itemsWithQuantity);
-
-    return itemsWithQuantity.every(item => getRemainingQuantity(item.id) === 0);
+    // Check if any split bill has at least 1 item
+    return splitBills.some(split => split.items && split.items.length > 0);
   };
 
   const updateSplitBillTotals = (splitBillId) => {
@@ -5069,24 +5418,316 @@ const RunningOrders = () => {
     ));
   };
 
+  const updateCartAfterSplitPayment = (paidSplitBill) => {
+    console.log('=== UPDATE CART AFTER SPLIT PAYMENT ===');
+    console.log('Paid split bill:', paidSplitBill);
+    console.log('Current cart items before update:', cartItems);
+    
+    if (!paidSplitBill || !paidSplitBill.items || paidSplitBill.items.length === 0) {
+      console.log('No paid items to remove from cart');
+      return;
+    }
+
+    // Remove paid items from cart items
+    setCartItems(prev => {
+      const updatedCartItems = [...prev];
+      
+      paidSplitBill.items.forEach(paidItem => {
+        const cartItemIndex = updatedCartItems.findIndex(item => item.food?.id === paidItem.food?.id);
+        if (cartItemIndex !== -1) {
+          const cartItem = updatedCartItems[cartItemIndex];
+          const newQuantity = cartItem.quantity - paidItem.quantity;
+          
+          if (newQuantity <= 0) {
+            // Remove item completely if quantity becomes 0 or negative
+            updatedCartItems.splice(cartItemIndex, 1);
+            console.log(`Removed item ${paidItem.food?.name} from cart (quantity was ${cartItem.quantity}, paid ${paidItem.quantity})`);
+          } else {
+            // Update quantity and recalculate price
+            const perUnitPrice = cartItem.totalPrice / cartItem.quantity;
+            updatedCartItems[cartItemIndex] = {
+              ...cartItem,
+              quantity: newQuantity,
+              totalPrice: perUnitPrice * newQuantity
+            };
+            console.log(`Updated item ${paidItem.food?.name} quantity from ${cartItem.quantity} to ${newQuantity}`);
+          }
+        }
+      });
+      
+      console.log('Updated cart items after split payment:', updatedCartItems);
+      return updatedCartItems;
+    });
+    
+    console.log('Cart items updated after split payment');
+  };
+
+  const handlePlaceSplitBillOrder = async (splitBill, paymentInfo) => {
+    console.log('=== HANDLE PLACE SPLIT BILL ORDER CALLED ===');
+    console.log('handlePlaceSplitBillOrder called with:');
+    console.log('splitBill:', splitBill);
+    console.log('paymentInfo:', paymentInfo);
+    console.log('paymentInfo.paymentAmount:', paymentInfo.paymentAmount);
+    console.log('splitBill.items:', splitBill.items);
+    console.log('splitBill.items.length:', splitBill.items?.length);
+    
+    try {
+      // Split bill orders always get "New" status regardless of main screen selection
+      let dbStatus = 'new';
+
+      // Map order type to database format
+      let orderType = 'instore';
+      switch (selectedOrderType) {
+        case 'In Store':
+          orderType = 'instore';
+          break;
+        case 'Table':
+          orderType = 'table';
+          break;
+        case 'Collection':
+          orderType = 'collection';
+          break;
+        case 'Delivery':
+          orderType = 'delivery';
+          break;
+        default:
+          orderType = 'instore';
+      }
+
+      // Prepare order data for database (same structure as regular handlePlaceOrder)
+      const orderData = {
+        customer_id: selectedCustomer?.id || null,
+        order_amount: paymentInfo.paymentAmount || splitBill.total, // Use payment amount from paymentInfo
+        coupon_discount_amount: splitBill.discount || 0,
+        coupon_discount_title: null,
+        payment_status: 'paid', // Split bills are paid when placed
+        order_status: dbStatus, // Use the same status mapping as regular orders
+        total_tax_amount: splitBill.tax || 0,
+        payment_method: paymentInfo.paymentMethod || 'Cash',
+        delivery_address_id: null, // Will be set if delivery order
+        coupon_code: null,
+        order_note: null,
+        order_type: orderType,
+        restaurant_id: 1,
+        delivery_charge: 0,
+        additional_charge: 0,
+        discount_amount: splitBill.discount || 0,
+        tax_percentage: getTaxRate(),
+        scheduled: 0,
+        schedule_at: null,
+        failed: 0,
+        refunded: 0,
+        isdeleted: 0,
+        issyncronized: 0,
+        table_details: selectedTable ? JSON.stringify({ tables: [{ id: selectedTable, table_no: selectedTable }] }) : null,
+        placed_at: dbStatus === 'new' ? new Date().toISOString() : null
+      };
+
+      // Place the order in database first (same as simple pay)
+      console.log('Creating split bill order with data:', orderData);
+      const orderResult = await window.myAPI?.createOrder(orderData);
+      console.log('Split bill createOrder result:', orderResult);
+      
+      if (!orderResult || !orderResult.success) {
+        console.error('Split bill order creation failed:', orderResult);
+        showError('Failed to place split bill order: ' + (orderResult?.message || 'Unknown error'));
+        return null;
+      }
+
+      const orderId = orderResult.id;
+      console.log('Split bill order created successfully with ID:', orderId);
+
+      // Prepare order details data (same structure as simple pay)
+      const orderDetailsArray = splitBill.items.map(item => {
+        // Calculate item-specific totals
+        const itemSubtotal = item.totalPrice;
+        const itemTax = calculateTaxAmount(itemSubtotal); // Calculate tax using settings
+        const itemDiscount = 0; // Individual item discount if any
+
+        // Handle custom pizza items differently (same as simple pay)
+        if (item.isCustomPizza) {
+          // For custom pizzas, create special food details
+          const customPizzaDetails = JSON.stringify({
+            type: 'custom_pizza',
+            name: 'Split Pizza',
+            size: item.size,
+            slices: item.slices,
+            price: item.price,
+            note: item.customNote,
+            selectedPizzas: item.selectedPizzas,
+            flavorIngredients: item.flavorIngredients,
+            sliceColors: item.sliceColors
+          });
+
+          return {
+            order_id: orderId,
+            food_id: 0, // No specific food ID for custom pizzas
+            quantity: item.quantity,
+            price: item.price,
+            food_details: customPizzaDetails,
+            item_note: item.customNote,
+            variation: null,
+            add_ons: null,
+            ingredients: JSON.stringify(item.flavorIngredients),
+            discount_on_food: 0,
+            discount_type: null,
+            tax_amount: itemTax,
+            total_add_on_price: 0,
+            issynicronized: 0,
+            isdeleted: 0,
+            iscreateyourown: 1, // Mark as custom pizza
+            isopen: 0
+          };
+        }
+
+        // Handle custom food items (same as simple pay)
+        if (item.isCustomFood) {
+          const customFoodDetails = JSON.stringify({
+            type: 'custom_food',
+            name: item.customFoodName,
+            price: item.price,
+            note: item.customFoodNote,
+            ingredients: item.customFoodIngredients
+          });
+
+          return {
+            order_id: orderId,
+            food_id: 0, // No specific food ID for custom foods
+            quantity: item.quantity,
+            price: item.price,
+            food_details: customFoodDetails,
+            item_note: item.customFoodNote,
+            variation: null,
+            add_ons: null,
+            ingredients: JSON.stringify(item.customFoodIngredients),
+            discount_on_food: 0,
+            discount_type: null,
+            tax_amount: itemTax,
+            total_add_on_price: 0,
+            issynicronized: 0,
+            isdeleted: 0,
+            iscreateyourown: 0,
+            isopen: 1 // Mark as open order
+          };
+        }
+
+        // Handle regular food items (same as simple pay)
+        // Prepare variations and addons as JSON
+        const variations = Object.keys(item.variations || {}).length > 0 ? JSON.stringify(item.variations) : null;
+        const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
+
+        // Prepare food details as JSON (same structure as regular orders)
+        const foodDetails = JSON.stringify({
+          food: {
+            id: item.food?.id || 0,
+            name: item.food?.name || 'Unknown Food',
+            description: item.food?.description || '',
+            price: item.food?.price || 0,
+            image: item.food?.image || null
+          },
+          variations: item.variations || {},
+          addons: item.adons || [],
+          quantity: item.quantity,
+          totalPrice: item.totalPrice
+        });
+
+        return {
+          food_id: item.food?.id || 0,
+          order_id: orderId,
+          price: item.food?.price || 0,
+          food_details: foodDetails,
+          item_note: null,
+          variation: variations,
+          add_ons: addons,
+          discount_on_food: itemDiscount,
+          discount_type: null,
+          quantity: item.quantity,
+          tax_amount: itemTax,
+          total_add_on_price: 0,
+          issynicronized: false,
+          isdeleted: false
+        };
+      });
+
+      // Create order details separately (same as simple pay)
+      console.log('Creating split bill order details:', orderDetailsArray);
+      console.log('Order details array length:', orderDetailsArray.length);
+      console.log('API available check:', !!window.myAPI);
+      console.log('createMultipleOrderDetails available check:', !!window.myAPI?.createMultipleOrderDetails);
+      
+      if (!window.myAPI?.createMultipleOrderDetails) {
+        console.error('createMultipleOrderDetails API not available');
+        showError('createMultipleOrderDetails API not available');
+        return null;
+      }
+      
+      const orderDetailsResult = await window.myAPI.createMultipleOrderDetails(orderDetailsArray);
+      console.log('Split bill order details result:', orderDetailsResult);
+
+      if (!orderDetailsResult.success) {
+        console.error('Failed to create split bill order details:', orderDetailsResult);
+        showError('Failed to create split bill order details: ' + orderDetailsResult.message);
+        return null;
+      }
+
+      console.log('Split bill order and details created successfully');
+      console.log('Order ID:', orderId);
+      console.log('Order details created:', orderDetailsResult);
+      showSuccess(`Split Bill ${splitBill.id} order placed successfully!`);
+      return orderId;
+    } catch (error) {
+      console.error('Error placing split bill order:', error);
+      showError('Failed to place split bill order. Please try again.');
+      return null;
+    }
+  };
+
   const handleRemoveSplitBill = (splitBillId) => {
     // Get the split bill being removed to return its items to the pool
     const splitToRemove = splitBills.find(split => split.id === splitBillId);
 
+    // Since paid splits are automatically removed, all remaining splits are unpaid
+    // Return items to cart items
+    if (splitToRemove) {
+      const updatedCartItems = [...cartItems];
+      splitToRemove.items.forEach(splitItem => {
+        const cartItem = updatedCartItems.find(item => item.food?.id === splitItem.food?.id);
+        if (cartItem) {
+          // Increase quantity in cart
+          cartItem.quantity += splitItem.quantity;
+          // Recalculate total price based on original per-unit price
+          const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+          cartItem.totalPrice = perUnitPrice * cartItem.quantity;
+        }
+      });
+      
+      // Update cart items with returned quantities
+      setCartItems(updatedCartItems);
+      
+      // Also update splitItems
+      const updatedSplitItems = [...splitItems];
+      splitToRemove.items.forEach(splitItem => {
+        const splitItemInList = updatedSplitItems.find(item => item.food?.id === splitItem.food?.id);
+        if (splitItemInList) {
+          // Increase quantity in splitItems
+          splitItemInList.quantity += splitItem.quantity;
+          // Recalculate total price
+          const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+          splitItemInList.totalPrice = perUnitPrice * splitItemInList.quantity;
+        }
+      });
+      
+      // Update splitItems with returned quantities
+      setSplitItems(updatedSplitItems);
+    }
+
+    // Remove the split bill
     setSplitBills(prev => prev.filter(split => split.id !== splitBillId));
 
     // Update selected split bill if the removed one was selected
     if (selectedSplitBill?.id === splitBillId) {
       const remainingSplits = splitBills.filter(split => split.id !== splitBillId);
       setSelectedSplitBill(remainingSplits[0] || null);
-    }
-
-    // If this was a paid split (not manually removed), don't return items to pool
-    // Items from paid splits should stay with the payment
-    if (!splitToRemove?.paid) {
-      // Return items to the available pool by updating splitItems
-      // This is handled by the getRemainingQuantity function which calculates
-      // remaining quantity based on current splitBills state
     }
   };
 
@@ -5302,7 +5943,7 @@ const RunningOrders = () => {
     if (!isSinglePayMode) return { subtotal: 0, tax: 0, total: 0 };
 
     // Use cartItems for single pay mode (PAY button) or selectedPlacedOrder.items for existing orders
-    const items = cartItems.length > 0 ? cartItems : (selectedPlacedOrder?.items || []);
+    const items = cartItems.length > 0 ? cartItems.filter(item => item.quantity > 0) : (selectedPlacedOrder?.items || []);
 
     const subtotal = items.reduce((sum, item) => {
       return sum + (parseFloat(item.totalPrice) || 0);
@@ -6496,7 +7137,18 @@ const RunningOrders = () => {
             )}
             <div className="flex items-center justify-between mb-2 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
-
+                {/* Menu Button */}
+                <button
+                  onClick={() => {
+                    console.log('Menu button clicked');
+                    setShowFloatingSidebar(true);
+                  }}
+                  className="px-3 py-1 cursor-pointer flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200 rounded-lg border-2 border-blue-600 shadow-md text-sm font-bold"
+                  title="Menu"
+                >
+                  <Menu className="w-4 h-4 mr-1" />
+                  MENU
+                </button>
                 <span className="font-semibold text-gray-800 text-xs sm:text-sm md:text-xs lg:text-sm">🍽 Food &amp; Categories</span>
               </div>
               <div className="flex gap-2">
@@ -6549,6 +7201,17 @@ const RunningOrders = () => {
           {/* Modification indicator */}
           {isModifyingOrder && (
             <></>
+          )}
+          {/* Draft Update indicator */}
+          {currentDraftId && (
+            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 mb-2 mx-2 mt-2" role="alert">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <span className="text-xs font-medium">Updating Draft: {currentDraftNumber || currentDraftId}</span>
+              </div>
+            </div>
           )}
           <div className="px-2 py-2 flex-shrink-0 space-y-2">
             {/* Order Type Buttons Row */}
@@ -6750,8 +7413,8 @@ const RunningOrders = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white flex-1 overflow-y-auto">
-                  {cartItems.length > 0 ? (
-                    cartItems.map((item) => (
+                  {cartItems.filter(item => item.quantity > 0).length > 0 ? (
+                    cartItems.filter(item => item.quantity > 0).map((item) => (
                       <tr key={item.id} className="grid grid-cols-[auto_100px_100px_100px] gap-2 items-center text-sm p-2 border-b border-gray-200">
 
                         <td className="text-gray-800 text-sm">
@@ -6840,14 +7503,22 @@ const RunningOrders = () => {
                           <div className="flex items-center rounded">
                             <button
                               className="text-primary flex items-center cursor-pointer justify-center transition-colors"
-                              onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                              onClick={() => {
+                                console.log('=== CART MINUS BUTTON CLICKED ===');
+                                console.log('Item ID:', item.id, 'Current quantity:', item.quantity);
+                                updateCartItemQuantity(item.id, item.quantity - 1);
+                              }}
                             >
                               <Minus size={15} />
                             </button>
                             <span className="w-8 text-center text-gray-800 py-1 text-sm">{item.quantity}</span>
                             <button
                               className="flex items-center cursor-pointer justify-center text-primary transition-colors"
-                              onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                              onClick={() => {
+                                console.log('=== CART PLUS BUTTON CLICKED ===');
+                                console.log('Item ID:', item.id, 'Current quantity:', item.quantity);
+                                updateCartItemQuantity(item.id, item.quantity + 1);
+                              }}
                             >
                               <Plus size={15} />
                             </button>
@@ -7003,6 +7674,7 @@ const RunningOrders = () => {
           isOpen={showCustomerSearchModal}
           onClose={() => {
             setShowCustomerSearchModal(false);
+            setCustomerSearchFromSplit(false);
             // Only reset customer if no customer was selected during this modal session
             // Don't reset if customer was already selected before opening modal
           }}
@@ -7010,6 +7682,7 @@ const RunningOrders = () => {
           onEditCustomer={handleOpenEditModal}
           onNewCustomer={() => setShowCustomerModal(true)}
           orderType={selectedOrderType}
+          zIndex={customerSearchFromSplit ? 60 : 50}
         />
 
         {/* Customer Information Modal */}
@@ -7075,6 +7748,18 @@ const RunningOrders = () => {
             resetFinalizeSaleModalForSplitBill={resetFinalizeSaleModalForSplitBill}
             setIsSinglePayMode={setIsSinglePayMode}
             setShowFinalizeSaleModal={setShowFinalizeSaleModal}
+            // Customer selection props
+            selectedCustomer={selectedCustomer}
+            setSelectedCustomer={setSelectedCustomer}
+            selectedOrderType={selectedOrderType}
+            setSelectedOrderType={setSelectedOrderType}
+            showCustomerModal={showCustomerModal}
+            setShowCustomerModal={setShowCustomerModal}
+            showCustomerSearchModal={showCustomerSearchModal}
+            setShowCustomerSearchModal={setShowCustomerSearchModal}
+            setCustomerSearchFromSplit={setCustomerSearchFromSplit}
+            handleCustomerSelect={handleCustomerSelect}
+            handleEditCustomer={handleEditCustomer}
           />
 
         )}
@@ -8478,6 +9163,7 @@ const RunningOrders = () => {
             // Mode and data props
             isSinglePayMode={isSinglePayMode}
             selectedSplitBill={selectedSplitBill}
+            setSelectedSplitBill={setSelectedSplitBill}
             selectedPlacedOrder={selectedPlacedOrder}
             cartItems={cartItems}
             foodDetails={foodDetails}
@@ -8533,6 +9219,8 @@ const RunningOrders = () => {
             splitBillToRemove={splitBillToRemove}
             setSplitBills={setSplitBills}
             setSplitBillToRemove={setSplitBillToRemove}
+            updateCartAfterSplitPayment={updateCartAfterSplitPayment}
+            handlePlaceSplitBillOrder={handlePlaceSplitBillOrder}
             // Order related props
             placedOrders={placedOrders}
             selectedCustomer={selectedCustomer}
@@ -8557,6 +9245,15 @@ const RunningOrders = () => {
             setShowPayLaterButton={setShowPayLaterButton}
             hasResetPayment={hasResetPayment}
             setHasResetPayment={setHasResetPayment}
+            setShowSplitBillModal={setShowSplitBillModal}
+            setCustomerSearchFromSplit={setCustomerSearchFromSplit}
+            splitBills={splitBills}
+            setSplitItems={setSplitItems}
+            setSplitBills={setSplitBills}
+            setSplitDiscount={setSplitDiscount}
+            setSplitCharge={setSplitCharge}
+            setSplitTips={setSplitTips}
+            setSplitBillToRemove={setSplitBillToRemove}
           />
         )}
       </div>
@@ -8740,10 +9437,10 @@ const RunningOrders = () => {
                   <span className="text-gray-600">Total Item:</span>
                   <span className="font-semibold">
                     {isSinglePayMode
-                      ? (cartItems.length > 0 ? cartItems : selectedPlacedOrder?.items || []).reduce((total, item) => total + (parseInt(item.quantity) || 0), 0)
+                      ? (cartItems.length > 0 ? cartItems.filter(item => item.quantity > 0) : selectedPlacedOrder?.items || []).reduce((total, item) => total + (parseInt(item.quantity) || 0), 0)
                       : selectedSplitBill
                         ? selectedSplitBill.items.reduce((total, item) => total + (item.quantity || 0), 0)
-                        : cartItems.reduce((total, item) => total + (item.quantity || 0), 0)
+                        : cartItems.filter(item => item.quantity > 0).reduce((total, item) => total + (item.quantity || 0), 0)
                     }
                   </span>
                 </div>
@@ -9195,12 +9892,65 @@ const RunningOrders = () => {
         isOpen={showDraftsModal}
         onClose={() => setShowDraftsModal(false)}
         currentDraftOrders={currentDraftOrders}
-        onEditDraft={(draft) => {
+        onEditDraft={async (draft) => {
           // Handle editing draft in cart
+          console.log('=== EDIT DRAFT DEBUG START ===');
           console.log('Editing draft:', draft);
+          console.log('Draft properties:', {
+            id: draft.id,
+            databaseId: draft.databaseId,
+            orderNumber: draft.orderNumber,
+            hasDatabaseId: 'databaseId' in draft,
+            hasOrderNumber: 'orderNumber' in draft
+          });
+          console.log('Draft items:', draft.items);
+          console.log('Draft items details:', draft.items?.map(item => ({
+            id: item.id,
+            name: item.food?.name || 'Unknown',
+            quantity: item.quantity,
+            price: item.food?.price || item.price || 0,
+            totalPrice: item.totalPrice
+          })));
+          console.log('Full draft object keys:', Object.keys(draft));
+          console.log('Full draft object:', JSON.stringify(draft, null, 2));
+          
+          // Check if draft has the required properties, if not, try to derive them
+          let databaseId = draft.databaseId || draft.id;
+          let orderNumber = draft.orderNumber;
+          
+          if (!databaseId) {
+            console.error('No valid database ID found for draft:', draft);
+            showError('Invalid draft data. Cannot edit this draft.');
+            return;
+          }
+          
+          if (!orderNumber) {
+            // Generate a fallback order number
+            orderNumber = `draft_id${databaseId}`;
+            console.log('Generated fallback order number:', orderNumber);
+          }
+          
+          // Find the position of this draft in the list before removing it
+          const draftPosition = currentDraftOrders.findIndex(d => d.id === draft.id);
+          console.log('Draft position in list:', draftPosition);
+          
           // Load the draft into the cart
           if (draft.items && draft.items.length > 0) {
+            console.log('=== LOADING DRAFT ITEMS INTO CART ===');
+            console.log('Draft items to load:', draft.items);
+            console.log('Items details:', draft.items.map(item => ({
+              id: item.id,
+              name: item.food?.name || 'Unknown',
+              quantity: item.quantity,
+              price: item.food?.price || item.price || 0,
+              totalPrice: item.totalPrice
+            })));
             setCartItems(draft.items);
+            console.log('Cart items set successfully');
+            console.log('=== CART ITEMS AFTER LOADING DRAFT ===');
+            console.log('Loaded cart items:', draft.items);
+            console.log('First item quantity:', draft.items[0]?.quantity);
+            console.log('First item details:', draft.items[0]);
           }
           if (draft.customer) {
             setSelectedCustomer(draft.customer);
@@ -9208,8 +9958,52 @@ const RunningOrders = () => {
           if (draft.orderType) {
             setSelectedOrderType(draft.orderType);
           }
-          // Remove the draft from currentDraftOrders since it's now in the cart
+          if (draft.coupon) {
+            setAppliedCoupon(draft.coupon);
+          }
+          
+          // Set the current draft ID, position, and number so future saves will update this draft at same position
+          setCurrentDraftId(databaseId);
+          setCurrentDraftPosition(draftPosition);
+          setCurrentDraftNumber(orderNumber);
+          console.log('Set current draft ID for updates:', databaseId, 'at position:', draftPosition, 'with number:', orderNumber);
+          
+          // DELETE the draft from database when editing
+          try {
+            if (window.myAPI) {
+              console.log('Attempting to delete draft from database:', databaseId);
+              const deleteResult = await window.myAPI.deleteOrder(databaseId);
+              console.log('Delete result:', deleteResult);
+              
+              if (deleteResult && deleteResult.success) {
+                console.log('Successfully deleted draft from database for editing:', databaseId);
+                // Show success message to user
+                showSuccess('Draft loaded for editing');
+              } else {
+                console.error('Failed to delete draft from database:', deleteResult?.message || 'Unknown error');
+                showError('Failed to load draft for editing. Please try again.');
+                return; // Don't proceed if deletion failed
+              }
+            } else {
+              console.error('API not available for deleting draft');
+              showError('API not available. Please refresh the page.');
+              return;
+            }
+          } catch (error) {
+            console.error('Error deleting draft from database:', error);
+            showError('Error loading draft for editing: ' + error.message);
+            return;
+          }
+          
+          // Remove the draft from currentDraftOrders list (it will be re-added when saved)
           setCurrentDraftOrders(prev => prev.filter(d => d.id !== draft.id));
+          console.log('Removed draft from list - will be restored at same position when saved');
+          
+          // Refresh the draft list to ensure UI is updated
+          setTimeout(() => {
+            fetchDraftOrders();
+          }, 100);
+          
           setShowDraftsModal(false);
         }}
         onDeleteDraft={handleDeleteDraft}
@@ -9270,6 +10064,7 @@ const RunningOrders = () => {
           currencyAmount={currencyAmount}
           setCurrencyAmount={setCurrencyAmount}
           selectedCurrency={selectedCurrency}
+          handleRemoveSplitBill={handleRemoveSplitBill}
           setSelectedCurrency={setSelectedCurrency}
           currencyOptions={currencyOptions}
           addedPayments={addedPayments}
@@ -9277,6 +10072,7 @@ const RunningOrders = () => {
           // Mode and data props
           isSinglePayMode={isSinglePayMode}
           selectedSplitBill={selectedSplitBill}
+          setSelectedSplitBill={setSelectedSplitBill}
           selectedPlacedOrder={selectedPlacedOrder}
           cartItems={cartItems}
           foodDetails={foodDetails}
@@ -9332,6 +10128,8 @@ const RunningOrders = () => {
           splitBillToRemove={splitBillToRemove}
           setSplitBills={setSplitBills}
           setSplitBillToRemove={setSplitBillToRemove}
+          updateCartAfterSplitPayment={updateCartAfterSplitPayment}
+          handlePlaceSplitBillOrder={handlePlaceSplitBillOrder}
           // Order related props
           placedOrders={placedOrders}
           selectedCustomer={selectedCustomer}
@@ -9356,7 +10154,41 @@ const RunningOrders = () => {
           setShowPayLaterButton={setShowPayLaterButton}
           hasResetPayment={hasResetPayment}
           setHasResetPayment={setHasResetPayment}
+          setShowSplitBillModal={setShowSplitBillModal}
+          setCustomerSearchFromSplit={setCustomerSearchFromSplit}
+          splitBills={splitBills}
+          setSplitItems={setSplitItems}
+          setSplitBills={setSplitBills}
+          setSplitDiscount={setSplitDiscount}
+          setSplitCharge={setSplitCharge}
+          setSplitTips={setSplitTips}
+          setSplitBillToRemove={setSplitBillToRemove}
         />
+      )}
+
+      {/* Floating Sidebar */}
+      {showFloatingSidebar && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div 
+            className="flex-1 bg-black bg-opacity-50"
+            onClick={() => setShowFloatingSidebar(false)}
+          />
+          {/* Sidebar */}
+          <div className="w-80 h-full bg-white shadow-xl">
+            <Sidebar 
+              navigationItems={[
+                { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+                { name: 'Sales', path: '/dashboard/sales', icon: <ShoppingBag size={20} /> },
+                { name: 'Orders', path: '/dashboard/orders', icon: <Receipt size={20} /> },
+                { name: 'Customers', path: '/dashboard/customers', icon: <Users2 size={20} /> },
+                { name: 'Menu', path: '/dashboard/menu', icon: <Utensils size={20} /> },
+                { name: 'Reports', path: '/dashboard/reports', icon: <FileText size={20} /> },
+                { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} /> }
+              ]}
+            />
+          </div>
+        </div>
       )}
     </>
   );

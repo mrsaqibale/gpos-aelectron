@@ -1,5 +1,5 @@
 import React from "react";
-import { X, CheckCircle } from "lucide-react";
+import { X, CheckCircle, User } from "lucide-react";
 
 const SplitBillModal = ({
     isOpen,
@@ -24,7 +24,19 @@ const SplitBillModal = ({
     setSplitBillToRemove,
     resetFinalizeSaleModalForSplitBill,
     setIsSinglePayMode,
-    setShowFinalizeSaleModal
+    setShowFinalizeSaleModal,
+    // Customer selection props
+    selectedCustomer,
+    setSelectedCustomer,
+    selectedOrderType,
+    setSelectedOrderType,
+    showCustomerModal,
+    setShowCustomerModal,
+    showCustomerSearchModal,
+    setShowCustomerSearchModal,
+    setCustomerSearchFromSplit,
+    handleCustomerSelect,
+    handleEditCustomer
 }) => {
     if (!isOpen) return null; // modal toggle
 
@@ -36,11 +48,7 @@ const SplitBillModal = ({
                     <h2 className="text-xl font-bold">Split Bill</h2>
                     <button
                         onClick={onClose}
-                        disabled={areAllItemsDistributed()}
-                        className={`p-1 rounded-full transition-colors ${areAllItemsDistributed()
-                                ? "text-gray-400 cursor-not-allowed"
-                                : "text-red-500 hover:text-red-300 hover:bg-white hover:bg-opacity-20"
-                            }`}
+                        className="text-red-500 hover:text-red-300 hover:bg-white hover:bg-opacity-20 p-1 rounded-full transition-colors"
                     >
                         X Cancel
                     </button>
@@ -166,9 +174,9 @@ const SplitBillModal = ({
                                     </span>
                                     <span className="text-sm font-bold text-gray-800">
                                         €
-                                        {selectedPlacedOrder
+                                        {splitItems.length > 0
                                             ? (
-                                                selectedPlacedOrder.total /
+                                                splitItems.reduce((sum, item) => sum + item.totalPrice, 0) /
                                                 (1 + getTaxRate() / 100)
                                             ).toFixed(2)
                                             : "0.00"}
@@ -180,9 +188,9 @@ const SplitBillModal = ({
                                     </span>
                                     <span className="text-sm font-bold text-gray-800">
                                         €
-                                        {selectedPlacedOrder
+                                        {splitItems.length > 0
                                             ? (
-                                                (selectedPlacedOrder.total *
+                                                (splitItems.reduce((sum, item) => sum + item.totalPrice, 0) *
                                                     getTaxRate()) /
                                                 100 /
                                                 (1 + getTaxRate() / 100)
@@ -196,8 +204,8 @@ const SplitBillModal = ({
                                     </span>
                                     <span className="text-lg font-bold text-primary">
                                         €
-                                        {selectedPlacedOrder
-                                            ? selectedPlacedOrder.total.toFixed(2)
+                                        {splitItems.length > 0
+                                            ? splitItems.reduce((sum, item) => sum + item.totalPrice, 0).toFixed(2)
                                             : "0.00"}
                                     </span>
                                 </div>
@@ -292,27 +300,24 @@ const SplitBillModal = ({
                                                 <label className="block text-xs font-medium text-gray-700 mb-1">
                                                     Customer:
                                                 </label>
-                                                <select
-                                                    value={splitBill.customer}
-                                                    onChange={(e) =>
-                                                        handleSplitBillCustomerChange(
-                                                            splitBill.id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setCustomerSearchFromSplit(true);
+                                                        setShowCustomerSearchModal(true);
+                                                    }}
+                                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary bg-white hover:bg-gray-50 text-left flex items-center justify-between"
                                                 >
-                                                    <option value="Walk-in Customer">
-                                                        Walk-in Customer
-                                                    </option>
-                                                    <option value="John Smith 555-1234">
-                                                        John Smith 555-1234
-                                                    </option>
-                                                    <option value="Jane Doe 555-5678">
-                                                        Jane Doe 555-5678
-                                                    </option>
-                                                </select>
+                                                    <div className="flex items-center gap-1">
+                                                        <User size={12} className="text-gray-500" />
+                                                        <span className="truncate">
+                                                            {selectedCustomer ? selectedCustomer.name : 'Select Customer'}
+                                                        </span>
+                                                    </div>
+                                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
                                             </div>
 
                                             {/* Summary */}
