@@ -1,6 +1,8 @@
 const { app, BrowserWindow, Menu, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const url = require('url');
 
 // Disable Chrome sandbox to avoid permission issues on Linux
 // These must be called before app.whenReady()
@@ -36,6 +38,132 @@ require('./ipchandler/attendance.cjs');
 require('./ipchandler/salaryPayments.cjs');
 require('./ipchandler/leaveRequests.cjs');
 // const { initDatabase } = require('./init-database.cjs');
+
+// Counter HTTP Server
+let counterServer = null;
+const COUNTER_PORT = 3001;
+
+function startCounterServer() {
+  if (counterServer) {
+    console.log('Counter server already running on port', COUNTER_PORT);
+    return { success: true, port: COUNTER_PORT, alreadyRunning: true };
+  }
+
+  counterServer = http.createServer((req, res) => {
+    const parsedUrl = url.parse(req.url, true);
+    
+    // Enable CORS for network access
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+
+    // Serve the counter HTML file
+    if (parsedUrl.pathname === '/' || parsedUrl.pathname === '/counter') {
+      const appPath = app.getAppPath();
+      const counterHtmlPath = path.join(appPath, 'src', 'counter.html');
+      
+      fs.readFile(counterHtmlPath, 'utf8', (err, data) => {
+        if (err) {
+          console.error('Error reading counter.html:', err);
+          res.writeHead(404, { 'Content-Type': 'text/html' });
+          res.end(`
+            <html>
+              <body style="font-family: Arial; padding: 20px;">
+                <h1>Counter Not Found</h1>
+                <p>Could not find counter.html file at: ${counterHtmlPath}</p>
+                <p>Make sure the file exists in the src folder.</p>
+              </body>
+            </html>
+          `);
+          return;
+        }
+        
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(data);
+      });
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/html' });
+      res.end(`
+        <html>
+          <body style="font-family: Arial; padding: 20px;">
+            <h1>GPOS Counter Server</h1>
+            <p>Available routes:</p>
+            <ul>
+              <li><a href="/">Counter</a></li>
+              <li><a href="/counter">Counter (alternative)</a></li>
+            </ul>
+          </body>
+        </html>
+      `);
+    }
+  });
+
+  return new Promise((resolve, reject) => {
+    counterServer.listen(COUNTER_PORT, '0.0.0.0', () => {
+      const networkInterfaces = require('os').networkInterfaces();
+      let localIP = 'localhost';
+      
+      // Find the first non-internal IPv4 address
+      for (const name of Object.keys(networkInterfaces)) {
+        for (const interface of networkInterfaces[name]) {
+          if (interface.family === 'IPv4' && !interface.internal) {
+            localIP = interface.address;
+            break;
+          }
+        }
+        if (localIP !== 'localhost') break;
+      }
+      
+      console.log(`🎯 Counter server running on:`);
+      console.log(`   Local:  http://localhost:${COUNTER_PORT}`);
+      console.log(`   Network: http://${localIP}:${COUNTER_PORT}`);
+      console.log(`📱 Access the counter from any device on your network!`);
+      
+      resolve({ 
+        success: true, 
+        port: COUNTER_PORT, 
+        localUrl: `http://localhost:${COUNTER_PORT}`,
+        networkUrl: `http://${localIP}:${COUNTER_PORT}`,
+        localIP 
+      });
+    });
+
+    counterServer.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`⚠️  Port ${COUNTER_PORT} is already in use. Trying next port...`);
+        counterServer.close();
+        resolve({ success: false, error: 'Port in use' });
+      } else {
+        console.error('Counter server error:', err);
+        reject(err);
+      }
+    });
+  });
+}
+
+function stopCounterServer() {
+  if (counterServer) {
+    counterServer.close(() => {
+      console.log('Counter server stopped');
+      counterServer = null;
+    });
+    return true;
+  }
+  return false;
+}
+
+function getCounterServerStatus() {
+  return {
+    isRunning: counterServer !== null,
+    port: COUNTER_PORT
+  };
+}
 
 async function createWindow() {
   // Get screen dimensions
@@ -246,6 +374,67 @@ app.whenReady().then(async () => {
     win.close();
   });
 
+  // Shell operations
+  ipcMain.handle('shell:openExternal', async (event, url) => {
+    const { shell } = require('electron');
+    return shell.openExternal(url);
+  });
+
+  // Path operations
+  ipcMain.handle('path:join', async (event, ...args) => {
+    return path.join(...args);
+  });
+
+  // App path operations
+  ipcMain.handle('app:getAppPath', async () => {
+    return app.getAppPath();
+  });
+
+  // File existence check
+  ipcMain.handle('file:exists', async (event, filePath) => {
+    return fs.existsSync(filePath);
+  });
+
+  // Get counter file path
+  ipcMain.handle('counter:getPath', async () => {
+    const appPath = app.getAppPath();
+    const counterPath = path.join(appPath, 'src', 'counter.html');
+    return {
+      appPath,
+      counterPath,
+      exists: fs.existsSync(counterPath)
+    };
+  });
+
+  // Counter server operations
+  ipcMain.handle('counter:startServer', async () => {
+    try {
+      const result = await startCounterServer();
+      return result;
+    } catch (error) {
+      console.error('Error starting counter server:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle('counter:stopServer', async () => {
+    return stopCounterServer();
+  });
+
+  ipcMain.handle('counter:getServerStatus', async () => {
+    return getCounterServerStatus();
+  });
+
+  ipcMain.handle('counter:openInBrowser', async () => {
+    const status = getCounterServerStatus();
+    if (status.isRunning) {
+      const { shell } = require('electron');
+      return shell.openExternal(`http://localhost:${COUNTER_PORT}`);
+    } else {
+      throw new Error('Counter server is not running');
+    }
+  });
+
   // ipcMain.handle('window:isMaximized', () => {
   //   return win.isMaximized();
   // });
@@ -266,4 +455,20 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
+});
+
+// Cleanup when app is quitting
+app.on('before-quit', () => {
+  stopCounterServer();
+});
+
+// Handle app termination
+process.on('SIGINT', () => {
+  stopCounterServer();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  stopCounterServer();
+  process.exit(0);
 });

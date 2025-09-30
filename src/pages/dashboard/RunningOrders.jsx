@@ -653,8 +653,24 @@ const RunningOrders = () => {
       }
     };
     window.addEventListener('openCustomerInfo', handleOpenInfo);
-    return () => window.removeEventListener('openStatusModal', handleOpenStatusModal);
-  }, [selectedOrderType]);
+    
+    // Add event listener for Save button to create draft
+    const handleSaveClicked = () => {
+      if (cartItems.length === 0) {
+        showError('Please add items to cart before saving as draft');
+        return;
+      }
+      // Save directly without customer name popup
+      handleDraftOrder('Walk-in Customer');
+    };
+    window.addEventListener('headerSaveClicked', handleSaveClicked);
+    
+    return () => {
+      window.removeEventListener('openStatusModal', handleOpenStatusModal);
+      window.removeEventListener('openCustomerInfo', handleOpenInfo);
+      window.removeEventListener('headerSaveClicked', handleSaveClicked);
+    };
+  }, [selectedOrderType, cartItems.length, showError]);
 
   // Fetch foods by category
   const fetchFoodsByCategory = async (categoryId) => {
