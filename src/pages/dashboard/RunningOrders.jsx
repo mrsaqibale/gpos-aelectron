@@ -4109,6 +4109,42 @@ const RunningOrders = () => {
             
             console.log('Creating draft object with ID:', validId, 'order_number:', order.order_number, 'validOrderNumber:', validOrderNumber);
             
+            // Fetch customer data if customer_id exists, otherwise use draft_name
+            let customerData = {
+              name: order.draft_name || 'Walk-in Customer',
+              phone: 'N/A'
+            };
+            
+            if (order.customer_id) {
+              try {
+                const customerResult = await window.myAPI.getCustomerById(order.customer_id);
+                if (customerResult && customerResult.success && customerResult.data) {
+                  customerData = {
+                    id: customerResult.data.id,
+                    name: customerResult.data.name,
+                    phone: customerResult.data.phone || 'N/A',
+                    email: customerResult.data.email
+                  };
+                  
+                  // Fetch customer addresses
+                  const addressResult = await window.myAPI.getCustomerAddresses(order.customer_id);
+                  if (addressResult && addressResult.success && addressResult.data) {
+                    customerData.addresses = addressResult.data;
+                  }
+                  
+                  console.log('Loaded full customer data for draft (id, name, phone, email, addresses):', customerData);
+                } else {
+                  console.log('Failed to fetch customer data, using draft_name:', order.draft_name);
+                }
+              } catch (error) {
+                console.error('Error fetching customer data for draft:', error);
+                console.log('Falling back to draft_name:', order.draft_name);
+                // Keep default customer data with draft_name if fetch fails
+              }
+            } else {
+              console.log('No customer_id found, using draft_name:', order.draft_name);
+            }
+            
             // Calculate accurate totals from actual loaded items (not from database order_amount)
             // This ensures the displayed total matches the actual items
             const calculatedSubTotal = items.reduce((sum, item) => {
@@ -4133,10 +4169,7 @@ const RunningOrders = () => {
               databaseId: validId,
               orderNumber: validOrderNumber,
               items: items,
-              customer: {
-                name: order.draft_name || 'Unknown',
-                phone: 'N/A'
-              },
+              customer: customerData, // Use fetched customer data
               total: calculatedTotal, // Use calculated total from items
               coupon: null,
               orderType: 'Draft',
@@ -4154,10 +4187,10 @@ const RunningOrders = () => {
               charge: 0,
               tips: 0,
               totalPayable: calculatedTotal, // Use calculated total from items
-              draftName: order.draft_name || 'Unknown'
+              draftName: customerData.name || order.draft_name || 'Walk-in Customer'
             };
             
-            console.log('Final draft object created with calculated totals:', draftObject);
+            console.log('Final draft object created with calculated totals and customer data:', draftObject);
             return draftObject;
           })
         );
@@ -4223,13 +4256,14 @@ const RunningOrders = () => {
       let draftId, orderId;
       
       if (isUpdatingExistingDraft) {
-        // For edited drafts, always generate a new sequential draft ID
-        // This ensures we don't reuse the same draft number
-        draftId = await getNextDraftId();
-        console.log('Generated new sequential draft ID for edited draft:', draftId, 'for ID:', currentDraftId);
+        // For edited drafts, reuse the SAME draft number to maintain consistency
+        // This ensures the draft keeps its original number
+        draftId = currentDraftNumber || await getNextDraftId();
+        console.log('Reusing existing draft ID for edited draft:', draftId, 'for ID:', currentDraftId);
       } else {
         // Get next draft ID for new draft
         draftId = await getNextDraftId();
+        console.log('Generated new draft ID for new draft:', draftId);
       }
 
       // Prepare order data for database
@@ -4258,7 +4292,7 @@ const RunningOrders = () => {
         isdeleted: 0,
         issyncronized: 0,
         table_details: null,
-        draft_name: userName, // Save the draft name
+        draft_name: selectedCustomer?.name || userName || 'Walk-in Customer', // Save actual customer name
         order_number: draftId // Set the draft ID as order number
       };
 
@@ -4501,7 +4535,7 @@ const RunningOrders = () => {
         databaseId: orderId, // Store database ID
         orderNumber: draftId, // Use the draft ID format
         items: [...cartItems],
-        customer: selectedCustomer || { name: userName, phone: 'N/A' },
+        customer: selectedCustomer || { name: userName || 'Walk-in Customer', phone: 'N/A' },
         total: total,
         coupon: appliedCoupon,
         orderType: 'Draft',
@@ -4517,7 +4551,7 @@ const RunningOrders = () => {
         charge: 0,
         tips: 0,
         totalPayable: total,
-        draftName: userName // Store draft name
+        draftName: selectedCustomer?.name || userName || 'Walk-in Customer' // Store actual customer name
       };
 
       // Update local state
