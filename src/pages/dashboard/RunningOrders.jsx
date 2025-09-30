@@ -8938,6 +8938,14 @@ const RunningOrders = () => {
             setShowPayLaterButton={setShowPayLaterButton}
             hasResetPayment={hasResetPayment}
             setHasResetPayment={setHasResetPayment}
+            setShowSplitBillModal={setShowSplitBillModal}
+            setCustomerSearchFromSplit={setCustomerSearchFromSplit}
+            setSplitItems={setSplitItems}
+            setSplitBills={setSplitBills}
+            setSplitDiscount={setSplitDiscount}
+            setSplitCharge={setSplitCharge}
+            setSplitTips={setSplitTips}
+            setSplitBillToRemove={setSplitBillToRemove}
           />
         )}
       </div>
@@ -9741,6 +9749,14 @@ const RunningOrders = () => {
           setShowPayLaterButton={setShowPayLaterButton}
           hasResetPayment={hasResetPayment}
           setHasResetPayment={setHasResetPayment}
+          setShowSplitBillModal={setShowSplitBillModal}
+          setCustomerSearchFromSplit={setCustomerSearchFromSplit}
+          setSplitItems={setSplitItems}
+          setSplitBills={setSplitBills}
+          setSplitDiscount={setSplitDiscount}
+          setSplitCharge={setSplitCharge}
+          setSplitTips={setSplitTips}
+          setSplitBillToRemove={setSplitBillToRemove}
         />
       )}
     </>

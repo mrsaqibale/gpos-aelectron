@@ -45,6 +45,14 @@ const FinalizeSaleModal = ({
   // Other props
   sendSMS,
   setSendSMS,
+  setShowSplitBillModal,
+  setCustomerSearchFromSplit,
+  setSplitItems,
+  setSplitBills,
+  setSplitDiscount,
+  setSplitCharge,
+  setSplitTips,
+  setSplitBillToRemove,
   // Handler functions
   handleCashGivenAmountChange,
   handleCashAmountChange,
@@ -1208,7 +1216,8 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
                     
                     // Automatically remove the paid split bill
                     if (splitBillToRemove) {
-                      setSplitBills(prev => prev.filter(split => split.id !== splitBillToRemove));
+                      const updatedSplitBills = splitBills.filter(split => split.id !== splitBillToRemove);
+                      setSplitBills(updatedSplitBills);
                       setSplitBillToRemove(null);
                       
                       // Update cart items by removing paid quantities
@@ -1216,6 +1225,24 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
                       
                       // Reset selectedSplitBill after successful payment
                       setSelectedSplitBill(null);
+                      
+                      // Check if no more split bills remain, then close the split modal
+                      if (updatedSplitBills.length === 0) {
+                        console.log('No more split bills remaining - closing split bill modal automatically');
+                        // Close the split bill modal
+                        setShowSplitBillModal(false);
+                        setTotalSplit('');
+                        setSplitItems([]);
+                        setSplitBills([]);
+                        setSelectedSplitBill(null);
+                        setSplitDiscount(0);
+                        setSplitCharge(0);
+                        setSplitTips(0);
+                        setSplitBillToRemove(null);
+                        setCustomerSearchFromSplit(false);
+                        setIsSinglePayMode(false);
+                      }
+                      
                       console.log('Automatically removed paid split bill and reset selectedSplitBill after successful payment');
                     }
                   } else {
