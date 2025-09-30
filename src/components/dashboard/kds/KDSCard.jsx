@@ -60,8 +60,8 @@ const KDSCard = ({
             <span>Table {order.tableNumber}</span>
           </div>
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.orderType === 'Dine-In' ? 'bg-primaryExtraLight text-primary' :
-              order.orderType === 'Takeaway' ? 'bg-primaryExtraLight text-primary' :
-                'bg-primaryExtraLight text-primary'
+            order.orderType === 'Takeaway' ? 'bg-primaryExtraLight text-primary' :
+              'bg-primaryExtraLight text-primary'
             }`}>
             {order.orderType}
           </span>
@@ -102,29 +102,29 @@ const KDSCard = ({
                   {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                 </span>
 
-                <div className="flex gap-1">
-                  {item.status === 'new' && (
-                    <button
-                      onClick={() => onUpdateItemStatus(order.id, item.id, 'preparing')}
-                      className="px-2 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600 transition-colors"
-                    >
-                      Cook
-                    </button>
-                  )}
+              </div>
+              <div className="flex gap-1">
+                {item.status === 'new' && (
+                  <button
+                    onClick={() => onUpdateItemStatus(order.id, item.id, 'preparing')}
+                    className="px-2 py-1 bg-orange-500 text-white rounded text-xs hover:bg-orange-600 transition-colors"
+                  >
+                    Cook
+                  </button>
+                )}
 
-                  {item.status === 'preparing' && (
-                    <button
-                      onClick={() => onUpdateItemStatus(order.id, item.id, 'ready')}
-                      className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors"
-                    >
-                      Ready
-                    </button>
-                  )}
+                {item.status === 'preparing' && (
+                  <button
+                    onClick={() => onUpdateItemStatus(order.id, item.id, 'ready')}
+                    className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors"
+                  >
+                    Ready
+                  </button>
+                )}
 
-                  {item.status === 'ready' && (
-                    <CheckCircle size={16} className="text-green-600" />
-                  )}
-                </div>
+                {item.status === 'ready' && (
+                  <CheckCircle size={16} className="text-green-600" />
+                )}
               </div>
             </div>
           ))}

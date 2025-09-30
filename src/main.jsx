@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { createHashRouter, RouterProvider, Navigate } from "react-router-dom"
 import WelcomeScreen from './pages/loginPage/WelcomeScreen.jsx'
+import CustomerScreen from './pages/customer/Welcome.jsx'
 import POSLogin from './pages/loginPage/PosLogin.jsx'
 import LicenseScreen from './pages/loginPage/LicenseScreen.jsx'
 import DashboardLayout from './components/dashboard/DashboardLayout.jsx'
@@ -60,6 +61,10 @@ const router = createHashRouter([
       {
         path: 'license',
         element: <ErrorBoundary><LicenseScreen /></ErrorBoundary>,
+      },
+      {
+        path: '/customer',
+        element: <ErrorBoundary><CustomerScreen /></ErrorBoundary>
       },
       {
         path: 'dashboard',
