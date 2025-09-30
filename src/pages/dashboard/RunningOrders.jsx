@@ -3888,7 +3888,7 @@ const RunningOrders = () => {
   const getNextDraftId = async () => {
     try {
       if (!window.myAPI) {
-        return `draft_id${Date.now()}`;
+        return `draft_id001`;
       }
 
       // Get all draft orders to find the highest number
@@ -3899,24 +3899,31 @@ const RunningOrders = () => {
 
         // Find the highest draft number
         draftOrders.forEach(order => {
-          if (order.order_number && order.order_number.startsWith('draft_id')) {
-            const number = parseInt(order.order_number.replace('draft_id', ''));
-            if (!isNaN(number) && number > maxNumber) {
+          if (order.order_number && typeof order.order_number === 'string' && order.order_number.startsWith('draft_id')) {
+            // Extract number from draft_id format
+            const numberPart = order.order_number.replace('draft_id', '');
+            const number = parseInt(numberPart);
+            
+            // Only consider valid sequential numbers (001, 002, etc.)
+            if (!isNaN(number) && number > 0 && number <= 999 && number > maxNumber) {
               maxNumber = number;
             }
           }
         });
 
-        // Return next draft ID
+        // Return next draft ID with proper padding
         const nextNumber = maxNumber + 1;
-        return `draft_id${nextNumber.toString().padStart(3, '0')}`;
+        const paddedNumber = nextNumber.toString().padStart(3, '0');
+        console.log('Generated next draft ID:', `draft_id${paddedNumber}`, 'from max number:', maxNumber);
+        return `draft_id${paddedNumber}`;
       }
 
       // If no drafts found, start with 001
+      console.log('No existing drafts found, starting with draft_id001');
       return 'draft_id001';
     } catch (error) {
       console.error('Error getting next draft ID:', error);
-      return `draft_id${Date.now()}`;
+      return 'draft_id001';
     }
   };
 
@@ -4068,7 +4075,13 @@ const RunningOrders = () => {
       
       if (isUpdatingExistingDraft) {
         // Use the stored draft number and create new order with same ID
-        draftId = currentDraftNumber; // Use the stored draft number
+        if (currentDraftNumber && typeof currentDraftNumber === 'string' && currentDraftNumber.startsWith('draft_id')) {
+          draftId = currentDraftNumber; // Use the stored draft number
+        } else {
+          // Fallback: generate a new sequential draft ID
+          draftId = await getNextDraftId();
+          console.warn('currentDraftNumber was invalid, generated new draft ID:', draftId);
+        }
         // For edited drafts, we'll create a new order but use the same draft number
         console.log('Recreating draft with same number:', draftId, 'for ID:', currentDraftId);
       } else {
@@ -9731,15 +9744,28 @@ const RunningOrders = () => {
           // DELETE the draft from database when editing
           try {
             if (window.myAPI) {
+              console.log('Attempting to delete draft from database:', draft.databaseId);
               const deleteResult = await window.myAPI.deleteOrder(draft.databaseId);
-              if (deleteResult.success) {
-                console.log('Deleted draft from database for editing:', draft.databaseId);
+              console.log('Delete result:', deleteResult);
+              
+              if (deleteResult && deleteResult.success) {
+                console.log('Successfully deleted draft from database for editing:', draft.databaseId);
+                // Show success message to user
+                showSuccess('Draft loaded for editing');
               } else {
-                console.error('Failed to delete draft from database:', deleteResult.message);
+                console.error('Failed to delete draft from database:', deleteResult?.message || 'Unknown error');
+                showError('Failed to load draft for editing. Please try again.');
+                return; // Don't proceed if deletion failed
               }
+            } else {
+              console.error('API not available for deleting draft');
+              showError('API not available. Please refresh the page.');
+              return;
             }
           } catch (error) {
             console.error('Error deleting draft from database:', error);
+            showError('Error loading draft for editing: ' + error.message);
+            return;
           }
           
           // Remove the draft from currentDraftOrders list (it will be re-added when saved)

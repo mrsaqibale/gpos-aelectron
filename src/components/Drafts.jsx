@@ -169,7 +169,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                         if (!draft) return null; // Safety check
                         
                         // Format draft ID to show as Draft_001, Draft_002, etc.
-                        const draftId = draft.orderNumber || draft.id || 'Unknown';
+                        const draftId = String(draft.orderNumber || draft.id || 'Unknown');
                         const formattedDraftId = draftId.startsWith('draft_id') 
                           ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
                           : draftId;
@@ -228,7 +228,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
                     <span className="text-sm font-medium text-gray-700">Draft ID:</span>
                     <span className="text-sm font-bold text-gray-900">
                       {(() => {
-                        const draftId = selectedDraft.orderNumber || selectedDraft.id || 'Unknown';
+                        const draftId = String(selectedDraft.orderNumber || selectedDraft.id || 'Unknown');
                         return draftId.startsWith('draft_id') 
                           ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
                           : draftId;
@@ -387,7 +387,7 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
               <p className="text-sm text-gray-600 mb-6">
                 Draft: <strong>
                   {(() => {
-                    const draftId = selectedDraft.orderNumber || selectedDraft.id || 'Unknown';
+                    const draftId = String(selectedDraft.orderNumber || selectedDraft.id || 'Unknown');
                     return draftId.startsWith('draft_id') 
                       ? `Draft_${draftId.replace('draft_id', '').padStart(3, '0')}`
                       : draftId;
