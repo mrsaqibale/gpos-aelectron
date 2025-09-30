@@ -1,4 +1,9 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import twilio from 'twilio';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class TwilioService {
   constructor() {

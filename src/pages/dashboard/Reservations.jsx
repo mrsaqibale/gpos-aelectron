@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { CalendarDays, Filter, Edit, Check, X, Trash2, Plus } from 'lucide-react'
+import { CalendarDays, Filter, Edit, Check, X, Trash2, Plus, Lock } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import NewReservation from '../../components/dashboard/reservation/NewReservation'
 import useCustomAlert from '../../hooks/useCustomAlert'
@@ -158,12 +158,13 @@ const Reservations = () => {
                             New Reservation
                         </button>
                         {/* TEMPORARILY DISABLED */}
-                        {/* <button 
-                            onClick={() => navigate('/dashboard/sales')}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                        <button 
+                            disabled
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg opacity-50 cursor-not-allowed"
                         >
+                            <Lock size={16} />
                             Sales Screen
-                        </button> */}
+                        </button>
                     </div>
                 </div>
                     {/* Tabs */}

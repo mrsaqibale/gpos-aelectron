@@ -8,7 +8,7 @@ import {
   LayoutDashboard,
   Search,
   Users2, Utensils, Table,
-  Tag, X, LogOut, User, Home, Settings, Clock, BarChart3
+  Tag, X, LogOut, User, Home, Settings, Clock, BarChart3, Lock
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -112,19 +112,20 @@ const DashboardLayout = () => {
         path: "/dashboard",
         allowedRoles: ["admin", "cashier", "manager", "chef", "waiter"]
       },
-      // TEMPORARILY DISABLED
-      // {
-      //   name: "Sales",
-      //   icon: <Users2 size={18} className="font-bold" />,
-      //   path: "/dashboard/sales",
-      //   allowedRoles: ["admin", "cashier"]
-      // },
-      // {
-      //   name: "Manage Orders",
-      //   icon: <LayoutDashboard size={18} className="font-bold" />,
-      //   path: "/dashboard/manage-orders",
-      //   allowedRoles: ["admin", "cashier"]
-      // },
+      {
+        name: "Sales",
+        icon: <Users2 size={18} className="font-bold" />,
+        path: "/dashboard/sales",
+        allowedRoles: ["admin", "cashier"],
+        disabled: true // TEMPORARILY DISABLED
+      },
+      {
+        name: "Manage Orders",
+        icon: <LayoutDashboard size={18} className="font-bold" />,
+        path: "/dashboard/manage-orders",
+        allowedRoles: ["admin", "cashier"],
+        disabled: true // TEMPORARILY DISABLED
+      },
       {
         name: "Reservations",
         icon: <Clock size={18} className="font-bold" />,
@@ -143,13 +144,13 @@ const DashboardLayout = () => {
         path: "/dashboard/coupons",
         allowedRoles: ["admin", "manager", "cashier"]
       },
-      // TEMPORARILY DISABLED
-      // {
-      //   name: "All Reports",
-      //   icon: <BarChart3 size={18} className="font-bold" />,
-      //   path: "/dashboard/reports",
-      //   allowedRoles: ["admin", "manager", "cashier"]
-      // },
+      {
+        name: "All Reports",
+        icon: <BarChart3 size={18} className="font-bold" />,
+        path: "/dashboard/reports",
+        allowedRoles: ["admin", "manager", "cashier"],
+        disabled: true // TEMPORARILY DISABLED
+      },
       {
         name: "KDS",
         icon: <Search size={18} className="font-bold" />,
@@ -230,57 +231,73 @@ const DashboardLayout = () => {
                 {navigationItems.map((item) => (
                   <div key={item.name}>
                                          <button
-                       onClick={async () => {
-                         setShowDashboardSlider(false);
-                         
-                         // Check if this is the sales route and check register status
-                         if (item.path === '/dashboard/sales') {
-                           try {
-                             // Get the last register entry from database
-                             // Using getAllRegisters as workaround since getLastRegister might not be registered yet
-                             const allRegistersResult = await window.myAPI?.getAllRegisters();
-                             const lastRegisterResult = allRegistersResult && allRegistersResult.success && allRegistersResult.data && allRegistersResult.data.length > 0 
-                               ? { success: true, data: allRegistersResult.data[0] } // First item is the last register
-                               : { success: true, data: null };
-                             
-                             if (lastRegisterResult && lastRegisterResult.success && lastRegisterResult.data) {
-                               const lastRegister = lastRegisterResult.data;
-                               
-                               // Check if the last register is closed (isclosed = 1)
-                               // If isclosed = 1 (closed), show popup to open new register
-                               // If isclosed = 0 (open), no popup needed, go directly to sales
-                               if (lastRegister.isclosed === 1) {
-                                 setShowCheckIn(true);
-                                 return; // Don't navigate yet, wait for check-in completion
-                               }
-                             } else {
-                               // If no register found, show check-in popup
-                               setShowCheckIn(true);
-                               return;
-                             }
-                           } catch (error) {
-                             console.error('Error checking register status:', error);
-                             // On error, show check-in popup to be safe
-                             setShowCheckIn(true);
-                             return;
-                           }
-                         }
-                         
-                         // Normal navigation for other routes or if already checked in
-                         navigate(item.path);
-                       }}
-                      className="w-full flex items-center px-4 py-3 text-sm text-gray-100 transition-colors"
-                      style={{ 
-                        ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.055)' }
+                      onClick={async () => {
+                        // Check if item is disabled
+                        if (item.disabled) {
+                          return; // Don't navigate if disabled
+                        }
+                        
+                        setShowDashboardSlider(false);
+                        
+                        // Check if this is the sales route and check register status
+                        if (item.path === '/dashboard/sales') {
+                          try {
+                            // Get the last register entry from database
+                            // Using getAllRegisters as workaround since getLastRegister might not be registered yet
+                            const allRegistersResult = await window.myAPI?.getAllRegisters();
+                            const lastRegisterResult = allRegistersResult && allRegistersResult.success && allRegistersResult.data && allRegistersResult.data.length > 0 
+                              ? { success: true, data: allRegistersResult.data[0] } // First item is the last register
+                              : { success: true, data: null };
+                            
+                            if (lastRegisterResult && lastRegisterResult.success && lastRegisterResult.data) {
+                              const lastRegister = lastRegisterResult.data;
+                              
+                              // Check if the last register is closed (isclosed = 1)
+                              // If isclosed = 1 (closed), show popup to open new register
+                              // If isclosed = 0 (open), no popup needed, go directly to sales
+                              if (lastRegister.isclosed === 1) {
+                                setShowCheckIn(true);
+                                return; // Don't navigate yet, wait for check-in completion
+                              }
+                            } else {
+                              // If no register found, show check-in popup
+                              setShowCheckIn(true);
+                              return;
+                            }
+                          } catch (error) {
+                            console.error('Error checking register status:', error);
+                            // On error, show check-in popup to be safe
+                            setShowCheckIn(true);
+                            return;
+                          }
+                        }
+                        
+                        // Normal navigation for other routes or if already checked in
+                        navigate(item.path);
                       }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.055)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = 'transparent';
-                      }}
+                     className={`w-full flex items-center px-4 py-3 text-sm text-gray-100 transition-colors ${
+                       item.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                     }`}
+                     style={{ 
+                       ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.055)' }
+                     }}
+                     onMouseEnter={(e) => {
+                       if (!item.disabled) {
+                         e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.055)';
+                       }
+                     }}
+                     onMouseLeave={(e) => {
+                       if (!item.disabled) {
+                         e.target.style.backgroundColor = 'transparent';
+                       }
+                     }}
+                     disabled={item.disabled}
                     >
-                      <span className="text-gray-100">{item.icon}</span>
+                      {item.disabled ? (
+                        <Lock size={16} className="text-gray-100" />
+                      ) : (
+                        <span className="text-gray-100">{item.icon}</span>
+                      )}
                       <span className="ml-2 font-medium whitespace-nowrap">
                         {item.name}
                       </span>

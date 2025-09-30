@@ -2,7 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import Database from 'better-sqlite3';
 import fs from 'fs';
-import twilioService from '../../../services/TwilioService.js';
+import twilioService from '../../services/TwilioService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
