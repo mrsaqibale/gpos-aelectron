@@ -1206,13 +1206,9 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
                     // Set the split order for invoice display
                     setSelectedPlacedOrder(splitOrderForInvoice);
                     
-                    // Mark the processed split bill as paid instead of removing it
+                    // Automatically remove the paid split bill
                     if (splitBillToRemove) {
-                      setSplitBills(prev => prev.map(split => 
-                        split.id === splitBillToRemove 
-                          ? { ...split, paid: true }
-                          : split
-                      ));
+                      setSplitBills(prev => prev.filter(split => split.id !== splitBillToRemove));
                       setSplitBillToRemove(null);
                       
                       // Update cart items by removing paid quantities
@@ -1220,7 +1216,7 @@ console.log("selectedSplitBill selectedSplitBill", selectedSplitBill);
                       
                       // Reset selectedSplitBill after successful payment
                       setSelectedSplitBill(null);
-                      console.log('Marked split bill as paid and reset selectedSplitBill after successful split bill payment');
+                      console.log('Automatically removed paid split bill and reset selectedSplitBill after successful payment');
                     }
                   } else {
                     showError('Failed to place split bill order. Please try again.');

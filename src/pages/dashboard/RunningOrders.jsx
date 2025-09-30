@@ -4872,32 +4872,29 @@ const RunningOrders = () => {
 
   const handleCloseSplitBillModal = () => {
     // Restore cart items to their original quantities before closing
-    // Only restore items from splits that were NOT paid
+    // Since paid splits are automatically removed, all remaining splits are unpaid
     const originalCartItems = [...cartItems];
     
-    // For each item that was in UNPAID splits, restore its quantity
+    // For each item that was in remaining splits, restore its quantity
     splitBills.forEach(splitBill => {
-      // Only restore items from splits that were not paid
-      if (!splitBill.paid) {
-        splitBill.items.forEach(splitItem => {
-          const cartItem = originalCartItems.find(item => item.food?.id === splitItem.food?.id);
-          if (cartItem) {
-            cartItem.quantity += splitItem.quantity;
-            // Recalculate total price based on original per-unit price
-            const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
-            cartItem.totalPrice = perUnitPrice * cartItem.quantity;
-          }
-        });
-      }
+      splitBill.items.forEach(splitItem => {
+        const cartItem = originalCartItems.find(item => item.food?.id === splitItem.food?.id);
+        if (cartItem) {
+          cartItem.quantity += splitItem.quantity;
+          // Recalculate total price based on original per-unit price
+          const perUnitPrice = splitItem.totalPrice / splitItem.quantity;
+          cartItem.totalPrice = perUnitPrice * cartItem.quantity;
+        }
+      });
     });
     
-    // Update cart items with restored quantities (only from unpaid splits)
+    // Update cart items with restored quantities
     setCartItems(originalCartItems);
     
     setShowSplitBillModal(false);
     setTotalSplit('');
     setSplitItems([]);
-    setSplitBills([]); // This will remove all splits (both paid and unpaid)
+    setSplitBills([]); // This will remove all remaining splits
     setSelectedSplitBill(null);
     setSplitDiscount(0);
     setSplitCharge(0);
@@ -4910,7 +4907,7 @@ const RunningOrders = () => {
     // Ensure single pay mode is reset when closing split modal
     setIsSinglePayMode(false);
     
-    console.log('Split bill modal closed - items from unpaid splits restored to cart');
+    console.log('Split bill modal closed - all remaining unpaid splits restored to cart');
   };
   
 
@@ -5412,9 +5409,9 @@ const RunningOrders = () => {
     // Get the split bill being removed to return its items to the pool
     const splitToRemove = splitBills.find(split => split.id === splitBillId);
 
-    // If this split was not paid, return its items to the cart
-    if (splitToRemove && !splitToRemove.paid) {
-      // Return items to cart items
+    // Since paid splits are automatically removed, all remaining splits are unpaid
+    // Return items to cart items
+    if (splitToRemove) {
       const updatedCartItems = [...cartItems];
       splitToRemove.items.forEach(splitItem => {
         const cartItem = updatedCartItems.find(item => item.food?.id === splitItem.food?.id);
