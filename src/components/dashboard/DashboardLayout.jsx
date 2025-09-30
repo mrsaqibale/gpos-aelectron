@@ -112,18 +112,19 @@ const DashboardLayout = () => {
         path: "/dashboard",
         allowedRoles: ["admin", "cashier", "manager", "chef", "waiter"]
       },
-      {
-        name: "Sales",
-        icon: <Users2 size={18} className="font-bold" />,
-        path: "/dashboard/sales",
-        allowedRoles: ["admin", "cashier"]
-      },
-      {
-        name: "Manage Orders",
-        icon: <LayoutDashboard size={18} className="font-bold" />,
-        path: "/dashboard/manage-orders",
-        allowedRoles: ["admin", "cashier"]
-      },
+      // TEMPORARILY DISABLED
+      // {
+      //   name: "Sales",
+      //   icon: <Users2 size={18} className="font-bold" />,
+      //   path: "/dashboard/sales",
+      //   allowedRoles: ["admin", "cashier"]
+      // },
+      // {
+      //   name: "Manage Orders",
+      //   icon: <LayoutDashboard size={18} className="font-bold" />,
+      //   path: "/dashboard/manage-orders",
+      //   allowedRoles: ["admin", "cashier"]
+      // },
       {
         name: "Reservations",
         icon: <Clock size={18} className="font-bold" />,
@@ -142,12 +143,13 @@ const DashboardLayout = () => {
         path: "/dashboard/coupons",
         allowedRoles: ["admin", "manager", "cashier"]
       },
-      {
-        name: "All Reports",
-        icon: <BarChart3 size={18} className="font-bold" />,
-        path: "/dashboard/reports",
-        allowedRoles: ["admin", "manager", "cashier"]
-      },
+      // TEMPORARILY DISABLED
+      // {
+      //   name: "All Reports",
+      //   icon: <BarChart3 size={18} className="font-bold" />,
+      //   path: "/dashboard/reports",
+      //   allowedRoles: ["admin", "manager", "cashier"]
+      // },
       {
         name: "KDS",
         icon: <Search size={18} className="font-bold" />,
