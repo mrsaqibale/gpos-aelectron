@@ -10,11 +10,17 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const { themeColors } = useTheme();
 
-  // Use current draft orders passed as props
+  // Reset selected draft when modal is opened/closed or when editing
   useEffect(() => {
     console.log('Drafts modal isOpen:', isOpen);
     console.log('Current draft orders:', currentDraftOrders);
-  }, [isOpen, currentDraftOrders]);
+    
+    // Always reset selected draft when modal opens or closes
+    // This ensures the right section is hidden on first open
+    setSelectedDraft(null);
+    setCustomerSearchQuery('');
+    setItemSearchQuery('');
+  }, [isOpen]);
 
     const filteredDrafts = currentDraftOrders.filter(draft => {
     if (!draft) return false; // Safety check for undefined draft
@@ -50,6 +56,8 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
       // Transform the draft back to the format expected by the cart
       const cartData = {
         id: selectedDraft.id,
+        databaseId: selectedDraft.databaseId,
+        orderNumber: selectedDraft.orderNumber,
         items: selectedDraft.items,
         customer: selectedDraft.customer,
         table: selectedDraft.table,
@@ -62,6 +70,9 @@ const Drafts = ({ isOpen, onClose, onEditDraft, currentDraftOrders = [], onDelet
         tips: selectedDraft.tips,
         totalPayable: selectedDraft.totalPayable
       };
+      
+      // Reset selected draft before closing
+      setSelectedDraft(null);
       
       onEditDraft(cartData);
       onClose();
