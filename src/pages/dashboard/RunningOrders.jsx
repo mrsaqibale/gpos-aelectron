@@ -500,6 +500,7 @@ const RunningOrders = () => {
   const [showPayLaterButton, setShowPayLaterButton] = useState(false);
   const [hasResetPayment, setHasResetPayment] = useState(false);
   const [selectedNewOrderStatus, setSelectedNewOrderStatus] = useState('New'); // Track status for new orders
+  const [isEditModalClosedBySave, setIsEditModalClosedBySave] = useState(false); // Track if modal closed by save or cancel
 
   // Use the custom hook for keyboard functionality
   const {
@@ -1973,6 +1974,8 @@ const RunningOrders = () => {
       console.log('Customer validation result:', hasRequiredData);
     }
 
+    // Mark that modal is being closed by SAVE action
+    setIsEditModalClosedBySave(true);
     setShowEditModal(false);
 
     // Trigger a custom event to refresh customer list in CustomerSearchModal
@@ -7752,23 +7755,32 @@ const RunningOrders = () => {
             isOpen={showEditModal}
             onClose={() => {
               setShowEditModal(false);
-              // Only revert to In Store if customer data is INVALID for current order type
-              if (selectedOrderType === 'Delivery' || selectedOrderType === 'Collection') {
-                // Check if customer has valid data for the selected order type
-                let hasValidData = false;
-                
-                if (selectedOrderType === 'Delivery') {
-                  const hasPhone = selectedCustomer?.phone && selectedCustomer.phone.trim().length > 0;
-                  const hasAddress = selectedCustomer?.addresses && selectedCustomer.addresses.length > 0;
-                  hasValidData = hasPhone && hasAddress;
-                } else if (selectedOrderType === 'Collection') {
-                  const hasPhone = selectedCustomer?.phone && selectedCustomer.phone.trim().length > 0;
-                  hasValidData = hasPhone;
-                }
-                
-                // Only revert to In Store if customer data is still invalid
-                if (!hasValidData && shouldShowOrderType('instore')) {
-                  setSelectedOrderType('In Store');
+              
+              // Check if modal was closed by SAVE or CANCEL (CROSS)
+              if (isEditModalClosedBySave) {
+                // Modal closed by SAVE - keep the order type as is (Collection/Delivery)
+                setIsEditModalClosedBySave(false); // Reset flag
+                console.log('Edit modal closed by SAVE - keeping order type:', selectedOrderType);
+              } else {
+                // Modal closed by CANCEL (CROSS) - revert to In Store if data is invalid
+                if (selectedOrderType === 'Delivery' || selectedOrderType === 'Collection') {
+                  // Check if customer has valid data for the selected order type
+                  let hasValidData = false;
+                  
+                  if (selectedOrderType === 'Delivery') {
+                    const hasPhone = selectedCustomer?.phone && selectedCustomer.phone.trim().length > 0;
+                    const hasAddress = selectedCustomer?.addresses && selectedCustomer.addresses.length > 0;
+                    hasValidData = hasPhone && hasAddress;
+                  } else if (selectedOrderType === 'Collection') {
+                    const hasPhone = selectedCustomer?.phone && selectedCustomer.phone.trim().length > 0;
+                    hasValidData = hasPhone;
+                  }
+                  
+                  // Revert to In Store if customer data is invalid (user cancelled without saving)
+                  if (!hasValidData && shouldShowOrderType('instore')) {
+                    console.log('Edit modal closed by CANCEL - reverting to In Store');
+                    setSelectedOrderType('In Store');
+                  }
                 }
               }
             }}
