@@ -4395,6 +4395,11 @@ const RunningOrders = () => {
         setSelectedOrderType('In Store');
       }
 
+      // Refresh the draft list to ensure UI is updated
+      setTimeout(() => {
+        fetchDraftOrders();
+      }, 100);
+
     } catch (error) {
       console.error('Error creating draft order:', error);
       console.error('Error details:', error.message, error.stack);
@@ -9771,6 +9776,11 @@ const RunningOrders = () => {
           // Remove the draft from currentDraftOrders list (it will be re-added when saved)
           setCurrentDraftOrders(prev => prev.filter(d => d.id !== draft.id));
           console.log('Removed draft from list - will be restored at same position when saved');
+          
+          // Refresh the draft list to ensure UI is updated
+          setTimeout(() => {
+            fetchDraftOrders();
+          }, 100);
           
           setShowDraftsModal(false);
         }}
