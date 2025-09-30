@@ -1,8 +1,8 @@
 import React from 'react';
-import { 
-  Clock, 
-  User, 
-  MapPin, 
+import {
+  Clock,
+  User,
+  MapPin,
   ChefHat,
   CheckCircle,
   AlertTriangle,
@@ -10,16 +10,16 @@ import {
   Utensils
 } from 'lucide-react';
 
-const KDSCard = ({ 
-  order, 
-  onUpdateItemStatus, 
+const KDSCard = ({
+  order,
+  onUpdateItemStatus,
   onUpdateOrderStatus,
   onCompleteOrder,
   onCookAll,
   onMarkAllReady,
-  formatElapsedTime 
+  formatElapsedTime
 }) => {
-  
+
   const getItemStatusColor = (status) => {
     switch (status) {
       case 'new': return 'bg-gray-100 text-gray-700 border-gray-300';
@@ -47,7 +47,7 @@ const KDSCard = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold text-primary">#{order.id}</span>
-          
+
           </div>
           <div className={`text-sm font-bold ${getTimeColor(order.elapsedTime)}`}>
             <Clock size={16} className="inline mr-1" />
@@ -55,19 +55,18 @@ const KDSCard = ({
           </div>
         </div>
         <div className='flex justify-between items-center mt-2'>
-  <div className="flex items-center gap-1 text-sm text-gray-600">
-              <MapPin size={14} />
-              <span>Table {order.tableNumber}</span>
-            </div>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              order.orderType === 'Dine-In' ? 'bg-primaryExtraLight text-primary' : 
-              order.orderType === 'Takeaway' ? 'bg-primaryExtraLight text-primary' : 
-              'bg-primaryExtraLight text-primary'
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <MapPin size={14} />
+            <span>Table {order.tableNumber}</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.orderType === 'Dine-In' ? 'bg-primaryExtraLight text-primary' :
+              order.orderType === 'Takeaway' ? 'bg-primaryExtraLight text-primary' :
+                'bg-primaryExtraLight text-primary'
             }`}>
-              {order.orderType}
-            </span>
+            {order.orderType}
+          </span>
         </div>
-        
+
         <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
           <User size={14} />
           <span>{order.customer}</span>
@@ -82,7 +81,7 @@ const KDSCard = ({
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-gray-800">{item.name}</span>
-                
+
                 </div>
                 {item.notes && (
                   <div className="flex items-center gap-1 mt-1 text-xs text-orange-600">
@@ -90,19 +89,19 @@ const KDSCard = ({
                     <span>{item.notes}</span>
                   </div>
                 )}
-                  {item.isAddedLate && (
-                    <span className="bg-yellow-100 mt-2 text-yellow-800 w-[90px] py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1">
-                      <Plus size={10} />
-                      Added Late
-                    </span>
-                  )}
+                {item.isAddedLate && (
+                  <span className="bg-yellow-100 mt-2 text-yellow-800 w-[90px] py-1 rounded-full text-xs font-medium flex items-center justify-center gap-1">
+                    <Plus size={10} />
+                    Added Late
+                  </span>
+                )}
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-1 rounded text-xs font-medium border ${getItemStatusColor(item.status)}`}>
                   {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                 </span>
-                
+
                 <div className="flex gap-1">
                   {item.status === 'new' && (
                     <button
@@ -112,7 +111,7 @@ const KDSCard = ({
                       Cook
                     </button>
                   )}
-                  
+
                   {item.status === 'preparing' && (
                     <button
                       onClick={() => onUpdateItemStatus(order.id, item.id, 'ready')}
@@ -121,7 +120,7 @@ const KDSCard = ({
                       Ready
                     </button>
                   )}
-                  
+
                   {item.status === 'ready' && (
                     <CheckCircle size={16} className="text-green-600" />
                   )}
@@ -142,7 +141,7 @@ const KDSCard = ({
                 Cook All
               </button>
             )}
-            
+
             {hasPreparingItems && !allItemsReady && (
               <button
                 onClick={() => onMarkAllReady(order.id)}
@@ -151,7 +150,7 @@ const KDSCard = ({
                 Mark All Ready
               </button>
             )}
-            
+
             {allItemsReady && (
               <button
                 onClick={() => onCompleteOrder(order.id)}
