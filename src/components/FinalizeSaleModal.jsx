@@ -26,6 +26,7 @@ const FinalizeSaleModal = ({
   // Mode and data props
   isSinglePayMode,
   selectedSplitBill,
+  setSelectedSplitBill,
   selectedPlacedOrder,
   cartItems,
   foodDetails,

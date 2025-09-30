@@ -5181,16 +5181,44 @@ const RunningOrders = () => {
         placed_at: dbStatus === 'new' ? new Date().toISOString() : null
       };
 
-      // Add items data
-      orderData.items = splitBill.items.map(item => ({
-        food_id: item.food?.id,
-        quantity: item.quantity,
-        price: item.totalPrice / item.quantity,
-        total_price: item.totalPrice,
-        variations: item.variations || [],
-        adons: item.adons || [],
-        custom_ingredients: item.customIngredients || []
-      }));
+      // Add items data with proper structure for order details
+      orderData.items = splitBill.items.map(item => {
+        // Prepare variations and addons as JSON
+        const variations = Object.keys(item.variations || {}).length > 0 ? JSON.stringify(item.variations) : null;
+        const addons = item.adons && item.adons.length > 0 ? JSON.stringify(item.adons) : null;
+
+        // Prepare food details as JSON (same structure as regular orders)
+        const foodDetails = JSON.stringify({
+          food: {
+            id: item.food?.id || 0,
+            name: item.food?.name || 'Unknown Food',
+            description: item.food?.description || '',
+            price: item.food?.price || 0,
+            image: item.food?.image || null
+          },
+          variations: item.variations || {},
+          addons: item.adons || [],
+          quantity: item.quantity,
+          totalPrice: item.totalPrice
+        });
+
+        return {
+          food_id: item.food?.id || 0,
+          order_id: null, // Will be set by the API
+          price: item.food?.price || 0,
+          food_details: foodDetails,
+          item_note: null,
+          variation: variations,
+          add_ons: addons,
+          discount_on_food: 0,
+          discount_type: null,
+          quantity: item.quantity,
+          tax_amount: 0, // Will be calculated by the API
+          total_add_on_price: 0,
+          issynicronized: false,
+          isdeleted: false
+        };
+      });
       
       console.log('Split bill items being saved:', orderData.items);
 
@@ -8638,6 +8666,7 @@ const RunningOrders = () => {
             // Mode and data props
             isSinglePayMode={isSinglePayMode}
             selectedSplitBill={selectedSplitBill}
+            setSelectedSplitBill={setSelectedSplitBill}
             selectedPlacedOrder={selectedPlacedOrder}
             cartItems={cartItems}
             foodDetails={foodDetails}
@@ -9432,6 +9461,7 @@ const RunningOrders = () => {
           currencyAmount={currencyAmount}
           setCurrencyAmount={setCurrencyAmount}
           selectedCurrency={selectedCurrency}
+          handleRemoveSplitBill={handleRemoveSplitBill}
           setSelectedCurrency={setSelectedCurrency}
           currencyOptions={currencyOptions}
           addedPayments={addedPayments}
@@ -9439,6 +9469,7 @@ const RunningOrders = () => {
           // Mode and data props
           isSinglePayMode={isSinglePayMode}
           selectedSplitBill={selectedSplitBill}
+          setSelectedSplitBill={setSelectedSplitBill}
           selectedPlacedOrder={selectedPlacedOrder}
           cartItems={cartItems}
           foodDetails={foodDetails}
