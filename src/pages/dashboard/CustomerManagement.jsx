@@ -697,21 +697,21 @@ const CustomerManagement = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditCustomer(customer)}
-                        className="p-1.5 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                        className="p-1 text-primary hover:text-primary/80 transition-colors"
                         title="Edit Customer"
                       >
                         <Edit size={16} />
                       </button>
                       <button
                         onClick={() => handleModalOpen(customer)}
-                        className="p-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        className="p-1 text-green-600 hover:text-green-700 transition-colors"
                         title="View Details"
                       >
                         <Eye size={16} />
                       </button>
                       <button
                         onClick={() => handleDeleteButtonClick(customer)}
-                        className="p-1.5 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                        className="p-1 text-red-600 hover:text-red-700 transition-colors"
                         title="Delete Customer"
                       >
                         <Trash2 size={16} />
