@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
 import Invoice from '../../components/Invoice';
+import CustomerManagementModal from '../../components/dashboard/CustomerManagement';
 
 const CustomerManagement = () => {
   // State for filters
@@ -34,6 +35,10 @@ const CustomerManagement = () => {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printOrder, setPrintOrder] = useState(null);
   const [printOrderDetails, setPrintOrderDetails] = useState([]);
+
+  // Add customer modal state
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
 
 
   // Updated sorting options
@@ -355,16 +360,54 @@ const CustomerManagement = () => {
     setPrintOrderDetails([]);
   };
 
+  // Handle customer creation from modal
+  const handleCustomerCreated = (customer) => {
+    console.log('New customer created:', customer);
+    // Refresh the customer list
+    loadCustomers(searchTerm);
+    // Close the modal
+    setShowAddCustomerModal(false);
+    setEditingCustomer(null);
+  };
+
+  // Handle edit customer
+  const handleEditCustomer = async (customer) => {
+    try {
+      // Fetch customer addresses before opening edit modal
+      const addressResult = await window.electronAPI.invoke('address:getByCustomer', customer.id);
+      
+      const customerWithAddresses = {
+        ...customer,
+        addresses: addressResult.success ? addressResult.data : []
+      };
+      
+      setEditingCustomer(customerWithAddresses);
+      setShowAddCustomerModal(true);
+    } catch (error) {
+      console.error('Error fetching customer addresses:', error);
+      // Still open modal even if address fetch fails
+      setEditingCustomer(customer);
+      setShowAddCustomerModal(true);
+    }
+  };
+
 
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Users size={24} className="text-primary" />
           <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
         </div>
+        <button
+          onClick={() => setShowAddCustomerModal(true)}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium shadow-md"
+        >
+          <Plus size={18} />
+          Add New Customer
+        </button>
       </div>
 
       {/* Filters Card */}
@@ -589,12 +632,22 @@ const CustomerManagement = () => {
                     </button>
                   </td>
                   <td className="py-3 px-4">
-                    <button
-                      onClick={() => handleModalOpen(customer)}
-                      className="p-1 text-gray-400 hover:text-primary transition-colors"
-                    >
-                      <Eye size={16} />
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditCustomer(customer)}
+                        className="p-1 text-gray-400 hover:text-primary transition-colors"
+                        title="Edit Customer"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleModalOpen(customer)}
+                        className="p-1 text-gray-400 hover:text-primary transition-colors"
+                        title="View Details"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 ))
@@ -815,6 +868,18 @@ const CustomerManagement = () => {
         isOpen={showPrintModal}
         onClose={handlePrintClose}
         paymentStatus="PAID"
+      />
+
+      {/* Add/Edit Customer Modal */}
+      <CustomerManagementModal
+        isOpen={showAddCustomerModal}
+        onClose={() => {
+          setShowAddCustomerModal(false);
+          setEditingCustomer(null);
+        }}
+        onCustomerSelect={handleCustomerCreated}
+        editingCustomer={editingCustomer}
+        orderType="In Store"
       />
 
     </div>
