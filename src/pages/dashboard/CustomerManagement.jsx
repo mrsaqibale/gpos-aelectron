@@ -881,22 +881,15 @@ const CustomerManagement = () => {
                   <h4 className="text-lg font-semibold text-gray-800">{selectedCustomer.name}</h4>
                 </div>
                 
-                {/* Profile Picture Placeholder */}
-                <div className="flex justify-center mb-6">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center border-2 border-gray-200">
-                    <span className="text-gray-400 text-2xl">📷</span>
-                  </div>
-                </div>
-                
                 {/* Contact Information */}
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-3">
                     <Mail size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-800">{selectedCustomer.email}</span>
+                    <span className="text-sm text-gray-800">{selectedCustomer.email || 'No email'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Phone size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-800">{selectedCustomer.phone}</span>
+                    <span className="text-sm text-gray-800">{selectedCustomer.phone || 'No phone'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <ShoppingBag size={16} className="text-gray-400" />
@@ -904,19 +897,19 @@ const CustomerManagement = () => {
                   </div>
                 </div>
                 
-                {/* Contact Info Section */}
+                {/* Address Section */}
                 <div className="border-t border-gray-200 pt-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-3">Contact info</h5>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <Home size={16} className="text-gray-400 mt-0.5" />
-                      <span className="text-sm text-gray-800">{selectedCustomer.address || 'No address available'}</span>
+                  <h5 className="text-sm font-medium text-gray-700 mb-3">Address Information</h5>
+                  {selectedCustomer.address ? (
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Home size={16} className="text-gray-400 mt-0.5" />
+                        <span className="text-sm text-gray-800">{selectedCustomer.address}</span>
+                      </div>
                     </div>
-                    <div className="flex items-start gap-3">
-                      <Home size={16} className="text-gray-400 mt-0.5" />
-                      <span className="text-sm text-gray-800">{selectedCustomer.address || 'No address available'}</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 italic">No address available</div>
+                  )}
                 </div>
               </div>
             </div>
