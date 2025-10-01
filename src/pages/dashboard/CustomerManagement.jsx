@@ -11,6 +11,31 @@ const CustomerManagement = () => {
   const [customerJoiningDate, setCustomerJoiningDate] = useState('');
   const [sortBy, setSortBy] = useState('');
 
+  // Add CSS animation for modal
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fade-in {
+        0% {
+          opacity: 0;
+          transform: scale(0.95) translateY(-10px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.3s ease-out forwards;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   // Customer list state
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
@@ -39,6 +64,10 @@ const CustomerManagement = () => {
   // Add customer modal state
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  
+  // Delete confirmation modal state
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
 
 
   // Updated sorting options
@@ -391,6 +420,39 @@ const CustomerManagement = () => {
     }
   };
 
+  // Handle delete customer (soft delete)
+  const handleDeleteCustomer = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      console.log('Soft deleting customer ID:', customerToDelete.id);
+      
+      // Soft delete by updating isdeleted status to 1
+      const result = await window.electronAPI.invoke('customer:update', customerToDelete.id, { isdeleted: 1 });
+      
+      if (result.success) {
+        console.log('Successfully soft deleted customer');
+        // Refresh the customer list to remove the deleted customer
+        loadCustomers(searchTerm);
+        // Close the confirmation modal
+        setShowDeleteConfirmModal(false);
+        setCustomerToDelete(null);
+      } else {
+        console.error('Failed to delete customer:', result.message);
+        alert(`Failed to delete customer: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      alert(`Error deleting customer: ${error.message}`);
+    }
+  };
+
+  // Handle delete button click
+  const handleDeleteButtonClick = (customer) => {
+    setCustomerToDelete(customer);
+    setShowDeleteConfirmModal(true);
+  };
+
 
 
   return (
@@ -647,6 +709,13 @@ const CustomerManagement = () => {
                       >
                         <Eye size={16} />
                       </button>
+                      <button
+                        onClick={() => handleDeleteButtonClick(customer)}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete Customer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -881,6 +950,94 @@ const CustomerManagement = () => {
         editingCustomer={editingCustomer}
         orderType="In Store"
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmModal && customerToDelete && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-100 animate-fade-in">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Delete Customer</h3>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmModal(false);
+                  setCustomerToDelete(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="mb-6">
+                <p className="text-gray-700 text-base leading-relaxed">
+                  Are you sure you want to delete <span className="font-semibold text-red-600">{customerToDelete.name}</span>?
+                </p>
+                <p className="text-gray-500 text-sm mt-2">
+                  This customer will be marked as deleted and will no longer appear in the customer list.
+                </p>
+              </div>
+
+              {/* Customer Info Preview */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Details:</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Name:</span>
+                    <span className="text-gray-800 font-medium">{customerToDelete.name}</span>
+                  </div>
+                  {customerToDelete.email && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Email:</span>
+                      <span className="text-gray-800">{customerToDelete.email}</span>
+                    </div>
+                  )}
+                  {customerToDelete.phone && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Phone:</span>
+                      <span className="text-gray-800">{customerToDelete.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Total Orders:</span>
+                    <span className="text-gray-800 font-medium">{customerToDelete.totalOrders || 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmModal(false);
+                  setCustomerToDelete(null);
+                }}
+                className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteCustomer}
+                className="px-6 py-2.5 text-white bg-red-600 rounded-lg font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105"
+              >
+                <Trash2 className="w-4 h-4 inline mr-2" />
+                Delete Customer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
