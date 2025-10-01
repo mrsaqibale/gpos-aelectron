@@ -16,7 +16,7 @@ async function loadVoucherModule() {
       const devPath = path.join(__dirname, '../../src/database/models/voucher/voucher.js');
       
       // For built app: resources/database/models
-      const builtPath = path.join(process.resourcesPath || '', 'database/models/voucher/voucher.js');
+      const builtPath = path.join(__dirname, '../src/database/models/voucher/voucher.js');
       
       console.log(`[voucher.cjs] Looking for voucher model`);
       console.log(`[voucher.cjs] Current dir: ${__dirname}`);

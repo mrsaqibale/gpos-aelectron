@@ -11,8 +11,8 @@ const getModelPath = (modelPath) => {
     // Development path: electron/ipchandler -> src/database/models
     const devPath = path.join(__dirname, '../../src/database/models', modelPath);
     
-    // Built app path: resources/database/models
-    const builtPath = path.join(process.resourcesPath || '', 'database/models', modelPath);
+    // Built app path: inside app.asar
+    const builtPath = path.join(__dirname, '../src/database/models', modelPath);
     
     console.log(`[hotel.cjs] Looking for model: ${modelPath}`);
     console.log(`[hotel.cjs] Current dir: ${__dirname}`);
@@ -49,8 +49,8 @@ const loadHotelModel = async () => {
     // Development path: electron/ipchandler -> src/database/models
     const devPath = path.join(__dirname, '../../src/database/models/hotel/hotel.js');
     
-    // Built app path: resources/database/models
-    const builtPath = path.join(process.resourcesPath || '', 'database/models/hotel/hotel.js');
+    // Built app path: inside app.asar
+    const builtPath = path.join(__dirname, '../src/database/models/hotel/hotel.js');
     
     console.log(`[hotel.cjs] Loading hotel model...`);
     console.log(`[hotel.cjs] Current dir: ${__dirname}`);

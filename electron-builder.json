@@ -15,8 +15,17 @@
   ],
   "extraResources": [
     {
-      "from": "src/database/",
-      "to": "database/",
+      "from": "src/database/pos.db",
+      "to": "database/pos.db"
+    },
+    {
+      "from": "src/database/uploads/",
+      "to": "database/uploads/",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "src/database/migrations/",
+      "to": "database/migrations/",
       "filter": ["**/*"]
     },
     {

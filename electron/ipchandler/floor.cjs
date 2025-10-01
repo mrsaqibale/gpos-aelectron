@@ -12,8 +12,8 @@ const getModelPath = (modelPath) => {
     // Target: src/database/models/ (go up 2 levels, then into src/database/models)
     const devPath = path.join(__dirname, '../../src/database/models', modelPath);
     
-    // For built app: resources/database/models
-    const builtPath = path.join(process.resourcesPath || '', 'database/models', modelPath);
+    // For built app: inside app.asar
+    const builtPath = path.join(__dirname, '../src/database/models', modelPath);
     
     console.log(`[floor.cjs] Looking for model: ${modelPath}`);
     console.log(`[floor.cjs] Current dir: ${__dirname}`);
