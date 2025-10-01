@@ -458,18 +458,11 @@ const CustomerManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Users size={24} className="text-primary" />
           <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
         </div>
-        <button
-          onClick={() => setShowAddCustomerModal(true)}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium shadow-md"
-        >
-          <Plus size={18} />
-          Add New Customer
-        </button>
       </div>
 
       {/* Filters Card */}
@@ -602,6 +595,14 @@ const CustomerManagement = () => {
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
             </div>
+            {/* Add New Customer Button */}
+            <button
+              onClick={() => setShowAddCustomerModal(true)}
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium shadow-md"
+            >
+              <Plus size={18} />
+              Add New Customer
+            </button>
           </div>
         </div>
 
