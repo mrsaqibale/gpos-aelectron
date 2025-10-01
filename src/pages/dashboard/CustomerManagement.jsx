@@ -427,8 +427,8 @@ const CustomerManagement = () => {
     try {
       console.log('Soft deleting customer ID:', customerToDelete.id);
       
-      // Soft delete by updating isdeleted status to 1
-      const result = await window.electronAPI.invoke('customer:update', customerToDelete.id, { isdeleted: 1 });
+      // Soft delete by updating isDelete status to 1
+      const result = await window.electronAPI.invoke('customer:update', customerToDelete.id, { isDelete: 1 });
       
       if (result.success) {
         console.log('Successfully soft deleted customer');
