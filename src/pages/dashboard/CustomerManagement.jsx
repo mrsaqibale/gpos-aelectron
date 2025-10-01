@@ -790,9 +790,12 @@ const CustomerManagement = () => {
         <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h3 className="text-xl font-bold text-gray-800">Customer Details</h3>
-              <button onClick={handleModalClose} className="text-gray-400 hover:text-gray-600">
+            <div className="flex justify-between items-center p-6 bg-primary text-white rounded-t-lg">
+              <h3 className="text-xl font-bold">Customer Details</h3>
+              <button 
+                onClick={handleModalClose} 
+                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              >
                 <X size={20} />
               </button>
             </div>
