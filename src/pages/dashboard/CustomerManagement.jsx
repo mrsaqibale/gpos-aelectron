@@ -294,10 +294,28 @@ const CustomerManagement = () => {
   // Handle modal open
   const handleModalOpen = async (customer) => {
     console.log('Opening modal for customer:', customer);
-    setSelectedCustomer(customer);
-    setShowModal(true);
-    // Load customer orders when modal opens
-    await loadCustomerOrders(customer.id);
+    
+    try {
+      // Fetch customer addresses from addresses table
+      const addressResult = await window.electronAPI.invoke('address:getByCustomer', customer.id);
+      
+      const customerWithAddresses = {
+        ...customer,
+        addresses: addressResult.success ? addressResult.data : []
+      };
+      
+      console.log('Customer with addresses:', customerWithAddresses);
+      setSelectedCustomer(customerWithAddresses);
+      setShowModal(true);
+      // Load customer orders when modal opens
+      await loadCustomerOrders(customer.id);
+    } catch (error) {
+      console.error('Error fetching customer addresses:', error);
+      // Still open modal even if address fetch fails
+      setSelectedCustomer(customer);
+      setShowModal(true);
+      await loadCustomerOrders(customer.id);
+    }
   };
 
   // Handle modal close
@@ -900,12 +918,21 @@ const CustomerManagement = () => {
                 {/* Address Section */}
                 <div className="border-t border-gray-200 pt-4">
                   <h5 className="text-sm font-medium text-gray-700 mb-3">Address Information</h5>
-                  {selectedCustomer.address ? (
+                  {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 ? (
                     <div className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <Home size={16} className="text-gray-400 mt-0.5" />
-                        <span className="text-sm text-gray-800">{selectedCustomer.address}</span>
-                      </div>
+                      {selectedCustomer.addresses.map((addr, index) => (
+                        <div key={addr.id || index} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                          <div className="flex items-start gap-3 mb-2">
+                            <Home size={16} className="text-gray-400 mt-0.5" />
+                            <div className="flex-1">
+                              <span className="text-sm text-gray-800 block">{addr.address}</span>
+                              {addr.code && (
+                                <span className="text-xs text-gray-500 mt-1 block">Eircode: {addr.code}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="text-sm text-gray-500 italic">No address available</div>
