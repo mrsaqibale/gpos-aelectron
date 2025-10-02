@@ -413,6 +413,12 @@ const RunningOrders = () => {
   const [customTime, setCustomTime] = useState('');
   const [useCustomTime, setUseCustomTime] = useState(false);
 
+  // Service Fee Modal State
+  const [showServiceFeeModal, setShowServiceFeeModal] = useState(false);
+  const [serviceName, setServiceName] = useState('');
+  const [serviceAmount, setServiceAmount] = useState('');
+  const [serviceTaxPercentage, setServiceTaxPercentage] = useState(0);
+
 
 
   // Split Bill Modal State
@@ -2698,8 +2704,22 @@ const RunningOrders = () => {
   };
 
   const calculateCartTax = () => {
-    const subtotal = calculateCartSubtotal();
-    return calculateTaxAmount(subtotal);
+    // Calculate tax from individual food items instead of global tax rate
+    return cartItems.filter(item => item.quantity > 0).reduce((totalTax, item) => {
+      // For custom pizza and custom food items, use the stored tax
+      if (item.isCustomPizza || item.isCustomFood) {
+        return totalTax + (item.tax || 0) * item.quantity;
+      }
+      
+      // For regular food items, calculate tax from food.tax percentage
+      if (item.food && item.food.tax) {
+        const itemSubtotal = item.totalPrice;
+        const itemTax = (itemSubtotal * item.food.tax) / 100;
+        return totalTax + itemTax;
+      }
+      
+      return totalTax;
+    }, 0);
   };
 
   const calculateCartDiscount = () => {
@@ -2716,9 +2736,8 @@ const RunningOrders = () => {
 
   const calculateCartTotal = () => {
     const subtotal = calculateCartSubtotal();
-    const tax = calculateCartTax();
     const discount = calculateCartDiscount();
-    return subtotal + tax - discount;
+    return subtotal - discount; // Tax is NOT added to customer's payable amount
   };
 
   // Clear cart function
@@ -2747,6 +2766,9 @@ const RunningOrders = () => {
     setSelectedAdons([]);
     setSelectedOrderType('In Store');
     setSelectedScheduleDateTime(''); // Clear schedule when clearing cart
+    setServiceName(''); // Clear service fee
+    setServiceAmount('');
+    setServiceTaxPercentage(0);
 
     // Clear modification flags when starting fresh
     setIsModifyingOrder(false);
@@ -3483,6 +3505,10 @@ const RunningOrders = () => {
         payment_status: 'pending',
         order_status: dbStatus, // Use the mapped status instead of hardcoded 'pending'
         total_tax_amount: tax,
+        food_tax_amount: tax, // Save individual food tax amount
+        service_tax_amount: serviceAmount ? ((parseFloat(serviceAmount) * serviceTaxPercentage) / 100) : 0, // Calculate service tax
+        service_tax_percentage: serviceTaxPercentage || 0,
+        service_name: serviceName || null,
         payment_method: null, // Will be set when payment is made
         delivery_address_id: deliveryAddressId, // Set delivery address for delivery orders
         coupon_code: appliedCoupon?.code || null,
@@ -4278,6 +4304,10 @@ const RunningOrders = () => {
         payment_status: 'pending',
         order_status: 'draft', // Set status as draft
         total_tax_amount: tax,
+        food_tax_amount: tax, // Save individual food tax amount
+        service_tax_amount: serviceAmount ? ((parseFloat(serviceAmount) * serviceTaxPercentage) / 100) : 0, // Calculate service tax
+        service_tax_percentage: serviceTaxPercentage || 0,
+        service_name: serviceName || null,
         payment_method: null,
         delivery_address_id: null,
         coupon_code: appliedCoupon?.code || null,
@@ -5443,8 +5473,25 @@ const RunningOrders = () => {
     setSplitBills(prev => prev.map(split => {
       if (split.id === splitBillId) {
         const subtotal = split.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-        const tax = calculateTaxAmount(subtotal); // Calculate tax using settings
-        const total = subtotal + tax + (split.charge || 0) + (split.tips || 0) - (split.discount || 0);
+        
+        // Calculate tax from individual food items
+        const tax = split.items.reduce((totalTax, item) => {
+          // For custom pizza and custom food items, use the stored tax
+          if (item.isCustomPizza || item.isCustomFood) {
+            return totalTax + (item.tax || 0) * item.quantity;
+          }
+          
+          // For regular food items, calculate tax from food.tax percentage
+          if (item.food && item.food.tax) {
+            const itemSubtotal = item.totalPrice;
+            const itemTax = (itemSubtotal * item.food.tax) / 100;
+            return totalTax + itemTax;
+          }
+          
+          return totalTax;
+        }, 0);
+        
+        const total = subtotal + (split.charge || 0) + (split.tips || 0) - (split.discount || 0); // Tax is NOT added to customer's payable amount
 
         return {
           ...split,
@@ -5548,6 +5595,10 @@ const RunningOrders = () => {
         payment_status: 'paid', // Split bills are paid when placed
         order_status: dbStatus, // Use the same status mapping as regular orders
         total_tax_amount: splitBill.tax || 0,
+        food_tax_amount: splitBill.tax || 0, // Save individual food tax amount
+        service_tax_amount: serviceAmount ? ((parseFloat(serviceAmount) * serviceTaxPercentage) / 100) : 0, // Calculate service tax
+        service_tax_percentage: serviceTaxPercentage || 0,
+        service_name: serviceName || null,
         payment_method: paymentInfo.paymentMethod || 'Cash',
         delivery_address_id: null, // Will be set if delivery order
         coupon_code: null,
@@ -5780,8 +5831,25 @@ const RunningOrders = () => {
   const recalculateSplitBillTotals = () => {
     setSplitBills(prev => prev.map(split => {
       const subtotal = split.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-      const tax = calculateTaxAmount(subtotal); // Calculate tax using settings
-      const total = subtotal + tax + (split.charge || 0) + (split.tips || 0) - (split.discount || 0);
+      
+      // Calculate tax from individual food items
+      const tax = split.items.reduce((totalTax, item) => {
+        // For custom pizza and custom food items, use the stored tax
+        if (item.isCustomPizza || item.isCustomFood) {
+          return totalTax + (item.tax || 0) * item.quantity;
+        }
+        
+        // For regular food items, calculate tax from food.tax percentage
+        if (item.food && item.food.tax) {
+          const itemSubtotal = item.totalPrice;
+          const itemTax = (itemSubtotal * item.food.tax) / 100;
+          return totalTax + itemTax;
+        }
+        
+        return totalTax;
+      }, 0);
+      
+      const total = subtotal + (split.charge || 0) + (split.tips || 0) - (split.discount || 0); // Tax is NOT added to customer's payable amount
 
       return {
         ...split,
@@ -5994,7 +6062,22 @@ const RunningOrders = () => {
       return sum + (parseFloat(item.totalPrice) || 0);
     }, 0);
 
-    const tax = calculateTaxAmount(subtotal); // Calculate tax using settings
+    // Calculate tax from individual food items
+    const tax = items.reduce((totalTax, item) => {
+      // For custom pizza and custom food items, use the stored tax
+      if (item.isCustomPizza || item.isCustomFood) {
+        return totalTax + (item.tax || 0) * item.quantity;
+      }
+      
+      // For regular food items, calculate tax from food.tax percentage
+      if (item.food && item.food.tax) {
+        const itemSubtotal = item.totalPrice;
+        const itemTax = (itemSubtotal * item.food.tax) / 100;
+        return totalTax + itemTax;
+      }
+      
+      return totalTax;
+    }, 0);
 
     // Calculate discount
     let discount = 0;
@@ -6014,7 +6097,7 @@ const RunningOrders = () => {
       discount += parseFloat(finalizeDiscountAmount) || 0;
     }
 
-    const total = subtotal + tax - discount;
+    const total = subtotal - discount; // Tax is NOT added to customer's payable amount
 
     return { subtotal, tax, discount, total };
   };
@@ -6084,12 +6167,11 @@ const RunningOrders = () => {
     if (!selectedSplitBill) return 0;
 
     const subtotal = selectedSplitBill.subtotal || 0;
-    const tax = selectedSplitBill.tax || 0;
     const charge = selectedSplitBill.charge || 0;
     const tips = selectedSplitBill.tips || 0;
     const discount = calculateSplitBillDiscount(); // Use the updated discount calculation
 
-    const total = subtotal + tax + charge + tips - discount;
+    const total = subtotal + charge + tips - discount; // Tax is NOT added to customer's payable amount
     console.log('calculateSplitBillTotal - returning:', total);
     return total;
   };
@@ -6962,6 +7044,34 @@ const RunningOrders = () => {
     setUseCustomTime(false);
   };
 
+  // Service Fee Modal Functions
+  const handleOpenServiceFeeModal = () => {
+    // Get service tax percentage from settings
+    const serviceTax = parseFloat(settings?.service_tax) || 0;
+    setServiceTaxPercentage(serviceTax);
+    setShowServiceFeeModal(true);
+  };
+
+  const handleCloseServiceFeeModal = () => {
+    setShowServiceFeeModal(false);
+    setServiceName('');
+    setServiceAmount('');
+  };
+
+  const handleApplyServiceFee = () => {
+    if (!serviceName.trim()) {
+      showError('Please enter a service name');
+      return;
+    }
+    if (!serviceAmount || parseFloat(serviceAmount) <= 0) {
+      showError('Please enter a valid service amount');
+      return;
+    }
+
+    showSuccess(`Service fee "${serviceName}" of €${parseFloat(serviceAmount).toFixed(2)} applied!`);
+    handleCloseServiceFeeModal();
+  };
+
   return (
     <>
       <div className="flex justify-between gap-2 h-full">
@@ -7611,7 +7721,7 @@ const RunningOrders = () => {
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-medium text-gray-700 mb-2">Tax ({getTaxRate().toFixed(1)}%)</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">Tax</div>
                     <div className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-900">
                       €{calculateCartTax().toFixed(2)}
                     </div>
@@ -7695,7 +7805,10 @@ const RunningOrders = () => {
                   <Archive size={14} />
                   OPEN DRAWER
                 </button>
-                <button className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors">
+                <button 
+                  onClick={handleOpenServiceFeeModal}
+                  className="bg-gray-600 text-white btn-lifted p-2 text-xs sm:text-sm md:text-xs lg:text-xs xl:text-sm font-bold rounded flex items-center justify-center gap-1 hover:bg-gray-700 transition-colors"
+                >
                   <ChefHat size={14} />
                   SERVICE FEE
                 </button>
@@ -10102,6 +10215,103 @@ const RunningOrders = () => {
         onConfirm={handleScheduleConfirm}
         onCancel={handleScheduleCancel}
       />
+
+      {/* Service Fee Modal */}
+      {showServiceFeeModal && (
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            {/* Header */}
+            <div className="bg-primary text-white p-4 flex justify-between items-center rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <ChefHat size={20} />
+                <h2 className="text-xl font-bold">Service Fee</h2>
+              </div>
+              <button
+                onClick={handleCloseServiceFeeModal}
+                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {/* Service Tax Info */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-blue-800">
+                  <Info size={16} />
+                  <span>Service Tax from Settings: <strong>{serviceTaxPercentage.toFixed(1)}%</strong></span>
+                </div>
+              </div>
+
+              {/* Service Name Field */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Service Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={serviceName}
+                  onChange={(e) => setServiceName(e.target.value)}
+                  placeholder="Enter service name (e.g., Table Service, Delivery Fee)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                />
+              </div>
+
+              {/* Service Amount Field */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Service Amount <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    value={serviceAmount}
+                    onChange={(e) => setServiceAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-800">€</span>
+                </div>
+              </div>
+
+              {/* Calculated Service Tax Display */}
+              {serviceAmount && parseFloat(serviceAmount) > 0 && serviceTaxPercentage > 0 && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="text-sm text-green-800">
+                    <div className="flex justify-between mb-1">
+                      <span>Service Amount:</span>
+                      <span className="font-semibold">€{parseFloat(serviceAmount).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Service Tax ({serviceTaxPercentage.toFixed(1)}%):</span>
+                      <span className="font-semibold">€{((parseFloat(serviceAmount) * serviceTaxPercentage) / 100).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={handleCloseServiceFeeModal}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyServiceFee}
+                className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primaryLight transition-colors"
+              >
+                Apply Service Fee
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard

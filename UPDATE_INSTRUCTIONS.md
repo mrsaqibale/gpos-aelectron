@@ -83,3 +83,5 @@ npm run build:win-installer
 - The build process may take 5-10 minutes depending on your system
 - A new desktop shortcut will be created automatically
 
+
+

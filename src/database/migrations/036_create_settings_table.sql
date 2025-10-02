@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS settings (
     tax_rate NUMERIC,
     standard_tax NUMERIC,
     food_tax NUMERIC,
+    delivery_tax NUMERIC DEFAULT 0,
+    service_tax NUMERIC DEFAULT 0,
     time_zone TEXT,
     time_format TEXT,
 

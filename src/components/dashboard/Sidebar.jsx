@@ -4,7 +4,6 @@ import {
   LogOut,
   X,
   ChevronLeft,
-  Lock,
 } from "lucide-react";
 import { SidebarContext } from './DashboardLayout';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -22,11 +21,6 @@ const Sidebar = ({ navigationItems }) => {
 
   // Handle navigation with check-in logic
   const handleNavigation = async (item) => {
-    // Check if item is disabled
-    if (item.disabled) {
-      return; // Don't navigate if disabled
-    }
-    
     playButtonSound();
     
     // Check if this is the sales route and user hasn't checked in
@@ -133,36 +127,25 @@ const Sidebar = ({ navigationItems }) => {
               className={({ isActive }) =>
                 `flex items-center px-4 py-3 text-sm text-gray-100 ${
                   isActive ? "border-l-2 border-white" : ""
-                } ${
-                  item.disabled ? "opacity-50 cursor-not-allowed" : ""
                 }`
               }
               style={({ isActive }) => ({
                 backgroundColor: isActive ? 'rgba(255, 255, 255, 0.055)' : 'transparent',
-                ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.055)' },
-                pointerEvents: item.disabled ? 'none' : 'auto'
+                ':hover': { backgroundColor: 'rgba(255, 255, 255, 0.055)' }
               })}
               onMouseEnter={(e) => {
-                if (!item.disabled) {
-                  e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.055)';
-                }
+                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.055)';
               }}
               onMouseLeave={(e) => {
-                if (!item.disabled) {
-                  const isActive = e.target.classList.contains('bg-[#ffffff0e]') || e.target.closest('a').classList.contains('bg-[#ffffff0e]');
-                  e.target.style.backgroundColor = isActive ? 'rgba(255, 255, 255, 0.055)' : 'transparent';
-                }
+                const isActive = e.target.classList.contains('bg-[#ffffff0e]') || e.target.closest('a').classList.contains('bg-[#ffffff0e]');
+                e.target.style.backgroundColor = isActive ? 'rgba(255, 255, 255, 0.055)' : 'transparent';
               }}
               onClick={(e) => {
                 e.preventDefault(); // Prevent default navigation
                 handleNavigation(item);
               }}
             >
-              {item.disabled ? (
-                <Lock size={16} className="text-gray-100" />
-              ) : (
-                <span className="text-gray-100">{item.icon}</span>
-              )}
+              <span className="text-gray-100">{item.icon}</span>
               <span
                 className="ml-2 font-medium whitespace-nowrap"
                 style={{
