@@ -2737,7 +2737,8 @@ const RunningOrders = () => {
   const calculateCartTotal = () => {
     const subtotal = calculateCartSubtotal();
     const discount = calculateCartDiscount();
-    return subtotal - discount; // Tax is NOT added to customer's payable amount
+    const serviceFee = parseFloat(serviceAmount) || 0; // Only base service fee, NO tax
+    return subtotal - discount + serviceFee; // Tax is NOT added to customer's payable amount (neither food tax nor service fee tax)
   };
 
   // Clear cart function
@@ -3435,7 +3436,9 @@ const RunningOrders = () => {
       const subtotal = calculateCartSubtotal();
       const tax = calculateCartTax();
       const discount = calculateCartDiscount();
-      const total = calculateCartTotal();
+      const serviceFee = parseFloat(serviceAmount) || 0;
+      const serviceTax = serviceFee * serviceTaxPercentage / 100; // Tax on service fee (for hotel records only)
+      const total = subtotal - discount + serviceFee; // Total for customer (NO tax - neither food tax nor service fee tax)
 
       // Prepare table details for database
       let tableDetails = null;
@@ -3506,8 +3509,9 @@ const RunningOrders = () => {
         order_status: dbStatus, // Use the mapped status instead of hardcoded 'pending'
         total_tax_amount: tax,
         food_tax_amount: tax, // Save individual food tax amount
-        service_tax_amount: serviceAmount ? ((parseFloat(serviceAmount) * serviceTaxPercentage) / 100) : 0, // Calculate service tax
-        service_tax_percentage: serviceTaxPercentage || 0,
+        additional_charge: 0,
+        service_tax_amount: serviceFee, // Base service fee amount (€150)
+        service_tax_percentage: serviceTaxPercentage || 0, // Tax percentage (20%)
         service_name: serviceName || null,
         payment_method: null, // Will be set when payment is made
         delivery_address_id: deliveryAddressId, // Set delivery address for delivery orders
@@ -3516,7 +3520,6 @@ const RunningOrders = () => {
         order_type: orderType,
         restaurant_id: 1, // Default restaurant ID
         delivery_charge: 0, // Can be calculated for delivery
-        additional_charge: 0, // Set to 0 since cartCharge is not in schema
         discount_amount: discount,
         tax_percentage: getTaxRate(), // Use tax rate from settings
         scheduled: selectedScheduleDateTime ? 1 : 0, // Set to 1 if scheduled
@@ -4280,7 +4283,9 @@ const RunningOrders = () => {
       const subtotal = calculateCartSubtotal();
       const tax = calculateCartTax();
       const discount = calculateCartDiscount();
-      const total = calculateCartTotal();
+      const serviceFee = parseFloat(serviceAmount) || 0;
+      const serviceTax = serviceFee * serviceTaxPercentage / 100; // Tax on service fee (for hotel records only)
+      const total = subtotal - discount + serviceFee; // Total for customer (NO tax - neither food tax nor service fee tax)
 
       let draftId, orderId;
       
@@ -4305,8 +4310,9 @@ const RunningOrders = () => {
         order_status: 'draft', // Set status as draft
         total_tax_amount: tax,
         food_tax_amount: tax, // Save individual food tax amount
-        service_tax_amount: serviceAmount ? ((parseFloat(serviceAmount) * serviceTaxPercentage) / 100) : 0, // Calculate service tax
-        service_tax_percentage: serviceTaxPercentage || 0,
+        additional_charge: 0,
+        service_tax_amount: serviceFee, // Base service fee amount (€150)
+        service_tax_percentage: serviceTaxPercentage || 0, // Tax percentage (20%)
         service_name: serviceName || null,
         payment_method: null,
         delivery_address_id: null,
@@ -4315,7 +4321,6 @@ const RunningOrders = () => {
         order_type: 'draft',
         restaurant_id: 1,
         delivery_charge: 0,
-        additional_charge: 0,
         discount_amount: discount,
         tax_percentage: getTaxRate(),
         scheduled: 0,
@@ -5596,8 +5601,9 @@ const RunningOrders = () => {
         order_status: dbStatus, // Use the same status mapping as regular orders
         total_tax_amount: splitBill.tax || 0,
         food_tax_amount: splitBill.tax || 0, // Save individual food tax amount
-        service_tax_amount: serviceAmount ? ((parseFloat(serviceAmount) * serviceTaxPercentage) / 100) : 0, // Calculate service tax
-        service_tax_percentage: serviceTaxPercentage || 0,
+        additional_charge: 0,
+        service_tax_amount: parseFloat(serviceAmount) || 0, // Base service fee amount (€150)
+        service_tax_percentage: serviceTaxPercentage || 0, // Tax percentage (20%)
         service_name: serviceName || null,
         payment_method: paymentInfo.paymentMethod || 'Cash',
         delivery_address_id: null, // Will be set if delivery order
@@ -5606,7 +5612,6 @@ const RunningOrders = () => {
         order_type: orderType,
         restaurant_id: 1,
         delivery_charge: 0,
-        additional_charge: 0,
         discount_amount: splitBill.discount || 0,
         tax_percentage: getTaxRate(),
         scheduled: 0,
@@ -7049,13 +7054,13 @@ const RunningOrders = () => {
     // Get service tax percentage from settings
     const serviceTax = parseFloat(settings?.service_tax) || 0;
     setServiceTaxPercentage(serviceTax);
+    // Don't clear existing service fee - keep the values if already added
     setShowServiceFeeModal(true);
   };
 
   const handleCloseServiceFeeModal = () => {
     setShowServiceFeeModal(false);
-    setServiceName('');
-    setServiceAmount('');
+    // Don't clear service fee when closing modal - keep it applied
   };
 
   const handleApplyServiceFee = () => {
@@ -7739,6 +7744,39 @@ const RunningOrders = () => {
                     </div>
                   </div>
                 </div>
+                {/* Service Fee Display */}
+                {serviceAmount && parseFloat(serviceAmount) > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ChefHat size={16} className="text-blue-600" />
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-blue-800">{serviceName}</div>
+                          <div className="text-xs text-blue-600">
+                            Service Fee: €{parseFloat(serviceAmount).toFixed(2)}
+                          </div>
+                          {serviceTaxPercentage > 0 && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Tax ({serviceTaxPercentage}%): €{((parseFloat(serviceAmount) * serviceTaxPercentage) / 100).toFixed(2)} - Not charged to customer (Hotel records only)
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setServiceName('');
+                          setServiceAmount('');
+                          setServiceTaxPercentage(0);
+                          showSuccess('Service fee removed');
+                        }}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Remove Service Fee"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               {/* Total Payable */}
               {/* <div className='flex justify-center items-center mb-4'>
