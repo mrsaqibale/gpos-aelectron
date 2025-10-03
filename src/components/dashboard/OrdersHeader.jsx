@@ -110,6 +110,15 @@ const OrdersHeader = ({ onMenuClick, onDraftsClick, showMenuButton = true }) => 
       label: 'Today',
       onClick: () => setShowTodaySalesSammaryModal(true)
     },
+    {
+      icon: <Menu size={16} />,
+      style: { backgroundColor: themeColors.primary },
+      textColor: 'text-white',
+      label: 'Menu',
+      onClick: () => {
+        window.dispatchEvent(new CustomEvent('openDashboardMenu'));
+      }
+    },
 
     // {
     //  icon: <ListOrdered size={16} />,

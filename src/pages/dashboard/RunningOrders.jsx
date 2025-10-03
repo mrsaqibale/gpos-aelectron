@@ -96,7 +96,7 @@ import FoodIngredientsModalbox from '../../components/dashboard/FoodIngredientsM
 import InvoiceOptions from '../../components/InvoiceOptions.jsx';
 import PlaceOrderComponent from '../../components/PlaceOrderComponent.jsx';
 import SplitBillModal from '../../components/SplitBillModal.jsx';
-import Sidebar from '../../components/dashboard/Sidebar';
+import SalesSideBar from '../../components/SalesSideBar.jsx';
 
 const RunningOrders = () => {
   // Accept navigation state to pre-load an order
@@ -355,8 +355,8 @@ const RunningOrders = () => {
   const [cartTips, setCartTips] = useState(0); // Cart tips amount
   const [orderNote, setOrderNote] = useState(''); // Order note field
 
-  // Floating Sidebar State
-  const [showFloatingSidebar, setShowFloatingSidebar] = useState(false);
+  // Top Sidebar State
+  const [showTopSidebar, setShowTopSidebar] = useState(false);
 
   // Split Pizza Modal State
   const [showSplitPizzaModal, setShowSplitPizzaModal] = useState(false);
@@ -699,7 +699,7 @@ const RunningOrders = () => {
     
     // Add event listener for dashboard menu
     const handleDashboardMenu = () => {
-      setShowFloatingSidebar(true);
+      setShowTopSidebar(true);
     };
     window.addEventListener('openDashboardMenu', handleDashboardMenu);
     
@@ -7303,18 +7303,6 @@ const RunningOrders = () => {
             )}
             <div className="flex items-center justify-between mb-2 border-b border-gray-200 pb-2">
               <div className="flex items-center gap-2">
-                {/* Menu Button */}
-                <button
-                  onClick={() => {
-                    console.log('Menu button clicked');
-                    setShowFloatingSidebar(true);
-                  }}
-                  className="px-3 py-1 cursor-pointer flex items-center justify-center text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200 rounded-lg border-2 border-blue-600 shadow-md text-sm font-bold"
-                  title="Menu"
-                >
-                  <Menu className="w-4 h-4 mr-1" />
-                  MENU
-                </button>
                 <span className="font-semibold text-gray-800 text-xs sm:text-sm md:text-xs lg:text-sm">🍽 Food &amp; Categories</span>
               </div>
               <div className="flex gap-2">
@@ -10353,6 +10341,12 @@ const RunningOrders = () => {
           </div>
         </div>
       )}
+
+      {/* Sidebar Menu Component */}
+      <SalesSideBar 
+        isOpen={showTopSidebar}
+        onClose={() => setShowTopSidebar(false)}
+      />
 
       {/* Virtual Keyboard Component */}
       <VirtualKeyboard

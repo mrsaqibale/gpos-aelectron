@@ -37,8 +37,6 @@ const DashboardLayout = () => {
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
-    const openMenu = () => setShowDashboardSlider(true);
-    window.addEventListener('openDashboardMenu', openMenu);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
