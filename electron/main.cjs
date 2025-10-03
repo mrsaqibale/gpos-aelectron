@@ -171,9 +171,12 @@ async function createWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
 
+  // Set default window size to 1080x768
+  const windowWidth = 1080;
+  const windowHeight = 768;
   const win = new BrowserWindow({
-    width: screenWidth,
-    height: screenHeight,
+    width: windowWidth,
+    height: windowHeight,
     x: 0,
     y: 0,
     minWidth: 800,
