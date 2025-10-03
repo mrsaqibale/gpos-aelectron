@@ -4,6 +4,8 @@ import OrderDetailsModal from '../../components/OrderDetailsModal';
 import Invoice from '../../components/Invoice';
 import CustomerManagementModal from '../../components/dashboard/CustomerManagement';
 import LoyaltySettingsModalBox from '../../components/dashboard/LoyaltySettingsModalBox';
+import VirtualKeyboard from '../../components/VirtualKeyboard';
+import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
 
 const CustomerManagement = () => {
   // State for filters
@@ -76,6 +78,42 @@ const CustomerManagement = () => {
   // Loyalty settings modal state
   const [showLoyaltySettingsModal, setShowLoyaltySettingsModal] = useState(false);
 
+  // Use the custom hook for keyboard functionality
+  const {
+    showKeyboard,
+    activeInput: virtualKeyboardActiveInput,
+    keyboardInput: virtualKeyboardInput,
+    handleInputFocus,
+    handleInputBlur,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    onKeyboardChange,
+    onKeyboardKeyPress,
+    resetKeyboardInputs,
+    hideKeyboard
+  } = useVirtualKeyboard(['searchTerm']);
+
+  // Custom blur handler that saves the current keyboard input
+  const handleCustomInputBlur = (e, inputName) => {
+    // Save the current keyboard input to the appropriate state
+    if (virtualKeyboardActiveInput === inputName && virtualKeyboardInput !== undefined) {
+      handleKeyboardChange(virtualKeyboardInput, inputName);
+    }
+    // Call the hook's blur handler
+    handleInputBlur(e);
+  };
+
+  // Handle keyboard input changes
+  const updateFieldFromKeyboard = (fieldName, value) => {
+    if (fieldName === 'searchTerm') {
+      setSearchTerm(value);
+    }
+  };
+
+  const getValueForActiveInput = (fieldName) => {
+    if (fieldName === 'searchTerm') return searchTerm || '';
+    return '';
+  };
 
   // Updated sorting options
   const sortingOptions = [
@@ -617,9 +655,13 @@ const CustomerManagement = () => {
             <div className="relative">
               <input
                 type="text"
+                name="searchTerm"
                 placeholder="Search by name"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={(e) => handleAnyInputFocus(e, 'searchTerm')}
+                onClick={(e) => handleAnyInputClick(e, 'searchTerm')}
+                onBlur={(e) => handleCustomInputBlur(e, 'searchTerm')}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm w-64"
               />
             </div>
@@ -1120,6 +1162,18 @@ const CustomerManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Virtual Keyboard Component */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={() => hideKeyboard()}
+        activeInput={virtualKeyboardActiveInput}
+        onInputChange={(input, inputName) => {
+          updateFieldFromKeyboard(inputName, input);
+        }}
+        onInputBlur={handleInputBlur}
+        inputValue={getValueForActiveInput(virtualKeyboardActiveInput)}
+      />
 
     </div>
   );

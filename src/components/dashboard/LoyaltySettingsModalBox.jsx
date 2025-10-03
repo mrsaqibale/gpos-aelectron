@@ -1,11 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { X, Settings } from 'lucide-react';
+import VirtualKeyboard from '../VirtualKeyboard';
+import useVirtualKeyboard from '../../hooks/useVirtualKeyboard';
 
 const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
   const [loyaltyEnabled, setLoyaltyEnabled] = useState(false);
   const [selectedRule, setSelectedRule] = useState('');
   const [minimumAmount, setMinimumAmount] = useState('100');
   const [minimumOrders, setMinimumOrders] = useState('5');
+
+  // Use the custom hook for keyboard functionality
+  const {
+    showKeyboard,
+    activeInput: virtualKeyboardActiveInput,
+    keyboardInput: virtualKeyboardInput,
+    handleInputFocus,
+    handleInputBlur,
+    handleAnyInputFocus,
+    handleAnyInputClick,
+    onKeyboardChange,
+    onKeyboardKeyPress,
+    resetKeyboardInputs,
+    hideKeyboard
+  } = useVirtualKeyboard(['minimumAmount', 'minimumOrders']);
+
+  // Custom blur handler that saves the current keyboard input
+  const handleCustomInputBlur = (e, inputName) => {
+    // Save the current keyboard input to the appropriate state
+    if (virtualKeyboardActiveInput === inputName && virtualKeyboardInput !== undefined) {
+      handleKeyboardChange(virtualKeyboardInput, inputName);
+    }
+    // Call the hook's blur handler
+    handleInputBlur(e);
+  };
+
+  // Handle keyboard input changes
+  const updateFieldFromKeyboard = (fieldName, value) => {
+    if (fieldName === 'minimumAmount') {
+      setMinimumAmount(value);
+    } else if (fieldName === 'minimumOrders') {
+      setMinimumOrders(value);
+    }
+  };
+
+  const getValueForActiveInput = (fieldName) => {
+    if (fieldName === 'minimumAmount') return minimumAmount || '';
+    if (fieldName === 'minimumOrders') return minimumOrders || '';
+    return '';
+  };
 
   // Load settings when modal opens
   useEffect(() => {
@@ -108,8 +150,12 @@ const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
                     </label>
                     <input
                       type="number"
+                      name="minimumAmount"
                       value={minimumAmount}
                       onChange={(e) => setMinimumAmount(e.target.value)}
+                      onFocus={(e) => handleAnyInputFocus(e, 'minimumAmount')}
+                      onClick={(e) => handleAnyInputClick(e, 'minimumAmount')}
+                      onBlur={(e) => handleCustomInputBlur(e, 'minimumAmount')}
                       placeholder="100"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm text-[#333]"
                     />
@@ -123,8 +169,12 @@ const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
                     </label>
                     <input
                       type="number"
+                      name="minimumOrders"
                       value={minimumOrders}
                       onChange={(e) => setMinimumOrders(e.target.value)}
+                      onFocus={(e) => handleAnyInputFocus(e, 'minimumOrders')}
+                      onClick={(e) => handleAnyInputClick(e, 'minimumOrders')}
+                      onBlur={(e) => handleCustomInputBlur(e, 'minimumOrders')}
                       placeholder="5"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm text-[#333]"
                     />
@@ -151,6 +201,18 @@ const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
           </button>
         </div>
       </div>
+
+      {/* Virtual Keyboard Component */}
+      <VirtualKeyboard
+        isVisible={showKeyboard}
+        onClose={() => hideKeyboard()}
+        activeInput={virtualKeyboardActiveInput}
+        onInputChange={(input, inputName) => {
+          updateFieldFromKeyboard(inputName, input);
+        }}
+        onInputBlur={handleInputBlur}
+        inputValue={getValueForActiveInput(virtualKeyboardActiveInput)}
+      />
     </div>
   );
 };
