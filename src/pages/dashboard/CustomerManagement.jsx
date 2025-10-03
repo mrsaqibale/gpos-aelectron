@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer } from 'lucide-react';
+import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer, Settings } from 'lucide-react';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
 import Invoice from '../../components/Invoice';
 import CustomerManagementModal from '../../components/dashboard/CustomerManagement';
+import LoyaltySettingsModalBox from '../../components/dashboard/LoyaltySettingsModalBox';
 
 const CustomerManagement = () => {
   // State for filters
@@ -71,6 +72,9 @@ const CustomerManagement = () => {
   // Delete confirmation modal state
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
+
+  // Loyalty settings modal state
+  const [showLoyaltySettingsModal, setShowLoyaltySettingsModal] = useState(false);
 
 
   // Updated sorting options
@@ -500,7 +504,7 @@ const CustomerManagement = () => {
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <Users size={24} className="text-primary" />
-            <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Customer</h1>
           </div>
           <h2 className='text-[#555] text-[22px] ml-7'>Manage Your Customers easily</h2>
         </div>
@@ -535,8 +539,8 @@ const CustomerManagement = () => {
               </div>
             </div>
 
-            {/* Refresh Button */}
-            <div className="flex items-end">
+            {/* Refresh Button and Loyalty Settings */}
+            <div className="flex items-end gap-3">
               <button
                 onClick={() => {
                   // Clear all filters
@@ -549,12 +553,19 @@ const CustomerManagement = () => {
                   // Load fresh data
                   loadCustomers('');
                 }}
-                className="w-full px-4 py-2 bg-[#0d6efd] text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                className="px-4 py-2 bg-[#0d6efd] text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Reset
+              </button>
+              <button
+                onClick={() => setShowLoyaltySettingsModal(true)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+              >
+                <Settings size={16} />
+                Loyalty Settings
               </button>
             </div>
           </div>
@@ -1014,6 +1025,12 @@ const CustomerManagement = () => {
         onCustomerSelect={handleCustomerCreated}
         editingCustomer={editingCustomer}
         orderType="In Store"
+      />
+
+      {/* Loyalty Settings Modal */}
+      <LoyaltySettingsModalBox
+        isOpen={showLoyaltySettingsModal}
+        onClose={() => setShowLoyaltySettingsModal(false)}
       />
 
       {/* Delete Confirmation Modal */}
