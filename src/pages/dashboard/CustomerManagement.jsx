@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer, Settings } from 'lucide-react';
+import { Edit, Plus, X, Trash2, Eye, LocationEdit, Users, ChevronDown, Filter, Search, ChevronLeft, ChevronRight, Mail, Phone, ShoppingBag, Home, Printer, Settings } from 'lucide-react';
 import OrderDetailsModal from '../../components/OrderDetailsModal';
 import Invoice from '../../components/Invoice';
 import CustomerManagementModal from '../../components/dashboard/CustomerManagement';
@@ -882,102 +882,164 @@ const CustomerManagement = () => {
 
       {/* Modal for Customer Details */}
       {showModal && selectedCustomer && (
-        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-[50] p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[80vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 bg-primary text-white rounded-t-lg">
-              <h3 className="text-xl font-bold">Customer Details</h3>
+            <div className="flex justify-center items-center px-6 py-4 bg-primary text-white rounded-t-lg">
+              <h3 className="text-xl font-semibold">Customer Details</h3>
               <button
                 onClick={handleModalClose}
-                className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
+                className="text-white absolute right-32 hover:text-gray-300 transition-colors"
               >
-                <X size={20} />
+                <X size={24} />
               </button>
             </div>
 
             {/* Modal Content */}
             <div className="flex flex-1 overflow-hidden">
-              {/* Left Panel - Order List */}
-              <div className="flex-1 p-6 border-r border-gray-200 overflow-hidden flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-lg font-semibold text-gray-800">Order List</h4>
-                    <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
-                      {selectedCustomer.totalOrders}
-                    </span>
+              {/* Left Panel - Customer Profile */}
+              <div className="w-80 p-6 border-r border-gray-200 overflow-y-auto bg-gray-50">
+                {/* Customer Name */}
+                <h4 className="text-2xl font-bold text-gray-900 mb-8 border-b border-gray-200 pb-4">{selectedCustomer.name}</h4>
+
+                {/* Contact Information */}
+                <div className="space-y-6">
+                  {/* Phone */}
+                  <div className="flex items-start gap-3">
+                    <Phone size={20} className="text-primary mt-1" />
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Phone</div>
+                      <div className="text-sm text-gray-900 font-semibold">{selectedCustomer.phone || 'No phone'}</div>
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="flex items-start gap-3">
+                    <Mail size={20} className="text-primary mt-1" />
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Email</div>
+                      <div className="text-sm text-gray-900 font-semibold">{selectedCustomer.email || 'No email'}</div>
+                    </div>
+                  </div>
+
+                  {/* Number of Orders */}
+                  <div className="flex items-start gap-3">
+                    <ShoppingBag size={20} className="text-primary mt-1" />
+                    <div>
+                      <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Number of Orders</div>
+                      <div className="text-sm text-gray-900 font-semibold">{selectedCustomer.totalOrders} Orders</div>
+                    </div>
                   </div>
                 </div>
 
+                {/* Address Section */}
+                <div className="mt-8 pt-6 border-t border-gray-300">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Home size={18} className="text-primary" />
+                    <h5 className="text-sm font-semibold text-gray-900">Address Information</h5>
+                  </div>
+                  {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedCustomer.addresses.map((addr, index) => (
+                        <div key={addr.id || index} className="flex items-start gap-2">
+                          <LocationEdit size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <div className="text-sm text-gray-800">{addr.address}</div>
+                            {addr.code && (
+                              <div className="text-xs text-gray-500 mt-1">Eircode: {addr.code}</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">No address available</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Panel - Order List */}
+              <div className="flex-1 p-6 overflow-hidden flex flex-col bg-white">
+                <div className="flex items-center gap-2 mb-4">
+                  <h4 className="text-lg font-semibold text-gray-800">Order List</h4>
+                  <span className="bg-primary text-white text-xs px-2.5 py-1 rounded-full font-medium">
+                    {selectedCustomer.totalOrders}
+                  </span>
+                </div>
 
                 {/* Order Table */}
                 <div className="flex-1 overflow-auto">
-                  <table className="w-full">
-                    <thead className="sticky top-0 bg-white">
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                          Sl
-                          <ChevronDown className="inline ml-1" size={12} />
+                  <table className="w-full border border-gray-200 ">
+                    <thead className="sticky top-0 bg-[#F8F9FA] border-b-2 border-gray-200">
+                      <tr>
+                        <th className="text-left py-3 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                          SI
                         </th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                          Order Id
-                          <ChevronDown className="inline ml-1" size={12} />
+                        <th className="text-left py-3 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                          Order ID
                         </th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
+                        <th className="text-left py-3 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                          Order Date
+                        </th>
+                        <th className="text-left py-3 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
                           Status
-                          <ChevronDown className="inline ml-1" size={12} />
                         </th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
+                        <th className="text-left py-3 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
                           Total Amount
-                          <ChevronDown className="inline ml-1" size={12} />
                         </th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Action</th>
+                        <th className="text-left py-3 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                          Action
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {customerOrders.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="py-8 text-center text-gray-500">
+                          <td colSpan="6" className="py-8 text-center text-gray-500">
                             No orders found for this customer
                           </td>
                         </tr>
                       ) : (
                         customerOrders.map((order, index) => (
                           <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-3 px-4 text-sm text-gray-600">
+                            <td className="py-3 px-3 text-sm text-gray-700">
                               {index + 1}
                             </td>
-                            <td className="py-3 px-4">
-                              <span className="text-primary font-medium cursor-pointer hover:underline">
-                                {order.order_number || order.id}
+                            <td className="py-3 px-3 text-sm font-medium text-gray-900">
+                              {order.order_number || order.id}
+                            </td>
+                            <td className="py-3 px-3 text-sm text-gray-700">
+                              {new Date(order.created_at).toLocaleDateString('en-CA')}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-medium ${
+                                order.order_status === 'completed' || order.order_status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                order.order_status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                                order.order_status === 'new' ? 'bg-blue-100 text-blue-700' :
+                                order.order_status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                'bg-blue-100 text-blue-700'
+                              }`}>
+                                {order.order_status || 'new'}
                               </span>
                             </td>
-                            <td className="py-3 px-4">
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.order_status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                order.order_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  order.order_status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                    'bg-blue-100 text-blue-800'
-                                }`}>
-                                {order.order_status || 'Confirmed'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-sm font-medium text-gray-800">
+                            <td className="py-3 px-3 text-sm font-medium text-gray-900">
                               {parseFloat(order.order_amount || 0).toFixed(2)} €
                             </td>
-                            <td className="py-3 px-4">
+                            <td className="py-3 px-3">
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleOrderDetailsOpen(order)}
-                                  className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                                  className="p-1.5 bg-gray-100 text-white rounded hover:bg-cyan-600 transition-colors"
                                   title="View Order Details"
                                 >
-                                  <Eye size={14} />
+                                  <Eye size={16} className='text-[#10B981]' />
                                 </button>
                                 <button
                                   onClick={() => handlePrintOpen(order)}
-                                  className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                                  className="p-1.5 bg-gray-100 text-white rounded hover:bg-cyan-600 transition-colors"
                                   title="Print Invoice"
                                 >
-                                  <Printer size={14} />
+                                  <Printer size={16} className='text-[#0EA5E9]' />
                                 </button>
                               </div>
                             </td>
@@ -986,54 +1048,6 @@ const CustomerManagement = () => {
                       )}
                     </tbody>
                   </table>
-                </div>
-              </div>
-
-              {/* Right Panel - Customer Profile */}
-              <div className="w-80 p-6 overflow-y-auto">
-                <div className="flex items-center gap-2 mb-6">
-                  <Users size={20} className="text-primary" />
-                  <h4 className="text-lg font-semibold text-gray-800">{selectedCustomer.name}</h4>
-                </div>
-
-                {/* Contact Information */}
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <Mail size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-800">{selectedCustomer.email || 'No email'}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-800">{selectedCustomer.phone || 'No phone'}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <ShoppingBag size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-800">{selectedCustomer.totalOrders} Orders</span>
-                  </div>
-                </div>
-
-                {/* Address Section */}
-                <div className="border-t border-gray-200 pt-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-3">Address Information</h5>
-                  {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 ? (
-                    <div className="space-y-3">
-                      {selectedCustomer.addresses.map((addr, index) => (
-                        <div key={addr.id || index} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                          <div className="flex items-start gap-3 mb-2">
-                            <Home size={16} className="text-gray-400 mt-0.5" />
-                            <div className="flex-1">
-                              <span className="text-sm text-gray-800 block">{addr.address}</span>
-                              {addr.code && (
-                                <span className="text-xs text-gray-500 mt-1 block">Eircode: {addr.code}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-500 italic">No address available</div>
-                  )}
                 </div>
               </div>
             </div>
