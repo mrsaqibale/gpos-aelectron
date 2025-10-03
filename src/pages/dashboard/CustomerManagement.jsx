@@ -51,6 +51,9 @@ const CustomerManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   
+  // Dropdown state
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+
   // Order details modal state
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -64,7 +67,7 @@ const CustomerManagement = () => {
   // Add customer modal state
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
-  
+
   // Delete confirmation modal state
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
@@ -87,7 +90,7 @@ const CustomerManagement = () => {
     setLoading(true);
     try {
       let result;
-      
+
       // Check if order date range filter is applied
       if (orderStartDate && orderEndDate) {
         // Use order date range filtering
@@ -99,7 +102,7 @@ const CustomerManagement = () => {
         // Get all customers without pagination
         result = await window.electronAPI.invoke('customer:getWithOrderStats', 1, 1000, 0);
       }
-      
+
       if (result.success) {
         setCustomers(result.data);
         // Apply frontend filtering (for other filters like joining date and sorting)
@@ -203,11 +206,25 @@ const CustomerManagement = () => {
     }
   }, [customerJoiningDate, sortBy, customers]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSortDropdown && !event.target.closest('.sort-dropdown-container')) {
+        setShowSortDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSortDropdown]);
+
   // Calculate pagination info
   const totalPages = Math.ceil(totalCustomers / customersPerPage);
   const indexOfFirstCustomer = (currentPage - 1) * customersPerPage + 1;
   const indexOfLastCustomer = Math.min(currentPage * customersPerPage, totalCustomers);
-  
+
   // Get paginated customers for display
   const paginatedCustomers = filteredCustomers.slice(
     (currentPage - 1) * customersPerPage,
@@ -234,34 +251,34 @@ const CustomerManagement = () => {
     try {
       console.log('Toggling loyalty for customer ID:', customerId);
       setUpdatingCustomer(customerId); // Set loading state
-      
+
       const customer = customers.find(c => c.id === customerId);
       if (customer) {
         console.log('Current customer loyalty status:', customer.isloyal);
         const newLoyaltyStatus = !customer.isloyal;
         console.log('New loyalty status:', newLoyaltyStatus);
-        
+
         // Optimistically update the UI immediately for smooth experience
-        setCustomers(prevCustomers => 
-          prevCustomers.map(c => 
-            c.id === customerId 
+        setCustomers(prevCustomers =>
+          prevCustomers.map(c =>
+            c.id === customerId
               ? { ...c, isloyal: newLoyaltyStatus }
               : c
           )
         );
-        
+
         const result = await window.electronAPI.invoke('customer:update', customerId, { isloyal: newLoyaltyStatus ? 1 : 0 });
         console.log('Update result:', result);
-        
+
         if (result.success) {
           console.log('Successfully updated customer loyalty status');
           // No need to reload - UI is already updated optimistically
         } else {
           console.error('Failed to update customer status:', result.message);
           // Revert the optimistic update on failure
-          setCustomers(prevCustomers => 
-            prevCustomers.map(c => 
-              c.id === customerId 
+          setCustomers(prevCustomers =>
+            prevCustomers.map(c =>
+              c.id === customerId
                 ? { ...c, isloyal: customer.isloyal } // Revert to original state
                 : c
             )
@@ -277,9 +294,9 @@ const CustomerManagement = () => {
       // Revert the optimistic update on error
       const customer = customers.find(c => c.id === customerId);
       if (customer) {
-        setCustomers(prevCustomers => 
-          prevCustomers.map(c => 
-            c.id === customerId 
+        setCustomers(prevCustomers =>
+          prevCustomers.map(c =>
+            c.id === customerId
               ? { ...c, isloyal: customer.isloyal } // Revert to original state
               : c
           )
@@ -294,16 +311,16 @@ const CustomerManagement = () => {
   // Handle modal open
   const handleModalOpen = async (customer) => {
     console.log('Opening modal for customer:', customer);
-    
+
     try {
       // Fetch customer addresses from addresses table
       const addressResult = await window.electronAPI.invoke('address:getByCustomer', customer.id);
-      
+
       const customerWithAddresses = {
         ...customer,
         addresses: addressResult.success ? addressResult.data : []
       };
-      
+
       console.log('Customer with addresses:', customerWithAddresses);
       setSelectedCustomer(customerWithAddresses);
       setShowModal(true);
@@ -329,7 +346,7 @@ const CustomerManagement = () => {
     try {
       setSelectedOrder(order);
       setShowOrderDetailsModal(true);
-      
+
       // Fetch order details with food information
       const result = await window.electronAPI.invoke('orderDetail:getWithFood', order.id);
       if (result.success) {
@@ -355,7 +372,7 @@ const CustomerManagement = () => {
   const handlePrintOpen = async (order) => {
     try {
       setShowPrintModal(true);
-      
+
       // Fetch order details with food information for printing
       const result = await window.electronAPI.invoke('orderDetail:getWithFood', order.id);
       if (result.success) {
@@ -385,7 +402,7 @@ const CustomerManagement = () => {
           table: order.table_number || 'None',
           notes: order.notes
         };
-        
+
         setPrintOrder(structuredOrder);
         setPrintOrderDetails(result.data);
       } else {
@@ -422,12 +439,12 @@ const CustomerManagement = () => {
     try {
       // Fetch customer addresses before opening edit modal
       const addressResult = await window.electronAPI.invoke('address:getByCustomer', customer.id);
-      
+
       const customerWithAddresses = {
         ...customer,
         addresses: addressResult.success ? addressResult.data : []
       };
-      
+
       setEditingCustomer(customerWithAddresses);
       setShowAddCustomerModal(true);
     } catch (error) {
@@ -444,10 +461,10 @@ const CustomerManagement = () => {
 
     try {
       console.log('Soft deleting customer ID:', customerToDelete.id);
-      
+
       // Soft delete by updating isDelete status to 1
       const result = await window.electronAPI.invoke('customer:update', customerToDelete.id, { isDelete: 1 });
-      
+
       if (result.success) {
         console.log('Successfully soft deleted customer');
         // Refresh the customer list to remove the deleted customer
@@ -476,142 +493,163 @@ const CustomerManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex items-center gap-2">
-          <Users size={24} className="text-primary" />
-          <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
+      <div
+        className="bg-[#CDCDCD] rounded-2xl flex items-center justify-between gap-3 mb-6"
+        style={{ boxShadow: '0 8px 18px rgba(0, 0, 0, 0.15)', border:'1px solid #b0b0b0', margin: '0 0 15px 0', padding: '18px 24px' }}
+      >
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Users size={24} className="text-primary" />
+            <h1 className="text-2xl font-bold text-gray-800">Customers</h1>
+          </div>
+          <h2 className='text-[#555] text-[22px] ml-7'>Manage Your Customers easily</h2>
         </div>
-      </div>
-
-      {/* Filters Card */}
-      <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-        <div className="grid grid-cols-4 gap-6">
-          
-          {/* Order Date Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Order Date Range
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {/* Start Date */}
-              <div>
+        {/* Filters Card */}
+        <div className="p-6">
+          <div className="flex items-center gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center overflow-hidden border border-gray-300 rounded-lg">
+                <label className="bg-primary text-white px-4 py-2 font-semibold text-sm whitespace-nowrap">
+                  From:
+                </label>
                 <input
                   type="date"
                   value={orderStartDate}
                   onChange={(e) => setOrderStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  className="flex-1 px-3 py-2 border-0 focus:outline-none bg-white focus:ring-0 text-sm"
                   placeholder="Start Date"
                 />
               </div>
-              
-              {/* End Date */}
-              <div>
+
+              <div className="flex items-center overflow-hidden border border-gray-300 rounded-lg">
+                <label className="bg-primary text-white px-4 py-2 font-semibold text-sm whitespace-nowrap">
+                  To:
+                </label>
                 <input
                   type="date"
                   value={orderEndDate}
                   onChange={(e) => setOrderEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  className="flex-1 px-3 py-2 border-0 focus:outline-none bg-white focus:ring-0 text-sm"
                   placeholder="End Date"
                 />
               </div>
             </div>
-          </div>
 
-          {/* Customer Joining Date Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Customer Joining Date
-            </label>
-            <input
-              type="date"
-              value={customerJoiningDate}
-              onChange={(e) => setCustomerJoiningDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-            />
-          </div>
-
-          {/* Sort By Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Sort By
-            </label>
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none cursor-pointer"
+            {/* Refresh Button */}
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  // Clear all filters
+                  setOrderStartDate('');
+                  setOrderEndDate('');
+                  setCustomerJoiningDate('');
+                  setSortBy('');
+                  setSearchTerm('');
+                  setCurrentPage(1);
+                  // Load fresh data
+                  loadCustomers('');
+                }}
+                className="w-full px-4 py-2 bg-[#0d6efd] text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
               >
-                <option value="">Select Sorting Order</option>
-                {sortingOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
+              </button>
             </div>
-          </div>
-
-          {/* Refresh Button */}
-          <div className="flex items-end">
-            <button
-              onClick={() => {
-                // Clear all filters
-                setOrderStartDate('');
-                setOrderEndDate('');
-                setCustomerJoiningDate('');
-                setSortBy('');
-                setSearchTerm('');
-                setCurrentPage(1);
-                // Load fresh data
-                loadCustomers('');
-              }}
-              className="w-full px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh
-            </button>
           </div>
         </div>
       </div>
+
+
 
       {/* Customer List */}
       <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
         {/* Header with search and export */}
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-800">Customer list</h3>
-            <span className="text-sm text-gray-500">({totalCustomers} customers)</span>
-          </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-end gap-3">
+            {/* Customer Joining Date Filter */}
+            <div>
+              <label className="block text-sm font-medium text-[#333] font-semibold mb-2">
+                Customer Joining Date
+              </label>
+              <input
+                type="date"
+                value={customerJoiningDate}
+                onChange={(e) => setCustomerJoiningDate(e.target.value)}
+                className="w-full px-3 py-2 text-[#333] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+              />
+            </div>
             {/* Pagination Options */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Show:</span>
+              <span className="text-sm text-[#333] font-semibold">Show:</span>
               <select
                 value={customersPerPage}
                 onChange={(e) => {
                   setCustomersPerPage(parseInt(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 text-[#333] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
               >
                 {paginationOptions.map(option => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            
             {/* Search */}
             <div className="relative">
               <input
                 type="text"
-                placeholder="Ex: Search by name"
+                placeholder="Search by name"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm w-64"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm w-64"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              </div>
+            {/* Sort By Filter */}
+            <div className="relative sort-dropdown-container">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="px-4 pl-10 py-2 bg-primary text-white border border-primary hover:bg-primary/90 transition-all text-sm font-medium outline-none cursor-pointer rounded-lg flex items-center gap-2 whitespace-nowrap"
+              >
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white" size={16} />
+                {sortBy ? sortingOptions.find(opt => opt.value === sortBy)?.label : 'All customers'}
+                <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* Dropdown Menu */}
+              {showSortDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2">
+                  <button
+                    onClick={() => {
+                      setSortBy('');
+                      setShowSortDropdown(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                      sortBy === '' ? 'bg-gray-50 font-medium text-primary' : 'text-gray-700'
+                    }`}
+                  >
+                    All customers
+                  </button>
+                  {sortingOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setShowSortDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                        sortBy === option.value ? 'bg-gray-50 font-medium text-primary' : 'text-gray-700'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             {/* Add New Customer Button */}
             <button
@@ -632,24 +670,27 @@ const CustomerManagement = () => {
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">SI</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
                   Name
-                  <ChevronDown className="inline ml-1" size={12} />
+                  {/* <ChevronDown className="inline ml-1" size={12} /> */}
                 </th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Contact Information
-                  <ChevronDown className="inline ml-1" size={12} />
+                  Phone
+                  {/* <ChevronDown className="inline ml-1" size={12} /> */}
                 </th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Total Order
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Total Order Amount
-                  <ChevronDown className="inline ml-1" size={12} />
+                  Address
                 </th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
                   Joining Date
-                  <ChevronDown className="inline ml-1" size={12} />
                 </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
+                  Orders
+                  {/* <ChevronDown className="inline ml-1" size={12} /> */}
+                </th>
+                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
+                  Amount
+                  {/* <ChevronDown className="inline ml-1" size={12} /> */}
+                </th>
+
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Loyal</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Actions</th>
               </tr>
@@ -672,72 +713,73 @@ const CustomerManagement = () => {
                   <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {indexOfFirstCustomer + index}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-800">{customer.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="text-sm">
-                      <div className="text-gray-800">{customer.email}</div>
-                      <div className="text-gray-500">{customer.phone}</div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {customer.totalOrders}
-                  </td>
-                  <td className="py-3 px-4 text-sm font-medium text-gray-800">
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-800">{customer.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="text-sm">
+                        {/* <div className="text-gray-800">{customer.email || '--'}</div> */}
+                        <div className="text-gray-500">{customer.phone || '--'}</div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {customer.address || '--'}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {formatDate(customer.joiningDate)}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {customer.totalOrders}
+                    </td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-800">
                       {parseFloat(customer.totalAmount || 0).toFixed(2)} €
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {formatDate(customer.joiningDate)}
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => handleStatusToggle(customer.id)}
-                      disabled={updatingCustomer === customer.id}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ease-in-out ${
-                          customer.isloyal ? 'bg-primary' : 'bg-gray-300'
-                      } ${updatingCustomer === customer.id ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
-                    >
-                      {updatingCustomer === customer.id ? (
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-                      ) : (
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-200 ease-in-out ${
-                              customer.isloyal ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      )}
-                    </button>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex gap-2">
+                    </td>
+                    <td className="py-3 px-4">
                       <button
-                        onClick={() => handleEditCustomer(customer)}
-                        className="p-1 text-primary hover:text-primary/80 transition-colors"
-                        title="Edit Customer"
+                        onClick={() => handleStatusToggle(customer.id)}
+                        disabled={updatingCustomer === customer.id}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-200 ease-in-out ${customer.isloyal ? 'bg-primary' : 'bg-gray-300'
+                          } ${updatingCustomer === customer.id ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
                       >
-                        <Edit size={16} />
+                        {updatingCustomer === customer.id ? (
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                        ) : (
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-200 ease-in-out ${customer.isloyal ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                          />
+                        )}
                       </button>
-                      <button
-                        onClick={() => handleModalOpen(customer)}
-                        className="p-1 text-green-600 hover:text-green-700 transition-colors"
-                        title="View Details"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteButtonClick(customer)}
-                        className="p-1 text-red-600 hover:text-red-700 transition-colors"
-                        title="Delete Customer"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditCustomer(customer)}
+                          className="p-1 text-primary hover:text-primary/80 transition-colors"
+                          title="Edit Customer"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleModalOpen(customer)}
+                          className="p-1 text-green-600 hover:text-green-700 transition-colors"
+                          title="View Details"
+                        >
+                          <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteButtonClick(customer)}
+                          className="p-1 text-red-600 hover:text-red-700 transition-colors"
+                          title="Delete Customer"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))
               )}
             </tbody>
@@ -758,21 +800,20 @@ const CustomerManagement = () => {
               >
                 <ChevronLeft size={16} />
               </button>
-              
+
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => handlePageChange(page)}
-                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                    currentPage === page
+                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${currentPage === page
                       ? 'bg-primary text-white'
                       : 'border border-gray-300 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {page}
                 </button>
               ))}
-              
+
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -792,14 +833,14 @@ const CustomerManagement = () => {
             {/* Modal Header */}
             <div className="flex justify-between items-center p-6 bg-primary text-white rounded-t-lg">
               <h3 className="text-xl font-bold">Customer Details</h3>
-              <button 
-                onClick={handleModalClose} 
+              <button
+                onClick={handleModalClose}
                 className="text-white hover:text-gray-200 p-1 rounded-full hover:bg-white hover:bg-opacity-20"
               >
                 <X size={20} />
               </button>
             </div>
-            
+
             {/* Modal Content */}
             <div className="flex flex-1 overflow-hidden">
               {/* Left Panel - Order List */}
@@ -812,8 +853,8 @@ const CustomerManagement = () => {
                     </span>
                   </div>
                 </div>
-                
-                
+
+
                 {/* Order Table */}
                 <div className="flex-1 overflow-auto">
                   <table className="w-full">
@@ -838,7 +879,7 @@ const CustomerManagement = () => {
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Action</th>
                       </tr>
                     </thead>
-                                         <tbody>
+                    <tbody>
                       {customerOrders.length === 0 ? (
                         <tr>
                           <td colSpan="5" className="py-8 text-center text-gray-500">
@@ -847,61 +888,60 @@ const CustomerManagement = () => {
                         </tr>
                       ) : (
                         customerOrders.map((order, index) => (
-                         <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                           <td className="py-3 px-4 text-sm text-gray-600">
-                             {index + 1}
-                           </td>
-                           <td className="py-3 px-4">
-                             <span className="text-primary font-medium cursor-pointer hover:underline">
+                          <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-4 text-sm text-gray-600">
+                              {index + 1}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="text-primary font-medium cursor-pointer hover:underline">
                                 {order.order_number || order.id}
-                             </span>
-                           </td>
-                           <td className="py-3 px-4">
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                order.order_status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                order.order_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                order.order_status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.order_status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                  order.order_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    order.order_status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                      'bg-blue-100 text-blue-800'
+                                }`}>
                                 {order.order_status || 'Confirmed'}
-                             </span>
-                           </td>
-                           <td className="py-3 px-4 text-sm font-medium text-gray-800">
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm font-medium text-gray-800">
                               {parseFloat(order.order_amount || 0).toFixed(2)} €
-                           </td>
-                           <td className="py-3 px-4">
-                             <div className="flex gap-2">
-                               <button 
-                                 onClick={() => handleOrderDetailsOpen(order)}
-                                 className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
-                                 title="View Order Details"
-                               >
-                                 <Eye size={14} />
-                               </button>
-                               <button 
-                                 onClick={() => handlePrintOpen(order)}
-                                 className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
-                                 title="Print Invoice"
-                               >
-                                 <Printer size={14} />
-                               </button>
-                             </div>
-                           </td>
-                         </tr>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleOrderDetailsOpen(order)}
+                                  className="p-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                                  title="View Order Details"
+                                >
+                                  <Eye size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handlePrintOpen(order)}
+                                  className="p-1 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                                  title="Print Invoice"
+                                >
+                                  <Printer size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
                         ))
                       )}
-                     </tbody>
+                    </tbody>
                   </table>
                 </div>
               </div>
-              
+
               {/* Right Panel - Customer Profile */}
               <div className="w-80 p-6 overflow-y-auto">
                 <div className="flex items-center gap-2 mb-6">
                   <Users size={20} className="text-primary" />
                   <h4 className="text-lg font-semibold text-gray-800">{selectedCustomer.name}</h4>
                 </div>
-                
+
                 {/* Contact Information */}
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center gap-3">
@@ -917,7 +957,7 @@ const CustomerManagement = () => {
                     <span className="text-sm text-gray-800">{selectedCustomer.totalOrders} Orders</span>
                   </div>
                 </div>
-                
+
                 {/* Address Section */}
                 <div className="border-t border-gray-200 pt-4">
                   <h5 className="text-sm font-medium text-gray-700 mb-3">Address Information</h5>
