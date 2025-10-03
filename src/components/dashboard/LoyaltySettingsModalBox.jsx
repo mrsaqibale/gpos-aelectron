@@ -29,28 +29,8 @@ const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleSave = async () => {
-    try {
-      const settings = {
-        enabled: loyaltyEnabled,
-        rule: selectedRule,
-        minimumAmount,
-        minimumOrders
-      };
-
-      const result = await window.electronAPI.invoke('settings:set', 'loyalty_settings', JSON.stringify(settings));
-      
-      if (result.success) {
-        console.log('Loyalty settings saved successfully');
-        onClose();
-      } else {
-        console.error('Failed to save loyalty settings:', result.message);
-        alert('Failed to save settings. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error saving loyalty settings:', error);
-      alert('Error saving settings. Please try again.');
-    }
+  const handleSave = () => {
+    onClose();
   };
 
   const handleCancel = () => {

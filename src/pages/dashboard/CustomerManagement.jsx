@@ -498,7 +498,7 @@ const CustomerManagement = () => {
     <div className="space-y-6">
       {/* Header */}
       <div
-        className="bg-[#CDCDCD] rounded-2xl flex items-center justify-between gap-3 mb-6"
+        className="bg-[#CDCDCD] rounded-2xl flex items-center justify-between mb-6"
         style={{ boxShadow: '0 8px 18px rgba(0, 0, 0, 0.15)', border: '1px solid #b0b0b0', margin: '0 0 15px 0', padding: '18px 24px' }}
       >
         <div className="flex flex-col gap-2">
@@ -509,9 +509,9 @@ const CustomerManagement = () => {
           <h2 className='text-[#555] text-[22px] ml-7'>Manage Your Customers easily</h2>
         </div>
         {/* Filters Card */}
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="grid grid-cols-2 gap-3">
+        <div className="py-6">
+          <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div className="flex items-center overflow-hidden border border-gray-300 rounded-lg">
                 <label className="bg-primary text-white px-4 py-2 font-semibold text-sm whitespace-nowrap">
                   From:
@@ -540,7 +540,7 @@ const CustomerManagement = () => {
             </div>
 
             {/* Refresh Button and Loyalty Settings */}
-            <div className="flex items-end gap-3">
+            <div className="flex items-end gap-2">
               <button
                 onClick={() => {
                   // Clear all filters
@@ -562,7 +562,7 @@ const CustomerManagement = () => {
               </button>
               <button
                 onClick={() => setShowLoyaltySettingsModal(true)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                className="px-2 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
               >
                 <Settings size={16} />
                 Loyalty Settings
