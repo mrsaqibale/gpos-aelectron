@@ -61,9 +61,9 @@ const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl transform transition-all duration-300 scale-100 animate-fade-in" style={{ borderRadius: '5%' }}>
+      <div className="bg-white shadow-xl w-full max-w-2xl transform transition-all duration-300 scale-100 animate-fade-in" style={{ borderRadius: '20px' }}>
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 bg-primary text-white" style={{ borderRadius: '5% 5% 0 0' }}>
+        <div className="flex items-center justify-between p-6 bg-primary text-white rounded-t-xl">
           <div className="flex items-center gap-3">
             <Settings size={24} />
             <h3 className="text-xl font-bold">Customer Loyalty Settings</h3>
@@ -77,7 +77,7 @@ const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
         </div>
 
         {/* Modal Body */}
-        <div className="m-8 p-5 rounded-lg border border-gray-200">
+        <div className="m-8 p-5 shadow-md rounded-lg border border-gray-100">
           {/* Loyalty Program Toggle */}
           <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-200">
             <label className="text-md font-bold text-[#333]">Loyalty Program</label>
@@ -156,7 +156,7 @@ const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50" style={{ borderRadius: '0 0 5% 5%' }}>
+        <div className="flex items-center rounded-b-xl justify-end gap-3 px-6 py-3 border-t border-gray-200 bg-gray-50">
           <button
             onClick={handleCancel}
             className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
@@ -165,7 +165,7 @@ const LoyaltySettingsModalBox = ({ isOpen, onClose }) => {
           </button>
           <button
             onClick={handleSave}
-            className="px-6 py-2.5 text-white bg-primary rounded-lg font-medium hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
+            className="px-6 py-2.5 text-white bg-primary rounded-lg font-medium hover:bg-primary/90 outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-200"
           >
             Save Settings
           </button>
