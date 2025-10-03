@@ -894,11 +894,11 @@ const CustomerManagement = () => {
         <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-[50] p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-6xl h-[80vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex justify-center items-center px-6 py-4 bg-primary text-white rounded-t-lg">
+            <div className="flex relative justify-center items-center px-6 py-4 bg-primary text-white rounded-t-lg">
               <h3 className="text-xl font-semibold">Customer Details</h3>
               <button
                 onClick={handleModalClose}
-                className="text-white absolute right-32 hover:text-gray-300 transition-colors"
+                className="text-white absolute right-6 hover:text-gray-300 transition-colors"
               >
                 <X size={24} />
               </button>
