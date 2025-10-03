@@ -50,7 +50,7 @@ const CustomerManagement = () => {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  
+
   // Dropdown state
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
@@ -495,7 +495,7 @@ const CustomerManagement = () => {
       {/* Header */}
       <div
         className="bg-[#CDCDCD] rounded-2xl flex items-center justify-between gap-3 mb-6"
-        style={{ boxShadow: '0 8px 18px rgba(0, 0, 0, 0.15)', border:'1px solid #b0b0b0', margin: '0 0 15px 0', padding: '18px 24px' }}
+        style={{ boxShadow: '0 8px 18px rgba(0, 0, 0, 0.15)', border: '1px solid #b0b0b0', margin: '0 0 15px 0', padding: '18px 24px' }}
       >
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
@@ -589,7 +589,10 @@ const CustomerManagement = () => {
                   setCustomersPerPage(parseInt(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 text-[#333] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                className="w-full pl-3 pr-10 py-2 text-[#333] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm appearance-none bg-[length:16px] bg-[position:right_0.75rem_center] bg-no-repeat"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`
+                }}
               >
                 {paginationOptions.map(option => (
                   <option key={option} value={option}>{option}</option>
@@ -598,7 +601,7 @@ const CustomerManagement = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            
+
             {/* Search */}
             <div className="relative">
               <input
@@ -608,7 +611,7 @@ const CustomerManagement = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm w-64"
               />
-              </div>
+            </div>
             {/* Sort By Filter */}
             <div className="relative sort-dropdown-container">
               <button
@@ -619,7 +622,7 @@ const CustomerManagement = () => {
                 {sortBy ? sortingOptions.find(opt => opt.value === sortBy)?.label : 'All customers'}
                 <ChevronDown size={16} className={`transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {/* Dropdown Menu */}
               {showSortDropdown && (
                 <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2">
@@ -628,9 +631,8 @@ const CustomerManagement = () => {
                       setSortBy('');
                       setShowSortDropdown(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                      sortBy === '' ? 'bg-gray-50 font-medium text-primary' : 'text-gray-700'
-                    }`}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${sortBy === '' ? 'bg-gray-50 font-medium text-primary' : 'text-gray-700'
+                      }`}
                   >
                     All customers
                   </button>
@@ -641,9 +643,8 @@ const CustomerManagement = () => {
                         setSortBy(option.value);
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                        sortBy === option.value ? 'bg-gray-50 font-medium text-primary' : 'text-gray-700'
-                      }`}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${sortBy === option.value ? 'bg-gray-50 font-medium text-primary' : 'text-gray-700'
+                        }`}
                     >
                       {option.label}
                     </button>
@@ -657,7 +658,7 @@ const CustomerManagement = () => {
               className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm font-medium shadow-md"
             >
               <Plus size={18} />
-              Add New Customer
+              New
             </button>
           </div>
         </div>
@@ -806,8 +807,8 @@ const CustomerManagement = () => {
                   key={page}
                   onClick={() => handlePageChange(page)}
                   className={`px-3 py-2 text-sm rounded-lg transition-colors ${currentPage === page
-                      ? 'bg-primary text-white'
-                      : 'border border-gray-300 hover:bg-gray-50'
+                    ? 'bg-primary text-white'
+                    : 'border border-gray-300 hover:bg-gray-50'
                     }`}
                 >
                   {page}
@@ -899,9 +900,9 @@ const CustomerManagement = () => {
                             </td>
                             <td className="py-3 px-4">
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${order.order_status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                  order.order_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    order.order_status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                      'bg-blue-100 text-blue-800'
+                                order.order_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  order.order_status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    'bg-blue-100 text-blue-800'
                                 }`}>
                                 {order.order_status || 'Confirmed'}
                               </span>
