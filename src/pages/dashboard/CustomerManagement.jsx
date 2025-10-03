@@ -386,7 +386,16 @@ const CustomerManagement = () => {
   // Handle order details modal open
   const handleOrderDetailsOpen = async (order) => {
     try {
-      setSelectedOrder(order);
+      // Enhance order with customer information from selectedCustomer
+      const enhancedOrder = {
+        ...order,
+        customer_name: selectedCustomer?.name || order.customer_name || 'Walk-in Customer',
+        customer_phone: selectedCustomer?.phone || order.customer_phone,
+        customer_email: selectedCustomer?.email || order.customer_email,
+        customer_address: selectedCustomer?.address || order.customer_address
+      };
+
+      setSelectedOrder(enhancedOrder);
       setShowOrderDetailsModal(true);
 
       // Fetch order details with food information
