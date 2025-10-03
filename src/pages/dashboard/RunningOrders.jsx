@@ -7083,8 +7083,9 @@ const RunningOrders = () => {
         <div className='flex w-[20%] flex-col bg-[#ffffff] border-r border-gray-200 shadow-lg rounded-xl pb-4'>
           {/* Main content row */}
           {/* Running Orders */}
-          <div className="p-2">
-
+          
+          {/* Top Section - Header and Search */}
+          <div className="p-2 flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-xs sm:text-sm md:text-md lg:text-lg text-gray-800">Active Orders</h2>
               <button
@@ -7116,8 +7117,9 @@ const RunningOrders = () => {
               </div>
             </div>
           </div>
-          <div className="overflow-y-auto p-3 h-100">
 
+          {/* Middle Section - Orders List (takes remaining space) */}
+          <div className="flex-1 overflow-y-auto p-3">
             {/* Placed Orders List */}
             <PlaceOrderComponent
               placedOrders={placedOrders}
@@ -7133,20 +7135,21 @@ const RunningOrders = () => {
               handleOpenStatusUpdateModal={handleOpenStatusUpdateModal}
             />
           </div>
-          {/* Order Action Buttons - Below Running Orders Box */}
-          <div className="flex justify-center p-2">
+
+          {/* Bottom Section - Order Action Buttons (takes full width) */}
+          <div className="w-full p-2 flex-shrink-0">
             {/* Modification Mode Indicator */}
             {isModifyingOrder && (
               <></>
             )}
             <div className="flex flex-col gap-2 w-full">
               {/* First Row - Bill and Invoice */}
-              <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 w-full">
                 {selectedPlacedOrder?.isDraft ? (
                   // Draft order actions
                   <>
                     <button
-                      className="bg-green-600 text-white text-xs sm:text-sm md:text-xs lg:text-xs font-medium p-1 rounded-lg hover:bg-green-700 transition-colors"
+                      className="w-full bg-green-600 text-white text-xs sm:text-sm md:text-xs lg:text-xs font-medium p-1 rounded-lg hover:bg-green-700 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         // Handle convert to order
@@ -7161,7 +7164,7 @@ const RunningOrders = () => {
                   // Regular order actions
                   <>
                     <button
-                      className={`text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
+                      className={`w-full text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                         }`}
@@ -7181,7 +7184,7 @@ const RunningOrders = () => {
                   data-invoice-button
                   onClick={() => setShowInvoiceOptions(!showInvoiceOptions)}
                   disabled={!selectedPlacedOrder}
-                  className={`text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#010101] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
+                  className={`w-full text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#010101] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}>
                   <Receipt size={14} />
                   BILL
                 </button>
@@ -7201,7 +7204,7 @@ const RunningOrders = () => {
                 <button
                   onClick={handleOpenOrderDetailsModal}
                   disabled={!selectedPlacedOrder}
-                  className={`text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  className={`w-full text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder ? 'bg-[#4d36eb] text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     }`}
                 >
                   <Eye size={14} />
@@ -7217,7 +7220,7 @@ const RunningOrders = () => {
                     }
                   }}
                   disabled={!selectedPlacedOrder || (isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)}
-                  className={`text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
+                  className={`w-full text-[14px] font-bold rounded-lg p-1 cursor-pointer flex items-center justify-center gap-1 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] hover:shadow-[0_1px_2px_rgba(0,0,0,0.1),0_1px_0_rgba(255,255,255,0.8)_inset] active:shadow-[0_1px_2px_rgba(0,0,0,0.1)_inset] active:translate-y-[1px] transition-all duration-150 ${selectedPlacedOrder && !(isModifyingOrder && selectedPlacedOrder && selectedPlacedOrder.databaseId === modifyingOrderId)
                     ? 'bg-[#f3be25] text-white hover:bg-[#e6b31e]'
                     : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     }`}
@@ -10363,30 +10366,7 @@ const RunningOrders = () => {
         inputValue={getValueForActiveInput(virtualKeyboardActiveInput)}
       />
 
-      {/* Floating Sidebar */}
-      {showFloatingSidebar && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div 
-            className="flex-1 bg-black bg-opacity-50"
-            onClick={() => setShowFloatingSidebar(false)}
-          />
-          {/* Sidebar */}
-          <div className="w-80 h-full bg-white shadow-xl">
-            <Sidebar 
-              navigationItems={[
-                { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-                { name: 'Sales', path: '/dashboard/sales', icon: <ShoppingBag size={20} /> },
-                { name: 'Orders', path: '/dashboard/orders', icon: <Receipt size={20} /> },
-                { name: 'Customers', path: '/dashboard/customers', icon: <Users2 size={20} /> },
-                { name: 'Menu', path: '/dashboard/menu', icon: <Utensils size={20} /> },
-                { name: 'Reports', path: '/dashboard/reports', icon: <FileText size={20} /> },
-                { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} /> }
-              ]}
-            />
-          </div>
-        </div>
-      )}
+      
     </>
   );
 };
