@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye } from 'lucide-react';
 import VirtualKeyboard from '../../VirtualKeyboard';
+import EmpAttendanceDetailsModalbox from './EmpAttendanceDetailsModalbox';
 
 const EmployeePayRol = () => {
   const [employees, setEmployees] = useState([]);
@@ -11,6 +12,10 @@ const EmployeePayRol = () => {
   
   // Keyboard state
   const [showSearchKeyboard, setShowSearchKeyboard] = useState(false);
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   // Fetch employees
   const fetchEmployees = async () => {
@@ -63,6 +68,17 @@ const EmployeePayRol = () => {
 
   const handleSearchKeyboardClose = () => {
     setShowSearchKeyboard(false);
+  };
+
+  // Modal handlers
+  const handleViewEmployee = (employee) => {
+    setSelectedEmployee(employee);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedEmployee(null);
   };
 
   // Filter and Search logic
@@ -306,6 +322,7 @@ const EmployeePayRol = () => {
                     {/* ACTION */}
                     <td className="py-3 px-4">
                       <button
+                        onClick={() => handleViewEmployee(employee)}
                         className="px-4 py-2 bg-teal-600 text-white text-xs font-medium rounded flex items-center gap-2 hover:bg-teal-700 transition-colors"
                       >
                         <Eye size={14} />
@@ -368,6 +385,13 @@ const EmployeePayRol = () => {
         onInputBlur={handleSearchBlur}
         inputValue={searchQuery}
         placeholder="Search by name or ID..."
+      />
+
+      {/* Employee Attendance Details Modal */}
+      <EmpAttendanceDetailsModalbox
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        employee={selectedEmployee}
       />
     </div>
   );
