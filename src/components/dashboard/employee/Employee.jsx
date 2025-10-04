@@ -34,7 +34,12 @@ const Employee = () => {
     vehicleNumber: '',
     vehicleType: '',
     licenseNumber: '',
-    licenseExpiry: ''
+    licenseExpiry: '',
+    joiningDate: '',
+    shiftStartTime: '',
+    shiftEndTime: '',
+    salarySchedule: '',
+    resignationDate: ''
   });
   const [pinError, setPinError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -109,7 +114,12 @@ const Employee = () => {
       vehicleNumber: employee.vnumber || '',
       vehicleType: employee.vtype || '',
       licenseNumber: employee.license_number || '',
-      licenseExpiry: employee.license_expiry || ''
+      licenseExpiry: employee.license_expiry || '',
+      joiningDate: employee.joining_date || '',
+      shiftStartTime: employee.shift_start_time || '',
+      shiftEndTime: employee.shift_end_time || '',
+      salarySchedule: employee.salary_schedule || '',
+      resignationDate: employee.resignation_date || ''
     });
     // Set image preview if employee has an image
     if (employee.imgurl) {
@@ -162,7 +172,12 @@ const Employee = () => {
       vehicleNumber: '',
       vehicleType: '',
       licenseNumber: '',
-      licenseExpiry: ''
+      licenseExpiry: '',
+      joiningDate: '',
+      shiftStartTime: '',
+      shiftEndTime: '',
+      salarySchedule: '',
+      resignationDate: ''
     });
     setImagePreview(null);
     setPinError(''); // Clear any previous PIN error messages
@@ -316,6 +331,12 @@ const Employee = () => {
         notes: newEmployee.notes,
         pin: newEmployee.pin,
         code: newEmployee.pin, // Using PIN as code for now
+        salary_per_hour: newEmployee.salaryPerHour,
+        joining_date: newEmployee.joiningDate,
+        shift_start_time: newEmployee.shiftStartTime,
+        shift_end_time: newEmployee.shiftEndTime,
+        salary_schedule: newEmployee.salarySchedule,
+        resignation_date: newEmployee.resignationDate,
         isavailable: 1,
         isActive: 1,
         isDeleted: 0,
@@ -415,7 +436,12 @@ const Employee = () => {
       vehicleNumber: '',
       vehicleType: '',
       licenseNumber: '',
-      licenseExpiry: ''
+      licenseExpiry: '',
+      joiningDate: '',
+      shiftStartTime: '',
+      shiftEndTime: '',
+      salarySchedule: '',
+      resignationDate: ''
     });
     setImagePreview(null);
     setPinError('');
