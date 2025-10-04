@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Phone, Home, Wallet, BriefcaseBusiness, CreditCard, Check } from 'lucide-react';
 import CustomAlert from '../../CustomAlert';
 import VirtualKeyboard from '../../VirtualKeyboard';
+import SalaryHistory from './SalaryHistory';
 
 const EmpAttendanceDetailsModalbox = ({ isOpen, onClose, employee }) => {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -26,6 +27,9 @@ const EmpAttendanceDetailsModalbox = ({ isOpen, onClose, employee }) => {
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
+
+  // Salary History modal state
+  const [showSalaryHistory, setShowSalaryHistory] = useState(false);
 
   // Mock attendance data - replace with actual API call
   useEffect(() => {
@@ -193,6 +197,15 @@ const EmpAttendanceDetailsModalbox = ({ isOpen, onClose, employee }) => {
     return paymentData.givenAmount.trim() !== '' && paymentData.paymentMethod;
   };
 
+  // Salary History handlers
+  const handleViewSalaryHistory = () => {
+    setShowSalaryHistory(true);
+  };
+
+  const handleCloseSalaryHistory = () => {
+    setShowSalaryHistory(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-[#00000089] bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
@@ -282,7 +295,10 @@ const EmpAttendanceDetailsModalbox = ({ isOpen, onClose, employee }) => {
                 </div>
               </div>
 
-              <button className="w-full mt-4 bg-primary text-white py-2 px-4 rounded-md flex items-center justify-center gap-2 00 transition-colors">
+              <button 
+                onClick={handleViewSalaryHistory}
+                className="w-full mt-4 bg-primary text-white py-2 px-4 rounded-md flex items-center justify-center gap-2 "
+              >
                 <Wallet className="w-4 h-4" />
                 View Salary History
               </button>
@@ -441,7 +457,7 @@ const EmpAttendanceDetailsModalbox = ({ isOpen, onClose, employee }) => {
                   disabled={!isFormValid()}
                   className={`w-full py-3 px-4 rounded-md flex items-center justify-center gap-2 transition-colors font-medium ${
                     isFormValid()
-                      ? 'bg-primary text-white hover:bg-green-700'
+                      ? 'bg-primary text-white'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
@@ -472,6 +488,13 @@ const EmpAttendanceDetailsModalbox = ({ isOpen, onClose, employee }) => {
         onInputBlur={handleInputBlur}
         inputValue={activeInput === 'givenAmount' ? paymentData.givenAmount : paymentData.note}
         placeholder={activeInput === 'givenAmount' ? 'Enter amount...' : 'Add payment note...'}
+      />
+
+      {/* Salary History Modal */}
+      <SalaryHistory
+        isOpen={showSalaryHistory}
+        onClose={handleCloseSalaryHistory}
+        employee={employee}
       />
     </div>
   );
