@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Users, Calendar } from 'lucide-react';
+import { Users, Calendar, DollarSign } from 'lucide-react';
 import Employee from '../../components/dashboard/employee/Employee';
 import EmployeeAttendance from '../../components/dashboard/employee/EmployeeAttendance';
+import EmployeePayRol from '../../components/dashboard/employee/EmployeePayRol';
 
 const EmployeeManagement = () => {
   const [activeTab, setActiveTab] = useState('employee'); // Default to employee management
@@ -49,6 +50,17 @@ const EmployeeManagement = () => {
             <Calendar size={16} />
             Attendance
           </button>
+          <button
+            onClick={() => setActiveTab('payroll')}
+            className={`px-3 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors flex items-center gap-2 ${
+              activeTab === 'payroll' 
+                ? 'bg-primaryLight text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <DollarSign size={16} />
+            Pay Role
+          </button>
         </div>
       </div>
 
@@ -56,6 +68,7 @@ const EmployeeManagement = () => {
       <div className="mt-6">
         {activeTab === 'employee' && <Employee />}
         {activeTab === 'attendance' && <EmployeeAttendance />}
+        {activeTab === 'payroll' && <EmployeePayRol />}
       </div>
     </div>
   );

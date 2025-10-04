@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Plus, X, Trash2, Eye, EyeOff, Upload } from 'lucide-react';
+import { Edit, Plus, X, Trash2 } from 'lucide-react';
+import NewEmployeeForm from './NewEmployeeForm';
 import VirtualKeyboard from '../../VirtualKeyboard';
 
 const Employee = () => {
@@ -16,13 +17,24 @@ const Employee = () => {
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
+  const [showSearchKeyboard, setShowSearchKeyboard] = useState(false);
+  
+  // Filter, Search and Pagination state
+  const [filterRole, setFilterRole] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   const [newEmployee, setNewEmployee] = useState({
     firstName: '',
     lastName: '',
+    dateOfBirth: '',
     role: '',
+    nationality: '',
     phone: '',
     email: '',
+    address: '',
+    notes: '',
     pin: '',
     confirmPin: '',
     salaryPerHour: '',
@@ -30,7 +42,12 @@ const Employee = () => {
     vehicleNumber: '',
     vehicleType: '',
     licenseNumber: '',
-    licenseExpiry: ''
+    licenseExpiry: '',
+    joiningDate: '',
+    shiftStartTime: '',
+    shiftEndTime: '',
+    salarySchedule: '',
+    resignationDate: ''
   });
   const [pinError, setPinError] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -91,9 +108,13 @@ const Employee = () => {
     setNewEmployee({
       firstName: employee.fname || '',
       lastName: employee.lname || '',
+      dateOfBirth: employee.date_of_birth || '',
       role: employee.roll || '',
+      nationality: employee.nationality || '',
       phone: employee.phone || '',
       email: employee.email || '',
+      address: employee.address || '',
+      notes: employee.notes || '',
       pin: '',
       confirmPin: '',
       salaryPerHour: employee.salary_per_hour || '',
@@ -101,7 +122,12 @@ const Employee = () => {
       vehicleNumber: employee.vnumber || '',
       vehicleType: employee.vtype || '',
       licenseNumber: employee.license_number || '',
-      licenseExpiry: employee.license_expiry || ''
+      licenseExpiry: employee.license_expiry || '',
+      joiningDate: employee.joining_date || '',
+      shiftStartTime: employee.shift_start_time || '',
+      shiftEndTime: employee.shift_end_time || '',
+      salarySchedule: employee.salary_schedule || '',
+      resignationDate: employee.resignation_date || ''
     });
     // Set image preview if employee has an image
     if (employee.imgurl) {
@@ -140,9 +166,13 @@ const Employee = () => {
     setNewEmployee({
       firstName: '',
       lastName: '',
+      dateOfBirth: '',
       role: '',
+      nationality: '',
       phone: '',
       email: '',
+      address: '',
+      notes: '',
       pin: '',
       confirmPin: '',
       salaryPerHour: '',
@@ -150,7 +180,12 @@ const Employee = () => {
       vehicleNumber: '',
       vehicleType: '',
       licenseNumber: '',
-      licenseExpiry: ''
+      licenseExpiry: '',
+      joiningDate: '',
+      shiftStartTime: '',
+      shiftEndTime: '',
+      salarySchedule: '',
+      resignationDate: ''
     });
     setImagePreview(null);
     setPinError(''); // Clear any previous PIN error messages
@@ -295,12 +330,21 @@ const Employee = () => {
       const employeeData = {
         fname: newEmployee.firstName,
         lname: newEmployee.lastName,
+        date_of_birth: newEmployee.dateOfBirth,
         roll: newEmployee.role,
+        nationality: newEmployee.nationality,
         phone: newEmployee.phone,
         email: newEmployee.email,
+        address: newEmployee.address,
+        notes: newEmployee.notes,
         pin: newEmployee.pin,
         code: newEmployee.pin, // Using PIN as code for now
-        address: '',
+        salary_per_hour: newEmployee.salaryPerHour,
+        joining_date: newEmployee.joiningDate,
+        shift_start_time: newEmployee.shiftStartTime,
+        shift_end_time: newEmployee.shiftEndTime,
+        salary_schedule: newEmployee.salarySchedule,
+        resignation_date: newEmployee.resignationDate,
         isavailable: 1,
         isActive: 1,
         isDeleted: 0,
@@ -386,9 +430,13 @@ const Employee = () => {
     setNewEmployee({
       firstName: '',
       lastName: '',
+      dateOfBirth: '',
       role: '',
+      nationality: '',
       phone: '',
       email: '',
+      address: '',
+      notes: '',
       pin: '',
       confirmPin: '',
       salaryPerHour: '',
@@ -396,7 +444,12 @@ const Employee = () => {
       vehicleNumber: '',
       vehicleType: '',
       licenseNumber: '',
-      licenseExpiry: ''
+      licenseExpiry: '',
+      joiningDate: '',
+      shiftStartTime: '',
+      shiftEndTime: '',
+      salarySchedule: '',
+      resignationDate: ''
     });
     setImagePreview(null);
     setPinError('');
@@ -582,554 +635,294 @@ const Employee = () => {
     setActiveInput('');
   };
 
+  // Search keyboard handlers
+  const handleSearchFocus = () => {
+    setShowSearchKeyboard(true);
+  };
+
+  const handleSearchBlur = (e) => {
+    // Check if the focus is moving to a keyboard element
+    if (e.relatedTarget && e.relatedTarget.closest('.hg-theme-default')) {
+      return; // Don't hide keyboard if focus moved to keyboard
+    }
+    
+    setTimeout(() => {
+      setShowSearchKeyboard(false);
+    }, 100);
+  };
+
+  const handleSearchKeyboardChange = (input) => {
+    setSearchQuery(input);
+  };
+
+  const handleSearchKeyboardClose = () => {
+    setShowSearchKeyboard(false);
+  };
+
+  // Filter and Search logic
+  const filteredEmployees = employees
+    .filter(employee => employee.roll !== 'Admin') // Filter out Admin role
+    .filter(employee => {
+      // Filter by role
+      if (filterRole && employee.roll !== filterRole) return false;
+      
+      // Search by name or phone
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const fullName = `${employee.fname} ${employee.lname}`.toLowerCase();
+        const phone = employee.phone?.toLowerCase() || '';
+        return fullName.includes(query) || phone.includes(query);
+      }
+      
+      return true;
+    });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentEmployees = filteredEmployees.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterRole, searchQuery, itemsPerPage]);
+
+  // Generate Employee ID
+  const generateEmpId = (id) => {
+    return `EMP${String(id).padStart(3, '0')}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Employee Form - NOW AT THE VERY TOP */}
-      {showForm && (
-        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-primary">
-              {editingEmployee ? 'Edit Employee' : 'Add New Employee'}
-            </h2>
-            <button 
-              onClick={() => {
-                setShowForm(false);
-                setImagePreview(null);
-              }} 
-              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            {/* General Information Section */}
-            <div className="mb-5">
-              <h3 className="text-lg font-semibold text-primary mb-4 pb-2 border-b border-gray-200">
-                General Information
-              </h3>
-              
-              <div className="flex ">
-                {/* Left Side - Form Fields */}
-                <div className="flex-1">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        First Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="firstName"
-                        value={newEmployee.firstName}
-                        onChange={handleInputChange}
-                        onFocus={() => handleAnyInputFocus(null, 'firstName')}
-                        onBlur={handleInputBlur}
-                        onClick={() => handleAnyInputClick(null, 'firstName')}
-                        className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                        placeholder="Ex: John"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Last Name <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="lastName"
-                        value={newEmployee.lastName}
-                        onChange={handleInputChange}
-                        onFocus={() => handleAnyInputFocus(null, 'lastName')}
-                        onBlur={handleInputBlur}
-                        onClick={() => handleAnyInputClick(null, 'lastName')}
-                        className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                        placeholder="Ex: Doe"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Role <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        name="role"
-                        value={newEmployee.role}
-                        onChange={handleInputChange}
-                        onFocus={() => handleAnyInputFocus(null, 'role')}
-                        onBlur={handleInputBlur}
-                        onClick={() => handleAnyInputClick(null, 'role')}
-                        className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                        required
-                      >
-                        <option value="">Select Role</option>
-                        <option value="Manager">Manager</option>
-                        <option value="Cashier">Cashier</option>
-                        <option value="Chef">Chef</option>
-                        <option value="Waiter">Waiter</option>
-                        <option value="Sweeper">Sweeper</option>
-                        <option value="Delivery Man">Delivery Man</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Phone <span className="text-red-500">*</span> <span className="text-xs text-gray-500">(Must start with 08 and be 10 digits)</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="phone"
-                        value={newEmployee.phone}
-                        onChange={handleInputChange}
-                        onFocus={() => handleAnyInputFocus(null, 'phone')}
-                        onBlur={handleInputBlur}
-                        onClick={() => handleAnyInputClick(null, 'phone')}
-                        className={`w-[80%] px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                          phoneError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
-                        }`}
-                        placeholder="08xxxxxxxx"
-                        maxLength="10"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {newEmployee.phone.length > 0 && (
-                          <span className={newEmployee.phone.length === 10 && newEmployee.phone.startsWith('08') ? 'text-green-600' : 'text-red-500'}>
-                            {newEmployee.phone.length}/10 digits
-                          </span>
-                        )}
-                      </p>
-                      {phoneError && (
-                        <p className="mt-1 text-xs text-red-600">{phoneError}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Salary per Hour <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        name="salaryPerHour"
-                        value={newEmployee.salaryPerHour}
-                        onChange={handleInputChange}
-                        onFocus={() => handleAnyInputFocus(null, 'salaryPerHour')}
-                        onBlur={handleInputBlur}
-                        onClick={() => handleAnyInputClick(null, 'salaryPerHour')}
-                        className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        required
-                      />
-                    </div>
-                    
-                    {/* Vehicle Information - Only show for Delivery Man */}
-                    {newEmployee.role === 'Delivery Man' && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Vehicle Number <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            name="vehicleNumber"
-                            value={newEmployee.vehicleNumber}
-                            onChange={handleInputChange}
-                            onFocus={() => handleAnyInputFocus(null, 'vehicleNumber')}
-                            onBlur={handleInputBlur}
-                            onClick={() => handleAnyInputClick(null, 'vehicleNumber')}
-                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                            placeholder="Ex: ABC-123"
-                            required
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Vehicle Type <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            name="vehicleType"
-                            value={newEmployee.vehicleType}
-                            onChange={handleInputChange}
-                            onFocus={() => handleAnyInputFocus(null, 'vehicleType')}
-                            onBlur={handleInputBlur}
-                            onClick={() => handleAnyInputClick(null, 'vehicleType')}
-                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                            required
-                          >
-                            <option value="">Select Vehicle Type</option>
-                            <option value="Bike">Bike</option>
-                            <option value="Car">Car</option>
-                            <option value="Truck">Truck</option>
-                            <option value="Bicycle">Bicycle</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            License Number
-                          </label>
-                          <input
-                            type="text"
-                            name="licenseNumber"
-                            value={newEmployee.licenseNumber}
-                            onChange={handleInputChange}
-                            onFocus={() => handleAnyInputFocus(null, 'licenseNumber')}
-                            onBlur={handleInputBlur}
-                            onClick={() => handleAnyInputClick(null, 'licenseNumber')}
-                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                            placeholder="Optional"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            License Expiry Date <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="date"
-                            name="licenseExpiry"
-                            value={newEmployee.licenseExpiry}
-                            onChange={handleInputChange}
-                            onFocus={() => handleAnyInputFocus(null, 'licenseExpiry')}
-                            onBlur={handleInputBlur}
-                            onClick={() => handleAnyInputClick(null, 'licenseExpiry')}
-                            className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                            required
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Right Side - Image Section */}
-                <div className="w-48">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Employee Image
-                  </label>
-                  <div className="space-y-2">
-                    <label className="border-2 border-dashed border-gray-300 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors w-full h-32 relative overflow-hidden">
-                      {imagePreview ? (
-                        <div className="relative w-full h-full">
-                          <img 
-                            src={imagePreview} 
-                            alt="Preview" 
-                            className="w-full h-full object-cover rounded-md"
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                            <span className="text-white text-xs">Change Image</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <Upload size={20} className="text-gray-400 mb-1" />
-                          <span className="text-primary font-medium text-xs">Upload Image</span>
-                        </>
-                      )}
-                      <input
-                        type="file"
-                        onChange={handleFileChange}
-                        className="sr-only"
-                        accept="image/*"
-                      />
-                    </label>
-                    <div className="text-xs text-gray-500 space-y-1">
-                      <p>Image format - jpg png jpeg gif</p>
-                      <p>Image Size - maximum size 2 MB</p>
-                      <p>Image Ratio - 1:1</p>
-                      {newEmployee.image && (
-                        <p className="text-green-600 font-medium">Selected: {newEmployee.image.name}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Account Info Section */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
-                <span className="text-lg">👤</span>
-                <h3 className="text-lg font-semibold text-primary">
-                  Account Info
-                </h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={newEmployee.email}
-                    onChange={handleInputChange}
-                    onFocus={() => handleAnyInputFocus(null, 'email')}
-                    onBlur={handleInputBlur}
-                    onClick={() => handleAnyInputClick(null, 'email')}
-                    className={`w-3/4 px-3 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                      emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
-                    }`}
-                    placeholder="mrsaqibale@gmail.com"
-                    required
-                  />
-                  {emailError && (
-                    <p className="mt-1 text-xs text-red-600">{emailError}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    PIN Code <span className="text-red-500">*</span> <span className="text-xs text-gray-500">(4-6 digits)</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPin ? "text" : "password"}
-                      name="pin"
-                      value={newEmployee.pin}
-                      onChange={handleInputChange}
-                      onFocus={() => handleAnyInputFocus(null, 'pin')}
-                      onBlur={handleInputBlur}
-                      onClick={() => handleAnyInputClick(null, 'pin')}
-                      className={`w-3/4 px-3 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent pr-6 text-sm ${
-                        pinError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
-                      }`}
-                      placeholder="••••••"
-                      minLength="4"
-                      maxLength="6"
-                      pattern="[0-9]{4,6}"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPin(!showPin)}
-                      className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPin ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
-                  {pinError && (
-                    <p className="mt-1 text-xs text-red-600">{pinError}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Confirm PIN <span className="text-red-500">*</span> <span className="text-xs text-gray-500">(Must match above)</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPin ? "text" : "password"}
-                      name="confirmPin"
-                      value={newEmployee.confirmPin}
-                      onChange={handleInputChange}
-                      onFocus={() => handleAnyInputFocus(null, 'confirmPin')}
-                      onBlur={handleInputBlur}
-                      onClick={() => handleAnyInputClick(null, 'confirmPin')}
-                      className="w-3/4 px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent pr-6 text-sm"
-                      placeholder="••••••"
-                      minLength="4"
-                      maxLength="6"
-                      pattern="[0-9]{4,6}"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPin(!showConfirmPin)}
-                      className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showConfirmPin ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4">
-              <button
-                type="button"
-                onClick={handleReset}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                Reset
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-primary text-white font-medium rounded-lg 
-                shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
-                active:shadow-none active:translate-y-[4px] transition-all"
-              >
-                Submit
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <NewEmployeeForm
+        showForm={showForm}
+        setShowForm={setShowForm}
+        editingEmployee={editingEmployee}
+        newEmployee={newEmployee}
+        setNewEmployee={setNewEmployee}
+        handleInputChange={handleInputChange}
+        handleFileChange={handleFileChange}
+        handleSubmit={handleSubmit}
+        handleReset={handleReset}
+        imagePreview={imagePreview}
+        setImagePreview={setImagePreview}
+        pinError={pinError}
+        emailError={emailError}
+        phoneError={phoneError}
+        showPin={showPin}
+        setShowPin={setShowPin}
+        showConfirmPin={showConfirmPin}
+        setShowConfirmPin={setShowConfirmPin}
+        handleAnyInputFocus={handleAnyInputFocus}
+        handleInputBlur={handleInputBlur}
+        handleAnyInputClick={handleAnyInputClick}
+        showKeyboard={showKeyboard}
+        activeInput={activeInput}
+        handleKeyboardClose={handleKeyboardClose}
+        onKeyboardChange={onKeyboardChange}
+      />
 
       {/* Employee List Section - NOW BELOW THE FORM */}
       <div className="bg-white rounded-lg shadow-sm p-4">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        {/* Filter and Search Bar */}
+        <div className="flex justify-between items-center mb-6 gap-4">
+          {/* Left side - Filter and Show */}
+          <div className="flex items-center gap-4">
+            {/* Filter by Role */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Role</label>
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value="">All Roles</option>
+                <option value="Manager">Manager</option>
+                <option value="Cashier">Cashier</option>
+                <option value="Chef">Chef</option>
+                <option value="Waiter">Waiter</option>
+                <option value="Sweeper">Sweeper</option>
+                <option value="Delivery Man">Delivery Man</option>
+              </select>
+            </div>
+
+            {/* Show Items Per Page */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Show:</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
-            <span className="text-2xl">👥</span>
-            <h2 className="text-lg font-semibold text-gray-800">Employee List</h2>
+        
+          <div className="flex-1 max-w-md">
+            <input
+              type="text"
+              placeholder="Search by name or phone"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
+              onClick={handleSearchFocus}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            />
           </div>
           <button
             onClick={handleAddEmployee}
-            className="px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg flex items-center gap-2 
-            shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
-            active:shadow-none active:translate-y-[4px] transition-all"
+            className="px-4 py-2 bg-black text-white text-sm font-medium rounded-md flex items-center gap-2 hover:bg-gray-800 transition-colors whitespace-nowrap"
           >
             <Plus size={16} />
             Add New Employee
           </button>
+          </div>
         </div>
 
         {/* Employee Table */}
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse  overflow-hidden rounded-xl shadow-sm">
+          <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
             <thead>
-              <tr className="bg-primaryExtraLight">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+              <tr className="bg-gray-100">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   SI
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Employee Name
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  JOINING DATE
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Role
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ROLE
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Phone
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  EMP ID
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Email
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  NAME
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Available
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  PHONE
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Status
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ROTA START
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Created At
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ROTA END
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primaryuppercase tracking-wider">
-                  Action
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  PER HOUR SALARY
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  STATUS
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ACTION
                 </th>
               </tr>
             </thead>
             <tbody>
-              {employees
-                .filter(employee => employee.roll !== 'Admin') // Filter out Admin role employees
-                .map((employee, index) => (
-                <tr key={employee.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+              {currentEmployees.map((employee, index) => (
+                <tr key={employee.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  {/* SI */}
                   <td className="py-3 px-4">
-                    <span className="text-sm font-medium text-gray-700">{index + 1}</span>
+                    <span className="text-sm text-gray-700">{indexOfFirstItem + index + 1}</span>
                   </td>
+                  
+                  {/* JOINING DATE */}
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      {employee.imgurl ? (
-                        <img
-                          src={employee.imgurl.startsWith('uploads/') ? imageUrls[employee.id] : `data:image/png;base64,${employee.imgurl}`}
-                          alt={`${employee.fname} ${employee.lname}`}
-                          className="w-8 h-8 object-cover rounded-full"
-                          onError={(e) => {
-                            // Fallback to initials if image fails to load
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-xs text-gray-500">
-                            {employee.fname?.charAt(0)}{employee.lname?.charAt(0)}
-                          </span>
-                        </div>
-                      )}
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center" style={{ display: 'none' }}>
-                        <span className="text-xs text-gray-500">
-                          {employee.fname?.charAt(0)}{employee.lname?.charAt(0)}
-                        </span>
-                      </div>
-                      <span className="text-sm font-medium text-gray-800">
-                        {employee.fname} {employee.lname}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{employee.roll}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{employee.phone}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{employee.email}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <label className={`relative inline-flex items-center ${toggleLoadingAvailable[employee.id] ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                      <input
-                        type="checkbox"
-                        checked={employee.isavailable === 1}
-                        onChange={() => !toggleLoadingAvailable[employee.id] && toggleAvailability(employee.id)}
-                        className="sr-only"
-                        disabled={toggleLoadingAvailable[employee.id]}
-                      />
-                      <div className={`w-10 h-5 rounded-full transition-colors ${employee.isavailable === 1 ? 'bg-primary' : 'bg-gray-200'}`}>
-                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${employee.isavailable === 1 ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`}></div>
-                      </div>
-                      {toggleLoadingAvailable[employee.id] && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </label>
-                  </td>
-                  <td className="py-3 px-4">
-                    <label className={`relative inline-flex items-center ${toggleLoading[employee.id] ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                      <input
-                        type="checkbox"
-                        checked={employee.isActive === 1}
-                        onChange={() => !toggleLoading[employee.id] && toggleStatus(employee.id)}
-                        className="sr-only"
-                        disabled={toggleLoading[employee.id]}
-                      />
-                      <div className={`w-10 h-5 rounded-full transition-colors ${employee.isActive === 1 ? 'bg-primary' : 'bg-gray-200'}`}>
-                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${employee.isActive === 1 ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`}></div>
-                      </div>
-                      {toggleLoading[employee.id] && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </label>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">
-                      {employee.created_at ? new Date(employee.created_at).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      }) : '-'}
+                    <span className="text-sm text-gray-700">
+                      {employee.joining_date 
+                        ? new Date(employee.joining_date).toLocaleDateString('en-CA')
+                        : employee.created_at 
+                          ? new Date(employee.created_at).toLocaleDateString('en-CA')
+                          : '-'
+                      }
                     </span>
                   </td>
+                  
+                  {/* ROLE */}
                   <td className="py-3 px-4">
-                    <div className="flex gap-3">
+                    <span className={`px-3 py-1 rounded text-xs font-medium ${
+                      employee.roll === 'Manager' ? 'bg-blue-100 text-blue-800' :
+                      employee.roll === 'Driver' || employee.roll === 'Delivery Man' ? 'bg-yellow-100 text-yellow-800' :
+                      employee.roll === 'Chef' ? 'bg-red-100 text-red-800' :
+                      employee.roll === 'Waiter' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {employee.roll}
+                    </span>
+                  </td>
+                  
+                  {/* EMP ID */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-700">{generateEmpId(employee.id)}</span>
+                  </td>
+                  
+                  {/* NAME */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-700">{employee.fname} {employee.lname}</span>
+                  </td>
+                  
+                  {/* PHONE */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-700">{employee.phone}</span>
+                  </td>
+                  
+                  {/* ROTA START */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-700">
+                      {employee.shift_start_time || '-'}
+                    </span>
+                  </td>
+                  
+                  {/* ROTA END */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-700">
+                      {employee.shift_end_time || '-'}
+                    </span>
+                  </td>
+                  
+                  {/* PER HOUR SALARY */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-700">
+                      €{employee.salary_per_hour ? Number(employee.salary_per_hour).toFixed(2) : '0.00'}
+                    </span>
+                  </td>
+                  
+                  {/* STATUS */}
+                  <td className="py-3 px-4">
+                    <span className={`px-3 py-1 rounded text-xs font-medium ${
+                      employee.resignation_date ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {employee.resignation_date ? 'RESIGNED' : 'AVAILABLE'}
+                    </span>
+                  </td>
+                  
+                  {/* ACTION */}
+                  <td className="py-3 px-4">
+                    <div className="flex gap-2">
                       <button 
                         onClick={() => handleEditEmployee(employee)}
-                        className="text-primary hover:text-primary-dark transition-colors p-1 rounded hover:bg-blue-50"
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Edit"
                       >
-                        <Edit size={16} />
+                        <Edit size={18} />
                       </button>
                       <button 
                         onClick={() => handleDeleteClick(employee)}
-                        className="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                        title="Delete"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </td>
@@ -1137,6 +930,45 @@ const Employee = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-gray-600">
+            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredEmployees.length)} of {filteredEmployees.length} employees
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              &lt;
+            </button>
+            
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-3 py-1 border rounded-md text-sm ${
+                  currentPage === i + 1
+                    ? 'bg-black text-white border-black'
+                    : 'border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              &gt;
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1188,15 +1020,15 @@ const Employee = () => {
         </div>
       )}
 
-      {/* Virtual Keyboard */}
+      {/* Virtual Keyboard for Search Bar */}
       <VirtualKeyboard
-        isVisible={showKeyboard}
-        onClose={handleKeyboardClose}
-        activeInput={activeInput}
-        onInputChange={onKeyboardChange}
-        onInputBlur={handleInputBlur}
-        inputValue={newEmployee[activeInput] || ''}
-        placeholder="Type here..."
+        isVisible={showSearchKeyboard}
+        onClose={handleSearchKeyboardClose}
+        activeInput="search"
+        onInputChange={handleSearchKeyboardChange}
+        onInputBlur={handleSearchBlur}
+        inputValue={searchQuery}
+        placeholder="Search by name or phone..."
       />
     </div>
   );

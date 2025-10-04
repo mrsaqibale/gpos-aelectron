@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, ChevronDown, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, Clock, Calendar, Eye, X } from 'lucide-react';
+import { Users, ChevronDown, Search, Download, ChevronLeft, ChevronRight, Mail, Phone, Clock, Calendar, Eye, X, Edit } from 'lucide-react';
 import VirtualKeyboard from '../../VirtualKeyboard';
 import CustomAlert from '../../CustomAlert';
 
@@ -24,7 +24,11 @@ const EmployeeAttendance = () => {
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [employeesPerPage] = useState(7);
+  const [employeesPerPage, setEmployeesPerPage] = useState(10);
+  
+  // Additional filters for Employee Attendance List
+  const [filterRole, setFilterRole] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -132,6 +136,9 @@ const EmployeeAttendance = () => {
 
   // Real attendance records list for modal
   const [attendanceRecords, setAttendanceRecords] = useState([]);
+  
+  // Today's attendance records for all employees
+  const [todayAttendanceRecords, setTodayAttendanceRecords] = useState([]);
 
   // Enhanced dummy employee attendance data with salary history
   const dummyEmployees = [
@@ -309,12 +316,42 @@ const EmployeeAttendance = () => {
 
         setEmployees(employeesWithDetails);
         setFilteredEmployees(employeesWithDetails);
+        
+        // Load today's attendance for all employees
+        await loadTodayAttendance(employeesWithDetails);
       } 
     } catch (error) {
       console.error('Error loading employees:', error);
       // Do not fallback to dummy; show no employees to avoid fake data in production
       setEmployees([]);
       setFilteredEmployees([]);
+    }
+  };
+
+  // Load today's attendance records for all employees
+  const loadTodayAttendance = async (employeeList) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      if (api) {
+        const attendancePromises = employeeList.map(async (emp) => {
+          try {
+            const result = await api.attendanceCheckTodayStatus(emp.id, today);
+            if (result.success && result.data) {
+              return result.data;
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error loading today's attendance for employee ${emp.id}:`, error);
+            return null;
+          }
+        });
+        
+        const results = await Promise.all(attendancePromises);
+        setTodayAttendanceRecords(results.filter(r => r !== null));
+      }
+    } catch (error) {
+      console.error('Error loading today\'s attendance:', error);
+      setTodayAttendanceRecords([]);
     }
   };
 
@@ -326,6 +363,25 @@ const EmployeeAttendance = () => {
       employee.phone.includes(searchTerm) ||
       employee.role.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Apply role filter
+    if (filterRole) {
+      filtered = filtered.filter(emp => emp.role === filterRole);
+    }
+
+    // Apply status filter (checking today's attendance)
+    if (filterStatus) {
+      const today = new Date().toISOString().split('T')[0];
+      filtered = filtered.filter(emp => {
+        // For now, we'll use a simple check - you can enhance this with actual attendance data
+        if (filterStatus === 'PRESENT') {
+          return emp.presentDays > 0; // Has attendance records
+        } else if (filterStatus === 'ABSENT') {
+          return emp.presentDays === 0 || !emp.presentDays;
+        }
+        return true;
+      });
+    }
 
     // Apply sorting
     if (sortBy) {
@@ -355,7 +411,7 @@ const EmployeeAttendance = () => {
 
     setFilteredEmployees(filtered);
     setCurrentPage(1);
-  }, [searchTerm, employees, sortBy]);
+  }, [searchTerm, employees, sortBy, filterRole, filterStatus]);
 
   // Get current employees for pagination
   const indexOfLastEmployee = currentPage * employeesPerPage;
@@ -505,6 +561,8 @@ const EmployeeAttendance = () => {
             
             // Reload employees to update attendance data
             await loadEmployees();
+            // Also reload today's attendance to update the table
+            await loadTodayAttendance(employees);
             // Refresh modal records if details modal is open for this employee
             try {
               if (showModal && selectedEmployee && selectedEmployee.id === selectedEmp?.id) {
@@ -984,104 +1042,198 @@ const EmployeeAttendance = () => {
 
       {/* Employee Attendance List */}
       <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-        {/* Header with search and export */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-800">Employee Attendance List</h3>
-            <span className="text-sm text-gray-500">({filteredEmployees.length} employees)</span>
-          </div>
-          <div className="flex items-center gap-3">
-                         {/* Search */}
-             <div className="relative">
-               <input
-                 type="text"
-                 placeholder="Ex: Search by name or role"
-                 value={searchTerm}
-                 onChange={(e) => setSearchTerm(e.target.value)}
-                 onFocus={() => handleInputFocus('searchTerm')}
-                 onBlur={handleInputBlur}
-                 onClick={() => handleAnyInputClick(null, 'searchTerm')}
-                 className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm w-64"
-               />
-               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-             </div>
+        {/* Filters Bar */}
+        <div className="flex justify-between items-center mb-6 gap-4">
+          {/* Left side - Filters */}
+          <div className="flex items-center gap-4">
+            {/* Select Role Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Select Role</label>
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value="">All Roles</option>
+                <option value="Manager">Manager</option>
+                <option value="Cashier">Cashier</option>
+                <option value="Chef">Chef</option>
+                <option value="Waiter">Waiter</option>
+                <option value="Driver">Driver</option>
+                <option value="Delivery Man">Delivery Man</option>
+              </select>
+            </div>
+
+            {/* Show Items Per Page */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Show:</label>
+              <select
+                value={employeesPerPage}
+                onChange={(e) => setEmployeesPerPage(Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+
+            {/* Sort By Status Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort By Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value="">All</option>
+                <option value="PRESENT">Present</option>
+                <option value="ABSENT">Absent</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Employee Table */}
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">SI</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Employee ID
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Employee Name
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Contact Information
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Role
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Hours
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm cursor-pointer hover:text-primary">
-                  Salary
-                  <ChevronDown className="inline ml-1" size={12} />
-                </th>
-                
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Actions</th>
+              <tr className="bg-gray-100">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">SI</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">DATE</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">ROLE</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">EMP ID</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">NAME</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">PHONE</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">STATUS</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">CHECK IN TIME</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">CHECK OUT TIME</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">WORKING HOURS</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">TOTAL SALARY</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">SHIFT STATUS</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">EDIT</th>
               </tr>
             </thead>
             <tbody>
               {currentEmployees.map((employee, index) => {
-                const attendancePercentage = getAttendancePercentage(employee.presentDays, employee.totalDays);
-                const statusBadge = getStatusBadge(employee.presentDays, employee.totalDays, employee.lateDays);
+                // Get today's date
+                const today = new Date().toISOString().split('T')[0];
+                
+                // Find today's attendance record
+                const todayRecord = todayAttendanceRecords.find(r => 
+                  r.employee_id === employee.id
+                );
+                
+                const checkInTime = todayRecord?.checkin 
+                  ? new Date(todayRecord.checkin).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+                  : '--';
+                
+                const checkOutTime = todayRecord?.checkout 
+                  ? new Date(todayRecord.checkout).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+                  : '--';
+                
+                const workingHours = todayRecord?.total_hours 
+                  ? `${Number(todayRecord.total_hours).toFixed(2)} hrs`
+                  : '--';
+                
+                const totalSalary = todayRecord?.earned_amount 
+                  ? `€${Number(todayRecord.earned_amount).toFixed(2)}`
+                  : '€0.00';
+                
+                const status = todayRecord?.status || 'ABSENT';
+                const shiftStatus = todayRecord?.status === 'late' ? 'Late' : todayRecord?.status === 'present' ? 'Full' : '--';
                 
                 return (
-                  <tr key={employee.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {indexOfFirstEmployee + index + 1}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {employee.employeeId}
-                    </td>
+                  <tr key={employee.id} className="border-b border-gray-200 hover:bg-gray-50">
+                    {/* SI */}
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-800">{employee.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-sm">
-                        <div className="text-gray-800">{employee.email}</div>
-                        <div className="text-gray-500">{employee.phone}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {employee.role}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {employee.totalHours}h
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      €{employee.salary.toLocaleString()}
+                      <span className="text-sm text-gray-700">{indexOfFirstEmployee + index + 1}</span>
                     </td>
                     
+                    {/* DATE */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-gray-700">{today}</span>
+                    </td>
+                    
+                    {/* ROLE */}
+                    <td className="py-3 px-4">
+                      <span className={`px-3 py-1 rounded text-xs font-medium ${
+                        employee.role === 'Manager' ? 'bg-blue-100 text-blue-800' :
+                        employee.role === 'Driver' || employee.role === 'Delivery Man' ? 'bg-yellow-100 text-yellow-800' :
+                        employee.role === 'Chef' ? 'bg-red-100 text-red-800' :
+                        employee.role === 'Waiter' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {employee.role}
+                      </span>
+                    </td>
+                    
+                    {/* EMP ID */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-gray-700">{employee.employeeId}</span>
+                    </td>
+                    
+                    {/* NAME */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-gray-700">{employee.name}</span>
+                    </td>
+                    
+                    {/* PHONE */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-gray-700">{employee.phone}</span>
+                    </td>
+                    
+                    {/* STATUS */}
+                    <td className="py-3 px-4">
+                      <span className={`px-3 py-1 rounded text-xs font-medium ${
+                        status.toUpperCase() === 'PRESENT' || status === 'present' || status === 'late' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {status.toUpperCase() === 'PRESENT' || status === 'present' || status === 'late' ? 'PRESENT' : 'ABSENT'}
+                      </span>
+                    </td>
+                    
+                    {/* CHECK IN TIME */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-gray-700">{checkInTime}</span>
+                    </td>
+                    
+                    {/* CHECK OUT TIME */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-gray-700">{checkOutTime}</span>
+                    </td>
+                    
+                    {/* WORKING HOURS */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-gray-700">{workingHours}</span>
+                    </td>
+                    
+                    {/* TOTAL SALARY */}
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-gray-700">{totalSalary}</span>
+                    </td>
+                    
+                    {/* SHIFT STATUS */}
+                    <td className="py-3 px-4">
+                      <span className={`px-3 py-1 rounded text-xs font-medium ${
+                        shiftStatus === 'Full' ? 'bg-green-100 text-green-800' :
+                        shiftStatus === 'Late' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {shiftStatus}
+                      </span>
+                    </td>
+                    
+                    {/* EDIT */}
                     <td className="py-3 px-4">
                       <button
                         onClick={() => handleModalOpen(employee)}
-                        className="p-1 text-gray-400 hover:text-primary transition-colors"
+                        className="p-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
                       >
-                        <Eye size={16} />
+                        <Edit size={16} />
                       </button>
                     </td>
                   </tr>
@@ -1092,44 +1244,43 @@ const EmployeeAttendance = () => {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
-            <div className="text-sm text-gray-500">
-              Showing {indexOfFirstEmployee + 1} to {Math.min(indexOfLastEmployee, filteredEmployees.length)} of {filteredEmployees.length} employees
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                    currentPage === page
-                      ? 'bg-primary text-white'
-                      : 'border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+        <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+          <div className="text-sm text-gray-600">
+            Showing {indexOfFirstEmployee + 1} to {Math.min(indexOfLastEmployee, filteredEmployees.length)} of {filteredEmployees.length} employees
           </div>
-        )}
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              &lt;
+            </button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`px-3 py-1 border rounded-md text-sm ${
+                  currentPage === page
+                    ? 'bg-black text-white border-black'
+                    : 'border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              &gt;
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Modal for Employee Attendance Details */}
