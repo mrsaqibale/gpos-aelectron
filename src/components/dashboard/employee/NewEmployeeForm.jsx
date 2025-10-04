@@ -99,7 +99,24 @@ const NewEmployeeForm = ({
                   
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Role <span className="text-red-500">*</span>
+                      Date of Birth <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="dateOfBirth"
+                      value={newEmployee.dateOfBirth}
+                      onChange={handleInputChange}
+                      onFocus={() => handleAnyInputFocus(null, 'dateOfBirth')}
+                      onBlur={handleInputBlur}
+                      onClick={() => handleAnyInputClick(null, 'dateOfBirth')}
+                      className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Select Role <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="role"
@@ -123,7 +140,25 @@ const NewEmployeeForm = ({
                   
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Phone <span className="text-red-500">*</span> <span className="text-xs text-gray-500">(Must start with 08 and be 10 digits)</span>
+                      Nationality <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="nationality"
+                      value={newEmployee.nationality}
+                      onChange={handleInputChange}
+                      onFocus={() => handleAnyInputFocus(null, 'nationality')}
+                      onBlur={handleInputBlur}
+                      onClick={() => handleAnyInputClick(null, 'nationality')}
+                      className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                      placeholder="Ex: Irish / Pakistani / British"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Phone Number <span className="text-red-500">*</span> <span className="text-xs text-gray-500">(Must start with 08)</span>
                     </label>
                     <input
                       type="text"
@@ -150,6 +185,47 @@ const NewEmployeeForm = ({
                     {phoneError && (
                       <p className="mt-1 text-xs text-red-600">{phoneError}</p>
                     )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={newEmployee.email}
+                      onChange={handleInputChange}
+                      onFocus={() => handleAnyInputFocus(null, 'email')}
+                      onBlur={handleInputBlur}
+                      onClick={() => handleAnyInputClick(null, 'email')}
+                      className={`w-[80%] px-2 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                        emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
+                      }`}
+                      placeholder="john.smith@email.com"
+                      required
+                    />
+                    {emailError && (
+                      <p className="mt-1 text-xs text-red-600">{emailError}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="address"
+                      value={newEmployee.address}
+                      onChange={handleInputChange}
+                      onFocus={() => handleAnyInputFocus(null, 'address')}
+                      onBlur={handleInputBlur}
+                      onClick={() => handleAnyInputClick(null, 'address')}
+                      className="w-[80%] px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                      placeholder="123 Main Street, Cashel, Ireland"
+                      required
+                    />
                   </div>
                   
                   <div>
@@ -297,6 +373,26 @@ const NewEmployeeForm = ({
             </div>
           </div>
 
+          {/* Notes Section */}
+          <div className="mb-5">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Notes
+              </label>
+              <textarea
+                name="notes"
+                value={newEmployee.notes}
+                onChange={handleInputChange}
+                onFocus={() => handleAnyInputFocus(null, 'notes')}
+                onBlur={handleInputBlur}
+                onClick={() => handleAnyInputClick(null, 'notes')}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                placeholder="Add any additional information (e.g., role, shift preferences, emergency contact)"
+                rows="4"
+              />
+            </div>
+          </div>
+
           {/* Account Info Section */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
@@ -306,30 +402,7 @@ const NewEmployeeForm = ({
               </h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={newEmployee.email}
-                  onChange={handleInputChange}
-                  onFocus={() => handleAnyInputFocus(null, 'email')}
-                  onBlur={handleInputBlur}
-                  onClick={() => handleAnyInputClick(null, 'email')}
-                  className={`w-3/4 px-3 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
-                    emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary'
-                  }`}
-                  placeholder="mrsaqibale@gmail.com"
-                  required
-                />
-                {emailError && (
-                  <p className="mt-1 text-xs text-red-600">{emailError}</p>
-                )}
-              </div>
-              
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   PIN Code <span className="text-red-500">*</span> <span className="text-xs text-gray-500">(4-6 digits)</span>
