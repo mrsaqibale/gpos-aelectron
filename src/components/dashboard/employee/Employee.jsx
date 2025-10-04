@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Plus, X, Trash2 } from 'lucide-react';
 import NewEmployeeForm from './NewEmployeeForm';
+import VirtualKeyboard from '../../VirtualKeyboard';
 
 const Employee = () => {
     const [employees, setEmployees] = useState([]);
@@ -16,6 +17,7 @@ const Employee = () => {
   // Keyboard state
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
+  const [showSearchKeyboard, setShowSearchKeyboard] = useState(false);
   
   // Filter, Search and Pagination state
   const [filterRole, setFilterRole] = useState('');
@@ -633,6 +635,30 @@ const Employee = () => {
     setActiveInput('');
   };
 
+  // Search keyboard handlers
+  const handleSearchFocus = () => {
+    setShowSearchKeyboard(true);
+  };
+
+  const handleSearchBlur = (e) => {
+    // Check if the focus is moving to a keyboard element
+    if (e.relatedTarget && e.relatedTarget.closest('.hg-theme-default')) {
+      return; // Don't hide keyboard if focus moved to keyboard
+    }
+    
+    setTimeout(() => {
+      setShowSearchKeyboard(false);
+    }, 100);
+  };
+
+  const handleSearchKeyboardChange = (input) => {
+    setSearchQuery(input);
+  };
+
+  const handleSearchKeyboardClose = () => {
+    setShowSearchKeyboard(false);
+  };
+
   // Filter and Search logic
   const filteredEmployees = employees
     .filter(employee => employee.roll !== 'Admin') // Filter out Admin role
@@ -747,7 +773,10 @@ const Employee = () => {
               placeholder="Search by name or phone"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className=" px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
+              onClick={handleSearchFocus}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
             />
           </div>
           <button
@@ -990,6 +1019,17 @@ const Employee = () => {
           </div>
         </div>
       )}
+
+      {/* Virtual Keyboard for Search Bar */}
+      <VirtualKeyboard
+        isVisible={showSearchKeyboard}
+        onClose={handleSearchKeyboardClose}
+        activeInput="search"
+        onInputChange={handleSearchKeyboardChange}
+        onInputBlur={handleSearchBlur}
+        inputValue={searchQuery}
+        placeholder="Search by name or phone..."
+      />
     </div>
   );
 };
