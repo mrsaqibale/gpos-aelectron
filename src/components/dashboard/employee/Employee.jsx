@@ -17,6 +17,12 @@ const Employee = () => {
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeInput, setActiveInput] = useState('');
   
+  // Filter, Search and Pagination state
+  const [filterRole, setFilterRole] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
   const [newEmployee, setNewEmployee] = useState({
     firstName: '',
     lastName: '',
@@ -627,6 +633,40 @@ const Employee = () => {
     setActiveInput('');
   };
 
+  // Filter and Search logic
+  const filteredEmployees = employees
+    .filter(employee => employee.roll !== 'Admin') // Filter out Admin role
+    .filter(employee => {
+      // Filter by role
+      if (filterRole && employee.roll !== filterRole) return false;
+      
+      // Search by name or phone
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const fullName = `${employee.fname} ${employee.lname}`.toLowerCase();
+        const phone = employee.phone?.toLowerCase() || '';
+        return fullName.includes(query) || phone.includes(query);
+      }
+      
+      return true;
+    });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentEmployees = filteredEmployees.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterRole, searchQuery, itemsPerPage]);
+
+  // Generate Employee ID
+  const generateEmpId = (id) => {
+    return `EMP${String(id).padStart(3, '0')}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Employee Form - NOW AT THE VERY TOP */}
@@ -660,164 +700,200 @@ const Employee = () => {
 
       {/* Employee List Section - NOW BELOW THE FORM */}
       <div className="bg-white rounded-lg shadow-sm p-4">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        {/* Filter and Search Bar */}
+        <div className="flex justify-between items-center mb-6 gap-4">
+          {/* Left side - Filter and Show */}
+          <div className="flex items-center gap-4">
+            {/* Filter by Role */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Role</label>
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value="">All Roles</option>
+                <option value="Manager">Manager</option>
+                <option value="Cashier">Cashier</option>
+                <option value="Chef">Chef</option>
+                <option value="Waiter">Waiter</option>
+                <option value="Sweeper">Sweeper</option>
+                <option value="Delivery Man">Delivery Man</option>
+              </select>
+            </div>
+
+            {/* Show Items Per Page */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Show:</label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
-            <span className="text-2xl">👥</span>
-            <h2 className="text-lg font-semibold text-gray-800">Employee List</h2>
+        
+          <div className="flex-1 max-w-md">
+            <input
+              type="text"
+              placeholder="Search by name or phone"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className=" px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            />
           </div>
           <button
             onClick={handleAddEmployee}
-            className="px-3 py-2 bg-primary text-white text-sm font-medium rounded-lg flex items-center gap-2 
-            shadow-[0_4px_0_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_rgba(0,0,0,0.2)] hover:translate-y-[2px] 
-            active:shadow-none active:translate-y-[4px] transition-all"
+            className="px-4 py-2 bg-black text-white text-sm font-medium rounded-md flex items-center gap-2 hover:bg-gray-800 transition-colors whitespace-nowrap"
           >
             <Plus size={16} />
             Add New Employee
           </button>
+          </div>
         </div>
 
         {/* Employee Table */}
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse  overflow-hidden rounded-xl shadow-sm">
+          <table className="w-full border-collapse overflow-hidden rounded-xl shadow-sm">
             <thead>
-              <tr className="bg-primaryExtraLight">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
+              <tr className="bg-gray-100">
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   SI
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Employee Name
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  JOINING DATE
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Role
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ROLE
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Phone
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  EMP ID
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Email
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  NAME
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Available
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  PHONE
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Status
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ROTA START
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primary uppercase tracking-wider">
-                  Created At
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ROTA END
                 </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-primaryuppercase tracking-wider">
-                  Action
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  PER HOUR SALARY
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  STATUS
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  ACTION
                 </th>
               </tr>
             </thead>
             <tbody>
-              {employees
-                .filter(employee => employee.roll !== 'Admin') // Filter out Admin role employees
-                .map((employee, index) => (
-                <tr key={employee.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+              {currentEmployees.map((employee, index) => (
+                <tr key={employee.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  {/* SI */}
                   <td className="py-3 px-4">
-                    <span className="text-sm font-medium text-gray-700">{index + 1}</span>
+                    <span className="text-sm text-gray-700">{indexOfFirstItem + index + 1}</span>
                   </td>
+                  
+                  {/* JOINING DATE */}
                   <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      {employee.imgurl ? (
-                        <img
-                          src={employee.imgurl.startsWith('uploads/') ? imageUrls[employee.id] : `data:image/png;base64,${employee.imgurl}`}
-                          alt={`${employee.fname} ${employee.lname}`}
-                          className="w-8 h-8 object-cover rounded-full"
-                          onError={(e) => {
-                            // Fallback to initials if image fails to load
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-xs text-gray-500">
-                            {employee.fname?.charAt(0)}{employee.lname?.charAt(0)}
-                          </span>
-                        </div>
-                      )}
-                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center" style={{ display: 'none' }}>
-                        <span className="text-xs text-gray-500">
-                          {employee.fname?.charAt(0)}{employee.lname?.charAt(0)}
-                        </span>
-                      </div>
-                      <span className="text-sm font-medium text-gray-800">
-                        {employee.fname} {employee.lname}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{employee.roll}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{employee.phone}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">{employee.email}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <label className={`relative inline-flex items-center ${toggleLoadingAvailable[employee.id] ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                      <input
-                        type="checkbox"
-                        checked={employee.isavailable === 1}
-                        onChange={() => !toggleLoadingAvailable[employee.id] && toggleAvailability(employee.id)}
-                        className="sr-only"
-                        disabled={toggleLoadingAvailable[employee.id]}
-                      />
-                      <div className={`w-10 h-5 rounded-full transition-colors ${employee.isavailable === 1 ? 'bg-primary' : 'bg-gray-200'}`}>
-                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${employee.isavailable === 1 ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`}></div>
-                      </div>
-                      {toggleLoadingAvailable[employee.id] && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </label>
-                  </td>
-                  <td className="py-3 px-4">
-                    <label className={`relative inline-flex items-center ${toggleLoading[employee.id] ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                      <input
-                        type="checkbox"
-                        checked={employee.isActive === 1}
-                        onChange={() => !toggleLoading[employee.id] && toggleStatus(employee.id)}
-                        className="sr-only"
-                        disabled={toggleLoading[employee.id]}
-                      />
-                      <div className={`w-10 h-5 rounded-full transition-colors ${employee.isActive === 1 ? 'bg-primary' : 'bg-gray-200'}`}>
-                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${employee.isActive === 1 ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`}></div>
-                      </div>
-                      {toggleLoading[employee.id] && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                    </label>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="text-sm text-gray-600">
-                      {employee.created_at ? new Date(employee.created_at).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      }) : '-'}
+                    <span className="text-sm text-gray-700">
+                      {employee.joining_date 
+                        ? new Date(employee.joining_date).toLocaleDateString('en-CA')
+                        : employee.created_at 
+                          ? new Date(employee.created_at).toLocaleDateString('en-CA')
+                          : '-'
+                      }
                     </span>
                   </td>
+                  
+                  {/* ROLE */}
                   <td className="py-3 px-4">
-                    <div className="flex gap-3">
+                    <span className={`px-3 py-1 rounded text-xs font-medium ${
+                      employee.roll === 'Manager' ? 'bg-blue-100 text-blue-800' :
+                      employee.roll === 'Driver' || employee.roll === 'Delivery Man' ? 'bg-yellow-100 text-yellow-800' :
+                      employee.roll === 'Chef' ? 'bg-red-100 text-red-800' :
+                      employee.roll === 'Waiter' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {employee.roll}
+                    </span>
+                  </td>
+                  
+                  {/* EMP ID */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-700">{generateEmpId(employee.id)}</span>
+                  </td>
+                  
+                  {/* NAME */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-700">{employee.fname} {employee.lname}</span>
+                  </td>
+                  
+                  {/* PHONE */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-700">{employee.phone}</span>
+                  </td>
+                  
+                  {/* ROTA START */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-700">
+                      {employee.shift_start_time || '-'}
+                    </span>
+                  </td>
+                  
+                  {/* ROTA END */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm text-gray-700">
+                      {employee.shift_end_time || '-'}
+                    </span>
+                  </td>
+                  
+                  {/* PER HOUR SALARY */}
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-medium text-gray-700">
+                      €{employee.salary_per_hour ? Number(employee.salary_per_hour).toFixed(2) : '0.00'}
+                    </span>
+                  </td>
+                  
+                  {/* STATUS */}
+                  <td className="py-3 px-4">
+                    <span className={`px-3 py-1 rounded text-xs font-medium ${
+                      employee.resignation_date ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {employee.resignation_date ? 'RESIGNED' : 'AVAILABLE'}
+                    </span>
+                  </td>
+                  
+                  {/* ACTION */}
+                  <td className="py-3 px-4">
+                    <div className="flex gap-2">
                       <button 
                         onClick={() => handleEditEmployee(employee)}
-                        className="text-primary hover:text-primary-dark transition-colors p-1 rounded hover:bg-blue-50"
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Edit"
                       >
-                        <Edit size={16} />
+                        <Edit size={18} />
                       </button>
                       <button 
                         onClick={() => handleDeleteClick(employee)}
-                        className="text-red-600 hover:text-red-800 transition-colors p-1 rounded hover:bg-red-50"
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                        title="Delete"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   </td>
@@ -825,6 +901,45 @@ const Employee = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-gray-600">
+            Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredEmployees.length)} of {filteredEmployees.length} employees
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              &lt;
+            </button>
+            
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i + 1}
+                onClick={() => setCurrentPage(i + 1)}
+                className={`px-3 py-1 border rounded-md text-sm ${
+                  currentPage === i + 1
+                    ? 'bg-black text-white border-black'
+                    : 'border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              &gt;
+            </button>
+          </div>
         </div>
       </div>
 
