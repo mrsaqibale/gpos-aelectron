@@ -34,7 +34,7 @@ const NewEmployeeForm = ({
 
     if (!showForm) return null;
 
-    return (
+  return (
         <>
             {/* Employee Form - NOW AT THE VERY TOP */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
